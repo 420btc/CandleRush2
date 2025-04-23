@@ -24,6 +24,7 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
   const { isMobile } = useDevice()
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const [isInitialized, setIsInitialized] = useState(false)
+  const [hasAnimated, setHasAnimated] = useState(false)
   const { bets } = useGame()
 
   // Estado para la navegación del gráfico
@@ -41,25 +42,79 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
 
   // Set up canvas dimensions
   useEffect(() => {
+    // Actualizar dimensiones del canvas
     const updateDimensions = () => {
       if (canvasRef.current && canvasRef.current.parentElement) {
-        const { width, height } = canvasRef.current.parentElement.getBoundingClientRect()
-        setDimensions({ width, height })
-        canvasRef.current.width = width * window.devicePixelRatio
-        canvasRef.current.height = height * window.devicePixelRatio
-        canvasRef.current.style.width = `${width}px`
-        canvasRef.current.style.height = `${height}px`
-        setIsInitialized(true)
+        const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
+        setDimensions({ width, height });
+        canvasRef.current.width = width * window.devicePixelRatio;
+        canvasRef.current.height = height * window.devicePixelRatio;
+        canvasRef.current.style.width = `${width}px`;
+        canvasRef.current.style.height = `${height}px`;
+        setIsInitialized(true);
       }
-    }
+    };
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
 
-    updateDimensions()
-    window.addEventListener("resize", updateDimensions)
-
-    return () => {
-      window.removeEventListener("resize", updateDimensions)
+  useEffect(() => {
+    // Solo animar al inicio y una sola vez
+    if (
+      !hasAnimated &&
+      candles.length > 0 &&
+      canvasRef.current &&
+      canvasRef.current.parentElement &&
+      dimensions.width > 0 &&
+      dimensions.height > 0
+    ) {
+      const { width } = canvasRef.current.parentElement.getBoundingClientRect();
+      const allCandles = [...candles];
+      if (currentCandle) allCandles.push(currentCandle);
+      const minTime = Math.min(...allCandles.map(c => c.timestamp));
+      const maxTime = Math.max(...allCandles.map(c => c.timestamp));
+      const timeRange = maxTime - minTime;
+      const targetScale = Math.min(5, Math.max(1, (candles.length + (currentCandle ? 1 : 0)) / 20));
+      // Recalcular min/max para Y con padding igual que en drawChart
+      let minPrice = Math.min(...allCandles.map(c => c.low));
+      let maxPrice = Math.max(...allCandles.map(c => c.high));
+      const pricePadding = (maxPrice - minPrice) * 0.1;
+      minPrice -= pricePadding;
+      maxPrice += pricePadding;
+      const priceRange = maxPrice - minPrice;
+      // const timeRange = maxTime - minTime; // Ya está declarado arriba
+      const xScale = (width / timeRange) * targetScale;
+      const yScale = (canvasRef.current.parentElement.getBoundingClientRect().height / priceRange) * targetScale;
+      const lastCandle = allCandles[allCandles.length - 1];
+      const lastCandleX = (lastCandle.timestamp - minTime) * xScale;
+      const lastCandleY = (lastCandle.close - minPrice) * yScale;
+      const targetOffsetX = lastCandleX - width / 2;
+      const targetOffsetY = lastCandleY - (canvasRef.current.parentElement.getBoundingClientRect().height / 2);
+      const start = performance.now();
+      const duration = 700;
+      const initialOffsetX = viewState.offsetX;
+      const initialOffsetY = viewState.offsetY;
+      const initialScale = viewState.scale;
+      function animate(now:number) {
+        const t = Math.min(1, (now - start) / duration);
+        const ease = 1 - Math.pow(1 - t, 3);
+        setViewState((prev) => ({
+          ...prev,
+          offsetX: initialOffsetX + (targetOffsetX - initialOffsetX) * ease,
+          offsetY: initialOffsetY + (targetOffsetY - initialOffsetY) * ease,
+          scale: initialScale + (targetScale - initialScale) * ease,
+        }));
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          setHasAnimated(true);
+        }
+      }
+      requestAnimationFrame(animate);
     }
-  }, [])
+    // eslint-disable-next-line
+  }, [candles, currentCandle, dimensions.width, dimensions.height, hasAnimated]);
 
   // Función para dibujar el gráfico completo
   const drawChart = useCallback(() => {
@@ -124,61 +179,9 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
     }
 
     // Draw background
-    ctx.fillStyle = "rgba(24, 24, 27, 0.5)"
+    ctx.fillStyle = "#000"
     ctx.fillRect(0, 0, dimensions.width, dimensions.height)
 
-    // Draw price grid lines
-    ctx.strokeStyle = "rgba(42, 46, 57, 0.3)"
-    ctx.lineWidth = 0.5
-
-    const visiblePriceRange = priceRange / viewState.scale
-    const priceStep = visiblePriceRange / 5
-    const startPrice = minPrice + clampedOffsetY / yScale
-
-    for (let i = 0; i <= 5; i++) {
-      const price = startPrice + i * priceStep
-      const y = dimensions.height - ((price - minPrice) * yScale - clampedOffsetY)
-
-      if (y >= 0 && y <= dimensions.height) {
-        ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(dimensions.width, y)
-        ctx.stroke()
-
-        // Draw price labels
-        ctx.fillStyle = "#d1d5db"
-        ctx.font = "10px Arial"
-        ctx.textAlign = "left"
-        ctx.fillText(price.toFixed(2), 5, y - 5)
-      }
-    }
-
-    // Draw time grid lines with offset
-    const visibleTimeRange = timeRange / viewState.scale
-    const timeStep = visibleTimeRange / 6
-    const startTime = minTime + clampedOffsetX / xScale
-
-    for (let i = 0; i <= 6; i++) {
-      const time = startTime + i * timeStep
-      const x = (time - minTime) * xScale - clampedOffsetX
-
-      if (x >= 0 && x <= dimensions.width) {
-        ctx.beginPath()
-        ctx.moveTo(x, 0)
-        ctx.lineTo(x, dimensions.height)
-        ctx.stroke()
-
-        // Draw time labels
-        if (i > 0 && i < 6) {
-          const date = new Date(time)
-          const timeLabel = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          ctx.fillStyle = "#d1d5db"
-          ctx.font = "10px Arial"
-          ctx.textAlign = "center"
-          ctx.fillText(timeLabel, x, dimensions.height - 5)
-        }
-      }
-    }
 
     // Draw candles with offset
     const candleWidth = Math.min(Math.max((dimensions.width / (allCandles.length / viewState.scale)) * 0.8, 2), 15)
@@ -257,7 +260,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
           // Dibujar marcador verde (alcista)
           ctx.fillStyle = "#22c55e"
           ctx.beginPath()
-          ctx.arc(x, markerY, 5, 0, Math.PI * 2)
+          ctx.arc(x, markerY, 3.5, 0, Math.PI * 2)
           ctx.fill()
           markerY -= 10 // Espacio para el siguiente marcador
         }
@@ -266,7 +269,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
           // Dibujar marcador rojo (bajista)
           ctx.fillStyle = "#ef4444"
           ctx.beginPath()
-          ctx.arc(x, markerY, 5, 0, Math.PI * 2)
+          ctx.arc(x, markerY, 3.5, 0, Math.PI * 2)
           ctx.fill()
         }
       }
@@ -596,10 +599,10 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
       </div>
 
       {!isInitialized && (
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-800/50">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#FFD600]/50">
           <div className="flex flex-col items-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-600 border-t-green-400"></div>
-            <p className="mt-2 text-zinc-400">Cargando gráfico...</p>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#FFD600] border-t-green-400"></div>
+            <p className="mt-2 text-[#FFD600]">Cargando gráfico...</p>
           </div>
         </div>
       )}

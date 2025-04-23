@@ -88,17 +88,17 @@ export default function GameTimer() {
   // BETTING: Large, prominent timer
   if (gamePhase === "BETTING") {
     return (
-      <div className="w-full flex flex-col items-center justify-center my-2">
-        <div className="text-lg md:text-2xl font-extrabold text-[#FFD600] mb-1 animate-pulse drop-shadow-lg">
+      <div className="w-full flex flex-col items-center justify-center my-0">
+        <div className="text-base font-bold text-[#FFD600] mb-0 animate-pulse">
           Fase de apuestas
         </div>
-        <div className={`flex items-center justify-center rounded-lg shadow-lg px-4 py-2 bg-black border-2 border-yellow-400 animate-pulse`}
-             style={{ minWidth: 120 }}>
-          <Clock className="h-5 w-5 text-yellow-300 mr-2" />
-          <span className="text-3xl md:text-4xl font-extrabold text-green-400">
+        <div className={`flex items-center justify-center rounded-lg shadow px-2 py-1 bg-black border border-yellow-400 animate-pulse`}
+             style={{ minWidth: 70 }}>
+          <Clock className="h-4 w-4 text-yellow-300 mr-1" />
+          <span className="text-xl font-extrabold text-green-400">
             {Math.max(0, Math.ceil(timeLeft / 1000))}
           </span>
-          <span className="text-lg font-bold text-green-400 ml-1">s</span>
+          <span className="text-base font-bold text-green-400 ml-1">s</span>
         </div>
       </div>
     )
@@ -106,13 +106,13 @@ export default function GameTimer() {
 
   // NOT BETTING: Dimmed/closed state
   return (
-    <div className="w-full flex flex-col items-center justify-center my-4">
-      <div className="text-xl md:text-2xl font-bold text-zinc-400 mb-2">
+    <div className="w-full flex flex-col items-center justify-center my-0">
+      <div className="text-base font-bold text-zinc-400 mb-0">
         Apuestas cerradas
       </div>
-      <div className="flex items-center justify-center rounded-lg px-8 py-4 bg-zinc-800 border-4 border-zinc-700 opacity-60" style={{ minWidth: 200 }}>
-        <Clock className="h-8 w-8 text-zinc-400 mr-3" />
-        <span className="text-4xl font-bold text-zinc-400">
+      <div className="flex items-center justify-center rounded-lg px-2 py-1 bg-zinc-800 border border-zinc-700 opacity-60" style={{ minWidth: 70 }}>
+        <Clock className="h-4 w-4 text-zinc-400 mr-1" />
+        <span className="text-xl font-bold text-zinc-400">
           --
         </span>
       </div>
