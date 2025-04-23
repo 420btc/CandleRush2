@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   generator: 'v0.dev',
 }
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -17,7 +18,9 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/btcc.png" />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+      </body>
     </html>
-  )
+  );
 }

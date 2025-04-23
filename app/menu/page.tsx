@@ -8,7 +8,7 @@ const menuItems = [
     description: "Ir al juego principal",
     href: "/",
     icon: (
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-green-500"><path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-green-500"><path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
     ),
   },
   {
@@ -16,7 +16,7 @@ const menuItems = [
     description: "Aprende las reglas y mecánicas",
     href: "/how-to-play",
     icon: (
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-blue-500"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-blue-500"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
     ),
   },
   {
@@ -24,7 +24,7 @@ const menuItems = [
     description: "Consulta tu progreso y logros",
     href: "/levels",
     icon: (
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-yellow-500"><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-yellow-500"><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
     ),
   },
   {
@@ -32,12 +32,12 @@ const menuItems = [
     description: "Ver y editar tu perfil",
     href: "/profile",
     icon: (
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-purple-500"><circle cx="12" cy="7" r="4" /><path d="M5.5 21a8.38 8.38 0 0 1 13 0" /></svg>
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-purple-500"><circle cx="12" cy="7" r="4" /><path d="M5.5 21a8.38 8.38 0 0 1 13 0" /></svg>
     ),
   },
 ];
 
-// Archivo migrado a app/menu/page.tsx. Este archivo es redundante y puede eliminarse.
+export default function MenuPage() {
   const [btcPrice, setBtcPrice] = useState<string>("-");
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
@@ -99,4 +99,3 @@ const menuItems = [
     </main>
   );
 }
-

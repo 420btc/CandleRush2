@@ -235,10 +235,30 @@ export default function GameScreen() {
     </a>
     <h1 className="text-3xl font-bold text-[#FFD600] tracking-tight" data-component-name="GameScreen">Candle Rush 2.0</h1>
     <nav className="flex gap-4 ml-4">
-      <button className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1">Menu</button>
-      <button className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1">Cómo jugar</button>
-      <button className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1">Niveles</button>
-      <button className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1">Perfil</button>
+      <button
+        className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
+        onClick={() => window.location.href = '/menu'}
+      >
+        Menu
+      </button>
+      <button
+        className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
+        onClick={() => window.location.href = '/how-to-play'}
+      >
+        Cómo jugar
+      </button>
+      <button
+        className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
+        onClick={() => window.location.href = '/levels'}
+      >
+        Niveles
+      </button>
+      <button
+        className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
+        onClick={() => window.location.href = '/profile'}
+      >
+        Perfil
+      </button>
     </nav>
   </div>
           
