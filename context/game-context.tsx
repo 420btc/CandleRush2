@@ -75,11 +75,16 @@ interface GameContextType {
   changeSymbol: (symbol: string) => void
   changeTimeframe: (timeframe: string) => void
   currentCandleBets: number
+  candleSizes: number[]
+  bonusInfo: { bonus: number; size: number; message: string } | null
+  setBonusInfo: React.Dispatch<React.SetStateAction<{ bonus: number; size: number; message: string } | null>>
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
 
 export function GameProvider({ children }: { children: ReactNode }) {
+  const [candleSizes, setCandleSizes] = useState<number[]>([]);
+  const [bonusInfo, setBonusInfo] = useState<{ bonus: number; size: number; message: string } | null>(null);
   const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING")
   const [nextPhaseTime, setNextPhaseTime] = useState<number | null>(null)
   const [nextCandleTime, setNextCandleTime] = useState<number | null>(null)
@@ -281,6 +286,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       // If candle is closed, add it to history and schedule resolution
       if (candle.isClosed) {
+        // Calcular tamaño de la vela cerrada
+        const size = Math.abs(candle.high - candle.low);
+        setCandleSizes((prev) => {
+          const arr = [...prev, size];
+          if (arr.length > 10) arr.shift();
+          return arr;
+        });
+
         // Programar la resolución de apuestas para cuando se cierre la vela
         const candleDuration = getTimeframeInMs(timeframe)
         const resolutionTime = candle.timestamp + candleDuration
@@ -342,6 +355,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Resolve bets when a candle closes
   const resolveBets = useCallback(
     (candle: Candle) => {
+      // --- BONUS Y MENSAJE DE RÉCORDS ---
+      const size = Math.abs(candle.high - candle.low);
+      let bonusPercent = 0;
+      if (size > 600) bonusPercent = 3.0;
+      else if (size > 400) bonusPercent = 2.0;
+      else if (size > 250) bonusPercent = 1.5;
+      else if (size > 150) bonusPercent = 1.0;
+      else if (size > 75) bonusPercent = 0.5;
+      else if (size > 25) bonusPercent = 0.25;
+      else if (size > 0) bonusPercent = 0.10;
+      // Acceso seguro a candleSizes
+      let last10 = candleSizes;
+      let message = "";
+      if (last10.length > 1 && size > last10[last10.length - 2]) message = "¡Vela más grande en 1 minuto!";
+      if (last10.length >= 5 && size > Math.max(...last10.slice(-5))) message = "¡Vela más grande en 5 minutos!";
+      if (last10.length === 10 && size > Math.max(...last10)) message = "¡Vela más grande en 10 minutos!";
+      // --- FIN BONUS Y MENSAJE DE RÉCORDS ---
       const isBullish = candle.close > candle.open
       let totalWinnings = 0
       let wonCount = 0
@@ -355,16 +385,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
           // Calcular ganancias
           if (won) {
-            const winnings = bet.amount * 0.9
-            totalWinnings += winnings
-            wonCount++
+            const winnings = bet.amount * 0.9;
+            const bonus = winnings * bonusPercent;
+            totalWinnings += winnings + bonus;
+            wonCount++;
+            if (bonus > 0) setBonusInfo({ bonus, size, message });
           }
 
           return {
             ...bet,
-            status: won ? "WON" : "LOST",
+            status: won ? 'WON' : 'LOST',
             resolvedAt: Date.now(),
-          }
+          } as Bet
         })
 
         // Actualizar balance después de procesar todas las apuestas
@@ -374,7 +406,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           // Notificar al usuario sobre sus ganancias
           toast({
             title: `¡Has ganado $${totalWinnings.toFixed(2)}!`,
-            description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}`,
+            description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}` + (bonusPercent > 0 ? ` (+${Math.round(bonusPercent*100)}% bonus)` : ""),
             variant: "default",
           })
         } else if (updatedBets.some((bet) => bet.status === "LOST" && bet.resolvedAt === Date.now())) {
@@ -579,6 +611,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         changeSymbol,
         changeTimeframe,
         currentCandleBets,
+        candleSizes,
+        bonusInfo,
+        setBonusInfo
       }}
     >
       {children}

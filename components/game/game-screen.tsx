@@ -15,8 +15,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useDevice } from "@/context/device-mode-context"
 import { ArrowUpCircle, ArrowDownCircle, BarChart3, History, Trophy, Wallet } from "lucide-react"
+import BetResultModal from "@/components/game/bet-result-modal"
 
 export default function GameScreen() {
+  const [bonusMessage, setBonusMessage] = useState<string | null>(null);
+  const [bonusDetail, setBonusDetail] = useState<string | null>(null);
+  const [betResult, setBetResult] = useState<null | {
+    won: boolean;
+    amount: number;
+    bet: {
+      prediction: "BULLISH" | "BEARISH";
+      amount: number;
+      timestamp: number;
+      symbol: string;
+      timeframe: string;
+    };
+    candle: {
+      open: number;
+      close: number;
+      high: number;
+      low: number;
+    };
+    diff: number;
+  }>(null);
+  const [showBetModal, setShowBetModal] = useState(false);
+
   const {
     gamePhase,
     currentSymbol,
@@ -31,6 +54,9 @@ export default function GameScreen() {
     nextPhaseTime,
     nextCandleTime,
     currentCandleBets,
+    bonusInfo,
+    setBonusInfo,
+    bets
   } = useGame()
   const { user } = useAuth()
   const { achievements, unlockedAchievements } = useAchievement()
@@ -39,6 +65,56 @@ export default function GameScreen() {
   const [showAchievement, setShowAchievement] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [timeUntilNextCandle, setTimeUntilNextCandle] = useState<number>(0)
+
+  // Mostrar modal de resultado de apuesta al resolver (ganar o perder)
+  useEffect(() => {
+    if (!bets || !candles.length) return;
+    // Buscar la última apuesta resuelta
+    const lastResolved = bets
+      .filter((b) => b.status !== "PENDING" && b.resolvedAt)
+      .sort((a, b) => ((b.resolvedAt ?? 0) - (a.resolvedAt ?? 0)))[0];
+    if (lastResolved && (!betResult || betResult.bet.timestamp !== lastResolved.timestamp || betResult.bet.prediction !== lastResolved.prediction)) {
+      // Buscar la vela correspondiente
+      const resolvedCandle = candles.find(c => Math.abs(c.timestamp - lastResolved.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
+      if (resolvedCandle) {
+        const diff = resolvedCandle.close - resolvedCandle.open;
+        setBetResult({
+          won: lastResolved.status === "WON",
+          amount: lastResolved.status === "WON" ? (lastResolved.amount * 0.9) : lastResolved.amount,
+          bet: {
+            prediction: lastResolved.prediction,
+            amount: lastResolved.amount,
+            timestamp: lastResolved.timestamp,
+            symbol: lastResolved.symbol,
+            timeframe: lastResolved.timeframe,
+          },
+          candle: {
+            open: resolvedCandle.open,
+            close: resolvedCandle.close,
+            high: resolvedCandle.high,
+            low: resolvedCandle.low,
+          },
+          diff,
+        });
+        setShowBetModal(true);
+        setTimeout(() => setShowBetModal(false), 2800);
+      }
+    }
+  }, [bets, candles]);
+
+  useEffect(() => {
+    if (bonusInfo && (bonusInfo.bonus > 0 || bonusInfo.message)) {
+      let msg = `Ganaste un bonus de +${Math.round((bonusInfo.bonus / (bonusInfo.size ? bonusInfo.size : 1)) * 100)}% por vela de $${bonusInfo.size.toFixed(2)}`;
+      if (bonusInfo.message) msg += `\n${bonusInfo.message}`;
+      setBonusMessage(msg);
+      setBonusDetail(`Bonus: +${bonusInfo.bonus.toFixed(2)} monedas`);
+      setTimeout(() => {
+        setBonusMessage(null);
+        setBonusDetail(null);
+        setBonusInfo(null);
+      }, 3000);
+    }
+  }, [bonusInfo, setBonusInfo]);
 
   useEffect(() => {
     if (unlockedAchievements.length > 0) {
@@ -132,7 +208,17 @@ export default function GameScreen() {
   }
 
   return (
-    <div className="w-full max-w-none mx-0 px-4 bg-black min-h-screen">
+    <>
+      <BetResultModal open={showBetModal} onOpenChange={setShowBetModal} result={showBetModal ? betResult : null} />
+      <div className="w-full max-w-none mx-0 px-4 bg-black min-h-screen">
+      {bonusMessage && (
+        <div className="w-full flex justify-center mt-4">
+          <div className="bg-yellow-400 border-2 border-yellow-600 text-black font-bold rounded-xl px-4 py-3 text-center shadow-lg animate-pulse max-w-xl">
+            <div>{bonusMessage.split('\n').map((line, i) => <div key={i}>{line}</div>)}</div>
+            {bonusDetail && <div className="text-xs mt-1">{bonusDetail}</div>}
+          </div>
+        </div>
+      )}
       
       <div className="flex flex-col gap-6">
         <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl px-6 py-4 mb-4 shadow-lg min-h-[80px] w-full">
@@ -168,9 +254,15 @@ export default function GameScreen() {
             <Card className="bg-black border-[#FFD600]">
               <CardHeader className="pb-0">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-4">
                     <BarChart3 className="h-5 w-5" />
-                    {currentSymbol} ({timeframe})
+                    <span className="text-3xl font-bold text-[#FFD600] tracking-tight flex items-center gap-2">
+                      {currentSymbol}
+                      <span className="ml-2 text-4xl font-extrabold text-white drop-shadow-lg">
+                        {currentCandle ? `$${currentCandle.close.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
+                      </span>
+                      <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
+                    </span>
                   </CardTitle>
                   <GameTimer />
                 </div>
@@ -320,5 +412,6 @@ export default function GameScreen() {
         <AchievementNotification achievementId={showAchievement} onClose={() => setShowAchievement(null)} />
       )}
     </div>
+    </>
   )
 }
