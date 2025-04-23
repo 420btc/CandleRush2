@@ -93,7 +93,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentSymbol, setCurrentSymbol] = useState<string>("BTCUSDT")
   const [timeframe, setTimeframe] = useState<string>("1m")
   const [bets, setBets] = useState<Bet[]>([])
-  const [userBalance, setUserBalance] = useState<number>(1000)
+  const [userBalance, setUserBalance] = useState<number>(100) // Saldo inicial reducido a 100$
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0)
   const [currentCandleBets, setCurrentCandleBets] = useState<number>(0)
@@ -180,6 +180,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
         // Guardar el tiempo de la próxima vela
         setNextCandleTime(nextCandleTime)
+
+        // IMPORTANTE: NO añadir resoluciones pendientes aquí. Solo se añaden al cerrar una vela real (en el handler de nuevas velas).
 
         // Determine current phase
         const now = Date.now() + serverTimeOffset
@@ -383,13 +385,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
           const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish)
 
-          // Calcular ganancias
+          // Calcular ganancias dinámicas según tamaño de la vela
+          let winnings = 0;
+          let bonus = 0;
           if (won) {
-            const winnings = bet.amount * 0.9;
-            const bonus = winnings * bonusPercent;
-            totalWinnings += winnings + bonus;
+            // % movimiento respecto al precio de apertura
+            const percentMove = Math.abs(candle.high - candle.low) / candle.open;
+            let payoutMultiplier = 0.9; // base
+            if (percentMove >= 0.01) payoutMultiplier = 2.0;
+            else if (percentMove >= 0.005) payoutMultiplier = 1.5;
+            else if (percentMove >= 0.0025) payoutMultiplier = 1.2;
+            else if (percentMove >= 0.001) payoutMultiplier = 1.05;
+            // Para movimientos muy pequeños, casi sin bonus
+            winnings = bet.amount * payoutMultiplier;
+            bonus = winnings - bet.amount * 0.9;
+            totalWinnings += winnings;
             wonCount++;
-            if (bonus > 0) setBonusInfo({ bonus, size, message });
+            if (bonus > 0.01) setBonusInfo({ bonus, size, message: `Bonus por movimiento: ${(percentMove*100).toFixed(2)}%` });
           }
 
           return {
@@ -406,7 +418,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           // Notificar al usuario sobre sus ganancias
           toast({
             title: `¡Has ganado $${totalWinnings.toFixed(2)}!`,
-            description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}` + (bonusPercent > 0 ? ` (+${Math.round(bonusPercent*100)}% bonus)` : ""),
+            description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}`,
             variant: "default",
           })
         } else if (updatedBets.some((bet) => bet.status === "LOST" && bet.resolvedAt === Date.now())) {
