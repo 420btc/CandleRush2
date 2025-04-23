@@ -92,7 +92,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentCandle, setCurrentCandle] = useState<Candle | null>(null)
   const [currentSymbol, setCurrentSymbol] = useState<string>("BTCUSDT")
   const [timeframe, setTimeframe] = useState<string>("1m")
-  const [bets, setBets] = useState<Bet[]>([])
+  // Estructura: { [symbol]: { [timeframe]: Bet[] } }
+  const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, Bet[]>>>({});
+  const bets = betsByPair[currentSymbol]?.[timeframe] || [];
   const [userBalance, setUserBalance] = useState<number>(100) // Saldo inicial reducido a 100$
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0)
@@ -378,8 +380,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       let totalWinnings = 0
       let wonCount = 0
 
-      setBets((prev) => {
-        const updatedBets = prev.map((bet) => {
+      setBetsByPair((prev) => {
+        const symbolBets = { ...(prev[currentSymbol] || {}) };
+        let tfBets = (symbolBets[timeframe] || []).map((bet) => {
           // Solo procesar apuestas pendientes que coincidan con el símbolo y timeframe
           if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet
 
@@ -421,7 +424,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
             description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}`,
             variant: "default",
           })
-        } else if (updatedBets.some((bet) => bet.status === "LOST" && bet.resolvedAt === Date.now())) {
+        } else if (tfBets.some((bet) => bet.status === "LOST" && bet.resolvedAt === Date.now())) {
           // Notificar al usuario sobre sus pérdidas si hay apuestas perdidas recién resueltas
           toast({
             title: "Apuestas resueltas",
@@ -430,7 +433,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
           })
         }
 
-        return updatedBets
+        symbolBets[timeframe] = tfBets;
+        return { ...prev, [currentSymbol]: symbolBets };
       })
 
       // Check for achievements
@@ -493,7 +497,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (amount <= 0 || amount > userBalance) {
+      // Obtener apuestas actuales del par/timeframe
+const pairBets = bets;
+
+if (amount <= 0 || amount > userBalance) {
         toast({
           title: "Cantidad inválida",
           description: "No tienes suficiente saldo",
@@ -515,7 +522,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
       console.log('[BET] Intentando apostar', { prediction, amount, gamePhase, currentCandleBets, candleTimestamp, currentCandle });
 
-      setBets((prev) => [...prev, newBet])
+      setBetsByPair((prev) => {
+  const symbolBets = { ...(prev[currentSymbol] || {}) };
+  const tfBets = [...(symbolBets[timeframe] || []), newBet];
+  symbolBets[timeframe] = tfBets;
+  return { ...prev, [currentSymbol]: symbolBets };
+})
       setUserBalance((prev) => prev - amount)
 
       // Incrementar contador de apuestas para la vela actual
@@ -541,7 +553,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (symbol === currentSymbol) return
 
       // Check if there are pending bets
-      const hasPendingBets = bets.some((bet) => bet.status === "PENDING" && bet.symbol === currentSymbol)
+      const pairBets = betsByPair[currentSymbol]?.[timeframe] || [];
+const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
 
       if (hasPendingBets) {
         toast({
@@ -567,9 +580,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (newTimeframe === timeframe) return
 
       // Check if there are pending bets
-      const hasPendingBets = bets.some(
-        (bet) => bet.status === "PENDING" && bet.symbol === currentSymbol && bet.timeframe === timeframe,
-      )
+      const pairBets = betsByPair[currentSymbol]?.[timeframe] || [];
+const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
 
       if (hasPendingBets) {
         toast({
@@ -585,6 +597,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setCurrentCandle(null)
       setCurrentCandleBets(0)
       setPendingResolutions([])
+      // No tocamos betsByPair, solo cambiamos el timeframe actual
     },
     [timeframe, currentSymbol, bets, toast],
   )
@@ -605,6 +618,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return 60 * 1000 // Default to 1m
     }
   }
+
+  // Solo las apuestas del símbolo y timeframe actual
+  // (declarada arriba, no redeclarar aquí)
 
   return (
     <GameContext.Provider
