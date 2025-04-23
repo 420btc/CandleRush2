@@ -319,14 +319,14 @@ export default function GameScreen() {
                     {/* Botones de apuesta */}
                     <div className="flex gap-4 justify-center">
                       <button
-                        className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold border-[#FFD600] disabled:bg-green-600 disabled:opacity-60"
+                        className="px-8 py-5 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-2xl shadow-lg transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[200px]"
                         onClick={handleBullishBet}
                         disabled={gamePhase !== "BETTING" || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10}
                       >
                         Apostar alcista
                       </button>
                       <button
-                        className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold border-[#FFD600] disabled:bg-red-600 disabled:opacity-60"
+                        className="px-8 py-5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-2xl shadow-lg transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[200px]"
                         onClick={handleBearishBet}
                         disabled={gamePhase !== "BETTING" || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10}
                       >
