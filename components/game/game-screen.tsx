@@ -223,16 +223,6 @@ export default function GameScreen() {
       <div className="flex flex-col gap-6">
         <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl px-6 py-4 mb-4 shadow-lg min-h-[80px] w-full">
   <div className="flex items-center gap-6 w-full lg:w-auto">
-    {/* Enlace a Candle Rush 1.0 btcer.fun */}
-    <a
-      href="https://btcer.fun"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-xs md:text-sm font-bold text-[#FFD600] hover:underline hover:text-[#ffb700] transition mr-2"
-      style={{ whiteSpace: 'nowrap' }}
-    >
-      Candle Rush 1.0&nbsp;&rarr;&nbsp;btcer.fun
-    </a>
     <h1 className="text-3xl font-bold text-[#FFD600] tracking-tight" data-component-name="GameScreen">Candle Rush 2.0</h1>
     <nav className="flex gap-4 ml-4">
       <button
@@ -265,6 +255,15 @@ export default function GameScreen() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-[#FFD600]">{user ? user.username : "Invitado"}</span>
             <span className="font-bold text-[#FFD600]">${userBalance.toFixed(2)}</span>
+            <a
+              href="https://btcer.fun"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs md:text-sm font-bold text-[#FFD600] hover:underline hover:text-[#ffb700] transition ml-4"
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              Candle Rush 1.0&nbsp;&rarr;&nbsp;btcer.fun
+            </a>
           </div>
         </header>
 
