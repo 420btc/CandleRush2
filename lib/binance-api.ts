@@ -3,7 +3,7 @@
 import type { Candle } from "@/types/game"
 
 // Fetch historical candles from Binance REST API
-export async function fetchHistoricalCandles(symbol: string, interval: string, limit = 100): Promise<Candle[]> {
+export async function fetchHistoricalCandles(symbol: string, interval: string, limit = 1000): Promise<Candle[]> {
   try {
     const response = await fetch(
       `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,

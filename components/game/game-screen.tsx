@@ -64,29 +64,33 @@ export default function GameScreen() {
   }, [isConnected, toast])
 
   // Calcular tiempo restante para apuestas y para la próxima vela
+  // Timer for betting phase
   useEffect(() => {
     const calculateTimeLeft = () => {
       if (!nextPhaseTime) return 0
       const now = Date.now()
       return Math.max(0, nextPhaseTime - now)
     }
+    setTimeLeft(calculateTimeLeft())
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft())
+    }, 100)
+    return () => clearInterval(interval)
+  }, [nextPhaseTime])
 
+  // Timer for next candle (always runs)
+  useEffect(() => {
     const calculateTimeUntilNextCandle = () => {
       if (!nextCandleTime) return 0
       const now = Date.now()
       return Math.max(0, nextCandleTime - now)
     }
-
-    const updateTimes = () => {
-      setTimeLeft(calculateTimeLeft())
+    setTimeUntilNextCandle(calculateTimeUntilNextCandle())
+    const interval = setInterval(() => {
       setTimeUntilNextCandle(calculateTimeUntilNextCandle())
-    }
-
-    updateTimes()
-    const interval = setInterval(updateTimes, 100)
-
+    }, 100)
     return () => clearInterval(interval)
-  }, [nextPhaseTime, nextCandleTime])
+  }, [nextCandleTime])
 
   const handleBullishBet = () => {
     if (gamePhase !== "BETTING") {
@@ -115,13 +119,13 @@ export default function GameScreen() {
   }
 
   // Determinar si estamos en los primeros 10 segundos de una vela
-  const canBet = gamePhase === "BETTING" && currentCandleBets < 2
+  const canBet = gamePhase === "BETTING" && currentCandleBets < 1
   const secondsLeft = Math.ceil(timeLeft / 1000)
   const secondsUntilNextCandle = Math.ceil(timeUntilNextCandle / 1000)
 
   // Mostrar información sobre el límite de apuestas
   const getBetButtonText = (type: string) => {
-    if (currentCandleBets >= 2) {
+    if (currentCandleBets >= 1) {
       return `${type} (Límite alcanzado)`
     }
     return type
@@ -160,25 +164,23 @@ export default function GameScreen() {
                 {/* Controles justo debajo del gráfico */}
                 <div className="mt-4 bg-zinc-700/50 rounded-lg p-4">
                   <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    {/* Contador de fase */}
+                    {/* Bloque unificado de información de fase */}
                     <div className="w-full md:w-auto">
-                      {gamePhase === "BETTING" && (
-                        <div
-                          className={`text-center p-2 rounded-lg ${
-                            secondsLeft <= 3 ? "bg-red-600 animate-pulse" : "bg-zinc-700"
-                          }`}
-                        >
+                      {gamePhase === "BETTING" && secondsLeft > 0 ? (
+                        <div className="text-center p-2 rounded-lg bg-zinc-700">
                           <p className="text-sm text-white">Tiempo para apostar</p>
                           <p className="text-2xl font-bold">{secondsLeft}s</p>
-                          <p className="text-xs text-zinc-300">Apuestas: {currentCandleBets}/2</p>
+                          <p className="text-xs text-zinc-300">Apuestas: {currentCandleBets}/1</p>
                         </div>
-                      )}
-
-                      {gamePhase === "WAITING" && (
+                      ) : gamePhase === "WAITING" && secondsUntilNextCandle > 0 ? (
                         <div className="text-center p-2 rounded-lg bg-zinc-700">
                           <p className="text-sm text-white">Próxima vela en</p>
                           <p className="text-2xl font-bold">{secondsUntilNextCandle}s</p>
-                          <p className="text-xs text-zinc-300">Esperando resolución</p>
+                          <p className="text-xs text-zinc-300">Esperando próxima ronda</p>
+                        </div>
+                      ) : (
+                        <div className="text-center p-2 rounded-lg bg-zinc-700">
+                          <p className="text-sm text-white">Sincronizando...</p>
                         </div>
                       )}
                     </div>
@@ -186,28 +188,18 @@ export default function GameScreen() {
                     {/* Botones de apuesta */}
                     <div className="flex gap-4 justify-center">
                       <button
+                        className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 disabled:bg-zinc-600 disabled:opacity-60"
                         onClick={handleBullishBet}
-                        disabled={!canBet}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold border-2 transition-colors ${
-                          canBet
-                            ? "bg-black text-[#22c55e] border-[#FFD600] hover:bg-[#1a1a1a] hover:text-[#22c55e] hover:border-[#FFD600]"
-                            : "bg-black text-zinc-400 border-zinc-400 cursor-not-allowed"
-                        }`}
+                        disabled={gamePhase !== "BETTING" || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10}
                       >
-                        <ArrowUpCircle className={`h-5 w-5 ${canBet ? 'text-[#22c55e]' : 'text-zinc-400'}`} />
-                        {getBetButtonText("Alcista")}
+                        Apostar alcista
                       </button>
                       <button
+                        className="px-4 py-2 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 disabled:bg-zinc-600 disabled:opacity-60"
                         onClick={handleBearishBet}
-                        disabled={!canBet}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold border-2 transition-colors ${
-                          canBet
-                            ? "bg-black text-[#ef4444] border-[#FFD600] hover:bg-[#1a1a1a] hover:text-[#ef4444] hover:border-[#FFD600]"
-                            : "bg-black text-zinc-400 border-zinc-400 cursor-not-allowed"
-                        }`}
+                        disabled={gamePhase !== "BETTING" || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10}
                       >
-                        <ArrowDownCircle className={`h-5 w-5 ${canBet ? 'text-[#ef4444]' : 'text-zinc-400'}`} />
-                        {getBetButtonText("Bajista")}
+                        Apostar bajista
                       </button>
                     </div>
 

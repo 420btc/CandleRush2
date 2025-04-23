@@ -180,15 +180,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
         const now = Date.now() + serverTimeOffset
         const timeUntilNextCandle = nextCandleTime - now
 
-        // Modificado: Solo permitir apuestas durante los primeros 10 segundos de cada vela
-        if (timeUntilNextCandle > candleDuration - 10000) {
-          // Primeros 10 segundos de la vela
-          setGamePhase("BETTING")
-          setNextPhaseTime(currentCandleTime + 10000) // 10 segundos después del inicio de la vela
+        // Siempre forzar el inicio de fase de apuestas al detectar una nueva vela
+        if (timeUntilNextCandle > candleDuration - 10000 || now < currentCandleTime + 10000) {
+          setGamePhase("BETTING");
+          setNextPhaseTime(currentCandleTime + 10000); // 10 segundos después del inicio de la vela
+          setCurrentCandle(historicalData[historicalData.length - 1]);
+          setCurrentCandleBets(0);
+          console.log('[FASE] Nueva vela - BETTING', { currentCandleTime, nextCandleTime, now });
         } else {
-          // Resto del tiempo
-          setGamePhase("WAITING")
-          setNextPhaseTime(nextCandleTime) // Esperar hasta la próxima vela
+          setGamePhase("WAITING");
+          setNextPhaseTime(nextCandleTime); // Esperar hasta la próxima vela
+          console.log('[FASE] Esperando próxima vela', { currentCandleTime, nextCandleTime, now });
         }
       }
     } catch (error) {
@@ -297,6 +299,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setNextCandleTime(nextCandleTime)
 
         setGamePhase("BETTING")
+        setNextPhaseTime(candle.timestamp + 10000) // 10 segundos para apostar
+        setCurrentCandleBets(0)
+        console.log('[FASE] WebSocket: Nueva vela - BETTING', { candle, nextCandleTime });
         // Solo permitir apuestas durante los primeros 10 segundos
         setNextPhaseTime(candle.timestamp + 10000)
 
@@ -398,6 +403,30 @@ export function GameProvider({ children }: { children: ReactNode }) {
     [bets, currentSymbol, timeframe, toast, unlockAchievement],
   )
 
+  // Efecto para transición automática de fases por temporizador
+  useEffect(() => {
+    if (!nextPhaseTime || !nextCandleTime) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (gamePhase === "BETTING" && nextPhaseTime && now >= nextPhaseTime) {
+        setGamePhase("WAITING");
+        // El timer para la próxima vela ya está corriendo
+      } else if (gamePhase === "WAITING" && nextCandleTime && now >= nextCandleTime) {
+        // Forzar nueva fase de apuestas y resetear todo
+        setGamePhase("BETTING");
+        setNextPhaseTime(now + 10000); // 10 segundos de apuestas
+        setNextCandleTime(now + getTimeframeInMs(timeframe));
+        setCurrentCandleBets(0);
+        // Opcional: notificar nueva vela
+        toast({
+          title: "Nueva vela",
+          description: "¡Comienza una nueva ronda de apuestas!",
+        });
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, [gamePhase, nextPhaseTime, nextCandleTime, timeframe, toast]);
+
   // Place a bet
   const placeBet = useCallback(
     (prediction: "BULLISH" | "BEARISH", amount: number) => {
@@ -411,10 +440,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
 
       // Verificar si ya se alcanzó el límite de apuestas para esta vela
-      if (currentCandleBets >= 2) {
+      if (currentCandleBets >= 1) {
         toast({
           title: "Límite de apuestas alcanzado",
-          description: "Solo puedes hacer 2 apuestas por vela",
+          description: "Solo puedes hacer 1 apuesta por vela",
           variant: "destructive",
         })
         return
@@ -429,15 +458,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return
       }
 
+      // Ajustar el timestamp de la apuesta para que siempre caiga dentro de la vela actual
+      const candleTimestamp = currentCandle ? currentCandle.timestamp : Date.now();
       const newBet: Bet = {
         id: uuidv4(),
         prediction,
         amount,
-        timestamp: Date.now(),
+        timestamp: candleTimestamp + Math.floor(Math.random() * 10000), // Simula aleatorio dentro de la vela
         status: "PENDING",
         symbol: currentSymbol,
         timeframe,
       }
+      console.log('[BET] Intentando apostar', { prediction, amount, gamePhase, currentCandleBets, candleTimestamp, currentCandle });
 
       setBets((prev) => [...prev, newBet])
       setUserBalance((prev) => prev - amount)

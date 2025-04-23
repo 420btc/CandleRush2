@@ -272,6 +272,67 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
       }
     })
 
+    // === DIBUJAR EMAS ===
+    // Función para calcular la EMA
+    function calculateEMA(period: number, data: Candle[]): (number | null)[] {
+      const k = 2 / (period + 1);
+      let emaArray: (number | null)[] = [];
+      let emaPrev: number | null = null;
+      for (let i = 0; i < data.length; i++) {
+        const price = data[i].close;
+        if (i < period - 1) {
+          emaArray.push(null); // No hay suficientes datos
+        } else if (i === period - 1) {
+          // Primer valor: media simple
+          const sma = data.slice(0, period).reduce((sum: number, c: Candle) => sum + c.close, 0) / period;
+          emaArray.push(sma);
+          emaPrev = sma;
+        } else if (emaPrev !== null) {
+          const ema: number = price * k + emaPrev * (1 - k);
+          emaArray.push(ema);
+          emaPrev = ema;
+        }
+      }
+      return emaArray;
+    }
+
+    // Calcular EMAs con todos los datos posibles
+    const ema10 = calculateEMA(10, allCandles);
+    const ema55 = calculateEMA(55, allCandles);
+    const ema200 = calculateEMA(200, allCandles);
+
+    // Función para dibujar una línea de EMA
+    function drawEMA(emaArray: (number | null)[], color: string) {
+      if (!ctx) return;
+      ctx.save();
+      ctx.beginPath();
+      let started = false;
+      for (let i = 0; i < emaArray.length; i++) {
+        if (emaArray[i] !== null) {
+          const candle = allCandles[i];
+          const x = (candle.timestamp - minTime) * xScale - clampedOffsetX;
+          const y = dimensions.height - ((emaArray[i]! - minPrice) * yScale - clampedOffsetY);
+          if (!started) {
+            ctx.moveTo(x, y);
+            started = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Dibujar EMAs
+    drawEMA(ema10, '#a259f7'); // Morado
+    drawEMA(ema55, '#FFD600'); // Dorado
+    drawEMA(ema200, '#2196f3'); // Azul
+
     // Draw chart title and info
     ctx.fillStyle = "#ffffff"
     ctx.font = "bold 12px Arial"
@@ -443,14 +504,30 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
   const handleZoomOut = () => {
     setViewState((prev) => ({
       ...prev,
-      scale: Math.max(0.5, prev.scale / 1.2),
+      scale: Math.max(0.2, prev.scale / 1.2),
     }));
   };
 
   return (
     <div className="relative h-full w-full overflow-hidden">
+      {/* Botones para ajustar altura */}
+      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+        <button
+          className="bg-zinc-800 hover:bg-zinc-700 text-white rounded px-2 py-1 text-xs shadow"
+          onClick={() => setViewState((prev) => ({ ...prev, offsetY: Math.max(0, prev.offsetY - 30) }))}
+          title="Aumentar altura (zoom in vertical)"
+        >
+          +
+        </button>
+        <button
+          className="bg-zinc-800 hover:bg-zinc-700 text-white rounded px-2 py-1 text-xs shadow"
+          onClick={() => setViewState((prev) => ({ ...prev, offsetY: prev.offsetY + 30 }))}
+          title="Reducir altura (zoom out vertical)"
+        >
+          -
+        </button>
+      </div>
       <canvas ref={canvasRef} className="h-full w-full cursor-grab active:cursor-grabbing" />
-
       {/* Controles de navegación */}
       <div className="absolute bottom-4 right-4 flex gap-2">
         <button
