@@ -40,6 +40,50 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
   // Referencia para el último timestamp renderizado
   const lastRenderRef = useRef<number>(0)
 
+  // Función para animar la vista hacia la última vela
+  const animateToLastCandle = useCallback(() => {
+    if (!canvasRef.current || !canvasRef.current.parentElement || candles.length === 0) return;
+    const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
+    const allCandles = [...candles];
+    if (currentCandle) allCandles.push(currentCandle);
+    const minTime = Math.min(...allCandles.map(c => c.timestamp));
+    const maxTime = Math.max(...allCandles.map(c => c.timestamp));
+    const targetScale = Math.min(5, Math.max(1, (candles.length + (currentCandle ? 1 : 0)) / 20));
+    let minPrice = Math.min(...allCandles.map(c => c.low));
+    let maxPrice = Math.max(...allCandles.map(c => c.high));
+    const pricePadding = (maxPrice - minPrice) * 0.1;
+    minPrice -= pricePadding;
+    maxPrice += pricePadding;
+    const priceRange = maxPrice - minPrice;
+    const timeRange = maxTime - minTime;
+    const xScale = (width / timeRange) * targetScale;
+    const yScale = (height / priceRange) * targetScale;
+    const lastCandle = allCandles[allCandles.length - 1];
+    const lastCandleX = (lastCandle.timestamp - minTime) * xScale;
+    const lastCandleY = (lastCandle.close - minPrice) * yScale;
+    const targetOffsetX = lastCandleX - width / 2;
+    const targetOffsetY = lastCandleY - (height / 2);
+    const start = performance.now();
+    const duration = 700;
+    const initialOffsetX = viewState.offsetX;
+    const initialOffsetY = viewState.offsetY;
+    const initialScale = viewState.scale;
+    function animate(now:number) {
+      const t = Math.min(1, (now - start) / duration);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setViewState((prev) => ({
+        ...prev,
+        offsetX: initialOffsetX + (targetOffsetX - initialOffsetX) * ease,
+        offsetY: initialOffsetY + (targetOffsetY - initialOffsetY) * ease,
+        scale: initialScale + (targetScale - initialScale) * ease,
+      }));
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      }
+    }
+    requestAnimationFrame(animate);
+  }, [candles, currentCandle, viewState, setViewState]);
+
   // Set up canvas dimensions
   useEffect(() => {
     // Actualizar dimensiones del canvas
@@ -594,6 +638,17 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
           >
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
             <path d="M3 3v5h5"></path>
+          </svg>
+        </button>
+        {/* Botón ir a última vela */}
+        <button
+          onClick={animateToLastCandle}
+          className="bg-yellow-500 hover:bg-yellow-400 text-black p-2 rounded-full shadow-lg border-2 border-yellow-700 animate-pulse"
+          aria-label="Ir a la última vela"
+          title="Ir a la última vela"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </div>
