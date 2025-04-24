@@ -45,10 +45,32 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
     const currentAudio = bgRefs.current[currentTrack];
     if (!currentAudio) return;
     currentAudio.currentTime = 0;
+    // Fade in
+    currentAudio.volume = 0;
     currentAudio.play();
+    let fadeInVol = 0;
+    const fadeStep = 0.05;
+    const fadeInterval = setInterval(() => {
+      fadeInVol = Math.min(0.45, fadeInVol + fadeStep);
+      currentAudio.volume = fadeInVol;
+      if (fadeInVol >= 0.45) {
+        clearInterval(fadeInterval);
+      }
+    }, 40);
     const handleEnded = () => {
-      const next = (currentTrack + 1) % bgTracks.length;
-      setCurrentTrack(next);
+      // Fade out antes de cambiar de pista
+      let fadeOutVol = currentAudio.volume;
+      const fadeStep = 0.05;
+      const fadeInterval = setInterval(() => {
+        fadeOutVol = Math.max(0, fadeOutVol - fadeStep);
+        currentAudio.volume = fadeOutVol;
+        if (fadeOutVol <= 0) {
+          clearInterval(fadeInterval);
+          currentAudio.pause();
+          const next = (currentTrack + 1) % bgTracks.length;
+          setCurrentTrack(next);
+        }
+      }, 40);
     };
     currentAudio.onended = handleEnded;
     return () => {
