@@ -9,34 +9,50 @@ interface SoundManagerProps {
 }
 
 export default function SoundManager({ muted, onToggleMute, triggerLose, triggerWin }: SoundManagerProps) {
-  const bgRef = useRef<HTMLAudioElement | null>(null);
-  const loseRef = useRef<HTMLAudioElement | null>(null);
-  const winRef = useRef<HTMLAudioElement | null>(null);
+  // Secuencia de música de fondo
+  const bgTracks = ["/fondo1.mp3", "/fondo2.mp3", "/fondo3.mp3"];
+  const bgRefs = useRef<HTMLAudioElement[]>([]);
+  const [currentTrack, setCurrentTrack] = useState(0);
   const [bgLoaded, setBgLoaded] = useState(false);
 
-  // Precarga fondo1.mp3 al montar
+  // Precarga todos los fondos al montar
   useEffect(() => {
-    bgRef.current = new Audio("/fondo1.mp3");
-    bgRef.current.loop = true;
-    bgRef.current.volume = 0.45;
-    bgRef.current.preload = "auto";
-    bgRef.current.addEventListener("canplaythrough", () => setBgLoaded(true), { once: true });
+    bgRefs.current = bgTracks.map((src, idx) => {
+      const audio = new Audio(src);
+      audio.volume = 0.45;
+      audio.preload = "auto";
+      // Solo marcar como cargado cuando el primero esté listo
+      if (idx === 0) {
+        audio.addEventListener("canplaythrough", () => setBgLoaded(true), { once: true });
+      }
+      return audio;
+    });
     return () => {
-      bgRef.current?.pause();
-      bgRef.current = null;
+      bgRefs.current.forEach(audio => audio.pause());
     };
   }, []);
 
-  // Play/stop música de fondo según mute
+  // Manejar reproducción secuencial y mute
   useEffect(() => {
-    if (!bgRef.current) return;
-    if (!muted && bgLoaded) {
-      bgRef.current.currentTime = 0;
-      bgRef.current.play();
-    } else {
-      bgRef.current.pause();
+    if (!bgLoaded) return;
+    if (muted) {
+      bgRefs.current.forEach(audio => audio.pause());
+      return;
     }
-  }, [muted, bgLoaded]);
+    const currentAudio = bgRefs.current[currentTrack];
+    if (!currentAudio) return;
+    currentAudio.currentTime = 0;
+    currentAudio.play();
+    const handleEnded = () => {
+      const next = (currentTrack + 1) % bgTracks.length;
+      setCurrentTrack(next);
+    };
+    currentAudio.onended = handleEnded;
+    return () => {
+      currentAudio.onended = null;
+      currentAudio.pause();
+    };
+  }, [muted, bgLoaded, currentTrack]);
 
   // Sonido de derrota
   useEffect(() => {
