@@ -36,7 +36,9 @@ export default function BetHistory() {
                   <ArrowDownCircle className="h-5 w-5 text-red-400" />
                 )}
                 <div>
-                  <p className="text-sm font-medium">{bet.prediction === "BULLISH" ? "Alcista" : "Bajista"}</p>
+                  <p className="text-sm font-medium">
+                    {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
+                  </p>
                   <p className="text-xs text-zinc-400">{new Date(bet.timestamp).toLocaleTimeString()}</p>
                 </div>
               </div>

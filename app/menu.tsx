@@ -37,7 +37,8 @@ const menuItems = [
   },
 ];
 
-// Archivo migrado a app/menu/page.tsx. Este archivo es redundante y puede eliminarse.
+
+function MenuPage() {
   const [btcPrice, setBtcPrice] = useState<string>("-");
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
@@ -67,36 +68,41 @@ const menuItems = [
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-black">
-      <div className="flex flex-col items-center mb-10">
-        <div className="flex items-center gap-4 mb-2">
-          <svg height="60" width="60" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="16" fill="#FFD600" />
-            <text x="16" y="22" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#222">₿</text>
-          </svg>
-          <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight">
-            {isClient ? (loading ? <span className="animate-pulse">...</span> : `$${btcPrice}`) : <span className="opacity-0">00000</span>}
+    <div className="flex flex-col items-center mb-10">
+      <div className="flex items-center gap-4 mb-2">
+  <svg height="60" width="60" viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="16" fill="#FFD600" />
+    <text x="16" y="22" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#222">₿</text>
+  </svg>
+  <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight leading-none flex items-center" style={{minHeight: '60px'}}>
+    {isClient ? (loading ? <span className="animate-pulse">...</span> : `$${btcPrice}`) : <span className="opacity-0">00000</span>}
+  </span>
+</div>
+      <span className="text-yellow-200 text-lg font-bold tracking-widest uppercase">Bitcoin</span>
+    </div>
+    {/* Fondo decorativo portada.png */}
+    <div className="fixed inset-0 -z-10 flex justify-center items-center pointer-events-none select-none">
+      <div className="w-[36rem] h-[36rem] bg-[url('/portada.png')] bg-contain bg-no-repeat bg-center opacity-30 blur-sm"></div>
+    </div>
+    <div className="flex flex-col gap-8 w-full max-w-lg">
+      {menuItems.map((item) => (
+        <Link
+          href={item.href}
+          key={item.label}
+          className="group flex items-center gap-6 p-8 rounded-3xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer text-yellow-200 hover:border-yellow-300 text-2xl font-extrabold tracking-tight"
+          style={{ boxShadow: '0 0 40px #FFD60055' }}
+        >
+          <span className="transition-transform group-hover:scale-125 drop-shadow-lg">{item.icon}</span>
+          <span className="flex flex-col">
+            <span className="text-2xl font-extrabold group-hover:text-black text-yellow-200">{item.label}</span>
+            <span className="text-yellow-300 text-base group-hover:text-black font-medium">{item.description}</span>
           </span>
-        </div>
-        <span className="text-yellow-200 text-lg font-bold tracking-widest uppercase">Bitcoin</span>
-      </div>
-      <div className="flex flex-col gap-8 w-full max-w-lg">
-        {menuItems.map((item) => (
-          <Link
-            href={item.href}
-            key={item.label}
-            className="group flex items-center gap-6 p-8 rounded-3xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer text-yellow-200 hover:border-yellow-300 text-2xl font-extrabold tracking-tight"
-            style={{ boxShadow: '0 0 40px #FFD60055' }}
-          >
-            <span className="transition-transform group-hover:scale-125 drop-shadow-lg">{item.icon}</span>
-            <span className="flex flex-col">
-              <span className="text-2xl font-extrabold group-hover:text-black text-yellow-200">{item.label}</span>
-              <span className="text-yellow-300 text-base group-hover:text-black font-medium">{item.description}</span>
-            </span>
-          </Link>
-        ))}
-      </div>
-      <footer className="mt-20 text-yellow-500 text-xs opacity-70 select-none">v1.0.0 &copy; CandleRush 2025</footer>
-    </main>
+        </Link>
+      ))}
+    </div>
+    <footer className="mt-20 text-yellow-500 text-xs opacity-70 select-none">v1.0.0 &copy; CandleRush 2025</footer>
+  </main>
   );
 }
 
+export default MenuPage;

@@ -20,6 +20,45 @@ interface ViewState {
 }
 
 export default function CandlestickChart({ candles, currentCandle }: CandlestickChartProps) {
+  // ...
+  const [countPlayed, setCountPlayed] = useState(false);
+  const { nextCandleTime } = useGame();
+  const countAudioRef = useRef<HTMLAudioElement | null>(null);
+  const prevMsLeftRef = useRef<number>(null);
+
+  // Precargar el audio al montar
+  useEffect(() => {
+    countAudioRef.current = new Audio('/count.mp3');
+    countAudioRef.current.preload = 'auto';
+  }, []);
+
+  // Sonido count.mp3 EXACTAMENTE cuando msLeft cruza de >6000 a <=6000
+  useEffect(() => {
+    if (!nextCandleTime) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const msLeft = nextCandleTime - now;
+      const prevMsLeft = prevMsLeftRef.current;
+      // Detectar cruce exacto de >6000 a <=6000
+      if (
+        prevMsLeft !== null &&
+        prevMsLeft > 4000 &&
+        msLeft <= 4000 &&
+        msLeft > 0 &&
+        !countPlayed &&
+        countAudioRef.current
+      ) {
+        countAudioRef.current.currentTime = 0;
+        countAudioRef.current.play();
+        setCountPlayed(true);
+      }
+      if ((msLeft > 4000 || msLeft <= 5000) && countPlayed) {
+        setCountPlayed(false); // reset para el siguiente ciclo
+      }
+      prevMsLeftRef.current = msLeft;
+    }, 50);
+    return () => clearInterval(interval);
+  }, [nextCandleTime, countPlayed]);
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { isMobile } = useDevice()
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
@@ -51,38 +90,77 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
     const targetScale = Math.min(5, Math.max(1, (candles.length + (currentCandle ? 1 : 0)) / 20));
     let minPrice = Math.min(...allCandles.map(c => c.low));
     let maxPrice = Math.max(...allCandles.map(c => c.high));
-    const pricePadding = (maxPrice - minPrice) * 0.1;
+    // Aumenta el padding vertical para que las velas no sean tan altas
+    const pricePadding = (maxPrice - minPrice) * 0.25;
     minPrice -= pricePadding;
     maxPrice += pricePadding;
     const priceRange = maxPrice - minPrice;
     const timeRange = maxTime - minTime;
     const xScale = (width / timeRange) * targetScale;
-    const yScale = (height / priceRange) * targetScale;
-    const lastCandle = allCandles[allCandles.length - 1];
-    const lastCandleX = (lastCandle.timestamp - minTime) * xScale;
-    const lastCandleY = (lastCandle.close - minPrice) * yScale;
-    const targetOffsetX = lastCandleX - width / 2;
-    const targetOffsetY = lastCandleY - (height / 2);
-    const start = performance.now();
-    const duration = 700;
-    const initialOffsetX = viewState.offsetX;
-    const initialOffsetY = viewState.offsetY;
-    const initialScale = viewState.scale;
-    function animate(now:number) {
-      const t = Math.min(1, (now - start) / duration);
+    // Helper para métricas del gráfico (min/max, escalas, posición última vela)
+    function getChartMetrics({candles, currentCandle, width, height}: {candles: Candle[], currentCandle: Candle|null, width: number, height: number}) {
+      const allCandles = [...candles];
+      if (currentCandle) allCandles.push(currentCandle);
+      const minTime = Math.min(...allCandles.map(c => c.timestamp));
+      const maxTime = Math.max(...allCandles.map(c => c.timestamp));
+      const timeRange = maxTime - minTime;
+      const targetScale = Math.min(5, Math.max(1, (allCandles.length) / 20));
+      let minPrice = Math.min(...allCandles.map(c => c.low));
+      let maxPrice = Math.max(...allCandles.map(c => c.high));
+      const pricePadding = (maxPrice - minPrice) * 0.25;
+      minPrice -= pricePadding;
+      maxPrice += pricePadding;
+      const priceRange = maxPrice - minPrice;
+      const xScale = (width / timeRange) * targetScale;
+      const yScale = (height / priceRange) * targetScale * 0.7;
+      const lastCandle = allCandles[allCandles.length - 1];
+      const lastCandleX = (lastCandle.timestamp - minTime) * xScale;
+      const lastCandleY = (lastCandle.close - minPrice) * yScale;
+      return {
+        minTime, maxTime, timeRange, minPrice, maxPrice, priceRange, xScale, yScale, targetScale, lastCandleX, lastCandleY
+      };
+    }
+
+    const metrics = getChartMetrics({candles, currentCandle, width, height});
+    // Animación directa: paneo y zoom hacia la última vela, centrada
+    const targetOffsetX = metrics.lastCandleX - width / 2;
+    const durationPan = 2000; // 2 segundos
+    const startPan = performance.now();
+    function animatePan(now:number) {
+      const t = Math.min(1, (now - startPan) / durationPan);
       const ease = 1 - Math.pow(1 - t, 3);
       setViewState((prev) => ({
         ...prev,
-        offsetX: initialOffsetX + (targetOffsetX - initialOffsetX) * ease,
-        offsetY: initialOffsetY + (targetOffsetY - initialOffsetY) * ease,
-        scale: initialScale + (targetScale - initialScale) * ease,
+        offsetX: prev.offsetX + (targetOffsetX - prev.offsetX) * ease,
+        offsetY: 0, // vertical fijo
+        scale: 1,
       }));
       if (t < 1) {
-        requestAnimationFrame(animate);
+        requestAnimationFrame(animatePan);
+      } else {
+        // Zoom central tras el paneo
+        setTimeout(() => {
+          const durationZoom = 700;
+          const startZoom = performance.now();
+          function animateZoom(nowZoom:number) {
+            const tZoom = Math.min(1, (nowZoom - startZoom) / durationZoom);
+            const easeZoom = 1 - Math.pow(1 - tZoom, 3);
+            setViewState((prev) => ({
+              ...prev,
+              offsetX: targetOffsetX,
+              offsetY: 0,
+              scale: 1 + (metrics.targetScale - 1) * easeZoom,
+            }));
+            if (tZoom < 1) {
+              requestAnimationFrame(animateZoom);
+            }
+          }
+          requestAnimationFrame(animateZoom);
+        }, 0);
       }
     }
-    requestAnimationFrame(animate);
-  }, [candles, currentCandle, viewState, setViewState]);
+    requestAnimationFrame(animatePan);
+  }, [candles, currentCandle, setViewState]);
 
   // Set up canvas dimensions
   useEffect(() => {
@@ -103,62 +181,8 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  useEffect(() => {
-    // Solo animar al inicio y una sola vez
-    if (
-      !hasAnimated &&
-      candles.length > 0 &&
-      canvasRef.current &&
-      canvasRef.current.parentElement &&
-      dimensions.width > 0 &&
-      dimensions.height > 0
-    ) {
-      const { width } = canvasRef.current.parentElement.getBoundingClientRect();
-      const allCandles = [...candles];
-      if (currentCandle) allCandles.push(currentCandle);
-      const minTime = Math.min(...allCandles.map(c => c.timestamp));
-      const maxTime = Math.max(...allCandles.map(c => c.timestamp));
-      const timeRange = maxTime - minTime;
-      const targetScale = Math.min(5, Math.max(1, (candles.length + (currentCandle ? 1 : 0)) / 20));
-      // Recalcular min/max para Y con padding igual que en drawChart
-      let minPrice = Math.min(...allCandles.map(c => c.low));
-      let maxPrice = Math.max(...allCandles.map(c => c.high));
-      const pricePadding = (maxPrice - minPrice) * 0.1;
-      minPrice -= pricePadding;
-      maxPrice += pricePadding;
-      const priceRange = maxPrice - minPrice;
-      // const timeRange = maxTime - minTime; // Ya está declarado arriba
-      const xScale = (width / timeRange) * targetScale;
-      const yScale = (canvasRef.current.parentElement.getBoundingClientRect().height / priceRange) * targetScale;
-      const lastCandle = allCandles[allCandles.length - 1];
-      const lastCandleX = (lastCandle.timestamp - minTime) * xScale;
-      const lastCandleY = (lastCandle.close - minPrice) * yScale;
-      const targetOffsetX = lastCandleX - width / 2;
-      const targetOffsetY = lastCandleY - (canvasRef.current.parentElement.getBoundingClientRect().height / 2);
-      const start = performance.now();
-      const duration = 700;
-      const initialOffsetX = viewState.offsetX;
-      const initialOffsetY = viewState.offsetY;
-      const initialScale = viewState.scale;
-      function animate(now:number) {
-        const t = Math.min(1, (now - start) / duration);
-        const ease = 1 - Math.pow(1 - t, 3);
-        setViewState((prev) => ({
-          ...prev,
-          offsetX: initialOffsetX + (targetOffsetX - initialOffsetX) * ease,
-          offsetY: initialOffsetY + (targetOffsetY - initialOffsetY) * ease,
-          scale: initialScale + (targetScale - initialScale) * ease,
-        }));
-        if (t < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          setHasAnimated(true);
-        }
-      }
-      requestAnimationFrame(animate);
-    }
-    // eslint-disable-next-line
-  }, [candles, currentCandle, dimensions.width, dimensions.height, hasAnimated]);
+  // Eliminado el centrado/autoenfoque inicial. Solo la animación de 'Ir a la última vela' mueve la cámara.
+
 
   // Función para dibujar el gráfico completo
   const drawChart = useCallback(() => {
@@ -557,69 +581,10 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {/* Botones para ajustar altura */}
-      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
-        <button
-          className="bg-zinc-800 hover:bg-zinc-700 text-white rounded px-2 py-1 text-xs shadow"
-          onClick={() => setViewState((prev) => ({ ...prev, offsetY: Math.max(0, prev.offsetY - 30) }))}
-          title="Aumentar altura (zoom in vertical)"
-        >
-          +
-        </button>
-        <button
-          className="bg-zinc-800 hover:bg-zinc-700 text-white rounded px-2 py-1 text-xs shadow"
-          onClick={() => setViewState((prev) => ({ ...prev, offsetY: prev.offsetY + 30 }))}
-          title="Reducir altura (zoom out vertical)"
-        >
-          -
-        </button>
-      </div>
+
       <canvas ref={canvasRef} className="h-full w-full cursor-grab active:cursor-grabbing" />
       {/* Controles de navegación */}
       <div className="absolute bottom-4 right-4 flex gap-2">
-        <button
-          onClick={handleZoomIn}
-          className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
-          aria-label="Acercar"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            <line x1="11" y1="8" x2="11" y2="14"></line>
-            <line x1="8" y1="11" x2="14" y2="11"></line>
-          </svg>
-        </button>
-        <button
-          onClick={handleZoomOut}
-          className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
-          aria-label="Alejar"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            <line x1="8" y1="11" x2="14" y2="11"></line>
-          </svg>
-        </button>
         <button
           onClick={handleReset}
           className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
@@ -652,7 +617,6 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
           </svg>
         </button>
       </div>
-
       {!isInitialized && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#FFD600]/50">
           <div className="flex flex-col items-center">

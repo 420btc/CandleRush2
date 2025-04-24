@@ -101,6 +101,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentCandleBets, setCurrentCandleBets] = useState<number>(0)
   const [notifications, setNotifications] = useState<{ id: string; message: string; type: string }[]>([])
   const [pendingResolutions, setPendingResolutions] = useState<{ candle: Candle; time: number }[]>([])
+  // --- WIN STREAK STATE ---
+  const [winStreak, setWinStreak] = useState<number>(0)
+  const [streakMultiplier, setStreakMultiplier] = useState<number>(1)
 
   const { toast } = useToast()
   const { unlockAchievement } = useAchievement()
@@ -369,7 +372,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       else if (size > 75) bonusPercent = 0.5;
       else if (size > 25) bonusPercent = 0.25;
       else if (size > 0) bonusPercent = 0.10;
-      // Acceso seguro a candleSizes
       let last10 = candleSizes;
       let message = "";
       if (last10.length > 1 && size > last10[last10.length - 2]) message = "¡Vela más grande en 1 minuto!";
@@ -379,19 +381,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const isBullish = candle.close > candle.open
       let totalWinnings = 0
       let wonCount = 0
+      let lostCount = 0
+      let lastResultWon = null;
 
       setBetsByPair((prev) => {
         const symbolBets = { ...(prev[currentSymbol] || {}) };
         let tfBets = (symbolBets[timeframe] || []).map((bet) => {
-          // Solo procesar apuestas pendientes que coincidan con el símbolo y timeframe
           if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet
-
           const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish)
-
-          // Calcular ganancias dinámicas según tamaño de la vela
           let winnings = 0;
           let bonus = 0;
+          // --- WIN STREAK MULTIPLIER LOGIC ---
+          let multiplier = 1;
           if (won) {
+            // Determine multiplier based on winStreak (before this bet)
+            if (winStreak + wonCount + 1 >= 9) multiplier = 3;
+            else if (winStreak + wonCount + 1 >= 6) multiplier = 2;
+            else if (winStreak + wonCount + 1 >= 3) multiplier = 1.5;
             // % movimiento respecto al precio de apertura
             const percentMove = Math.abs(candle.high - candle.low) / candle.open;
             let payoutMultiplier = 0.9; // base
@@ -399,14 +405,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
             else if (percentMove >= 0.005) payoutMultiplier = 1.5;
             else if (percentMove >= 0.0025) payoutMultiplier = 1.2;
             else if (percentMove >= 0.001) payoutMultiplier = 1.05;
-            // Para movimientos muy pequeños, casi sin bonus
-            winnings = bet.amount * payoutMultiplier;
-            bonus = winnings - bet.amount * 0.9;
+            winnings = bet.amount * payoutMultiplier * multiplier;
+            bonus = winnings - bet.amount * 0.9 * multiplier;
             totalWinnings += winnings;
             wonCount++;
-            if (bonus > 0.01) setBonusInfo({ bonus, size, message: `Bonus por movimiento: ${(percentMove*100).toFixed(2)}%` });
+            lastResultWon = true;
+            setBonusInfo({ bonus, size, message: `Bonus por movimiento: ${(percentMove*100).toFixed(2)}% + Racha x${multiplier}` });
+          } else {
+            lostCount++;
+            lastResultWon = false;
           }
-
           return {
             ...bet,
             status: won ? 'WON' : 'LOST',
@@ -417,38 +425,51 @@ export function GameProvider({ children }: { children: ReactNode }) {
         // Actualizar balance después de procesar todas las apuestas
         if (totalWinnings > 0) {
           setUserBalance((balance) => balance + totalWinnings)
-
-          // Notificar al usuario sobre sus ganancias
           toast({
             title: `¡Has ganado $${totalWinnings.toFixed(2)}!`,
-            description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}`,
+            description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}` + (streakMultiplier > 1 ? ` (Racha x${streakMultiplier})` : ""),
             variant: "default",
           })
         } else if (tfBets.some((bet) => bet.status === "LOST" && bet.resolvedAt === Date.now())) {
-          // Notificar al usuario sobre sus pérdidas si hay apuestas perdidas recién resueltas
           toast({
             title: "Apuestas resueltas",
             description: "No has ganado en esta ronda",
             variant: "destructive",
           })
         }
-
         symbolBets[timeframe] = tfBets;
         return { ...prev, [currentSymbol]: symbolBets };
       })
+
+      // --- WIN STREAK STATE UPDATE ---
+      // If user won all bets in this resolution, increment streak, else reset
+      if (wonCount > 0 && lostCount === 0) {
+        setWinStreak((prev) => {
+          const newStreak = prev + wonCount;
+          // Update multiplier for next round
+          let multi = 1;
+          if (newStreak >= 9) multi = 3;
+          else if (newStreak >= 6) multi = 2;
+          else if (newStreak >= 3) multi = 1.5;
+          setStreakMultiplier(multi);
+          return newStreak;
+        });
+      } else if (lostCount > 0) {
+        setWinStreak(0);
+        setStreakMultiplier(1);
+      }
 
       // Check for achievements
       const pendingBets = bets.filter((bet) => bet.status === "PENDING")
       if (pendingBets.length >= 5) {
         unlockAchievement("high_roller")
       }
-
       const wonBets = bets.filter((bet) => bet.status === "WON").length
       if (wonBets >= 10) {
         unlockAchievement("winning_streak")
       }
     },
-    [bets, currentSymbol, timeframe, toast, unlockAchievement],
+    [bets, currentSymbol, timeframe, toast, unlockAchievement, winStreak, streakMultiplier],
   )
 
   // Efecto para transición automática de fases por temporizador
@@ -641,7 +662,8 @@ const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
         currentCandleBets,
         candleSizes,
         bonusInfo,
-        setBonusInfo
+        setBonusInfo,
+
       }}
     >
       {children}

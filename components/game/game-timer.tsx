@@ -89,9 +89,10 @@ export default function GameTimer() {
   if (gamePhase === "BETTING") {
     return (
       <div className="w-full flex flex-col items-center justify-center my-0">
-        <div className="text-base font-bold text-[#FFD600] mb-0 animate-pulse">
-          Fase de apuestas
-        </div>
+        <div className="flex items-center justify-between w-full text-sm font-normal text-[#FFD600] animate-pulse">
+  <span>Fase de apuestas</span>
+  <img src="/portada.png" alt="Logo" className="h-24 w-24 ml-2" style={{objectFit:'contain'}} />
+</div>
         <div className={`flex items-center justify-center rounded-lg shadow px-2 py-1 bg-black border border-yellow-400 animate-pulse`}
              style={{ minWidth: 70 }}>
           <Clock className="h-4 w-4 text-yellow-300 mr-1" />
@@ -107,9 +108,10 @@ export default function GameTimer() {
   // NOT BETTING: Dimmed/closed state
   return (
     <div className="w-full flex flex-col items-center justify-center my-0">
-      <div className="text-base font-bold text-zinc-400 mb-0">
-        Apuestas cerradas
-      </div>
+      <div className="flex items-center justify-between w-full text-sm font-normal text-zinc-400">
+  <span>Apuestas cerradas</span>
+  <img src="/portada.png" alt="Logo" className="h-24 w-24 ml-2" style={{objectFit:'contain'}} />
+</div>
       <div className="flex items-center justify-center rounded-lg px-2 py-1 bg-zinc-800 border border-zinc-700 opacity-60" style={{ minWidth: 70 }}>
         <Clock className="h-4 w-4 text-zinc-400 mr-1" />
         <span className="text-xl font-bold text-zinc-400">
