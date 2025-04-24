@@ -395,23 +395,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
           let multiplier = 1;
           if (won) {
             // Determine multiplier based on winStreak (before this bet)
-            if (winStreak + wonCount + 1 >= 9) multiplier = 3;
-            else if (winStreak + wonCount + 1 >= 6) multiplier = 2;
-            else if (winStreak + wonCount + 1 >= 3) multiplier = 1.5;
-            // % movimiento respecto al precio de apertura
-            const percentMove = Math.abs(candle.high - candle.low) / candle.open;
-            let payoutMultiplier = 0.9; // base
-            if (percentMove >= 0.01) payoutMultiplier = 2.0;
-            else if (percentMove >= 0.005) payoutMultiplier = 1.5;
-            else if (percentMove >= 0.0025) payoutMultiplier = 1.2;
-            else if (percentMove >= 0.001) payoutMultiplier = 1.05;
-            winnings = bet.amount * payoutMultiplier * multiplier;
-            bonus = winnings - bet.amount * 0.9 * multiplier;
-            totalWinnings += winnings;
-            wonCount++;
-            lastResultWon = true;
-            setBonusInfo({ bonus, size, message: `Bonus por movimiento: ${(percentMove*100).toFixed(2)}% + Racha x${multiplier}` });
-          } else {
             lostCount++;
             lastResultWon = false;
           }

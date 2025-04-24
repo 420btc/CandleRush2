@@ -67,105 +67,8 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
   const [hasAnimated, setHasAnimated] = useState(false)
   const { bets } = useGame()
 
-  // Estado para la navegación del gráfico
-  const [viewState, setViewState] = useState<ViewState>({
-    offsetX: 0,
-    offsetY: 0,
-    scale: 1,
-    startX: null,
-    startY: null,
-    isDragging: false,
-  })
-
-  // Referencia para el último timestamp renderizado
-  const lastRenderRef = useRef<number>(0)
-
-  // Función para animar la vista hacia la última vela
-  const animateToLastCandle = useCallback(() => {
-    if (!canvasRef.current || !canvasRef.current.parentElement || candles.length === 0) return;
-    const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
-    const allCandles = [...candles];
-    if (currentCandle) allCandles.push(currentCandle);
-    const minTime = Math.min(...allCandles.map(c => c.timestamp));
-    const maxTime = Math.max(...allCandles.map(c => c.timestamp));
-    const targetScale = Math.min(5, Math.max(1, (candles.length + (currentCandle ? 1 : 0)) / 20));
-    let minPrice = Math.min(...allCandles.map(c => c.low));
-    let maxPrice = Math.max(...allCandles.map(c => c.high));
-    // Aumenta el padding vertical para que las velas no sean tan altas
-    const pricePadding = (maxPrice - minPrice) * 0.25;
-    minPrice -= pricePadding;
-    maxPrice += pricePadding;
-    const priceRange = maxPrice - minPrice;
-    const timeRange = maxTime - minTime;
-    const xScale = (width / timeRange) * targetScale;
-    // Helper para métricas del gráfico (min/max, escalas, posición última vela)
-    function getChartMetrics({candles, currentCandle, width, height}: {candles: Candle[], currentCandle: Candle|null, width: number, height: number}) {
-      const allCandles = [...candles];
-      if (currentCandle) allCandles.push(currentCandle);
-      const minTime = Math.min(...allCandles.map(c => c.timestamp));
-      const maxTime = Math.max(...allCandles.map(c => c.timestamp));
-      const timeRange = maxTime - minTime;
-      const targetScale = Math.min(5, Math.max(1, (allCandles.length) / 20));
-      let minPrice = Math.min(...allCandles.map(c => c.low));
-      let maxPrice = Math.max(...allCandles.map(c => c.high));
-      const pricePadding = (maxPrice - minPrice) * 0.25;
-      minPrice -= pricePadding;
-      maxPrice += pricePadding;
-      const priceRange = maxPrice - minPrice;
-      const xScale = (width / timeRange) * targetScale;
-      const yScale = (height / priceRange) * targetScale * 0.7;
-      const lastCandle = allCandles[allCandles.length - 1];
-      const lastCandleX = (lastCandle.timestamp - minTime) * xScale;
-      const lastCandleY = (lastCandle.close - minPrice) * yScale;
-      return {
-        minTime, maxTime, timeRange, minPrice, maxPrice, priceRange, xScale, yScale, targetScale, lastCandleX, lastCandleY
-      };
-    }
-
-    const metrics = getChartMetrics({candles, currentCandle, width, height});
-    // Animación directa: paneo y zoom hacia la última vela, centrada
-    const targetOffsetX = metrics.lastCandleX - width / 2;
-    const durationPan = 2000; // 2 segundos
-    const startPan = performance.now();
-    function animatePan(now:number) {
-      const t = Math.min(1, (now - startPan) / durationPan);
-      const ease = 1 - Math.pow(1 - t, 3);
-      setViewState((prev) => ({
-        ...prev,
-        offsetX: prev.offsetX + (targetOffsetX - prev.offsetX) * ease,
-        offsetY: 0, // vertical fijo
-        scale: 1,
-      }));
-      if (t < 1) {
-        requestAnimationFrame(animatePan);
-      } else {
-        // Zoom central tras el paneo
-        setTimeout(() => {
-          const durationZoom = 700;
-          const startZoom = performance.now();
-          function animateZoom(nowZoom:number) {
-            const tZoom = Math.min(1, (nowZoom - startZoom) / durationZoom);
-            const easeZoom = 1 - Math.pow(1 - tZoom, 3);
-            setViewState((prev) => ({
-              ...prev,
-              offsetX: targetOffsetX,
-              offsetY: 0,
-              scale: 1 + (metrics.targetScale - 1) * easeZoom,
-            }));
-            if (tZoom < 1) {
-              requestAnimationFrame(animateZoom);
-            }
-          }
-          requestAnimationFrame(animateZoom);
-        }, 0);
-      }
-    }
-    requestAnimationFrame(animatePan);
-  }, [candles, currentCandle, setViewState]);
-
-  // Set up canvas dimensions
+  // Restaurar efecto para inicializar dimensiones del canvas correctamente
   useEffect(() => {
-    // Actualizar dimensiones del canvas
     const updateDimensions = () => {
       if (canvasRef.current && canvasRef.current.parentElement) {
         const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
@@ -182,8 +85,18 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  // Eliminado el centrado/autoenfoque inicial. Solo la animación de 'Ir a la última vela' mueve la cámara.
+  // Estado para la navegación del gráfico
+  const [viewState, setViewState] = useState<ViewState>({
+    offsetX: 0,
+    offsetY: 0,
+    scale: 1,
+    startX: null,
+    startY: null,
+    isDragging: false,
+  })
 
+  // Referencia para el último timestamp renderizado
+  const lastRenderRef = useRef<number>(0)
 
   // Función para dibujar el gráfico completo
   const drawChart = useCallback(() => {
@@ -604,17 +517,6 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
           >
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
             <path d="M3 3v5h5"></path>
-          </svg>
-        </button>
-        {/* Botón ir a última vela */}
-        <button
-          onClick={animateToLastCandle}
-          className="bg-yellow-500 hover:bg-yellow-400 text-black p-2 rounded-full shadow-lg border-2 border-yellow-700 animate-pulse"
-          aria-label="Ir a la última vela"
-          title="Ir a la última vela"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </div>

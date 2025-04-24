@@ -22,7 +22,7 @@ export default function BetHistory() {
 
   return (
     <>
-      <ScrollArea className="h-[300px]">
+      <ScrollArea className="h-[500px]">
         <div className="space-y-2">
         {bets
           .slice()
