@@ -9,6 +9,9 @@ interface SoundManagerProps {
 }
 
 export default function SoundManager({ muted, onToggleMute, triggerLose, triggerWin }: SoundManagerProps) {
+  // Refs para sonidos de victoria y derrota
+  const loseRef = useRef<HTMLAudioElement | null>(null);
+  const winRef = useRef<HTMLAudioElement | null>(null);
   // Secuencia de música de fondo
   const bgTracks = ["/fondo1.mp3", "/fondo2.mp3", "/fondo3.mp3"];
   const bgRefs = useRef<HTMLAudioElement[]>([]);

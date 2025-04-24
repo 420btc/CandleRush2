@@ -85,39 +85,27 @@ export default function GameTimer() {
     return "bg-red-600 animate-pulse";
   };
 
-  // BETTING: Large, prominent timer
-  if (gamePhase === "BETTING") {
-    return (
-      <div className="w-full flex flex-col items-center justify-center my-0">
-        <div className="flex items-center justify-between w-full text-sm font-normal text-[#FFD600] animate-pulse">
-  <span>Fase de apuestas</span>
-  <img src="/portada.png" alt="Logo" className="h-24 w-24 ml-2" style={{objectFit:'contain'}} />
-</div>
-        <div className={`flex items-center justify-center rounded-lg shadow px-2 py-1 bg-black border border-yellow-400 animate-pulse`}
-             style={{ minWidth: 70 }}>
-          <Clock className="h-4 w-4 text-yellow-300 mr-1" />
-          <span className="text-xl font-extrabold text-green-400">
-            {Math.max(0, Math.ceil(timeLeft / 1000))}
-          </span>
-          <span className="text-base font-bold text-green-400 ml-1">s</span>
-        </div>
-      </div>
-    )
-  }
+  // Nuevo diseño: solo un bloque grande y claro
+  const isBetting = gamePhase === "BETTING";
+  const label = isBetting ? "Apuestas Abiertas" : "Apuestas Cerradas";
+  const seconds = Math.max(0, Math.floor(timeLeft / 1000));
+  const labelColor = isBetting ? "text-green-400" : "text-red-400";
 
-  // NOT BETTING: Dimmed/closed state
   return (
-    <div className="w-full flex flex-col items-center justify-center my-0">
-      <div className="flex items-center justify-between w-full text-sm font-normal text-zinc-400">
-  <span>Apuestas cerradas</span>
-  <img src="/portada.png" alt="Logo" className="h-24 w-24 ml-2" style={{objectFit:'contain'}} />
-</div>
-      <div className="flex items-center justify-center rounded-lg px-2 py-1 bg-zinc-800 border border-zinc-700 opacity-60" style={{ minWidth: 70 }}>
-        <Clock className="h-4 w-4 text-zinc-400 mr-1" />
-        <span className="text-xl font-bold text-zinc-400">
-          --
-        </span>
-      </div>
+    <div className="w-full flex flex-col items-center justify-center py-2 select-none" data-component-name="GameTimer">
+      <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${labelColor}`}>{label}</span>
+      <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl mb-2">
+        {seconds}s
+      </span>
     </div>
-  )
+  );
+
+  return (
+    <div className="w-full flex flex-col items-center justify-center py-2 select-none" data-component-name="GameTimer">
+      <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${labelColor}`}>{label}</span>
+      <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl mb-2">
+        {seconds}s
+      </span>
+    </div>
+  );
 }

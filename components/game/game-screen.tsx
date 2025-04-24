@@ -77,13 +77,17 @@ export default function GameScreen() {
   const [triggerWin, setTriggerWin] = useState(false);
 
   // Mostrar modal de resultado de apuesta al resolver (ganar o perder)
+  // Solo actualizar el modal y sonidos cuando cambie el resultado, nunca en el render
   useEffect(() => {
     if (!bets || !candles.length) return;
     // Buscar la última apuesta resuelta
     const lastResolved = bets
       .filter((b) => b.status !== "PENDING" && b.resolvedAt)
       .sort((a, b) => ((b.resolvedAt ?? 0) - (a.resolvedAt ?? 0)))[0];
-    if (lastResolved && (!betResult || betResult.bet.timestamp !== lastResolved.timestamp || betResult.bet.prediction !== lastResolved.prediction)) {
+    if (
+      lastResolved &&
+      (!betResult || betResult.bet.timestamp !== lastResolved.timestamp || betResult.bet.prediction !== lastResolved.prediction)
+    ) {
       // Buscar la vela correspondiente
       const resolvedCandle = candles.find(c => Math.abs(c.timestamp - lastResolved.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
       if (resolvedCandle) {
@@ -108,16 +112,15 @@ export default function GameScreen() {
           },
           diff,
         });
-        setShowBetModal(true);
-        // Trigger sonidos
-        setTriggerLose(isLost);
-        setTriggerWin(isWin);
+        setTimeout(() => setShowBetModal(true), 10); // abrir modal tras render
+        setTimeout(() => setTriggerLose(isLost), 20);
+        setTimeout(() => setTriggerWin(isWin), 20);
         setTimeout(() => setShowBetModal(false), 2800);
         setTimeout(() => setTriggerLose(false), 1000);
         setTimeout(() => setTriggerWin(false), 1000);
       }
     }
-  }, [bets, candles]);
+  }, [bets, candles, betResult]);
 
   useEffect(() => {
     if (bonusInfo && (bonusInfo.bonus > 0 || bonusInfo.message)) {
@@ -301,60 +304,34 @@ export default function GameScreen() {
               <Card className="bg-black border-[#FFD600]">
                 <CardHeader className="pb-0">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 w-full">
-                      <div className="flex items-center gap-4">
-                        <BarChart3 className="h-5 w-5" />
-                        <span className="text-3xl font-bold text-[#FFD600] tracking-tight flex items-center gap-2">
-                          {currentSymbol}
-                          <span className="ml-2 text-4xl font-extrabold text-white drop-shadow-lg">
+                    <CardTitle className="flex flex-col w-full">
+                      <div className="flex flex-row items-start justify-between w-full gap-6">
+                        {/* Precio BTC grande a la izquierda */}
+                        <div className="flex items-center gap-4">
+                          <BarChart3 className="h-5 w-5" />
+                          <span className="text-3xl font-bold text-[#FFD600] tracking-tight flex items-center gap-2">
+                            {currentSymbol}
+                          </span>
+                          <span className="text-[4rem] font-extrabold text-white drop-shadow-lg ml-2">
                             {currentCandle ? `$${currentCandle.close.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
                           </span>
                           <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-start md:items-center gap-1 w-full max-w-xs">
-                        <span className="text-base font-bold text-[#FFD600]">
-                          {gamePhase === "BETTING" ? "Apuestas abiertas" : "Apuestas cerradas"}
-                        </span>
-                        <span className="text-sm text-white font-extrabold">
-                          {gamePhase === "BETTING"
-                            ? `Tiempo para apostar: ${secondsLeft}s`
-                            : `Próxima vela en: ${secondsUntilNextCandle}s`}
-                        </span>
-                        <span className="text-xs text-[#FFD600]">Apuestas: {currentCandleBets}/1</span>
-                        {/* Barra de progreso visual animada de vaciado */}
-                        <div className="w-full h-3 rounded-lg overflow-hidden border border-[#FFD600] bg-zinc-900 mt-1">
-                          {(() => {
-                            let percent = 100;
-                            let color = "linear-gradient(90deg,#4ade80,#22d3ee)";
-                            let total = 1;
-                            let left = 1;
-                            if (gamePhase === "BETTING") {
-                              total = typeof nextPhaseTime === "number" && nextPhaseTime > 0 ? nextPhaseTime : 30;
-                              left = typeof secondsLeft === "number" && secondsLeft >= 0 ? secondsLeft : total;
-                            } else {
-                              total = typeof nextCandleTime === "number" && nextCandleTime > 0 ? nextCandleTime : 30;
-                              left = typeof secondsUntilNextCandle === "number" && secondsUntilNextCandle >= 0 ? secondsUntilNextCandle : total;
-                            }
-                            percent = total > 0 ? Math.max(0, Math.min(100, (left / total) * 100)) : 0;
-                            if (percent > 66) color = "linear-gradient(90deg,#4ade80,#22d3ee)";
-                            else if (percent > 20) color = "linear-gradient(90deg,#fbbf24,#f59e42)";
-                            else color = "linear-gradient(90deg,#ef4444,#f87171)";
-                            return (
-                              <div
-                                className="h-full transition-all duration-700"
-                                style={{ width: percent + "%", background: color }}
-                              />
-                            );
-                          })()}
+                        </div>
+                        {/* Estado de apuestas a la derecha */}
+                        <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
+                          <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
                         </div>
                       </div>
+                      {/* Contador grande centrado debajo */}
+                      <div className="w-full flex justify-center">
+                        <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl my-2">
+                          {gamePhase === 'BETTING' ? secondsLeft : secondsUntilNextCandle}s
+                        </span>
+                      </div>
                     </CardTitle>
-                    <GameTimer />
                   </div>
                 </CardHeader>
-                <CardContent className="p-2">
-                  {/* Gráfico */}
+                <CardContent>
                   <div className="h-[500px] w-full relative overflow-hidden">
                     {/* Fondo portada detrás del chart con opacidad y blur */}
                     <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
