@@ -6,14 +6,20 @@ import { AchievementProvider } from "@/context/achievement-context"
 import { DeviceModeProvider } from "@/context/device-mode-context"
 import Loading from "@/components/ui/loading"
 
-"use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-
 export default function Home() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace("/menu");
-  }, [router]);
-  return null;
+  return (
+    <DeviceModeProvider>
+      <AuthProvider>
+        <AchievementProvider>
+          <GameProvider>
+            <main className="min-h-screen bg-zinc-900 text-white">
+              <Suspense fallback={<Loading />}>
+                <GameScreen />
+              </Suspense>
+            </main>
+          </GameProvider>
+        </AchievementProvider>
+      </AuthProvider>
+    </DeviceModeProvider>
+  )
 }
