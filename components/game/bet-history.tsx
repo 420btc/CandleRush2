@@ -40,28 +40,40 @@ export default function BetHistory() {
   return (
     <>
       <ScrollArea className="h-[500px] w-full lg:h-full lg:w-full">
-        <div className="space-y-2 w-full h-full">
+        <div className="space-y-0 w-full h-full">
         {bets
           .slice()
           .reverse()
           .map((bet) => (
-            <div key={bet.id} className={`p-2 rounded-xl border border-yellow-400 flex items-center justify-between w-[calc(100%-2px)] text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
-              <div className="flex items-center gap-2">
-                {bet.prediction === "BULLISH" ? (
-                  <ArrowUpCircle className="h-5 w-5 text-green-400" />
-                ) : (
-                  <ArrowDownCircle className="h-5 w-5 text-red-400" />
-                )}
+            <div key={bet.id} className={`py-5 min-h-[80px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between w-full text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
+              <div className="flex items-center gap-4 w-full md:w-1/2">
+                <div className="flex flex-col items-center justify-center min-w-[36px]">
+                  <img
+                    src={bet.prediction === "BULLISH" ? "/bull.png" : "/bear.png"}
+                    alt={bet.prediction === "BULLISH" ? "Bull" : "Bear"}
+                    className="w-7 h-7 object-contain mx-auto"
+                  />
+                  <span className={`text-xs font-bold mt-1 ${bet.prediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>{bet.prediction === "BULLISH" ? "BULL" : "BEAR"}</span>
+                </div>
                 <div>
                   <p className="text-sm font-medium text-white">
                     {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
                   </p>
                   <p className="text-sm text-white">{localTimes[bet.id] || ''}</p>
+                  {/* Mostrar precio de entrada */}
+                  <p className="text-xs text-yellow-200 mt-1">Entrada: {(() => {
+                    const candle = candles.reduce((prev, curr) => {
+                      return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
+                        ? curr
+                        : prev
+                    }, candles[0]);
+                    return candle?.open?.toFixed(2) ?? '-';
+                  })()}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-white">${bet.amount.toFixed(2)}</span>
+              <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto justify-between">
+                <span className="font-bold text-white text-lg">${bet.amount.toFixed(2)}</span>
 
                 {bet.status === "PENDING" && (
                   <div className="flex items-center gap-1">

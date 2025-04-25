@@ -571,7 +571,7 @@ export default function GameScreen() {
               </Card>
             </div>
 
-            <div className="flex flex-col gap-3 sm:gap-6 h-full lg:h-full">
+            <div className="flex flex-col h-full lg:h-full m-0 p-0 gap-0">
               <Card className="bg-black border-[#FFD600]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -584,7 +584,7 @@ export default function GameScreen() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-black border-[#FFD600] p-2 pt-4 pb-4 md:p-8 w-full max-w-full h-auto lg:h-full">
+              <Card className="bg-black border-[#FFD600] w-full h-auto lg:h-full p-0 m-0">
                 <CardHeader className="pb-0">
                   <Tabs defaultValue="history">
                     <div className="flex justify-between items-center">
