@@ -447,11 +447,16 @@ export default function GameScreen() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[400px] md:h-[500px] w-full relative overflow-hidden">
+                  <div className="h-[500px] md:h-[600px] w-full relative overflow-hidden">
                     {/* Fondo portada detrás del chart con opacidad y blur */}
                     <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
-                    <div className="relative z-10">
-                      <CandlestickChart candles={candles} currentCandle={currentCandle} />
+                    <div className="relative z-10 flex flex-col gap-2">
+                      {/* MACD Chart: fino y separado visualmente */}
+                      <MacdChart candles={candles} />
+                      {/* Chart principal: más alto y con margen superior */}
+                      <div className="w-full mt-2">
+                        <CandlestickChart candles={candles} currentCandle={currentCandle} />
+                      </div>
                     </div>
                     <div className="absolute top-2 right-2 z-20">
                       <SoundManager muted={muted} onToggleMute={() => setMuted(m => !m)} triggerLose={triggerLose} triggerWin={triggerWin} />
@@ -551,14 +556,8 @@ export default function GameScreen() {
                 </CardContent>
               </Card>
 
-              {/* Línea divisoria encima del MACD */}
-              <hr className="w-full border-t-2 border-yellow-400 my-6 opacity-60" />
-              {/* MACD Chart debajo del GameScreen principal */}
-              <div className="w-full flex justify-center mt-4">
-                <MacdChart candles={candles} />
-              </div>
 
-              {/* Historial de apuestas en pantalla grande */}
+
               <Card className="bg-black border-[#FFD600] lg:hidden">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -638,9 +637,7 @@ export default function GameScreen() {
         </div>
 
         {/* AchievementNotification eliminado para evitar doble modal de logro al ganar. */}
-        <footer className="w-full bg-[#111] border-t-2 border-[#FFD600] text-[#FFD600] text-center py-3 shadow-inner mt-2">
-          &copy; 2025 Candle Rush 2.0
-        </footer>
+
       </div>
     </>
   )

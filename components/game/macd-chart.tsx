@@ -29,9 +29,9 @@ export default function MacdChart({ candles }: { candles: Candle[] }) {
   const { macd, signal, histogram } = useMemo(() => calculateMACD(closes), [closes]);
 
   // Renderizado simple SVG
-  const chartWidth = 900;
+  const chartWidth = 1200;
   const chartHeight = 180;
-  const barsToShow = 150;
+  const barsToShow = 120;
   const dataLen = macd.length;
   const maxAbs = Math.max(
     ...macd.slice(-barsToShow).map(Math.abs),
@@ -49,14 +49,13 @@ export default function MacdChart({ candles }: { candles: Candle[] }) {
   const histPoints = histogram.slice(-barsToShow);
 
   return (
-    <div className="w-full flex flex-col items-center mt-4">
-      <div className="text-xs text-yellow-400 mb-1 font-bold">MACD</div>
+    <div className="w-full mt-4">
       <svg
         width="100%"
         height={chartHeight}
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
         preserveAspectRatio="none"
-        style={{ background: "#191919", borderRadius: 8, display: 'block' }}
+        style={{ background: "#000", display: 'block' }}
       >
         {/* Histograma: verde si >0, rojo si <0 */}
         {histPoints.map((h, i) => (
