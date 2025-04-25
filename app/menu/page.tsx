@@ -112,7 +112,7 @@ export default function MenuPage() {
           </Link>
         ))}
       </div>
-      <footer className="mt-20 text-yellow-500 text-xs opacity-70 select-none">v1.0.0 &copy; CandleRush 2025</footer>
+      <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">v1.0.0 &copy; CandleRush 2025</footer>
       {/* Reloj digital */}
       <Clock />
       </div>

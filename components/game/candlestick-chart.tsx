@@ -63,7 +63,7 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
         countAudioRef.current
       ) {
         countAudioRef.current.currentTime = 0;
-        countAudioRef.current.volume = 0.35;
+        countAudioRef.current.volume = 0.175;
         countAudioRef.current.play();
         setCountPlayed(true);
       }

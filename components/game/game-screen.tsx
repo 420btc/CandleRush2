@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react"
 import { useGame } from "@/context/game-context"
 import { useAuth } from "@/context/auth-context"
 import { useAchievement } from "@/context/achievement-context"
-import CandlestickChart from "@/components/game/candlestick-chart"
+import CandlestickChart from "@/components/game/candlestick-chart";
+import MacdChart from "@/components/game/macd-chart";
 import GameControls from "@/components/game/game-controls"
 import GameTimer from "@/components/game/game-timer"
 import BetHistory from "@/components/game/bet-history"
@@ -549,6 +550,13 @@ export default function GameScreen() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Línea divisoria encima del MACD */}
+              <hr className="w-full border-t-2 border-yellow-400 my-6 opacity-60" />
+              {/* MACD Chart debajo del GameScreen principal */}
+              <div className="w-full flex justify-center mt-4">
+                <MacdChart candles={candles} />
+              </div>
 
               {/* Historial de apuestas en pantalla grande */}
               <Card className="bg-black border-[#FFD600] lg:hidden">

@@ -3,9 +3,19 @@ import Image from "next/image";
 import UserStats from "@/components/game/user-stats";
 import BetHistory from "@/components/game/bet-history";
 
+import { useRouter } from "next/navigation";
+
 export default function ProfilePage() {
+  const router = useRouter();
   return (
     <main className="min-h-screen bg-black flex flex-col items-center py-10 px-4">
+      {/* Botón para volver al menú principal */}
+      <button
+        className="absolute left-4 top-4 bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded shadow-lg transition-colors"
+        onClick={() => router.push('/menu')}
+      >
+        ← Volver al Menú
+      </button>
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-8">
         {/* Avatar y nombre */}
         <div className="flex flex-col items-center gap-2">
