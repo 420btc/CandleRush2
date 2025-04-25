@@ -6,10 +6,7 @@ import { AchievementProvider } from "@/context/achievement-context"
 import { DeviceModeProvider } from "@/context/device-mode-context"
 import Loading from "@/components/ui/loading"
 
-import { redirect } from "next/navigation";
-
-export default function Home() {
-  redirect("/game");
+export default function Game() {
   return (
     <DeviceModeProvider>
       <AuthProvider>

@@ -20,6 +20,20 @@ interface ViewState {
 }
 
 export default function CandlestickChart({ candles, currentCandle }: CandlestickChartProps) {
+  // Referencias para los iconos
+  const bullImgRef = useRef<HTMLImageElement | null>(null);
+  const bearImgRef = useRef<HTMLImageElement | null>(null);
+
+  // Pre-cargar imágenes sólo una vez
+  useEffect(() => {
+    const bullImg = new window.Image();
+    bullImg.src = '/bull.png';
+    bullImgRef.current = bullImg;
+    const bearImg = new window.Image();
+    bearImg.src = '/bear.png';
+    bearImgRef.current = bearImg;
+  }, []);
+
   // ...
   const [countPlayed, setCountPlayed] = useState(false);
   const { nextCandleTime } = useGame();
@@ -49,7 +63,7 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
         countAudioRef.current
       ) {
         countAudioRef.current.currentTime = 0;
-        countAudioRef.current.volume = 0.7;
+        countAudioRef.current.volume = 0.35;
         countAudioRef.current.play();
         setCountPlayed(true);
       }
@@ -95,8 +109,63 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
     isDragging: false,
   })
 
+  // Función para enfocar y hacer zoom en la última vela
+  const handleFocusLastCandle = useCallback(() => {
+    if (!canvasRef.current || !canvasRef.current.parentElement) return;
+    const zoomScale = 5;
+    const { width } = canvasRef.current.parentElement.getBoundingClientRect();
+    // Usar los metadatos del último render para calcular la X real de la última vela
+    const meta = lastRenderMeta.current;
+    if (!meta || !canvasRef.current || !canvasRef.current.parentElement) return;
+    const { minTime, xScale, clampedOffsetX } = meta;
+    const allCandles = [...candles];
+    if (currentCandle) allCandles.push(currentCandle);
+    if (allCandles.length === 0) return;
+    const last = allCandles[allCandles.length - 1];
+    const lastX = (last.timestamp - minTime) * xScale - clampedOffsetX;
+    // Centrar la última vela
+    const offsetXTarget = Math.max(0, lastX - width / 2);
+    const offsetYTarget = 0;
+    const targetScale = viewState.scale > 1 ? viewState.scale : zoomScale;
+    // Animación
+    const start = performance.now();
+    const duration = 1000;
+    const initial = { ...viewState };
+    const end = {
+      offsetX: offsetXTarget,
+      offsetY: offsetYTarget,
+      scale: targetScale,
+      startX: null,
+      startY: null,
+      isDragging: false,
+    };
+    function animate(now: number) {
+      const elapsed = Math.min(1, (now - start) / duration);
+      const t = elapsed < 0.5 ? 2 * elapsed * elapsed : -1 + (4 - 2 * elapsed) * elapsed;
+      setViewState({
+        offsetX: initial.offsetX + (end.offsetX - initial.offsetX) * t,
+        offsetY: initial.offsetY + (end.offsetY - initial.offsetY) * t,
+        scale: initial.scale + (end.scale - initial.scale) * t,
+        startX: null,
+        startY: null,
+        isDragging: false,
+      });
+      if (elapsed < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setViewState(end);
+      }
+    }
+    requestAnimationFrame(animate);
+  }, [dimensions.width, candles, currentCandle, viewState]);
+
   // Referencia para el último timestamp renderizado
   const lastRenderRef = useRef<number>(0)
+
+  // Ref para la coordenada X de la última vela
+  const lastCandleXRef = useRef<number | null>(null);
+  // Ref para guardar el minTime y xScale del último render
+  const lastRenderMeta = useRef<{minTime: number, xScale: number, clampedOffsetX: number} | null>(null);
 
   // Función para dibujar el gráfico completo
   const drawChart = useCallback(() => {
@@ -160,6 +229,21 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
       }))
     }
 
+    // Calcular la X de la última vela (en píxeles canvas)
+    if (allCandles.length > 0) {
+      const last = allCandles[allCandles.length - 1];
+      const lastX = (last.timestamp - minTime) * xScale - clampedOffsetX;
+      lastCandleXRef.current = lastX;
+      lastRenderMeta.current = { minTime, xScale, clampedOffsetX };
+      // Línea vertical de debug (puedes quitarla en producción)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,0,0,0.5)';
+      ctx.beginPath();
+      ctx.moveTo(lastX, 0);
+      ctx.lineTo(lastX, dimensions.height);
+      ctx.stroke();
+      ctx.restore();
+    }
     // Draw background
     ctx.fillStyle = "#000"
     ctx.fillRect(0, 0, dimensions.width, dimensions.height)
@@ -229,30 +313,23 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
         ctx.strokeRect(x - candleWidth / 2 - 1, candleY - 1, candleWidth + 2, candleHeight + 2)
       }
 
-      // Dibujar marcadores de apuestas si existen para esta vela
+      // Dibujar iconos de apuestas si existen para esta vela
       const candleBets = betsByTimestamp.get(candle.timestamp)
-      if (candleBets && candleBets.length > 0) {
-        // Dibujar un marcador por cada tipo de apuesta (bullish/bearish)
+      if (candleBets && candleBets.length > 0 && bullImgRef.current && bearImgRef.current) {
+        // Dibujar un icono por cada tipo de apuesta (bullish/bearish)
         const hasBullish = candleBets.some((bet: import("@/types/game").Bet) => bet.prediction === "BULLISH")
         const hasBearish = candleBets.some((bet: import("@/types/game").Bet) => bet.prediction === "BEARISH")
 
-        let markerY = high - 15 // Posición encima de la vela
-
-        if (hasBullish) {
-          // Dibujar marcador verde (alcista)
-          ctx.fillStyle = "#22c55e"
-          ctx.beginPath()
-          ctx.arc(x, markerY, 3.5, 0, Math.PI * 2)
-          ctx.fill()
-          markerY -= 10 // Espacio para el siguiente marcador
-        }
-
-        if (hasBearish) {
-          // Dibujar marcador rojo (bajista)
-          ctx.fillStyle = "#ef4444"
-          ctx.beginPath()
-          ctx.arc(x, markerY, 3.5, 0, Math.PI * 2)
-          ctx.fill()
+        let markerY = high - 20 // Posición encima de la vela
+        const iconSize = 20
+        // Si ambos existen, separar horizontalmente
+        if (hasBullish && hasBearish) {
+          ctx.drawImage(bullImgRef.current, x - iconSize, markerY, iconSize, iconSize)
+          ctx.drawImage(bearImgRef.current, x, markerY, iconSize, iconSize)
+        } else if (hasBullish) {
+          ctx.drawImage(bullImgRef.current, x - iconSize/2, markerY, iconSize, iconSize)
+        } else if (hasBearish) {
+          ctx.drawImage(bearImgRef.current, x - iconSize/2, markerY, iconSize, iconSize)
         }
       }
     })
@@ -520,6 +597,67 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
           </svg>
         </button>
       </div>
+
+      {/* Botones flotantes verticales (sonido + lupa) arriba izquierda */}
+      <div className="absolute top-24 right-4 flex flex-col gap-3 z-50">
+        {/* Botón de sonido (renderizado desde GameScreen) */}
+        {/* El botón de sonido debe estar aquí vía prop.children o prop extra */}
+        {/* Botón lupa para enfocar última vela */}
+        <button
+          onClick={handleFocusLastCandle}
+          className="bg-yellow-400 hover:bg-yellow-300 text-black p-2 rounded-full shadow-lg border-2 border-yellow-600"
+          aria-label="Enfocar última vela"
+          title="Enfocar última vela"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Controles de navegación abajo derecha */}
+      <div className="absolute bottom-4 right-4 flex gap-2">
+        <button
+          onClick={handleZoomIn}
+          className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
+          aria-label="Acercar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 9l-6 6 6 6" />
+          </svg>
+        </button>
+        <button
+          onClick={handleZoomOut}
+          className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
+          aria-label="Alejar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M9 15l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
+
       {!isInitialized && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#FFD600]/50">
           <div className="flex flex-col items-center">

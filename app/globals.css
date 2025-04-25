@@ -60,7 +60,15 @@
   * {
     @apply border-border;
   }
+  html, body {
+    background: #000 !important;
+    background-color: #000 !important;
+    color: #fff;
+    color-scheme: only dark;
+  }
   body {
-    @apply bg-background text-foreground;
+    background: #000 !important;
+    background-color: #000 !important;
+    color: #fff;
   }
 }

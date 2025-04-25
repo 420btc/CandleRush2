@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useGame } from "@/context/game-context"
 import { useAuth } from "@/context/auth-context"
 import { useAchievement } from "@/context/achievement-context"
@@ -16,10 +16,88 @@ import { useToast } from "@/hooks/use-toast"
 import { useDevice } from "@/context/device-mode-context"
 import { ArrowUpCircle, ArrowDownCircle, BarChart3, History, Trophy, Wallet } from "lucide-react"
 import BetResultModal from "@/components/game/bet-result-modal"
+import BetAmountFlyup from "@/components/game/BetAmountFlyup"
 
 import SoundManager from "@/components/game/SoundManager";
 
 export default function GameScreen() {
+  // Context hooks FIRST (fixes userBalance/addCoins before use)
+  const {
+    gamePhase,
+    currentSymbol,
+    timeframe,
+    candles,
+    currentCandle,
+    userBalance,
+    placeBet,
+    changeSymbol,
+    changeTimeframe,
+    isConnected,
+    nextPhaseTime,
+    nextCandleTime,
+    currentCandleBets,
+    bonusInfo,
+    setBonusInfo,
+    bets,
+    addCoins // might be missing in context, handle gracefully
+  } = useGame();
+  const { user } = useAuth();
+  const { achievements, unlockedAchievements } = useAchievement();
+  const { toast } = useToast();
+  const { isMobile } = useDevice();
+
+  // Game Over modal state
+  const [showGameOver, setShowGameOver] = useState(false);
+  const [waitTime, setWaitTime] = useState(600); // 10 min in seconds
+  const [waiting, setWaiting] = useState(false);
+  const [showAd, setShowAd] = useState(false);
+  const waitTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Detect userBalance 0
+  useEffect(() => {
+    if (userBalance === 0 && !showGameOver) {
+      setShowGameOver(true);
+    }
+  }, [userBalance, showGameOver]);
+
+  // Countdown logic for wait button
+  useEffect(() => {
+    if (waiting && waitTime > 0) {
+      waitTimerRef.current = setInterval(() => {
+        setWaitTime((t) => t - 1);
+      }, 1000);
+    } else if (waitTime === 0) {
+      setWaiting(false);
+      if (waitTimerRef.current) clearInterval(waitTimerRef.current);
+    }
+    return () => {
+      if (waitTimerRef.current) clearInterval(waitTimerRef.current);
+    };
+  }, [waiting, waitTime]);
+
+  // Give coins after ad or wait
+  function handleWait() {
+    setWaiting(true);
+    setWaitTime(600);
+  }
+  function handleWatchAd() {
+    setShowAd(true);
+  }
+  function handleAdFinished() {
+    setShowAd(false);
+    setShowGameOver(false);
+    if (typeof addCoins === 'function') {
+      addCoins(50);
+    }
+  }
+  function handleWaitFinished() {
+    setShowGameOver(false);
+    setWaiting(false);
+    setWaitTime(600);
+    if (typeof addCoins === 'function') {
+      addCoins(50);
+    }
+  }
   // Estado para el monto de apuesta
   const [betAmount, setBetAmount] = useState(10);
   const [bonusMessage, setBonusMessage] = useState<string | null>(null);
@@ -44,28 +122,7 @@ export default function GameScreen() {
   }>(null);
   const [showBetModal, setShowBetModal] = useState(false);
 
-  const {
-    gamePhase,
-    currentSymbol,
-    timeframe,
-    candles,
-    currentCandle,
-    userBalance,
-    placeBet,
-    changeSymbol,
-    changeTimeframe,
-    isConnected,
-    nextPhaseTime,
-    nextCandleTime,
-    currentCandleBets,
-    bonusInfo,
-    setBonusInfo,
-    bets
-  } = useGame()
-  const { user } = useAuth()
-  const { achievements, unlockedAchievements } = useAchievement()
-  const { toast } = useToast()
-  const { isMobile } = useDevice()
+
   const [showAchievement, setShowAchievement] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [timeUntilNextCandle, setTimeUntilNextCandle] = useState<number>(0)
@@ -188,6 +245,9 @@ export default function GameScreen() {
     return () => clearInterval(interval)
   }, [nextCandleTime])
 
+  const [showFlyup, setShowFlyup] = useState(false);
+  const [lastFlyupAmount, setLastFlyupAmount] = useState(0);
+
   const handleBullishBet = () => {
     if (gamePhase !== "BETTING") {
       toast({
@@ -206,6 +266,8 @@ export default function GameScreen() {
       return;
     }
     placeBet("BULLISH", betAmount);
+    setLastFlyupAmount(betAmount);
+    setShowFlyup(true);
   }
 
   const handleBearishBet = () => {
@@ -226,6 +288,8 @@ export default function GameScreen() {
       return;
     }
     placeBet("BEARISH", betAmount);
+    setLastFlyupAmount(betAmount);
+    setShowFlyup(true);
   }
 
   // Determinar si estamos en los primeros 10 segundos de una vela
@@ -243,8 +307,58 @@ export default function GameScreen() {
 
   return (
     <>
+      <BetAmountFlyup amount={lastFlyupAmount} trigger={showFlyup} onComplete={() => setShowFlyup(false)} />
+      {/* Game Over Modal */}
+      {showGameOver && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+          <div className="bg-zinc-900 rounded-2xl p-8 flex flex-col items-center border-4 border-yellow-400 shadow-2xl">
+            <h2 className="text-3xl font-bold text-red-500 mb-4">Game Over</h2>
+            <p className="text-white mb-6">Te has quedado sin monedas.</p>
+            <div className="flex gap-4">
+              <button
+                className="bg-yellow-400 text-black font-bold py-2 px-4 rounded-full shadow-lg disabled:opacity-50"
+                onClick={handleWait}
+                disabled={waiting}
+              >
+                {waiting ? `Espera ${Math.floor(waitTime / 60)}:${String(waitTime % 60).padStart(2, '0')}` : 'Esperar 10 minutos'}
+              </button>
+              <button
+                className="bg-yellow-400 text-black font-bold py-2 px-4 rounded-full shadow-lg"
+                onClick={handleWatchAd}
+              >
+                Ver anuncio
+              </button>
+            </div>
+            {/* Enable continue after wait is over */}
+            {waitTime === 0 && (
+              <button
+                className="mt-4 bg-green-500 text-white font-bold py-2 px-4 rounded-full shadow-lg"
+                onClick={handleWaitFinished}
+              >
+                Continuar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Simulated Ad Modal */}
+      {showAd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+          <div className="bg-zinc-900 rounded-2xl p-8 flex flex-col items-center border-4 border-yellow-400 shadow-2xl">
+            <div className="w-80 h-44 flex items-center justify-center bg-black rounded-lg mb-4">
+              <span className="text-yellow-300 text-xl">Simulando anuncio...</span>
+            </div>
+            <button
+              className="mt-4 bg-green-500 text-white font-bold py-2 px-4 rounded-full shadow-lg"
+              onClick={handleAdFinished}
+            >
+              Terminar anuncio y recibir monedas
+            </button>
+          </div>
+        </div>
+      )}
       <BetResultModal open={showBetModal} onOpenChange={setShowBetModal} result={showBetModal ? betResult : null} />
-      <div className="w-full max-w-none mx-0 px-4 bg-black min-h-screen flex flex-col">
+      <div className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col">
       {bonusMessage && (
         <div className="w-full flex justify-center mt-4">
           <div className="bg-yellow-400 border-2 border-yellow-600 text-black font-bold rounded-xl px-4 py-3 text-center shadow-lg animate-pulse max-w-xl">
@@ -254,12 +368,12 @@ export default function GameScreen() {
         </div>
       )}
       <div className="flex flex-col gap-6">
-          <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl px-4 py-2 mb-2 shadow-lg min-h-[50px] w-full">
+          <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-2 pt-4 pb-4 md:p-8 mb-2 shadow-lg min-h-[50px] w-full">
             <div className="flex items-center gap-6 w-full lg:w-auto">
-              <h1 className="text-3xl font-bold text-[#FFD600] tracking-tight" data-component-name="GameScreen">Candle Rush 2.0</h1>
+               <h1 className="text-2xl md:text-3xl font-extrabold text-[#FFD600] tracking-tight" data-component-name="GameScreen">Candle Rush 2.0</h1>
               <nav className="flex gap-4 ml-4">
                 <button
-                  className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
+                  className="text-white font-bold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-4 py-2 md:px-2 md:py-1"
                   onClick={() => window.location.href = '/menu'}
                 >
                   Menú
@@ -298,8 +412,8 @@ export default function GameScreen() {
               </a>
             </div>
           </header>
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 flex-grow h-full min-h-[700px]">
-            <div className="lg:col-span-4 flex flex-col gap-4 h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-3 flex-grow h-full min-h-[0] lg:h-[calc(100vh-120px)]">
+            <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:h-full">
               {/* Tarjeta principal con gráfico y controles */}
               <Card className="bg-black border-[#FFD600]">
                 <CardHeader className="pb-0">
@@ -332,7 +446,7 @@ export default function GameScreen() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[500px] w-full relative overflow-hidden">
+                  <div className="h-[400px] md:h-[500px] w-full relative overflow-hidden">
                     {/* Fondo portada detrás del chart con opacidad y blur */}
                     <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
                     <div className="relative z-10">
@@ -450,7 +564,7 @@ export default function GameScreen() {
               </Card>
             </div>
 
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3 sm:gap-6 h-full lg:h-full">
               <Card className="bg-black border-[#FFD600]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -463,7 +577,7 @@ export default function GameScreen() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-black border-[#FFD600] flex-1">
+              <Card className="bg-black border-[#FFD600] p-2 pt-4 pb-4 md:p-8 w-full max-w-full h-auto lg:h-full">
                 <CardHeader className="pb-0">
                   <Tabs defaultValue="history">
                     <div className="flex justify-between items-center">

@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 
 import './globals.css'
+import { DeviceModeProvider } from '../context/device-mode-context'
+import { AuthProvider } from '../context/auth-context'
+import { AchievementProvider } from '../context/achievement-context'
+import { GameProvider } from '../context/game-context'
 
 export const metadata: Metadata = {
   title: 'Candle Rush!',
@@ -21,7 +25,15 @@ export default function RootLayout({
         <link rel="icon" href="/btcc.png" />
       </head>
       <body>
-        {children}
+        <DeviceModeProvider>
+          <AuthProvider>
+            <AchievementProvider>
+              <GameProvider>
+                {children}
+              </GameProvider>
+            </AchievementProvider>
+          </AuthProvider>
+        </DeviceModeProvider>
       </body>
     </html>
   );

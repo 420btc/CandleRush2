@@ -78,11 +78,20 @@ interface GameContextType {
   candleSizes: number[]
   bonusInfo: { bonus: number; size: number; message: string } | null
   setBonusInfo: React.Dispatch<React.SetStateAction<{ bonus: number; size: number; message: string } | null>>
+  addCoins: (amount: number) => void
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
 
 export function GameProvider({ children }: { children: ReactNode }) {
+  // ...existing state...
+  const addCoins = (amount: number) => {
+    setUserBalance((prev) => {
+      const newBalance = prev + amount;
+      localStorage.setItem("userBalance", String(newBalance));
+      return newBalance;
+    });
+  }
   const [candleSizes, setCandleSizes] = useState<number[]>([]);
   const [bonusInfo, setBonusInfo] = useState<{ bonus: number; size: number; message: string } | null>(null);
   const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING")
@@ -104,6 +113,32 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // --- WIN STREAK STATE ---
   const [winStreak, setWinStreak] = useState<number>(0)
   const [streakMultiplier, setStreakMultiplier] = useState<number>(1)
+
+  // --- PERSISTENCIA LOCAL ---
+  // Cargar datos guardados al iniciar
+  useEffect(() => {
+    const savedBets = localStorage.getItem("betsByPair");
+    const savedBalance = localStorage.getItem("userBalance");
+    if (savedBets) {
+      try {
+        setBetsByPair(JSON.parse(savedBets));
+      } catch (e) {
+        localStorage.removeItem("betsByPair");
+      }
+    }
+    if (savedBalance) {
+      setUserBalance(Number(savedBalance));
+    }
+  }, []);
+
+  // Guardar apuestas y balance en cada cambio
+  useEffect(() => {
+    localStorage.setItem("betsByPair", JSON.stringify(betsByPair));
+  }, [betsByPair]);
+  useEffect(() => {
+    localStorage.setItem("userBalance", String(userBalance));
+  }, [userBalance]);
+
 
   const { toast } = useToast()
   const { unlockAchievement } = useAchievement()
@@ -552,7 +587,18 @@ if (amount <= 0 || amount > userBalance) {
   )
 
   // Change symbol
-  const changeSymbol = useCallback(
+  // Al cerrar sesión, limpiar apuestas y balance
+useEffect(() => {
+  window.addEventListener("logout", () => {
+    setBetsByPair({});
+    setUserBalance(100);
+    localStorage.removeItem("betsByPair");
+    localStorage.removeItem("userBalance");
+  });
+  return () => window.removeEventListener("logout", () => {});
+}, []);
+
+const changeSymbol = useCallback(
     (symbol: string) => {
       if (symbol === currentSymbol) return
 
@@ -646,7 +692,7 @@ const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
         candleSizes,
         bonusInfo,
         setBonusInfo,
-
+        addCoins,
       }}
     >
       {children}
