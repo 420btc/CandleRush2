@@ -24,20 +24,6 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
-  // Estado para escalar verticalmente la gráfica (solo PC)
-  const [verticalScale, setVerticalScale] = useState(1);
-  // --- NUEVO: Layout 100vh sin márgenes verticales ---
-  // Aplica estilos globales solo a esta pantalla
-  React.useEffect(() => {
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    // No tocar overflow (permitir scroll)
-    return () => {
-      document.body.style.margin = '';
-      document.body.style.padding = '';
-    };
-  }, []);
-
   // Context hooks FIRST (fixes userBalance/addCoins before use)
   const {
     gamePhase,
@@ -62,6 +48,49 @@ export default function GameScreen() {
   const { achievements, unlockedAchievements } = useAchievement();
   const { toast } = useToast();
   const { isMobile } = useDevice();
+
+  // Estado para escalar verticalmente la gráfica (solo PC)
+  const [verticalScale, setVerticalScale] = useState(1);
+  // --- NUEVO: Layout 100vh sin márgenes verticales ---
+  // Aplica estilos globales solo a esta pantalla
+  React.useEffect(() => {
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    // No tocar overflow (permitir scroll)
+    return () => {
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+    };
+  }, []);
+
+  // Estado de sincronización de vista para gráficos
+  interface ViewState {
+    offsetX: number;
+    offsetY: number;
+    scale: number;
+    startX: number | null;
+    startY: number | null;
+    isDragging: boolean;
+  }
+  const [viewState, setViewState] = useState<ViewState>({
+    offsetX: 0,
+    offsetY: 0,
+    scale: 1,
+    startX: null,
+    startY: null,
+    isDragging: false,
+  });
+
+  // Sincronización de paneo/zoom para MACD y velas
+  const allCandles = currentCandle ? [...candles, currentCandle] : candles;
+  const chartWidth = 1200; // Debe coincidir con ambos charts
+  const scale = viewState?.scale ?? 1;
+  const offsetX = viewState?.offsetX ?? 0;
+  const candleWidth = Math.min(Math.max((chartWidth / (allCandles.length / scale)) * 1, 2), 15);
+  const candlesToShow = Math.floor(chartWidth / candleWidth);
+  // Siempre mostrar la última vela visible al hacer zoom
+  const startIndex = Math.max(0, allCandles.length - candlesToShow);
+  const endIndex = allCandles.length;
 
   // Game Over modal state
   const [showGameOver, setShowGameOver] = useState(false);
@@ -125,23 +154,7 @@ export default function GameScreen() {
     }
   }, [userBalance]);
 
-  // Estado de sincronización de vista para gráficos
-  interface ViewState {
-    offsetX: number;
-    offsetY: number;
-    scale: number;
-    startX: number | null;
-    startY: number | null;
-    isDragging: boolean;
-  }
-  const [viewState, setViewState] = useState<ViewState>({
-    offsetX: 0,
-    offsetY: 0,
-    scale: 1,
-    startX: null,
-    startY: null,
-    isDragging: false,
-  });
+  
 
   // Estado para apalancamiento
   const [leverage, setLeverage] = useState(100);
@@ -332,10 +345,10 @@ export default function GameScreen() {
       });
       return;
     }
-    if (betAmount < 10 || betAmount > userBalance) {
+    if (betAmount < 1 || betAmount > userBalance) {
       toast({
         title: "Monto inválido",
-        description: `Debes apostar entre 10 y tu saldo disponible`,
+        description: `Debes apostar entre 1 y tu saldo disponible`,
         variant: "destructive",
       });
       return;
@@ -354,10 +367,10 @@ export default function GameScreen() {
       });
       return;
     }
-    if (betAmount < 10 || betAmount > userBalance) {
+    if (betAmount < 1 || betAmount > userBalance) {
       toast({
         title: "Monto inválido",
-        description: `Debes apostar entre 10 y tu saldo disponible`,
+        description: `Debes apostar entre 1 y tu saldo disponible`,
         variant: "destructive",
       });
       return;
@@ -608,7 +621,12 @@ export default function GameScreen() {
                         />
                       </div>
                       <div className="relative w-full h-[180px] mt-2">
-                        <MacdChart candles={candles} viewState={viewState} />
+                        <MacdChart 
+                          candles={allCandles}
+                          viewState={viewState}
+                          startIndex={startIndex}
+                          candlesToShow={candlesToShow}
+                        />
                       </div>
                     </CardContent>
                   </div>
@@ -668,8 +686,9 @@ export default function GameScreen() {
                                 type="number"
                                 min={1}
                                 max={userBalance}
+                                step={0.01}
                                 value={betAmount}
-                                onChange={e => setBetAmount(Math.max(1, Math.min(Number(e.target.value), Math.floor(userBalance))))}
+                                onChange={e => setBetAmount(Math.max(1, Math.min(Number(e.target.value), userBalance)))}
                                 className="w-20 text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none"
                               />
                               <button
@@ -708,13 +727,13 @@ export default function GameScreen() {
 
                             <input
                               type="range"
-                              min={10}
-                              max={Math.floor(userBalance)}
-                              step={1}
+                              min={1}
+                              max={userBalance}
+                              step={0.01}
                               value={betAmount}
                               onChange={e => setBetAmount(Number(e.target.value))}
                               className="w-full h-2 bg-[#FFD600]/30 rounded-lg appearance-none cursor-pointer accent-[#FFD600] mt-2"
-                              disabled={userBalance < 10 || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1}
+                              disabled={userBalance < 1 || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1}
                             />
                           </div>
                           {/* Betting buttons */}
@@ -722,7 +741,7 @@ export default function GameScreen() {
                             <button
                                className="px-4 py-2 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-lg shadow transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[120px] flex items-center justify-center gap-1"
                                onClick={() => handleBullishBet()}
-                               disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10 || betAmount < 10}
+                               disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
                              >
                                <img src="/bull.png" alt="Bullish" style={{ width: 20, height: 20, objectFit: 'contain', marginRight: 4 }} />
                                <span>Apostar alcista</span>
@@ -730,7 +749,7 @@ export default function GameScreen() {
                             <button
                                className="px-4 py-2 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-lg shadow transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[120px] flex items-center justify-center gap-1"
                                onClick={() => handleBearishBet()}
-                               disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10 || betAmount < 10}
+                               disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
                              >
                                <img src="/bear.png" alt="Bearish" style={{ width: 20, height: 20, objectFit: 'contain', marginRight: 4 }} />
                                <span>Apostar bajista</span>

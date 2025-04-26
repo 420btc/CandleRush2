@@ -29,9 +29,11 @@ interface MacdChartProps {
     offsetX: number;
     scale: number;
   };
+  startIndex?: number;
+  candlesToShow?: number;
 }
 
-export default function MacdChart({ candles, viewState }: MacdChartProps) {
+export default function MacdChart({ candles, viewState, startIndex: externalStartIndex, candlesToShow: externalCandlesToShow }: MacdChartProps) {
   // Extraer precios de cierre
   const closes = useMemo(() => candles.map(c => c.close), [candles]);
   const { macd, signal, histogram } = useMemo(() => calculateMACD(closes), [closes]);
@@ -42,10 +44,13 @@ export default function MacdChart({ candles, viewState }: MacdChartProps) {
 
   // Sincronizar pan/zoom con el gráfico principal
   const { offsetX, scale } = viewState;
-  // Determinar el rango de datos a mostrar
-  const candlesToShow = Math.floor(candles.length / scale);
-  const startIndex = Math.max(0, candles.length - candlesToShow - Math.floor(offsetX / (chartWidth / candlesToShow)));
-  const endIndex = candles.length;
+  // Calcular candleWidth igual que en candlestick-chart
+  const candleWidth = Math.min(Math.max((chartWidth / (candles.length / scale)) * 1, 2), 15);
+  // Determinar cuántas velas caben en pantalla
+  const candlesToShow = externalCandlesToShow ?? Math.floor(chartWidth / candleWidth);
+  // Calcular el índice inicial igual que en candlestick-chart
+  const startIndex = externalStartIndex ?? Math.max(0, Math.floor((candles.length - candlesToShow) - (offsetX / candleWidth)));
+  const endIndex = Math.min(candles.length, startIndex + candlesToShow);
 
   const closesSlice = closes.slice(startIndex, endIndex);
   const { macd: macdSlice, signal: signalSlice, histogram: histSlice } = useMemo(() => calculateMACD(closesSlice), [closesSlice]);
@@ -71,7 +76,7 @@ const signalPoints = points(signalSlice);
 const histPoints = histSlice;
 
   return (
-    <div className="w-full mt-4">
+    <div className="w-full mt-4" style={{ pointerEvents: 'none' }}>
       <svg
         width="100%"
         height={chartHeight}
@@ -82,25 +87,26 @@ const histPoints = histSlice;
         {/* Histograma: verde si >0, rojo si <0 */}
         {/* MACD tipo "velas" más marcadas */}
         {histPoints.map((h, i) => {
-  const barWidth = Math.max(5, chartWidth / barsToShow - 3);
+  const barWidth = Math.max(2, chartWidth / barsToShow - 7); // barras más finas
   const x = (i / barsToShow) * chartWidth - barWidth / 2;
   const y = h >= 0 ? histoY(h) : chartHeight / 2;
   const height = Math.abs(histoY(h) - chartHeight / 2);
   // Determinar si el valle/pico se está abriendo o cerrando
   const prev = i > 0 ? Math.abs(histPoints[i - 1]) : 0;
   const curr = Math.abs(h);
-  let fill = '#00FF85';
-  let shadow = 'drop-shadow(0 1px 3px #00FF8533)';
+  let fill = '#005c38'; // verde normal ahora oscuro (cierre)
+  let shadow = 'drop-shadow(0 1px 3px #005c3888)';
   if (h < 0) {
     fill = '#FF2222';
     shadow = 'drop-shadow(0 1px 3px #FF222233)';
   }
-  // Si el valor absoluto sube, usamos color claro
+  // Si el valor absoluto sube, usamos color claro (apertura)
   if (curr > prev) {
-    fill = h >= 0 ? '#66FFC2' : '#FF6666';
-    shadow = h >= 0 ? 'drop-shadow(0 1px 6px #66FFC299)' : 'drop-shadow(0 1px 6px #FF666699)';
+    fill = h >= 0 ? '#66FFC2' : '#FF6666'; // verde claro para apertura
+    shadow = h >= 0 ? 'drop-shadow(0 1px 6px #66FFC266)' : 'drop-shadow(0 1px 6px #FF666699)';
   }
   // Si baja, color normal (más oscuro)
+  const isLastGlobal = (i + startIndex) === (candles.length - 1);
   return (
     <rect
       key={i}
@@ -110,8 +116,10 @@ const histPoints = histSlice;
       height={height}
       fill={fill}
       opacity={h === 0 ? 0.5 : 1}
-
       rx={3}
+      stroke={isLastGlobal ? '#fff' : undefined}
+      strokeWidth={isLastGlobal ? 1 : undefined}
+      style={undefined}
     />
   );
 })}
