@@ -7,6 +7,8 @@ interface GameControlsProps {
   onTimeframeChange: (timeframe: string) => void
   currentSymbol: string
   currentTimeframe: string
+  gamePhase: string
+  isConnected: boolean
 }
 
 const AVAILABLE_SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT", "DOGEUSDT", "XRPUSDT", "SOLUSDT"]
@@ -18,12 +20,14 @@ export default function GameControls({
   onTimeframeChange,
   currentSymbol,
   currentTimeframe,
+  gamePhase,
+  isConnected
 }: GameControlsProps) {
   return (
     <div className="flex flex-wrap gap-4">
       <div className="space-y-1">
         <Label htmlFor="symbol">Par</Label>
-        <Select value={currentSymbol} onValueChange={onSymbolChange}>
+        <Select value={currentSymbol} onValueChange={onSymbolChange} disabled={gamePhase === 'LOADING' || !isConnected}>
           <SelectTrigger id="symbol" className="w-[140px] bg-black border-[#FFD600] text-[#FFD600] focus:ring-[#FFD600]">
             <SelectValue placeholder="Seleccionar par" />
           </SelectTrigger>
@@ -39,7 +43,7 @@ export default function GameControls({
 
       <div className="space-y-1">
         <Label htmlFor="timeframe">Intervalo</Label>
-        <Select value={currentTimeframe} onValueChange={onTimeframeChange}>
+        <Select value={currentTimeframe} onValueChange={onTimeframeChange} disabled={gamePhase === 'LOADING' || !isConnected} >
           <SelectTrigger id="timeframe" className="w-[140px] bg-black border-[#FFD600] text-[#FFD600] focus:ring-[#FFD600]">
             <SelectValue placeholder="Seleccionar intervalo" />
           </SelectTrigger>

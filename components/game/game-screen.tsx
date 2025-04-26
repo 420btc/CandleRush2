@@ -300,7 +300,7 @@ export default function GameScreen() {
       setTimeLeft(calculateTimeLeft())
     }, 100)
     return () => clearInterval(interval)
-  }, [nextPhaseTime])
+  }, [nextPhaseTime, currentSymbol, timeframe])
 
   // Timer for next candle (always runs)
   useEffect(() => {
@@ -316,7 +316,7 @@ export default function GameScreen() {
       setTimeUntilNextCandle(calculateTimeUntilNextCandle())
     }, 100)
     return () => clearInterval(interval)
-  }, [nextCandleTime])
+  }, [nextCandleTime, currentSymbol, timeframe])
 
   const [showFlyup, setShowFlyup] = useState(false);
   const [lastFlyupAmount, setLastFlyupAmount] = useState(0);
@@ -593,6 +593,8 @@ export default function GameScreen() {
                               onTimeframeChange={changeTimeframe}
                               currentSymbol={currentSymbol}
                               currentTimeframe={timeframe}
+                              gamePhase={gamePhase}
+                              isConnected={isConnected}
                             />
                           </div>
                           {/* Bet amount controls */}
