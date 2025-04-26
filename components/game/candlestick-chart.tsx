@@ -275,37 +275,48 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
     allCandles.forEach((candle) => {
       const x = (candle.timestamp - minTime) * xScale - clampedOffsetX
 
-      // Calcular posición Y con el offset vertical
-      const open = dimensions.height - ((candle.open - minPrice) * yScale - clampedOffsetY)
-      const close = dimensions.height - ((candle.close - minPrice) * yScale - clampedOffsetY)
-      const high = dimensions.height - ((candle.high - minPrice) * yScale - clampedOffsetY)
-      const low = dimensions.height - ((candle.low - minPrice) * yScale - clampedOffsetY)
+       // Calcular posición Y con el offset vertical
+       const open = dimensions.height - ((candle.open - minPrice) * yScale - clampedOffsetY)
+       const close = dimensions.height - ((candle.close - minPrice) * yScale - clampedOffsetY)
+       const high = dimensions.height - ((candle.high - minPrice) * yScale - clampedOffsetY)
+       const low = dimensions.height - ((candle.low - minPrice) * yScale - clampedOffsetY)
 
-      // Solo dibujar velas visibles (optimización)
-      if (x + candleWidth / 2 < 0 || x - candleWidth / 2 > dimensions.width || low < 0 || high > dimensions.height) {
-        return
-      }
+       // Solo dibujar velas visibles (optimización)
+       if (x + candleWidth / 2 < 0 || x - candleWidth / 2 > dimensions.width || low < 0 || high > dimensions.height) {
+         return
+       }
 
-      // Determine if bullish or bearish
-      const isBullish = candle.close > candle.open
-      ctx.fillStyle = isBullish ? "#22c55e" : "#ef4444"
-      ctx.strokeStyle = isBullish ? "#22c55e" : "#ef4444"
+       // === DIBUJAR BARRA DE VOLUMEN ===
+       // Calcula la altura máxima de volumen para escalar
+       const maxVolume = Math.max(...allCandles.map(c => c.volume || 0), 1);
+       const volumeHeight = Math.max(10, (candle.volume / maxVolume) * (dimensions.height * 0.22)); // 22% altura chart
+       const volBaseY = dimensions.height - 2; // base de la barra
+       ctx.save();
+       ctx.globalAlpha = 0.33;
+       ctx.fillStyle = candle.close > candle.open ? "#22c55e" : "#ef4444";
+       ctx.fillRect(x - candleWidth / 2, volBaseY - volumeHeight, candleWidth, volumeHeight);
+       ctx.restore();
 
-      // Draw candle body
-      const candleHeight = Math.abs(close - open) || 1 // Mínimo 1px de altura
-      const candleY = isBullish ? close : open
-      ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight)
+       // Determine if bullish or bearish
+       const isBullish = candle.close > candle.open
+       ctx.fillStyle = isBullish ? "#22c55e" : "#ef4444"
+       ctx.strokeStyle = isBullish ? "#22c55e" : "#ef4444"
 
-      // Draw wicks
-      ctx.beginPath()
-      ctx.moveTo(x, high)
-      ctx.lineTo(x, isBullish ? close : open)
-      ctx.stroke()
+       // Draw candle body
+       const candleHeight = Math.abs(close - open) || 1 // Mínimo 1px de altura
+       const candleY = isBullish ? close : open
+       ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight)
 
-      ctx.beginPath()
-      ctx.moveTo(x, isBullish ? open : close)
-      ctx.lineTo(x, low)
-      ctx.stroke()
+       // Draw wicks
+       ctx.beginPath()
+       ctx.moveTo(x, high)
+       ctx.lineTo(x, isBullish ? close : open)
+       ctx.stroke()
+
+       ctx.beginPath()
+       ctx.moveTo(x, isBullish ? open : close)
+       ctx.lineTo(x, low)
+       ctx.stroke()
 
       // Highlight current candle
       if (candle === currentCandle) {

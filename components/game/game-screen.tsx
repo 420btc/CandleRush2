@@ -6,6 +6,7 @@ import { useAuth } from "@/context/auth-context"
 import { useAchievement } from "@/context/achievement-context"
 import CandlestickChart from "@/components/game/candlestick-chart";
 import MacdChart from "@/components/game/macd-chart";
+import VolumeChartOverlay from "@/components/game/volume-chart-overlay";
 import GameControls from "@/components/game/game-controls"
 import GameTimer from "@/components/game/game-timer"
 import BetHistory from "@/components/game/bet-history"
@@ -495,14 +496,16 @@ export default function GameScreen() {
                   <div className="h-[500px] md:h-[600px] w-full relative overflow-hidden">
                     {/* Fondo portada detrás del chart con opacidad y blur */}
                     <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
-                    <div className="relative z-10 flex flex-col w-full">
-                      {/* MACD Chart y Candlestick fusionados, sin huecos */}
-                      <div className="w-full">
-                        <MacdChart candles={candles} />
+                    <CardContent className="relative p-0 bg-black rounded-b-2xl overflow-hidden">
+                      <div className="relative w-full h-[420px]">
                         <CandlestickChart candles={candles} currentCandle={currentCandle} />
+                        {/* Overlay de volumen translúcido */}
+                        <VolumeChartOverlay candles={candles} width={1200} height={60} />
                       </div>
-                    </div>
-
+                      <div className="relative w-full h-[180px] mt-2">
+                        <MacdChart candles={candles} />
+                      </div>
+                    </CardContent>
                   </div>
 
                   {/* Controles justo debajo del gráfico */}
