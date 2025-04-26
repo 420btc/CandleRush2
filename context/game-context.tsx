@@ -72,7 +72,7 @@ interface GameContextType {
   betsByPair: Record<string, Record<string, Bet[]>> // NUEVO: todas las apuestas globales
   userBalance: number
   isConnected: boolean
-  placeBet: (prediction: "BULLISH" | "BEARISH", amount: number) => void
+  placeBet: (prediction: "BULLISH" | "BEARISH", amount: number, leverage?: number) => void
   changeSymbol: (symbol: string) => void
   changeTimeframe: (timeframe: string) => void
   currentCandleBets: number
@@ -441,49 +441,101 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setBetsByPair((prev) => {
         const symbolBets = { ...(prev[currentSymbol] || {}) };
         let tfBets = (symbolBets[timeframe] || []).map((bet) => {
-          if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet;
-          const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish);
-          let winnings = 0;
-          let bonus = 0;
-          // --- WIN STREAK MULTIPLIER LOGIC ---
-          let multiplier = 1;
-          if (wonCount >= 9) multiplier = 3;
-          else if (wonCount >= 6) multiplier = 2;
-          else if (wonCount >= 3) multiplier = 1.5;
-          // Bonificación escalonada por tamaño de vela
-          if (size > 600) bonus = bet.amount * 3.0;
-          else if (size > 400) bonus = bet.amount * 2.0;
-          else if (size > 250) bonus = bet.amount * 1.5;
-          else if (size > 150) bonus = bet.amount * 1.0;
-          else if (size > 75) bonus = bet.amount * 0.5;
-          else if (size > 25) bonus = bet.amount * 0.25;
-          else if (size > 0) bonus = bet.amount * 0.10;
-          if (won) {
-            winnings = bet.amount * multiplier + bonus;
-            totalWinnings += winnings;
-            wonCount++;
-            lastResultWon = true;
-          } else {
-            lostCount++;
-            lastResultWon = false;
-          }
-          // Detectar jackpot: 10+ racha o 3+ apuestas ganadas en una ronda
-          if (wonCount >= 10 || (wonCount >= 3 && wonCount === bets.filter(b => b.status === 'PENDING').length)) {
-            setBonusInfo({
-              bonus: winnings,
-              size,
-              message: wonCount >= 10 ? '¡JACKPOT! 10+ apuestas en racha' : '¡Racha especial! 3+ apuestas ganadas en una ronda',
-            });
-          }
-          return {
-            ...bet,
-            status: won ? 'WON' : 'LOST',
-            resolvedAt: Date.now(),
-            winnings: won ? winnings : 0,
-            bonus: won ? bonus : 0,
-            multiplier: won ? multiplier : 1,
-          } as Bet;
-        });
+           if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet;
+
+           // Lógica de liquidación automática para apuestas con leverage
+           let wasLiquidated = false;
+           let liquidationTouched = false;
+           if (bet.leverage && bet.liquidationPrice && bet.entryPrice) {
+             if (bet.prediction === "BULLISH") {
+               // Liquidación si el mínimo de la vela toca o baja del liquidationPrice
+               if (candle.low <= bet.liquidationPrice) liquidationTouched = true;
+             } else {
+               // Liquidación si el máximo de la vela toca o sube del liquidationPrice
+               if (candle.high >= bet.liquidationPrice) liquidationTouched = true;
+             }
+           }
+           if (liquidationTouched) {
+             lostCount++;
+             wasLiquidated = true;
+             return {
+               ...bet,
+               status: 'LIQUIDATED',
+               wasLiquidated: true,
+               resolvedAt: Date.now(),
+               winnings: 0,
+               bonus: 0,
+               multiplier: 1,
+             } as Bet;
+           }
+
+           // Si no fue liquidada, evaluar si ganó o perdió
+           const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish);
+           let winnings = 0;
+           let bonus = 0;
+           // --- WIN STREAK MULTIPLIER LOGIC ---
+           let multiplier = 1;
+           if (wonCount >= 9) multiplier = 3;
+           else if (wonCount >= 6) multiplier = 2;
+           else if (wonCount >= 3) multiplier = 1.5;
+           // Bonificación escalonada por tamaño de vela
+           if (size > 600) bonus = bet.amount * 3.0;
+           else if (size > 400) bonus = bet.amount * 2.0;
+           else if (size > 250) bonus = bet.amount * 1.5;
+           else if (size > 150) bonus = bet.amount * 1.0;
+           else if (size > 75) bonus = bet.amount * 0.5;
+           else if (size > 25) bonus = bet.amount * 0.25;
+           else if (size > 0) bonus = bet.amount * 0.10;
+           if (won) {
+             // --- Nueva lógica avanzada de ganancias con apalancamiento ---
+             const priceDiff = Math.abs(candle.close - candle.open);
+             const entryPrice = bet.entryPrice || candle.open;
+             let baseWin = bet.amount * (priceDiff / entryPrice);
+             let mult = 1;
+             if (bet.leverage && bet.leverage > 1) {
+               if (priceDiff < 60) mult = 1 + (bet.leverage - 1) * 0.10;
+               else if (priceDiff < 150) mult = 1 + (bet.leverage - 1) * 0.35;
+               else if (priceDiff < 300) mult = 1 + (bet.leverage - 1) * 0.60;
+               else if (priceDiff < 500) mult = 1 + (bet.leverage - 1) * 0.85;
+               else if (priceDiff < 900) mult = bet.leverage;
+               else mult = bet.leverage * 1.1;
+             }
+             winnings = baseWin * mult;
+             // Aplicar bonus y multiplicador de racha solo a ganancias
+             winnings = winnings * multiplier + bonus;
+             // Limite duro de ganancia
+             const balance = typeof userBalance === 'number' ? userBalance : 100;
+             let maxWin = 9999;
+             if (balance >= 10000) maxWin = 4999;
+             winnings = Math.min(winnings, maxWin);
+             totalWinnings += winnings;
+             wonCount++;
+             lastResultWon = true;
+           } else {
+             winnings = 0;
+             bonus = 0;
+             totalWinnings += winnings;
+             lostCount++;
+             lastResultWon = false;
+           }
+           // Detectar jackpot: 10+ racha o 3+ apuestas ganadas en una ronda
+           if (wonCount >= 10 || (wonCount >= 3 && wonCount === bets.filter(b => b.status === 'PENDING').length)) {
+             setBonusInfo({
+               bonus: winnings,
+               size,
+               message: wonCount >= 10 ? '¡JACKPOT! 10+ apuestas en racha' : '¡Racha especial! 3+ apuestas ganadas en una ronda',
+             });
+           }
+           return {
+             ...bet,
+             status: won ? 'WON' : 'LOST',
+             wasLiquidated: false,
+             resolvedAt: Date.now(),
+             winnings,
+             bonus,
+             multiplier: won ? multiplier : 1,
+           } as Bet;
+         });
 
         // Actualizar balance después de procesar todas las apuestas
         if (totalWinnings > 0) {
@@ -569,7 +621,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Place a bet
   const placeBet = useCallback(
-    (prediction: "BULLISH" | "BEARISH", amount: number) => {
+    (prediction: "BULLISH" | "BEARISH", amount: number, leverage: number = 1) => {
       if (gamePhase !== "BETTING") {
         toast({
           title: "No puedes apostar ahora",
@@ -603,6 +655,16 @@ if (amount <= 0 || amount > userBalance) {
 
       // Ajustar el timestamp de la apuesta para que siempre caiga dentro de la vela actual
       const candleTimestamp = currentCandle ? currentCandle.timestamp : Date.now();
+      // Calcular entryPrice y liquidationPrice según leverage
+      const entryPrice = currentCandle ? currentCandle.close : 0;
+      let liquidationPrice: number | undefined = undefined;
+      if (leverage > 1 && entryPrice > 0) {
+        if (prediction === "BULLISH") {
+          liquidationPrice = entryPrice * (1 - (0.99 / leverage));
+        } else {
+          liquidationPrice = entryPrice * (1 + (0.99 / leverage));
+        }
+      }
       const newBet: Bet = {
         id: uuidv4(),
         prediction,
@@ -611,6 +673,10 @@ if (amount <= 0 || amount > userBalance) {
         status: "PENDING",
         symbol: currentSymbol,
         timeframe,
+        leverage: leverage > 1 ? leverage : undefined,
+        entryPrice: leverage > 1 ? entryPrice : undefined,
+        liquidationPrice: leverage > 1 ? liquidationPrice : undefined,
+        wasLiquidated: false,
       }
       console.log('[BET] Intentando apostar', { prediction, amount, gamePhase, currentCandleBets, candleTimestamp, currentCandle });
 

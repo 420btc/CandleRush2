@@ -4,7 +4,7 @@ import { useGame } from "@/context/game-context"
 import { TrendingUp, TrendingDown, Percent, DollarSign } from "lucide-react"
 
 export default function UserStats() {
-  const { bets } = useGame()
+  const { bets, userBalance } = useGame()
 
   // Calcular la racha real de victorias consecutivas
   let realStreak = 0;
@@ -22,39 +22,8 @@ export default function UserStats() {
   const lostBets = bets.filter((bet) => bet.status === "LOST").length
   const winRate = totalBets > 0 ? (wonBets / totalBets) * 100 : 0
 
-  // Lógica de balance real con payout escalonado
-  const { candles } = useGame();
-  let balance = bets.length === 0 ? 0 : 100;
-  bets.forEach((bet) => {
-    // Busca la vela más cercana por timestamp
-    const resolvedCandle = candles.reduce((prev, curr) => {
-      return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
-        ? curr
-        : prev;
-    }, candles[0]);
-    if (!resolvedCandle) return;
-    const open = resolvedCandle.open;
-    const close = resolvedCandle.close;
-    const movement = Math.abs(close - open);
-    let multiplier = 1;
-    if (movement < 10) multiplier = 1.1;
-    else if (movement < 20) multiplier = 1.2;
-    else if (movement < 50) multiplier = 1.5;
-    else if (movement < 100) multiplier = 2.5;
-    else if (movement < 200) multiplier = 5;
-    else if (movement < 500) multiplier = 15;
-    else if (movement < 800) multiplier = 40;
-    else if (movement < 1500) multiplier = 70;
-    else multiplier = 100;
-    if (bet.status === "WON") {
-      balance += bet.amount * (multiplier - 1);
-    } else if (bet.status === "LOST") {
-      balance -= bet.amount;
-    }
-  });
-
-  // Calculate profit/loss
-  const profitLoss = bets.length === 0 ? 0 : balance - 100;
+  const balance = userBalance;
+  const profitLoss = balance - 100;
   const isProfitable = profitLoss >= 0;
 
   return (

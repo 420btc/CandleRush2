@@ -101,6 +101,29 @@ export default function GameScreen() {
   }
   // Estado para el monto de apuesta
   const [betAmount, setBetAmount] = useState(10);
+
+  // Sincroniza el monto de apuesta con el balance real
+  useEffect(() => {
+    if (betAmount > userBalance) {
+      setBetAmount(userBalance > 0 ? userBalance : 0);
+    }
+  }, [userBalance]);
+
+  // Estado para apalancamiento
+  const [leverage, setLeverage] = useState(1);
+
+  // Calcular precio de liquidación en tiempo real
+  const entryPrice = currentCandle?.close || 0;
+  const liquidationPrice = leverage > 1 && entryPrice > 0
+    ? ((prediction: "BULLISH" | "BEARISH") => {
+        if (prediction === "BULLISH") {
+          return entryPrice * (1 - 0.99 / leverage);
+        } else {
+          return entryPrice * (1 + 0.99 / leverage);
+        }
+      })
+    : null; // función para calcular según tipo
+
   const [bonusMessage, setBonusMessage] = useState<string | null>(null);
   const [bonusDetail, setBonusDetail] = useState<string | null>(null);
   const [betResult, setBetResult] = useState<null | {
@@ -269,7 +292,7 @@ export default function GameScreen() {
       });
       return;
     }
-    placeBet("BULLISH", betAmount);
+    placeBet("BULLISH", betAmount, leverage);
     setLastFlyupAmount(betAmount);
     setShowFlyup(true);
   }
@@ -291,7 +314,7 @@ export default function GameScreen() {
       });
       return;
     }
-    placeBet("BEARISH", betAmount);
+    placeBet("BEARISH", betAmount, leverage);
     setLastFlyupAmount(betAmount);
     setShowFlyup(true);
   }
@@ -361,7 +384,15 @@ export default function GameScreen() {
           </div>
         </div>
       )}
-      <BetResultModal open={showBetModal} onOpenChange={setShowBetModal} result={showBetModal ? betResult : null} />
+      <BetResultModal open={showBetModal} onOpenChange={setShowBetModal} result={showBetModal && betResult && (betResult.bet && 'status' in betResult.bet) ? betResult : (showBetModal && bets.length > 0 ? {
+  bet: bets[bets.length - 1],
+  candle: betResult?.candle || {
+    open: bets[bets.length - 1].entryPrice || 0,
+    close: bets[bets.length - 1].entryPrice || 0,
+    high: bets[bets.length - 1].entryPrice || 0,
+    low: bets[bets.length - 1].entryPrice || 0,
+  }
+} : null)} />
       <div className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col">
       {bonusMessage && (
         <div className="w-full flex justify-center mt-4">
@@ -500,6 +531,22 @@ export default function GameScreen() {
                               <span>Máx: {Math.floor(userBalance)}</span>
                             </div>
                             <div className="flex gap-2 w-full justify-center">
+  {/* Selector de apalancamiento */}
+  <div className="flex flex-col items-center mx-2">
+    <label htmlFor="leverage" className="text-[#FFD600] text-xs font-bold mb-1">Apalancamiento</label>
+    <select
+      id="leverage"
+      className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-lg px-2 py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none"
+      value={leverage}
+      onChange={e => setLeverage(Number(e.target.value))}
+      style={{ minWidth: 70 }}
+    >
+      {[100, 200, 300, 500, 1000, 2000].map(x => (
+        <option key={x} value={x}>{x}x</option>
+      ))}
+    </select>
+  </div>
+
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
                                 onClick={() => setBetAmount((prev) => Math.max(10, prev - 10))}
@@ -530,7 +577,25 @@ export default function GameScreen() {
                                 All In
                               </button>
                             </div>
-                            {/* Slider for bet amount */}
+                            {/* Precio de liquidación estimado */}
+                            {leverage && currentCandle && (
+                              <div className="mt-1 text-xs text-yellow-400 text-center w-full">
+                                Precio de liquidación:
+                                <span className="font-mono ml-1">
+                                  {['BULLISH','BEARISH'].map(type => (
+                                    <span key={type}>
+                                      {type === 'BULLISH' ? 'Long' : 'Short'}: $
+                                      {type === 'BULLISH'
+                                        ? (currentCandle.close * (1 - 0.99/leverage)).toFixed(2)
+                                        : (currentCandle.close * (1 + 0.99/leverage)).toFixed(2)
+                                      }
+                                      {type === 'BULLISH' ? ' ' : ''}
+                                    </span>
+                                  ))}
+                                </span>
+                              </div>
+                            )}
+
                             <input
                               type="range"
                               min={10}

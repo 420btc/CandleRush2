@@ -1,17 +1,7 @@
 import { useEffect, useState } from "react";
+import type { Bet } from "@/types/game";
 import { useGame } from "../context/game-context";
 import Login from "./login";
-// Definición local para evitar errores de importación y asegurar la UI
-interface Bet {
-  id: string;
-  prediction: "BULLISH" | "BEARISH";
-  amount: number;
-  timestamp: number;
-  status: "PENDING" | "WON" | "LOST";
-  resolvedAt?: number;
-  symbol: string;
-  timeframe: string;
-}
 
 // BOTÓN DE PRUEBA SIMULADO (debe aparecer arriba del perfil)
 // Elimina este bloque tras la prueba
@@ -43,7 +33,7 @@ export default function Profile() {
       if (bet.status === "WON") {
         currentStreak++;
         if (currentStreak > maxStreak) maxStreak = currentStreak;
-      } else if (bet.status === "LOST") {
+      } else if (bet.status === "LOST" || bet.status === "LIQUIDATED") {
         currentStreak = 0;
       }
     });

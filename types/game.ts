@@ -17,8 +17,15 @@ export interface Bet {
   prediction: "BULLISH" | "BEARISH"
   amount: number
   timestamp: number
-  status: "PENDING" | "WON" | "LOST"
+  status: "PENDING" | "WON" | "LOST" | "LIQUIDATED"
   resolvedAt?: number
   symbol: string
   timeframe: string
+  // --- Apalancamiento (solo para apuestas nuevas) ---
+  leverage?: number; // 1x, 5x, 10x, ..., 100x
+  entryPrice?: number; // precio de entrada
+  liquidationPrice?: number; // precio de liquidación
+  wasLiquidated?: boolean; // true si fue liquidada antes del cierre
+  winnings?: number; // ganancia real de la apuesta
 }
+

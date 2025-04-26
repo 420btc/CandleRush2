@@ -67,15 +67,8 @@ export default function BetHistory() {
                       {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
                     </p>
                     <p className="text-sm text-white">{localTimes[bet.id] || ''}</p>
-                    {/* Mostrar precio de entrada */}
-                    <p className="text-xs text-yellow-200 mt-1">Entrada: {(() => {
-                      const candle = candles.reduce((prev, curr) => {
-                        return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
-                          ? curr
-                          : prev
-                      }, candles[0]);
-                      return candle?.open?.toFixed(2) ?? '-';
-                    })()}</p>
+                    {/* Mostrar precio de entrada real */}
+                    <p className="text-xs text-yellow-200 mt-1">Entrada: {bet.entryPrice ? bet.entryPrice.toFixed(2) : '-'}</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-1 w-full">
@@ -107,9 +100,9 @@ export default function BetHistory() {
                           won: bet.status === "WON",
                           amount: bet.amount,
                           bet,
-                          candle: candles.find(c => Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1],
+                          candle: candles.find(c => bet.resolvedAt ? Math.abs(c.timestamp - bet.resolvedAt) < 2 * 60 * 1000 : Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1],
                           diff: (() => {
-                            const candle = candles.find(c => Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
+                            const candle = candles.find(c => bet.resolvedAt ? Math.abs(c.timestamp - bet.resolvedAt) < 2 * 60 * 1000 : Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
                             return candle ? candle.close - candle.open : 0;
                           })()
                         });
