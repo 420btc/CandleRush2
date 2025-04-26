@@ -21,6 +21,9 @@ import type { Bet } from "@/types/game";
 export default function BetResultModal({ open, onOpenChange, result }: BetResultModalProps) {
   if (!result) return null;
   const { bet, candle } = result;
+  const openPrice = bet.entryPrice ?? candle.open;
+  const closePrice = candle.close;
+  const diff = closePrice - openPrice;
   const wasLiquidated = bet.status === 'LIQUIDATED' || bet.wasLiquidated;
   const won = bet.status === 'WON';
   return (
@@ -67,15 +70,15 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full mt-6 text-base">
             <div className="rounded-xl p-4 min-w-[90px] border-2 border-yellow-400 bg-black flex flex-col items-center">
               <div className="text-yellow-400 mb-1">Apertura</div>
-              <div className="font-mono text-xl text-white break-words">{(bet.entryPrice ?? candle.open).toFixed(2)}</div>
+              <div className="font-mono text-xl text-white break-words">{openPrice.toFixed(2)}</div>
             </div>
             <div className="rounded-xl p-4 min-w-[90px] border-2 border-yellow-400 bg-black flex flex-col items-center">
               <div className="text-yellow-400 mb-1">Cierre</div>
-              <div className="font-mono text-xl text-white break-words">{candle.close.toFixed(2)}</div>
+              <div className="font-mono text-xl text-white break-words">{closePrice.toFixed(2)}</div>
             </div>
             <div className="rounded-xl p-4 min-w-[90px] border-2 border-yellow-400 bg-black flex flex-col items-center">
               <div className="text-yellow-400 mb-1">Diferencia</div>
-              <div className={`font-mono text-xl break-words ${candle.close - candle.open > 0 ? "text-green-400" : candle.close - candle.open < 0 ? "text-red-400" : "text-white"}`}>{candle.close - candle.open > 0 ? "+" : ""}${(candle.close - candle.open).toFixed(2)}</div>
+              <div className={`font-mono text-xl break-words ${diff > 0 ? "text-green-400" : diff < 0 ? "text-red-400" : "text-white"}`}>{diff > 0 ? "+" : ""}${diff.toFixed(2)}</div>
             </div>
           </div>
         </div>
