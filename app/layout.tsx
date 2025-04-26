@@ -5,6 +5,7 @@ import { DeviceModeProvider } from '../context/device-mode-context'
 import { AuthProvider } from '../context/auth-context'
 import { AchievementProvider } from '../context/achievement-context'
 import { GameProvider } from '../context/game-context'
+import { Analytics } from '@vercel/analytics/react';
 
 export const metadata: Metadata = {
   title: 'Candle Rush!',
@@ -33,6 +34,7 @@ export default function RootLayout({
             </AchievementProvider>
           </AuthProvider>
         </DeviceModeProvider>
+        <Analytics />
       </body>
     </html>
   );
