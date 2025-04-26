@@ -174,10 +174,11 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
     const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
 
-    const allCandles = [...candles]
-    if (currentCandle) {
-      allCandles.push(currentCandle)
-    }
+    const allCandles = [...candles];
+// Solo agregar currentCandle si ya estamos en el periodo de la nueva vela
+if (currentCandle && Date.now() >= currentCandle.timestamp) {
+  allCandles.push(currentCandle);
+}
 
     if (allCandles.length === 0) return
 

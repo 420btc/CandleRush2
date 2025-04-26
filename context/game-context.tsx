@@ -196,7 +196,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (hasPending && !alreadyPending) {
       // Programar la resolución para el cierre real de la vela
       const candleDuration = getTimeframeInMs(timeframe);
-      const resolutionTime = currentCandle.timestamp + candleDuration - 3000;
+      const resolutionTime = currentCandle.timestamp + candleDuration;
       setPendingResolutions(prev => [...prev, { candle: currentCandle, time: resolutionTime }]);
     }
   }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol, pendingResolutions]);
@@ -364,7 +364,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
         // Programar la resolución de apuestas para cuando se cierre la vela
         const candleDuration = getTimeframeInMs(timeframe)
-        const resolutionTime = candle.timestamp + candleDuration - 3000;
+        const resolutionTime = candle.timestamp + candleDuration;
 
         // Añadir a la lista de resoluciones pendientes
         setPendingResolutions((prev) => [...prev, { candle, time: resolutionTime }])
@@ -375,23 +375,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
         // Resetear contador de apuestas para la nueva vela
         setCurrentCandleBets(0)
 
-        // Start new betting phase for the next candle
-        const nextCandleTime = candle.timestamp + candleDuration
-        setNextCandleTime(nextCandleTime)
-
-        setGamePhase("BETTING")
-        setNextPhaseTime(candle.timestamp + 10000) // 10 segundos para apostar
-        setCurrentCandleBets(0)
+        // Iniciar estrictamente la fase de apuestas por 10s al abrir nueva vela
+        const nextCandleTime = candle.timestamp + candleDuration;
+        setNextCandleTime(nextCandleTime);
+        setGamePhase("BETTING");
+        setNextPhaseTime(candle.timestamp + 10000); // Solo 10s exactos para apostar
+        setCurrentCandleBets(0);
         console.log('[FASE] WebSocket: Nueva vela - BETTING', { candle, nextCandleTime });
-        // Solo permitir apuestas durante los primeros 10 segundos
-        setNextPhaseTime(candle.timestamp + 10000)
 
-        // Notificar al usuario sobre el cierre de la vela
         toast({
           title: `Vela cerrada: ${candle.close > candle.open ? "ALCISTA ↑" : "BAJISTA ↓"}`,
           description: `Las apuestas se resolverán al final del período (${timeframe})`,
           variant: candle.close > candle.open ? "default" : "destructive",
-        })
+        });
       } else {
         // Update game phase based on time
         const now = Date.now() + serverTimeOffset
@@ -399,21 +395,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
         const timeElapsedInCandle = now - candleStartTime
 
         // Si han pasado más de 10 segundos desde el inicio de la vela, cerrar la fase de apuestas
-        if (gamePhase === "BETTING" && timeElapsedInCandle > 10000) {
-          setGamePhase("WAITING")
-
-          // Calcular tiempo hasta el cierre de la vela
-          const candleDuration = getTimeframeInMs(timeframe)
-          const nextCandleTime = candleStartTime + candleDuration
-          setNextPhaseTime(nextCandleTime)
-          setNextCandleTime(nextCandleTime)
-
-          // Notificar al usuario que la fase de apuestas ha terminado
+        // Si han pasado exactamente 10s desde el inicio de la vela, cambiar a WAITING hasta el cierre
+        if (gamePhase === "BETTING" && timeElapsedInCandle >= 10000) {
+          setGamePhase("WAITING");
+          const candleDuration = getTimeframeInMs(timeframe);
+          const nextCandleTime = candleStartTime + candleDuration;
+          setNextPhaseTime(null); // Ya no hay otra fase antes del cierre
+          setNextCandleTime(nextCandleTime);
           toast({
             title: "Fase de apuestas finalizada",
             description: "Ya no se pueden realizar más apuestas para esta vela",
             variant: "default",
-          })
+          });
         }
       }
     },
