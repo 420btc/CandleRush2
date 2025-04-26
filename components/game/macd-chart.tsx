@@ -33,14 +33,14 @@ interface MacdChartProps {
   candlesToShow?: number;
 }
 
-export default function MacdChart({ candles, viewState, startIndex: externalStartIndex, candlesToShow: externalCandlesToShow }: MacdChartProps) {
+export default function MacdChart({ candles, viewState, startIndex: externalStartIndex, candlesToShow: externalCandlesToShow, height = 180 }: MacdChartProps & { height?: number }) {
   // Extraer precios de cierre
   const closes = useMemo(() => candles.map(c => c.close), [candles]);
   const { macd, signal, histogram } = useMemo(() => calculateMACD(closes), [closes]);
 
   // Renderizado simple SVG
   const chartWidth = 1200;
-  const chartHeight = 180;
+  const chartHeight = height;
 
   // Sincronizar pan/zoom con el gráfico principal
   const { offsetX, scale } = viewState;

@@ -232,7 +232,7 @@ export default function GameScreen() {
           won: isWin,
           amount: isWin ? (lastResolved.amount * 0.9) : lastResolved.amount,
           bet: {
-            id: lastResolved.id,
+            id: String(lastResolved.id),
             prediction: lastResolved.prediction,
             amount: lastResolved.amount,
             timestamp: lastResolved.timestamp,
@@ -451,25 +451,19 @@ export default function GameScreen() {
   open={showBetModal}
   onOpenChange={setShowBetModal}
   result={(() => {
-    if (showBetModal && betResult && betResult.bet && 'status' in betResult.bet && 'id' in betResult.bet) {
+    if (showBetModal && betResult && betResult.bet && typeof betResult.bet.id === 'string' && 'status' in betResult.bet) {
       return { bet: betResult.bet, candle: betResult.candle };
     } else if (showBetModal && bets.length > 0) {
       const last = bets[bets.length - 1];
       return {
         bet: {
-          id: last.id,
+          id: String(last.id),
           prediction: last.prediction,
           amount: last.amount,
           timestamp: last.timestamp,
           symbol: last.symbol,
           timeframe: last.timeframe,
           status: last.status,
-          resolvedAt: last.resolvedAt,
-          leverage: last.leverage,
-          entryPrice: last.entryPrice,
-          liquidationPrice: last.liquidationPrice,
-          wasLiquidated: last.wasLiquidated,
-          winnings: last.winnings,
         },
         candle: betResult?.candle || {
           open: last.entryPrice || 0,
@@ -482,7 +476,27 @@ export default function GameScreen() {
     return null;
   })()}
 />
-      <div className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col" style={{ transform: 'scaleX(1.0) scaleY(0.87)', transformOrigin: 'top center' }} >
+      <div
+        className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col"
+        style={
+          Object.assign(
+            {},
+            isMobile
+              ? {
+                  width: '100vw',
+                  height: '100dvh', // Usa 100dvh para evitar problemas con barras del navegador móvil
+                  minHeight: 0,
+                  margin: 0,
+                  overflow: 'auto',
+                }
+              : {},
+            {
+              transform: 'scaleX(1.0) scaleY(0.87)',
+              transformOrigin: 'top center',
+            }
+          )
+        }
+      >
       {bonusMessage && (
         <div className="w-full flex justify-center mt-4">
           <div className="bg-yellow-400 border-2 border-yellow-600 text-black font-bold rounded-xl px-4 py-3 text-center shadow-lg animate-pulse max-w-xl">
@@ -573,16 +587,17 @@ export default function GameScreen() {
                           <span className="text-3xl font-bold text-[#FFD600] tracking-tight flex items-center gap-2">
                             {currentSymbol}
                           </span>
-                          <span className="text-[4rem] font-extrabold text-white drop-shadow-lg ml-2">
-                            {currentCandle ? `$${currentCandle.close.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
-                          </span>
+                          <span className="text-2xl sm:text-[4rem] font-extrabold text-white drop-shadow-lg ml-2">
+  {currentCandle ? `$${currentCandle.close.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
+</span>
                           <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
                         </div>
                         {/* Estado de apuestas a la derecha */}
                         <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
-                          <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
+                          {/* Solo en desktop: mantener arriba */}
+<span className={`hidden sm:inline text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
 <button
-  className="mt-0 mb-1 self-end rounded-full p-1 bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black"
+  className="hidden sm:inline mt-0 mb-1 self-end rounded-full p-1 bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black"
   style={{ fontSize: 0, outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none' }}
   onClick={() => setShowVolumeProfile(v => !v)}
   title="Mostrar/ocultar perfil de volumen"
@@ -628,11 +643,15 @@ export default function GameScreen() {
                         />
                       </div>
                       <div className="relative w-full h-[180px] mt-2">
-                        <MacdChart 
+                        <MacdChart
                           candles={allCandles}
-                          viewState={viewState}
+                          viewState={{
+                            offsetX,
+                            scale,
+                          }}
                           startIndex={startIndex}
                           candlesToShow={candlesToShow}
+                          height={isMobile ? 80 : 180}
                         />
                       </div>
                     </CardContent>
@@ -646,7 +665,21 @@ export default function GameScreen() {
                       {/* Selector de monto y botones de apuesta */}
                       <div className="flex flex-col items-center gap-4 w-full">
                         {/* Joystick-style console: all controls grouped */}
-                        <div className="w-full flex flex-col sm:flex-row items-center justify-between bg-black border-4 border-[#FFD600] rounded-3xl shadow-2xl p-6 gap-6">
+<div className="w-full flex flex-col sm:flex-row items-center justify-between bg-black border-4 border-[#FFD600] rounded-3xl shadow-2xl p-6 gap-6">
+  {/* SOLO EN MOVIL: Estado de apuestas y botón volumen */}
+  <div className="w-full flex sm:hidden flex-row justify-between items-center mb-2">
+    <span className={`text-xs font-extrabold uppercase tracking-wide drop-shadow-lg ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
+    <button
+      className="rounded-full p-0.5 bg-yellow-400 hover:bg-yellow-300 shadow border-2 border-yellow-300 transition text-black ml-2"
+      style={{ fontSize: 0, outline: showVolumeProfile ? '2px solid #FFD600' : 'none' }}
+      onClick={() => setShowVolumeProfile(v => !v)}
+      title="Mostrar/ocultar perfil de volumen"
+      type="button"
+      aria-label="Mostrar/ocultar perfil de volumen"
+    >
+      <BarChart3 className="w-4 h-4" />
+    </button>
+  </div>
                           {/* Symbol and Interval selectors */}
                           <div className="flex flex-row gap-4 w-full justify-center">
                             <GameControls
@@ -670,12 +703,12 @@ export default function GameScreen() {
                               <div className="flex flex-col items-center mx-2">
                                 <label htmlFor="leverage" className="text-[#FFD600] text-xs font-bold mb-1">Apalancamiento</label>
                                 <select
-                                  id="leverage"
-                                  className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-lg px-2 py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none"
-                                  value={leverage || 100}
-                                  onChange={e => setLeverage(Number(e.target.value))}
-                                  style={{ minWidth: 70 }}
-                                >
+  id="leverage"
+  className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-sm sm:text-lg px-1 py-1 sm:px-2 sm:py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none min-w-[40px] sm:min-w-[70px]"
+  value={leverage || 100}
+  onChange={e => setLeverage(Number(e.target.value))}
+>
+
                                   {[100, 200, 300, 500, 1000, 2000].map(x => (
                                     <option key={x} value={x}>{x}x</option>
                                   ))}
@@ -690,14 +723,14 @@ export default function GameScreen() {
                                 -1
                               </button>
                               <input
-                                type="number"
-                                min={1}
-                                max={userBalance}
-                                step={0.01}
-                                value={betAmount}
-                                onChange={e => setBetAmount(Math.max(1, Math.min(Number(e.target.value), userBalance)))}
-                                className="w-20 text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none"
-                              />
+  type="number"
+  min={1}
+  max={userBalance}
+  step={0.01}
+  value={betAmount}
+  onChange={e => setBetAmount(Math.max(1, Math.min(Number(e.target.value), userBalance)))}
+  className="w-16 sm:w-20 text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-base sm:text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none py-1 sm:py-1"
+/>
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
                                 onClick={() => setBetAmount((prev) => Math.min(Math.floor(userBalance), prev + 1))}
@@ -706,12 +739,12 @@ export default function GameScreen() {
                                 +1
                               </button>
                               <button
-                                className="bg-[#FFD600] text-black font-bold px-4 py-1 rounded-full shadow hover:bg-yellow-400 transition ml-2"
-                                onClick={() => setBetAmount(Math.floor(userBalance))}
-                                disabled={userBalance < 1}
-                              >
-                                All In
-                              </button>
+  className="bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition ml-2 text-sm sm:text-lg sm:px-4 sm:py-1 min-w-[40px] sm:min-w-[80px]"
+  onClick={() => setBetAmount(Math.floor(userBalance))}
+  disabled={userBalance < 1}
+>
+  All In
+</button>
                             </div>
                             {/* Precio de liquidación estimado */}
                             {leverage && currentCandle && (
@@ -746,18 +779,18 @@ export default function GameScreen() {
                           {/* Betting buttons */}
                           <div className="flex gap-4 justify-center w-full mt-2">
                             <button
-                              className="px-8 py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[160px] flex items-center justify-center gap-2"
-                              onClick={() => handleBullishBet()}
-                              disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
-                            >
+  className="px-4 py-2 sm:px-8 sm:py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-lg sm:text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[100px] sm:min-w-[160px] flex items-center justify-center gap-2"
+  onClick={() => handleBullishBet()}
+  disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
+>
                               <img src="/bull.png" alt="Bullish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
                               <span className="font-black tracking-widest text-white">BULL</span>
                             </button>
                             <button
-                              className="px-8 py-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[160px] flex items-center justify-center gap-2"
-                              onClick={() => handleBearishBet()}
-                              disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
-                            >
+  className="px-4 py-2 sm:px-8 sm:py-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-lg sm:text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[100px] sm:min-w-[160px] flex items-center justify-center gap-2"
+  onClick={() => handleBearishBet()}
+  disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
+>
                               <img src="/bear.png" alt="Bearish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
                               <span className="font-black tracking-widest text-white">BEAR</span>
                             </button>
