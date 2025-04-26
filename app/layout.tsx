@@ -9,7 +9,6 @@ import { GameProvider } from '../context/game-context'
 export const metadata: Metadata = {
   title: 'Candle Rush!',
   description: 'Created by Carlos Freire',
-  generator: 'v0.dev',
 }
 
 export default function RootLayout({

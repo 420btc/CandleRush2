@@ -86,11 +86,15 @@ export default function BetHistory() {
                   <div className="flex items-center gap-1">
                     <CheckCircle className="h-4 w-4 text-green-400" />
                     {(() => {
-                      const resolvedCandle = candles.reduce((prev, curr) => {
-                        return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
-                          ? curr
-                          : prev
-                      }, candles[0]);
+                       if (!candles.length) return <span className="text-green-400 font-medium">+0</span>;
+                       const resolvedCandle = candles.reduce((prev, curr) => {
+                         return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
+                           ? curr
+                           : prev
+                       }, candles[0]);
+                       if (!resolvedCandle || typeof resolvedCandle.open !== "number" || typeof resolvedCandle.close !== "number") {
+                         return <span className="text-green-400 font-medium">+0</span>;
+                       }
                        const open = resolvedCandle.open;
                        const close = resolvedCandle.close;
                        const movement = Math.abs(close - open);
@@ -111,11 +115,13 @@ export default function BetHistory() {
                       className="ml-2 p-1 rounded hover:bg-zinc-600 transition"
                       title="Ver resultado"
                       onClick={() => {
-                        const resolvedCandle = candles.reduce((prev, curr) => {
-                          return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
-                            ? curr
-                            : prev
-                        }, candles[0])
+                         if (!candles.length) return;
+                         const resolvedCandle = candles.reduce((prev, curr) => {
+                           return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
+                             ? curr
+                             : prev
+                         }, candles[0]);
+                         if (!resolvedCandle || typeof resolvedCandle.open !== "number" || typeof resolvedCandle.close !== "number") return;
                          const open = resolvedCandle.open;
                          const close = resolvedCandle.close;
                          const movement = Math.abs(close - open);

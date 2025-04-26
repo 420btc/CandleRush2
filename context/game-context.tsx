@@ -69,6 +69,7 @@ interface GameContextType {
   currentSymbol: string
   timeframe: string
   bets: Bet[]
+  betsByPair: Record<string, Record<string, Bet[]>> // NUEVO: todas las apuestas globales
   userBalance: number
   isConnected: boolean
   placeBet: (prediction: "BULLISH" | "BEARISH", amount: number) => void
@@ -103,6 +104,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [timeframe, setTimeframe] = useState<string>("1m")
   // Estructura: { [symbol]: { [timeframe]: Bet[] } }
   const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, Bet[]>>>({});
+  const [betsHydrated, setBetsHydrated] = useState(false);
   const bets = betsByPair[currentSymbol]?.[timeframe] || [];
   const [userBalance, setUserBalance] = useState<number>(100) // Saldo inicial reducido a 100$
   const [isConnected, setIsConnected] = useState<boolean>(false)
@@ -117,6 +119,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // --- PERSISTENCIA LOCAL ---
   // Cargar datos guardados al iniciar
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const savedBets = localStorage.getItem("betsByPair");
     const savedBalance = localStorage.getItem("userBalance");
     if (savedBets) {
@@ -129,12 +132,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (savedBalance) {
       setUserBalance(Number(savedBalance));
     }
+    setBetsHydrated(true);
   }, []);
 
   // Guardar apuestas y balance en cada cambio
   useEffect(() => {
+    if (!betsHydrated) return;
     localStorage.setItem("betsByPair", JSON.stringify(betsByPair));
-  }, [betsByPair]);
+  }, [betsByPair, betsHydrated]);
   useEffect(() => {
     localStorage.setItem("userBalance", String(userBalance));
   }, [userBalance]);
@@ -174,6 +179,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     return () => clearInterval(checkInterval)
   }, [pendingResolutions])
+
+  // --- SOLUCIÓN: Al hidratar apuestas y vela actual, si hay apuestas PENDING para la vela actual y no hay resolución pendiente, programar la resolución ---
+  useEffect(() => {
+    if (!betsHydrated || !currentCandle) return;
+    const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
+    const hasPending = tfBets.some(bet => bet.status === "PENDING" && bet.timestamp === currentCandle.timestamp);
+    const alreadyPending = pendingResolutions.some(item => item.candle.timestamp === currentCandle.timestamp);
+    if (hasPending && !alreadyPending) {
+      // Programar la resolución para el cierre real de la vela
+      const candleDuration = getTimeframeInMs(timeframe);
+      const resolutionTime = currentCandle.timestamp + candleDuration - 3000;
+      setPendingResolutions(prev => [...prev, { candle: currentCandle, time: resolutionTime }]);
+    }
+  }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol, pendingResolutions]);
 
   // Load historical candles
   const loadHistoricalCandles = useCallback(async () => {
@@ -338,7 +357,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
         // Programar la resolución de apuestas para cuando se cierre la vela
         const candleDuration = getTimeframeInMs(timeframe)
-        const resolutionTime = candle.timestamp + candleDuration
+        const resolutionTime = candle.timestamp + candleDuration - 3000;
 
         // Añadir a la lista de resoluciones pendientes
         setPendingResolutions((prev) => [...prev, { candle, time: resolutionTime }])
@@ -422,45 +441,71 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setBetsByPair((prev) => {
         const symbolBets = { ...(prev[currentSymbol] || {}) };
         let tfBets = (symbolBets[timeframe] || []).map((bet) => {
-          if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet
-          const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish)
+          if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet;
+          const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish);
           let winnings = 0;
           let bonus = 0;
           // --- WIN STREAK MULTIPLIER LOGIC ---
           let multiplier = 1;
+          if (wonCount >= 9) multiplier = 3;
+          else if (wonCount >= 6) multiplier = 2;
+          else if (wonCount >= 3) multiplier = 1.5;
+          // Bonificación escalonada por tamaño de vela
+          if (size > 600) bonus = bet.amount * 3.0;
+          else if (size > 400) bonus = bet.amount * 2.0;
+          else if (size > 250) bonus = bet.amount * 1.5;
+          else if (size > 150) bonus = bet.amount * 1.0;
+          else if (size > 75) bonus = bet.amount * 0.5;
+          else if (size > 25) bonus = bet.amount * 0.25;
+          else if (size > 0) bonus = bet.amount * 0.10;
           if (won) {
-            // Determine multiplier based on winStreak (before this bet)
+            winnings = bet.amount * multiplier + bonus;
+            totalWinnings += winnings;
+            wonCount++;
+            lastResultWon = true;
+          } else {
             lostCount++;
             lastResultWon = false;
+          }
+          // Detectar jackpot: 10+ racha o 3+ apuestas ganadas en una ronda
+          if (wonCount >= 10 || (wonCount >= 3 && wonCount === bets.filter(b => b.status === 'PENDING').length)) {
+            setBonusInfo({
+              bonus: winnings,
+              size,
+              message: wonCount >= 10 ? '¡JACKPOT! 10+ apuestas en racha' : '¡Racha especial! 3+ apuestas ganadas en una ronda',
+            });
           }
           return {
             ...bet,
             status: won ? 'WON' : 'LOST',
             resolvedAt: Date.now(),
-          } as Bet
-        })
+            winnings: won ? winnings : 0,
+            bonus: won ? bonus : 0,
+            multiplier: won ? multiplier : 1,
+          } as Bet;
+        });
 
         // Actualizar balance después de procesar todas las apuestas
         if (totalWinnings > 0) {
-          setUserBalance((balance) => balance + totalWinnings)
+          setUserBalance((balance) => balance + totalWinnings);
           toast({
             title: `¡Has ganado $${totalWinnings.toFixed(2)}!`,
-            description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}` + (streakMultiplier > 1 ? ` (Racha x${streakMultiplier})` : ""),
+            description: `${wonCount} apuesta${wonCount !== 1 ? "s" : ""} ganada${wonCount !== 1 ? "s" : ""}` + (wonCount >= 3 ? ` (Racha x${wonCount >= 9 ? 3 : wonCount >= 6 ? 2 : wonCount >= 3 ? 1.5 : 1})` : ""),
             variant: "default",
-          })
+          });
         } else if (tfBets.some((bet) => bet.status === "LOST" && bet.resolvedAt === Date.now())) {
           toast({
             title: "Apuestas resueltas",
             description: "No has ganado en esta ronda",
             variant: "destructive",
-          })
+          });
         }
         symbolBets[timeframe] = tfBets;
         return { ...prev, [currentSymbol]: symbolBets };
-      })
+      });
 
       // --- WIN STREAK STATE UPDATE ---
-      // If user won all bets in this resolution, increment streak, else reset
+      // If user won all bets en esta resolución, increment streak, else reset
       if (wonCount > 0 && lostCount === 0) {
         setWinStreak((prev) => {
           const newStreak = prev + wonCount;
@@ -470,6 +515,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
           else if (newStreak >= 6) multi = 2;
           else if (newStreak >= 3) multi = 1.5;
           setStreakMultiplier(multi);
+          // Jackpot: 10+ racha
+          if (newStreak >= 10) {
+            setBonusInfo({
+              bonus: totalWinnings,
+              size,
+              message: '¡JACKPOT! 10+ apuestas en racha',
+            });
+          }
           return newStreak;
         });
       } else if (lostCount > 0) {
@@ -683,6 +736,7 @@ const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
         currentSymbol,
         timeframe,
         bets,
+        betsByPair, // Añadido para cumplir el tipo y exponer globalmente
         userBalance,
         isConnected,
         placeBet,

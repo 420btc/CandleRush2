@@ -450,11 +450,10 @@ export default function GameScreen() {
                   <div className="h-[500px] md:h-[600px] w-full relative overflow-hidden">
                     {/* Fondo portada detrás del chart con opacidad y blur */}
                     <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
-                    <div className="relative z-10 flex flex-col gap-2">
-                      {/* MACD Chart: fino y separado visualmente */}
-                      <MacdChart candles={candles} />
-                      {/* Chart principal: más alto y con margen superior */}
-                      <div className="w-full mt-2">
+                    <div className="relative z-10 flex flex-col w-full">
+                      {/* MACD Chart y Candlestick fusionados, sin huecos */}
+                      <div className="w-full">
+                        <MacdChart candles={candles} />
                         <CandlestickChart candles={candles} currentCandle={currentCandle} />
                       </div>
                     </div>

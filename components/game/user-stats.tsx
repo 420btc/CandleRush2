@@ -6,6 +6,16 @@ import { TrendingUp, TrendingDown, Percent, DollarSign } from "lucide-react"
 export default function UserStats() {
   const { bets } = useGame()
 
+  // Calcular la racha real de victorias consecutivas
+  let realStreak = 0;
+  for (let i = bets.length - 1; i >= 0; i--) {
+    if (bets[i].status === "WON") {
+      realStreak++;
+    } else if (bets[i].status === "LOST") {
+      break;
+    }
+  }
+
   // Calculate stats
   const totalBets = bets.length
   const wonBets = bets.filter((bet) => bet.status === "WON").length
@@ -49,6 +59,32 @@ export default function UserStats() {
 
   return (
     <div className="space-y-4 text-white">
+      {/* Rachas */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {realStreak >= 3 ? (
+            <span className="text-orange-400 animate-pulse text-2xl">🔥</span>
+          ) : (
+            <span className="text-zinc-400 text-xl">🏁</span>
+          )}
+          <span className="text-sm">Racha actual</span>
+        </div>
+        <span className={`font-bold text-lg ${realStreak >= 3 ? "text-orange-400" : ""} ${realStreak >= 1 ? "animate-shake" : ""}`}>{realStreak}</span>
+      </div>
+      <style jsx>{`
+        @keyframes shake {
+          0% { transform: translateX(0); }
+          20% { transform: translateX(-2px); }
+          40% { transform: translateX(3px); }
+          60% { transform: translateX(-2px); }
+          80% { transform: translateX(2px); }
+          100% { transform: translateX(0); }
+        }
+        .animate-shake {
+          animation: shake 0.5s infinite;
+          display: inline-block;
+        }
+      `}</style>
       <div className="flex items-center justify-between text-white">
         <div className="flex items-center gap-2 text-white">
           <DollarSign className="h-5 w-5 text-green-400" />
