@@ -25,18 +25,44 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
-  // Estado para el reloj del sistema
+  // Estado para el reloj del sistema y el contador de cierre diario
   const [systemTime, setSystemTime] = useState<string>(() => {
     const now = new Date();
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  });
+  const [dailyCloseCountdown, setDailyCloseCountdown] = useState<string>(() => {
+    const now = new Date();
+    const nextClose = new Date(now);
+    nextClose.setHours(2, 0, 0, 0); // 2:00 AM
+    if (now.getHours() >= 2) {
+      // Si ya pasó de las 2:00, calcula para el día siguiente
+      nextClose.setDate(nextClose.getDate() + 1);
+    }
+    const diff = nextClose.getTime() - now.getTime();
+    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+    return `${h}:${m}:${s}`;
   });
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
       setSystemTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      // Actualiza el countdown de cierre diario a las 2:00 AM
+      const nextClose = new Date(now);
+      nextClose.setHours(2, 0, 0, 0); // 2:00 AM
+      if (now.getHours() >= 2) {
+        nextClose.setDate(nextClose.getDate() + 1);
+      }
+      const diff = nextClose.getTime() - now.getTime();
+      const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+      setDailyCloseCountdown(`${h}:${m}:${s}`);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
   // Estado para mostrar/ocultar el volume profile
   const [showVolumeProfile, setShowVolumeProfile] = useState(true);
   // Context hooks FIRST (fixes userBalance/addCoins before use)
@@ -605,9 +631,19 @@ export default function GameScreen() {
 </span>
                           <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
 {/* Reloj grande en amarillo */}
-<span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] ml-4 select-none" style={{letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088'}}>
-  {systemTime}
-</span>
+<div className="flex flex-col items-center ml-4">
+  <span className="text-xs font-semibold text-[#FFD600] mb-0.5" style={{letterSpacing: '0.01em'}}>Hora local</span>
+  <span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] select-none" style={{letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088'}}>
+    {systemTime}
+  </span>
+</div>
+{/* Reloj de cierre diario */}
+<div className="flex flex-col items-center ml-4">
+  <span className="text-xs font-semibold text-[#a259ff] mb-0.5" style={{letterSpacing: '0.01em'}}>Cierre diario</span>
+  <span className="text-3xl sm:text-4xl font-extrabold text-[#a259ff] select-none" style={{letterSpacing: '0.02em', textShadow: '0 0 12px #a259ff88'}}>
+    {dailyCloseCountdown}
+  </span>
+</div>
                         </div>
                         {/* Estado de apuestas a la derecha */}
                         <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
