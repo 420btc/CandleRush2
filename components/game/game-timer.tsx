@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useGame } from "@/context/game-context"
 import { Clock } from "lucide-react"
+import { formatTime } from "@/utils/formatTime"
 
 export default function GameTimer() {
   const { gamePhase, nextPhaseTime, nextCandleTime, timeframe } = useGame()
@@ -33,20 +34,6 @@ export default function GameTimer() {
 
     return () => clearInterval(interval)
   }, [nextPhaseTime, nextCandleTime, gamePhase])
-
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000)
-
-    // Si es más de un minuto, mostrar minutos y segundos
-    if (totalSeconds >= 60) {
-      const minutes = Math.floor(totalSeconds / 60)
-      const seconds = totalSeconds % 60
-      return `${minutes}m ${seconds}s`
-    }
-
-    // Si es menos de un minuto, solo mostrar segundos
-    return `${totalSeconds}s`
-  }
 
   // Etiqueta y color según fase
   const isBetting = gamePhase === "BETTING";

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useRef } from "react"
+import { formatTime } from "@/utils/formatTime"
 import { useGame } from "@/context/game-context"
 import { useAuth } from "@/context/auth-context"
 import { useAchievement } from "@/context/achievement-context"
@@ -620,8 +621,9 @@ export default function GameScreen() {
                       {/* Contador grande centrado debajo */}
                       <div className="w-full flex justify-center">
                         <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl my-2">
-                          {gamePhase === 'BETTING' ? secondsLeft : secondsUntilNextCandle}s
-                        </span>
+  {gamePhase === 'BETTING' ? formatTime(timeLeft) : formatTime(timeUntilNextCandle)}
+</span>
+
                       </div>
                     </CardTitle>
                   </div>

@@ -11,9 +11,9 @@ interface GameControlsProps {
   isConnected: boolean
 }
 
-const AVAILABLE_SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT", "DOGEUSDT", "XRPUSDT", "SOLUSDT"]
+const AVAILABLE_SYMBOLS = ["BTCUSDT", "ETHUSDT", "IOTAUSDT", "ADAUSDT", "DOGEUSDT", "XRPUSDT", "SOLUSDT", "BNBUSDT"]
 
-const AVAILABLE_TIMEFRAMES = ["1m", "3m", "5m", "15m", "30m", "1h"]
+const AVAILABLE_TIMEFRAMES = ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "1d"]
 
 export default function GameControls({
   onSymbolChange,
