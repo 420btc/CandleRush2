@@ -6,6 +6,8 @@ import { useGame } from "@/context/game-context"
 import { useDevice } from "@/context/device-mode-context"
 
 import React from 'react';
+import VolumeProfile from './volume-profile';
+import { BarChart3 } from 'lucide-react';
 
 interface CandlestickChartProps {
   candles: Candle[];
@@ -25,6 +27,7 @@ interface ViewState {
 }
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale }: CandlestickChartProps & { setVerticalScale?: (v: number) => void }) {
+  const [showVolumeProfile, setShowVolumeProfile] = useState(false);
   // Referencias para los iconos
   const bullImgRef = useRef<HTMLImageElement | null>(null);
   const bearImgRef = useRef<HTMLImageElement | null>(null);
@@ -100,13 +103,29 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
       }
     };
     updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
+    let observer: ResizeObserver | null = null;
+    if (canvasRef.current && canvasRef.current.parentElement && 'ResizeObserver' in window) {
+      observer = new ResizeObserver(() => {
+        updateDimensions();
+      });
+      observer.observe(canvasRef.current.parentElement);
+    } else {
+      window.addEventListener("resize", updateDimensions);
+    }
+    return () => {
+      if (observer && canvasRef.current && canvasRef.current.parentElement) {
+        observer.unobserve(canvasRef.current.parentElement);
+      }
+      window.removeEventListener("resize", updateDimensions);
+    };
   }, []);
 
   // Estado para la navegación del gráfico
   // Ahora el viewState y setViewState vienen de props, no se definen aquí
 
+  // --- UI: Botón toggle perfil de volumen ---
+  // El botón se renderiza sobre el canvas, en la esquina superior derecha
+  // El perfil de volumen se renderiza como un overlay SVG
 
   // Función para enfocar y hacer zoom en la última vela
   const handleFocusLastCandle = useCallback(() => {
@@ -610,109 +629,94 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     }));
   };
 
-  const handleZoomOut = () => {
-    setViewState((prev: ViewState) => ({
-      ...prev,
-      scale: Math.max(0.2, prev.scale / 1.2),
-    }));
-  };
+const handleZoomOut = () => {
+setViewState((prev: ViewState) => ({
+  ...prev,
+  scale: Math.max(0.5, prev.scale / 1.2),
+}));
+};
 
-  return (
-    <div className="relative h-full w-full overflow-hidden">
+return (
+    <div className="relative h-full w-full overflow-hidden select-none" style={{ minHeight: 320 }}>
 
-      <canvas ref={canvasRef} className="h-full w-full cursor-grab active:cursor-grabbing" />
-      {/* Controles de navegación */}
-      <div className="absolute bottom-4 right-4 flex gap-2">
-        <button
-          onClick={handleReset}
-          className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
-          aria-label="Restablecer vista"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-            <path d="M3 3v5h5"></path>
-          </svg>
-        </button>
+    {/* Toggle Volume Profile */}
+    <button
+      className="absolute top-3 right-3 z-30 rounded-full p-2 bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition"
+      style={{ color: '#000', outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none' }}
+      onClick={() => setShowVolumeProfile(v => !v)}
+      title="Mostrar/ocultar perfil de volumen"
+      type="button"
+    >
+      <BarChart3 className="w-6 h-6" />
+    </button>
+    <canvas ref={canvasRef} className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0 z-10" />
+    {/* Overlay: Perfil de Volumen */}
+    {showVolumeProfile && dimensions.height > 0 && (
+      <div className="absolute top-0 right-0 h-full z-20 pointer-events-none">
+        <VolumeProfile
+          candles={candles}
+          chartHeight={dimensions.height}
+          priceMin={(() => {
+            let min = Number.MAX_VALUE;
+            candles.forEach((c: { low: number }) => { min = Math.min(min, c.low); });
+            return min;
+          })()}
+          priceMax={(() => {
+            let max = Number.MIN_VALUE;
+            candles.forEach((c: { high: number }) => { max = Math.max(max, c.high); });
+            return max;
+          })()}
+          barWidth={28}
+          bins={24}
+        />
       </div>
-
-      {/* Botones flotantes verticales (sonido + lupa) arriba izquierda */}
-      <div className="absolute top-24 right-4 flex flex-col gap-3 z-50">
-        {/* Botón de sonido (renderizado desde GameScreen) */}
-        {/* El botón de sonido debe estar aquí vía prop.children o prop extra */}
-        {/* Botón lupa para enfocar última vela */}
-        <button
-          onClick={handleFocusLastCandle}
-          className="bg-yellow-400 hover:bg-yellow-300 text-black p-2 rounded-full shadow-lg border-2 border-yellow-600"
-          aria-label="Enfocar última vela"
-          title="Enfocar última vela"
+    )}
+    {/* Controles de navegación */}
+    <div className="absolute bottom-4 right-4 flex gap-2 z-40">
+      <button
+        onClick={handleReset}
+        className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
+        aria-label="Restablecer vista"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Controles de navegación abajo derecha */}
-      <div className="absolute bottom-4 right-4 flex gap-2">
-        <button
-          onClick={handleZoomIn}
-          className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
-          aria-label="Acercar"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 9l-6 6 6 6" />
-          </svg>
-        </button>
-        <button
-          onClick={handleZoomOut}
-          className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
-          aria-label="Alejar"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M9 15l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
-
-      {!isInitialized && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#FFD600]/50">
-          <div className="flex flex-col items-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#FFD600] border-t-green-400"></div>
-            <p className="mt-2 text-[#FFD600]">Cargando gráfico...</p>
-          </div>
-        </div>
-      )}
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+      </button>
+      <button
+        onClick={handleZoomIn}
+        className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
+        aria-label="Acercar"
+      >
+        +
+      </button>
+      <button
+        onClick={handleZoomOut}
+        className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
+        aria-label="Alejar"
+      >
+        -
+      </button>
     </div>
-  )
+    {/* Loading overlay */}
+    {!isInitialized && (
+      <div className="absolute inset-0 flex items-center justify-center bg-[#FFD600]/50">
+        <div className="flex flex-col items-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#FFD600] border-t-green-400"></div>
+          <p className="mt-2 text-[#FFD600]">Cargando gráfico...</p>
+        </div>
+      </div>
+    )}
+  </div>
+)
 }
