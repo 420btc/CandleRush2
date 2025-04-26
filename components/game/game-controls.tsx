@@ -26,14 +26,14 @@ export default function GameControls({
   return (
     <div className="flex flex-wrap gap-4">
       <div className="space-y-1">
-        <Label htmlFor="symbol">Par</Label>
+        <Label htmlFor="symbol" className="text-[#FFD600]">Par</Label>
         <Select value={currentSymbol} onValueChange={onSymbolChange} disabled={gamePhase === 'LOADING' || !isConnected}>
-          <SelectTrigger id="symbol" className="w-[140px] bg-black border-[#FFD600] text-[#FFD600] focus:ring-[#FFD600]">
+          <SelectTrigger id="symbol" className="w-[200px] h-14 bg-black border-2 border-[#FFD600] text-[#FFD600] focus:ring-[#FFD600] text-xl font-extrabold px-6 py-4 shadow-lg">
             <SelectValue placeholder="Seleccionar par" />
           </SelectTrigger>
           <SelectContent className="bg-black border-[#FFD600] text-[#FFD600]">
             {AVAILABLE_SYMBOLS.map((symbol) => (
-              <SelectItem key={symbol} value={symbol}>
+              <SelectItem key={symbol} value={symbol} className="text-[#FFD600]">
                 {symbol}
               </SelectItem>
             ))}
@@ -42,14 +42,14 @@ export default function GameControls({
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="timeframe">Intervalo</Label>
+        <Label htmlFor="timeframe" className="text-[#FFD600]">Intervalo</Label>
         <Select value={currentTimeframe} onValueChange={onTimeframeChange} disabled={gamePhase === 'LOADING' || !isConnected} >
-          <SelectTrigger id="timeframe" className="w-[140px] bg-black border-[#FFD600] text-[#FFD600] focus:ring-[#FFD600]">
+          <SelectTrigger id="timeframe" className="w-[200px] h-14 bg-black border-2 border-[#FFD600] text-[#FFD600] focus:ring-[#FFD600] text-xl font-extrabold px-6 py-4 shadow-lg">
             <SelectValue placeholder="Seleccionar intervalo" />
           </SelectTrigger>
           <SelectContent className="bg-black border-[#FFD600] text-[#FFD600]">
             {AVAILABLE_TIMEFRAMES.map((timeframe) => (
-              <SelectItem key={timeframe} value={timeframe}>
+              <SelectItem key={timeframe} value={timeframe} className="text-[#FFD600]">
                 {timeframe}
               </SelectItem>
             ))}

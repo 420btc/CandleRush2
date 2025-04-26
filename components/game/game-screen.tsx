@@ -752,21 +752,21 @@ export default function GameScreen() {
                           {/* Betting buttons */}
                           <div className="flex gap-4 justify-center w-full mt-2">
                             <button
-                               className="px-4 py-2 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-lg shadow transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[120px] flex items-center justify-center gap-1"
-                               onClick={() => handleBullishBet()}
-                               disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
-                             >
-                               <img src="/bull.png" alt="Bullish" style={{ width: 20, height: 20, objectFit: 'contain', marginRight: 4 }} />
-                               <span>Apostar alcista</span>
-                             </button>
+                              className="px-8 py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[160px] flex items-center justify-center gap-2"
+                              onClick={() => handleBullishBet()}
+                              disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
+                            >
+                              <img src="/bull.png" alt="Bullish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
+                              <span className="font-black tracking-widest text-white">BULL</span>
+                            </button>
                             <button
-                               className="px-4 py-2 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-lg shadow transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[120px] flex items-center justify-center gap-1"
-                               onClick={() => handleBearishBet()}
-                               disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
-                             >
-                               <img src="/bear.png" alt="Bearish" style={{ width: 20, height: 20, objectFit: 'contain', marginRight: 4 }} />
-                               <span>Apostar bajista</span>
-                             </button>
+                              className="px-8 py-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[160px] flex items-center justify-center gap-2"
+                              onClick={() => handleBearishBet()}
+                              disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
+                            >
+                              <img src="/bear.png" alt="Bearish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
+                              <span className="font-black tracking-widest text-white">BEAR</span>
+                            </button>
                           </div>
                         </div>
 
