@@ -12,8 +12,10 @@ interface GameControlsProps {
 }
 
 const AVAILABLE_SYMBOLS = [
-  "BTCUSDT", "ETHUSDT", "IOTAUSDT", "ADAUSDT", "DOGEUSDT", "XRPUSDT", "SOLUSDT", "BNBUSDT",
-  "TRONUSDT", "XLMUSDT", "PEPEUSDT", "TRUMPUSDT"
+  "BTCUSDT", "ETHUSDT", "IOTAUSDT", "ADAUSDT", "RENDERUSDT", // RENDERUSDT a la quinta posición
+  "XRPUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", // DOGEUSDT movido tras los antiguos
+  "TRONUSDT", "XLMUSDT", "PEPEUSDT", "TRUMPUSDT",
+  "WLDUSDT", "LINKUSDT", "VETUSDT"
 ]
 
 const AVAILABLE_TIMEFRAMES = ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "1d"]
