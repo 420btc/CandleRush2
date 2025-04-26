@@ -25,6 +25,18 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
+  // Estado para el reloj del sistema
+  const [systemTime, setSystemTime] = useState<string>(() => {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setSystemTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
   // Estado para mostrar/ocultar el volume profile
   const [showVolumeProfile, setShowVolumeProfile] = useState(true);
   // Context hooks FIRST (fixes userBalance/addCoins before use)
@@ -592,6 +604,10 @@ export default function GameScreen() {
   {currentCandle ? `$${currentCandle.close.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
 </span>
                           <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
+{/* Reloj grande en amarillo */}
+<span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] ml-4 select-none" style={{letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088'}}>
+  {systemTime}
+</span>
                         </div>
                         {/* Estado de apuestas a la derecha */}
                         <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
