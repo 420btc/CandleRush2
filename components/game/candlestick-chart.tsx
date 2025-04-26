@@ -295,10 +295,33 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
        ctx.fillStyle = isBullish ? "#22c55e" : "#ef4444"
        ctx.strokeStyle = isBullish ? "#22c55e" : "#ef4444"
 
-       // Draw candle body
-       const candleHeight = Math.abs(close - open) || 1 // Mínimo 1px de altura
-       const candleY = isBullish ? close : open
-       ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight)
+       // Calcular altura y posición de la vela
+        const candleHeight = Math.abs(close - open) || 1 // Mínimo 1px de altura
+        const candleY = isBullish ? close : open
+        // Obtener apuestas de la vela
+        let candleBets = betsByTimestamp.get(candle.timestamp);
+        // Si la vela tiene apuestas, dibujar un glow (resplandor)
+        if (candleBets && candleBets.length > 0) {
+          ctx.save();
+          ctx.shadowColor = '#fff666'; // Glow amarillo puro, más fuerte
+          ctx.shadowBlur = 9;
+          ctx.globalAlpha = 3;
+          ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+          ctx.restore();
+        }
+        // Draw candle body
+        ctx.save();
+        ctx.shadowColor = 'transparent'; // Sin glow para el cuerpo
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+        // Si la vela tiene apuestas, dibujar un borde amarillo
+        if (candleBets && candleBets.length > 0) {
+          ctx.strokeStyle = '#FFD700';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+        }
+        ctx.restore();
 
        // Draw wicks
        ctx.beginPath()
@@ -318,9 +341,8 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.strokeRect(x - candleWidth / 2 - 1, candleY - 1, candleWidth + 2, candleHeight + 2)
       }
 
-      // Dibujar iconos de apuestas si existen para esta vela
-      const candleBets = betsByTimestamp.get(candle.timestamp)
-      if (candleBets && candleBets.length > 0 && bullImgRef.current && bearImgRef.current) {
+       // Dibujar iconos de apuestas si existen para esta vela
+       if (candleBets && candleBets.length > 0 && bullImgRef.current && bearImgRef.current) {
         // Dibujar un icono por cada tipo de apuesta (bullish/bearish)
         const hasBullish = candleBets.some((bet: import("@/types/game").Bet) => bet.prediction === "BULLISH")
         const hasBearish = candleBets.some((bet: import("@/types/game").Bet) => bet.prediction === "BEARISH")
