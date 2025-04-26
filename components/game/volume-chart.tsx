@@ -6,7 +6,7 @@ export type VolumeChartProps = {
   height?: number;
 };
 
-export default function VolumeChart({ candles, width = 400, height = 60 }: VolumeChartProps) {
+export default function VolumeChart({ candles, width = 400, height = 120 }: VolumeChartProps) {
   if (!candles || candles.length === 0) return null;
 
   const maxVolume = Math.max(...candles.map(c => c.volume));
@@ -24,7 +24,7 @@ return (
           key={i}
           x={i * barWidth}
           y={height - barHeight}
-          width={Math.max(barWidth - 1, 3)}
+          width={Math.max(barWidth - 1, 2)}
           height={barHeight}
           fill={isBull ? "#22d3ee" : "#f43f5e"}
           style={{ filter: isBull ? 'drop-shadow(0 2px 8px #22d3eeAA)' : 'drop-shadow(0 2px 8px #f43f5eAA)' }}

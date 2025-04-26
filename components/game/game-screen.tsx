@@ -25,7 +25,7 @@ import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
   // Estado para mostrar/ocultar el volume profile
-  const [showVolumeProfile, setShowVolumeProfile] = useState(false);
+  const [showVolumeProfile, setShowVolumeProfile] = useState(true);
   // Context hooks FIRST (fixes userBalance/addCoins before use)
   const {
     gamePhase,
@@ -52,7 +52,7 @@ export default function GameScreen() {
   const { isMobile } = useDevice();
 
   // Estado para escalar verticalmente la gráfica (solo PC)
-  const [verticalScale, setVerticalScale] = useState(1);
+  const [verticalScale, setVerticalScale] = useState(1.5);
   // --- NUEVO: Layout 100vh sin márgenes verticales ---
   // Aplica estilos globales solo a esta pantalla
   React.useEffect(() => {

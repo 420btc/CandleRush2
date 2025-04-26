@@ -223,7 +223,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     })
 
     // Add some padding to price range
-    const pricePadding = (maxPrice - minPrice) * 0.1
+    const pricePadding = (maxPrice - minPrice) * 0.25
     minPrice -= pricePadding
     maxPrice += pricePadding
 
