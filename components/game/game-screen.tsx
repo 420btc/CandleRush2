@@ -585,7 +585,7 @@ export default function GameScreen() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-black border-[#FFD600] w-full h-[420px] flex flex-col min-h-0">
+              <Card className="bg-black border-[#FFD600] w-full h-full flex-1 flex flex-col min-h-0">
                 <CardHeader className="pb-0">
                   <Tabs defaultValue="history">
                     <div className="flex justify-between items-center gap-2">
