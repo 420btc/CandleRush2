@@ -10,6 +10,17 @@ interface SoundManagerProps {
 
 
 export default function SoundManager({ muted, onToggleMute, triggerLose, triggerWin }: SoundManagerProps) {
+  // Estado para detectar si el usuario ya interactuó
+  const [hasInteracted, setHasInteracted] = useState(false);
+  useEffect(() => {
+    const enable = () => setHasInteracted(true);
+    window.addEventListener('pointerdown', enable, { once: true });
+    window.addEventListener('keydown', enable, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', enable);
+      window.removeEventListener('keydown', enable);
+    };
+  }, []);
   // Volumen de música de fondo
   const [musicVolume, setMusicVolume] = useState(0.45);
 
@@ -58,7 +69,9 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
     currentAudio.currentTime = 0;
     // Fade in
     currentAudio.volume = 0;
-    currentAudio.play();
+    if (hasInteracted) {
+      currentAudio.play();
+    }
     let fadeInVol = 0;
     const fadeStep = 0.05;
     const fadeInterval = setInterval(() => {

@@ -674,7 +674,7 @@ if (amount <= 0 || amount > userBalance) {
         symbol: currentSymbol,
         timeframe,
         leverage: leverage > 1 ? leverage : undefined,
-        entryPrice: leverage > 1 ? entryPrice : undefined,
+        entryPrice: entryPrice,
         liquidationPrice: leverage > 1 ? liquidationPrice : undefined,
         wasLiquidated: false,
       }

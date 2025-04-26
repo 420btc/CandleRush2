@@ -62,9 +62,9 @@ export default function MacdChart({ candles }: { candles: Candle[] }) {
           <rect
             key={i}
             x={(i / (barsToShow - 1)) * chartWidth - 2}
-            y={h >= 0 ? chartHeight / 2 - (h / maxAbs) * (chartHeight / 2 - 10) : chartHeight / 2}
+            y={isNaN(h) || isNaN(maxAbs) ? chartHeight / 2 : (h >= 0 ? chartHeight / 2 - (h / maxAbs) * (chartHeight / 2 - 10) : chartHeight / 2)}
             width={4}
-            height={Math.abs((h / maxAbs) * (chartHeight / 2 - 10))}
+            height={isNaN(h) || isNaN(maxAbs) ? 0 : Math.abs((h / maxAbs) * (chartHeight / 2 - 10))}
             fill={h >= 0 ? "#00ff00" : "#ff0000"}
             opacity={0.7}
           />
