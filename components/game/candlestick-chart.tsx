@@ -337,8 +337,11 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         // Si la vela tiene apuestas, dibujar un borde amarillo
         if (candleBets && candleBets.length > 0) {
           ctx.strokeStyle = '#FFD700';
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 4]);
+          ctx.lineDashOffset = -((Date.now() / 10) % 20); // animación más rápida
           ctx.strokeRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+          ctx.setLineDash([]);
         }
         ctx.restore();
 

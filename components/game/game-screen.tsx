@@ -636,53 +636,53 @@ export default function GameScreen() {
                           {/* Bet amount controls */}
                           <div className="flex flex-col items-center w-full gap-2">
                             <div className="flex justify-between w-full text-[#FFD600] text-xs font-bold">
-                              <span>Mín: 10</span>
+                              <span>Mín: 1</span>
                               <span>Apostar: <span className="text-white text-lg">{betAmount}</span></span>
                               <span>Máx: {Math.floor(userBalance)}</span>
                             </div>
                             <div className="flex gap-2 w-full justify-center">
-  {/* Selector de apalancamiento */}
-  <div className="flex flex-col items-center mx-2">
-    <label htmlFor="leverage" className="text-[#FFD600] text-xs font-bold mb-1">Apalancamiento</label>
-    <select
-      id="leverage"
-      className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-lg px-2 py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none"
-      value={leverage || 100}
-      onChange={e => setLeverage(Number(e.target.value))}
-      style={{ minWidth: 70 }}
-    >
-      {[100, 200, 300, 500, 1000, 2000].map(x => (
-        <option key={x} value={x}>{x}x</option>
-      ))}
-    </select>
-  </div>
+                              {/* Selector de apalancamiento */}
+                              <div className="flex flex-col items-center mx-2">
+                                <label htmlFor="leverage" className="text-[#FFD600] text-xs font-bold mb-1">Apalancamiento</label>
+                                <select
+                                  id="leverage"
+                                  className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-lg px-2 py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none"
+                                  value={leverage || 100}
+                                  onChange={e => setLeverage(Number(e.target.value))}
+                                  style={{ minWidth: 70 }}
+                                >
+                                  {[100, 200, 300, 500, 1000, 2000].map(x => (
+                                    <option key={x} value={x}>{x}x</option>
+                                  ))}
+                                </select>
+                              </div>
 
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
-                                onClick={() => setBetAmount((prev) => Math.max(10, prev - 10))}
-                                disabled={betAmount <= 10}
+                                onClick={() => setBetAmount((prev) => Math.max(1, prev - 1))}
+                                disabled={betAmount <= 1}
                               >
-                                -10
+                                -1
                               </button>
                               <input
                                 type="number"
-                                min={10}
+                                min={1}
                                 max={userBalance}
                                 value={betAmount}
-                                onChange={e => setBetAmount(Math.max(10, Math.min(Number(e.target.value), Math.floor(userBalance))))}
+                                onChange={e => setBetAmount(Math.max(1, Math.min(Number(e.target.value), Math.floor(userBalance))))}
                                 className="w-20 text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none"
                               />
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
-                                onClick={() => setBetAmount((prev) => Math.min(Math.floor(userBalance), prev + 10))}
+                                onClick={() => setBetAmount((prev) => Math.min(Math.floor(userBalance), prev + 1))}
                                 disabled={betAmount >= userBalance}
                               >
-                                +10
+                                +1
                               </button>
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-4 py-1 rounded-full shadow hover:bg-yellow-400 transition ml-2"
                                 onClick={() => setBetAmount(Math.floor(userBalance))}
-                                disabled={userBalance < 10}
+                                disabled={userBalance < 1}
                               >
                                 All In
                               </button>
