@@ -15,6 +15,8 @@ interface CandlestickChartProps {
   viewState: ViewState;
   setViewState: React.Dispatch<React.SetStateAction<ViewState>>;
   verticalScale?: number;
+  showVolumeProfile?: boolean;
+  setShowVolumeProfile?: (v: boolean | ((v: boolean) => boolean)) => void;
 }
 
 interface ViewState {
@@ -26,8 +28,8 @@ interface ViewState {
   isDragging: boolean
 }
 
-export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale }: CandlestickChartProps & { setVerticalScale?: (v: number) => void }) {
-  const [showVolumeProfile, setShowVolumeProfile] = useState(false);
+export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile }: CandlestickChartProps & { setVerticalScale?: (v: number) => void }) {
+
   // Referencias para los iconos
   const bullImgRef = useRef<HTMLImageElement | null>(null);
   const bearImgRef = useRef<HTMLImageElement | null>(null);
@@ -639,16 +641,6 @@ setViewState((prev: ViewState) => ({
 return (
     <div className="relative h-full w-full overflow-hidden select-none" style={{ minHeight: 320 }}>
 
-    {/* Toggle Volume Profile */}
-    <button
-      className="absolute top-3 right-3 z-30 rounded-full p-2 bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition"
-      style={{ color: '#000', outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none' }}
-      onClick={() => setShowVolumeProfile(v => !v)}
-      title="Mostrar/ocultar perfil de volumen"
-      type="button"
-    >
-      <BarChart3 className="w-6 h-6" />
-    </button>
     <canvas ref={canvasRef} className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0 z-10" />
     {/* Overlay: Perfil de Volumen */}
     {showVolumeProfile && dimensions.height > 0 && (

@@ -22,14 +22,15 @@ export function computeVolumeProfile(candles: Candle[], priceMin: number, priceM
       bins - 1,
       Math.max(0, Math.floor((price - priceMin) / binSize))
     );
-    profile[idx] += candle.volume ?? 0;
+    // Aplicar factor de escala x1.5 al volumen
+    profile[idx] += (candle.volume ?? 0) * 1.5;
   });
   return profile;
 }
 
-const BLUE = "#3B82F6"; // azul tailwind-500
+const YELLOW = "#FFD600"; // amarillo fuerte
 
-const VolumeProfile: React.FC<VolumeProfileProps> = ({ candles, chartHeight, priceMin, priceMax, barWidth = 28, bins = 24 }) => {
+const VolumeProfile: React.FC<VolumeProfileProps> = ({ candles, chartHeight, priceMin, priceMax, barWidth = 7, bins = 40 }) => {
   const profile = computeVolumeProfile(candles, priceMin, priceMax, bins);
   const maxVol = Math.max(...profile, 1);
   return (
@@ -42,6 +43,7 @@ const VolumeProfile: React.FC<VolumeProfileProps> = ({ candles, chartHeight, pri
         const y = (chartHeight / bins) * i;
         const h = chartHeight / bins;
         const w = (vol / maxVol) * (barWidth - 4); // margen
+        const isMax = vol === maxVol;
         return (
           <rect
             key={i}
@@ -50,8 +52,9 @@ const VolumeProfile: React.FC<VolumeProfileProps> = ({ candles, chartHeight, pri
             width={w}
             height={h - 2}
             rx={h/3}
-            fill={BLUE}
-            fillOpacity={0.75}
+            fill={YELLOW}
+            fillOpacity={isMax ? 1 : 0.75}
+            style={isMax ? { filter: 'drop-shadow(0 0 16px #FFD600), drop-shadow(0 0 32px #FFD600CC)' } : {}}
           />
         );
       })}

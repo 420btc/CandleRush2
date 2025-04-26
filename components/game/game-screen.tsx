@@ -24,6 +24,8 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
+  // Estado para mostrar/ocultar el volume profile
+  const [showVolumeProfile, setShowVolumeProfile] = useState(false);
   // Context hooks FIRST (fixes userBalance/addCoins before use)
   const {
     gamePhase,
@@ -585,6 +587,16 @@ export default function GameScreen() {
                         {/* Estado de apuestas a la derecha */}
                         <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
                           <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
+<button
+  className="mt-0 mb-1 self-end rounded-full p-1 bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black"
+  style={{ fontSize: 0, outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none' }}
+  onClick={() => setShowVolumeProfile(v => !v)}
+  title="Mostrar/ocultar perfil de volumen"
+  type="button"
+  aria-label="Mostrar/ocultar perfil de volumen"
+>
+  <BarChart3 className="w-5 h-5" />
+</button>
                         </div>
                       </div>
 
@@ -617,7 +629,8 @@ export default function GameScreen() {
                           viewState={viewState}
                           setViewState={setViewState}
                           verticalScale={verticalScale}
-                          setVerticalScale={!isMobile ? setVerticalScale : undefined}
+                          showVolumeProfile={showVolumeProfile}
+                          setShowVolumeProfile={setShowVolumeProfile}
                         />
                       </div>
                       <div className="relative w-full h-[180px] mt-2">
