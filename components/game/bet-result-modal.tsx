@@ -55,7 +55,7 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
               </>
             ) : (
               <>
-                Ganancia: <span className={`font-mono text-2xl ml-2 ${won ? 'text-green-400' : 'text-red-400'}`}>{bet.winnings > 0 ? `+${bet.winnings.toFixed(2)}` : bet.winnings.toFixed(2)} $</span>
+                Ganancia: <span className={`font-mono text-2xl ml-2 ${won ? 'text-green-400' : 'text-red-400'}`}>{(bet.winnings ?? 0) > 0 ? `+${(bet.winnings ?? 0).toFixed(2)}` : (bet.winnings ?? 0).toFixed(2)} $</span>
               </>
             )}
           </div>

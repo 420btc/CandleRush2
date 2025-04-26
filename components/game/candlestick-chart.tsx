@@ -211,14 +211,9 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     const xScale = (dimensions.width / timeRange) * viewState.scale
     const yScale = (dimensions.height / priceRange) * viewState.scale
 
-    // Limitar el offset para que el gráfico no se salga del recuadro
-    const maxOffsetX = Math.max(0, timeRange * viewState.scale - timeRange)
-    const maxOffsetY = Math.max(0, priceRange * viewState.scale - priceRange)
-
-    // Permitir pan hacia la izquierda hasta la mitad del canvas
-const minOffsetX = -dimensions.width / 2
-const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffsetX)
-    const clampedOffsetY = Math.min(Math.max(0, viewState.offsetY), maxOffsetY)
+    // Paneo completamente libre en ambos ejes
+    const clampedOffsetX = viewState.offsetX;
+    const clampedOffsetY = viewState.offsetY;
 
     if (clampedOffsetX !== viewState.offsetX || clampedOffsetY !== viewState.offsetY) {
       setViewState((prev: ViewState) => ({
@@ -249,7 +244,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
 
 
     // Draw candles with offset
-    const candleWidth = Math.min(Math.max((dimensions.width / (allCandles.length / viewState.scale)) * 0.8, 2), 15)
+    const candleWidth = Math.min(Math.max((dimensions.width / (allCandles.length / viewState.scale)) * 1, 2), 15)
 
     // Crear un mapa de apuestas por timestamp para acceso rápido
     const betsByTimestamp = new Map()
@@ -372,6 +367,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
     const ema10 = calculateEMA(10, allCandles);
     const ema55 = calculateEMA(55, allCandles);
     const ema200 = calculateEMA(200, allCandles);
+    const ema365 = calculateEMA(365, allCandles);
 
     // Función para dibujar una línea de EMA
     function drawEMA(emaArray: (number | null)[], color: string) {
@@ -404,12 +400,9 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
     drawEMA(ema10, '#a259f7'); // Morado
     drawEMA(ema55, '#FFD600'); // Dorado
     drawEMA(ema200, '#2196f3'); // Azul
+    drawEMA(ema365, '#22c55e'); // Verde
 
-    // Draw chart title and info
-    ctx.fillStyle = "#ffffff"
-    ctx.font = "bold 12px Arial"
-    ctx.textAlign = "left"
-    ctx.fillText(`${currentCandle ? currentCandle.close.toFixed(2) : ""}`, 10, 20)
+
 
     // Reset transformation
     ctx.resetTransform()

@@ -123,7 +123,15 @@ export default function GameScreen() {
   }, [userBalance]);
 
   // Estado de sincronización de vista para gráficos
-  const [viewState, setViewState] = useState({
+  interface ViewState {
+    offsetX: number;
+    offsetY: number;
+    scale: number;
+    startX: number | null;
+    startY: number | null;
+    isDragging: boolean;
+  }
+  const [viewState, setViewState] = useState<ViewState>({
     offsetX: 0,
     offsetY: 0,
     scale: 1,
@@ -204,11 +212,19 @@ export default function GameScreen() {
           won: isWin,
           amount: isWin ? (lastResolved.amount * 0.9) : lastResolved.amount,
           bet: {
+            id: lastResolved.id,
             prediction: lastResolved.prediction,
             amount: lastResolved.amount,
             timestamp: lastResolved.timestamp,
             symbol: lastResolved.symbol,
             timeframe: lastResolved.timeframe,
+            status: lastResolved.status,
+            resolvedAt: lastResolved.resolvedAt,
+            leverage: lastResolved.leverage,
+            entryPrice: lastResolved.entryPrice,
+            liquidationPrice: lastResolved.liquidationPrice,
+            wasLiquidated: lastResolved.wasLiquidated,
+            winnings: lastResolved.winnings,
           },
           candle: {
             open: resolvedCandle.open,
@@ -407,8 +423,22 @@ export default function GameScreen() {
           </div>
         </div>
       )}
-      <BetResultModal open={showBetModal} onOpenChange={setShowBetModal} result={showBetModal && betResult && (betResult.bet && 'status' in betResult.bet) ? betResult : (showBetModal && bets.length > 0 ? {
-  bet: bets[bets.length - 1],
+      <BetResultModal open={showBetModal} onOpenChange={setShowBetModal} result={showBetModal && betResult && (betResult.bet && 'status' in betResult.bet) ? { bet: betResult.bet, candle: betResult.candle } : (showBetModal && bets.length > 0 ? {
+  bet: {
+    id: bets[bets.length - 1].id,
+    prediction: bets[bets.length - 1].prediction,
+    amount: bets[bets.length - 1].amount,
+    timestamp: bets[bets.length - 1].timestamp,
+    symbol: bets[bets.length - 1].symbol,
+    timeframe: bets[bets.length - 1].timeframe,
+    status: bets[bets.length - 1].status,
+    resolvedAt: bets[bets.length - 1].resolvedAt,
+    leverage: bets[bets.length - 1].leverage,
+    entryPrice: bets[bets.length - 1].entryPrice,
+    liquidationPrice: bets[bets.length - 1].liquidationPrice,
+    wasLiquidated: bets[bets.length - 1].wasLiquidated,
+    winnings: bets[bets.length - 1].winnings,
+  },
   candle: betResult?.candle || {
     open: bets[bets.length - 1].entryPrice || 0,
     close: bets[bets.length - 1].entryPrice || 0,
@@ -637,19 +667,21 @@ export default function GameScreen() {
                           {/* Betting buttons */}
                           <div className="flex gap-4 justify-center w-full mt-2">
                             <button
-                              className="px-4 py-2 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-lg shadow transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[120px]"
-                              onClick={() => handleBullishBet()}
-                              disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10 || betAmount < 10}
-                            >
-                              Apostar alcista
-                            </button>
+                               className="px-4 py-2 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-lg shadow transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[120px] flex items-center justify-center gap-1"
+                               onClick={() => handleBullishBet()}
+                               disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10 || betAmount < 10}
+                             >
+                               <img src="/bull.png" alt="Bullish" style={{ width: 20, height: 20, objectFit: 'contain', marginRight: 4 }} />
+                               <span>Apostar alcista</span>
+                             </button>
                             <button
-                              className="px-4 py-2 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-lg shadow transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[120px]"
-                              onClick={() => handleBearishBet()}
-                              disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10 || betAmount < 10}
-                            >
-                              Apostar bajista
-                            </button>
+                               className="px-4 py-2 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-lg shadow transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[120px] flex items-center justify-center gap-1"
+                               onClick={() => handleBearishBet()}
+                               disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 10 || betAmount < 10}
+                             >
+                               <img src="/bear.png" alt="Bearish" style={{ width: 20, height: 20, objectFit: 'contain', marginRight: 4 }} />
+                               <span>Apostar bajista</span>
+                             </button>
                           </div>
                         </div>
 
