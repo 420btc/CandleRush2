@@ -667,7 +667,7 @@ return (
     <div className="absolute bottom-4 right-4 flex gap-2 z-40">
       <button
         onClick={handleReset}
-        className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
+        className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
         aria-label="Restablecer vista"
       >
         <svg
@@ -676,7 +676,7 @@ return (
           height="16"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="currentColor"
+          stroke="#111"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -687,17 +687,44 @@ return (
       </button>
       <button
         onClick={handleZoomIn}
-        className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
+        className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
         aria-label="Acercar"
       >
-        +
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#111"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
       </button>
       <button
         onClick={handleZoomOut}
-        className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-full"
+        className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
         aria-label="Alejar"
       >
-        -
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#111"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
       </button>
     </div>
     {/* Loading overlay */}

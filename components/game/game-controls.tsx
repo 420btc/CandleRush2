@@ -15,10 +15,10 @@ const AVAILABLE_SYMBOLS = [
   "BTCUSDT", "ETHUSDT", "IOTAUSDT", "ADAUSDT", "RENDERUSDT", // RENDERUSDT a la quinta posición
   "XRPUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", // DOGEUSDT movido tras los antiguos
   "TRONUSDT", "XLMUSDT", "PEPEUSDT", "TRUMPUSDT",
-  "WLDUSDT", "LINKUSDT", "VETUSDT"
+  "WLDUSDT", "LINKUSDT", "VETUSDT", "SUIUSDT"
 ]
 
-const AVAILABLE_TIMEFRAMES = ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "1d"]
+const AVAILABLE_TIMEFRAMES = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d"]
 
 export default function GameControls({
   onSymbolChange,
