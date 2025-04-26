@@ -24,6 +24,8 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
+  // Estado para escalar verticalmente la gráfica (solo PC)
+  const [verticalScale, setVerticalScale] = useState(1);
   // --- NUEVO: Layout 100vh sin márgenes verticales ---
   // Aplica estilos globales solo a esta pantalla
   React.useEffect(() => {
@@ -142,7 +144,7 @@ export default function GameScreen() {
   });
 
   // Estado para apalancamiento
-  const [leverage, setLeverage] = useState(1);
+  const [leverage, setLeverage] = useState(100);
 
   // Calcular precio de liquidación en tiempo real
   const entryPrice = currentCandle?.close || 0;
@@ -430,29 +432,41 @@ export default function GameScreen() {
           </div>
         </div>
       )}
-      <BetResultModal open={showBetModal} onOpenChange={setShowBetModal} result={showBetModal && betResult && (betResult.bet && 'status' in betResult.bet) ? { bet: betResult.bet, candle: betResult.candle } : (showBetModal && bets.length > 0 ? {
-  bet: {
-    id: bets[bets.length - 1].id,
-    prediction: bets[bets.length - 1].prediction,
-    amount: bets[bets.length - 1].amount,
-    timestamp: bets[bets.length - 1].timestamp,
-    symbol: bets[bets.length - 1].symbol,
-    timeframe: bets[bets.length - 1].timeframe,
-    status: bets[bets.length - 1].status,
-    resolvedAt: bets[bets.length - 1].resolvedAt,
-    leverage: bets[bets.length - 1].leverage,
-    entryPrice: bets[bets.length - 1].entryPrice,
-    liquidationPrice: bets[bets.length - 1].liquidationPrice,
-    wasLiquidated: bets[bets.length - 1].wasLiquidated,
-    winnings: bets[bets.length - 1].winnings,
-  },
-  candle: betResult?.candle || {
-    open: bets[bets.length - 1].entryPrice || 0,
-    close: bets[bets.length - 1].entryPrice || 0,
-    high: bets[bets.length - 1].entryPrice || 0,
-    low: bets[bets.length - 1].entryPrice || 0,
-  }
-} : null)} />
+      <BetResultModal
+  open={showBetModal}
+  onOpenChange={setShowBetModal}
+  result={(() => {
+    if (showBetModal && betResult && betResult.bet && 'status' in betResult.bet && 'id' in betResult.bet) {
+      return { bet: betResult.bet, candle: betResult.candle };
+    } else if (showBetModal && bets.length > 0) {
+      const last = bets[bets.length - 1];
+      return {
+        bet: {
+          id: last.id,
+          prediction: last.prediction,
+          amount: last.amount,
+          timestamp: last.timestamp,
+          symbol: last.symbol,
+          timeframe: last.timeframe,
+          status: last.status,
+          resolvedAt: last.resolvedAt,
+          leverage: last.leverage,
+          entryPrice: last.entryPrice,
+          liquidationPrice: last.liquidationPrice,
+          wasLiquidated: last.wasLiquidated,
+          winnings: last.winnings,
+        },
+        candle: betResult?.candle || {
+          open: last.entryPrice || 0,
+          close: last.entryPrice || 0,
+          high: last.entryPrice || 0,
+          low: last.entryPrice || 0,
+        }
+      };
+    }
+    return null;
+  })()}
+/>
       <div className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col" style={{ transform: 'scaleX(1.0) scaleY(0.87)', transformOrigin: 'top center' }} >
       {bonusMessage && (
         <div className="w-full flex justify-center mt-4">
@@ -503,8 +517,25 @@ export default function GameScreen() {
               </nav>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-[#FFD600]">{user ? user.username : "Invitado"}</span>
-              <span className="font-bold text-[#FFD600]">${userBalance.toFixed(2)}</span>
+              {user ? (
+                <>
+                  <button
+                    onClick={() => window.location.href = '/profile'}
+                    className="text-sm font-bold text-[#FFD600] hover:underline hover:text-yellow-300 transition px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
+                    style={{ background: 'rgba(255, 214, 0, 0.08)' }}
+                    title="Ver perfil"
+                    data-component-name="GameScreen"
+                  >
+                    {user.username}
+                  </button>
+                  <span className="font-bold text-[#FFD600]">${userBalance.toFixed(2)}</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm font-bold text-[#FFD600]">Invitado</span>
+                  <span className="font-bold text-[#FFD600]">$0.00</span>
+                </>
+              )}
               <a
                 href="https://btcer.fun"
                 target="_blank"
@@ -567,9 +598,14 @@ export default function GameScreen() {
                     <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
                     <CardContent className="relative p-0 bg-black rounded-b-2xl overflow-hidden">
                       <div className="relative w-full h-[420px]">
-                        <CandlestickChart candles={candles} currentCandle={currentCandle} viewState={viewState} setViewState={setViewState} />
-                        {/* Overlay de volumen translúcido */}
-                        
+                        <CandlestickChart
+                          candles={candles}
+                          currentCandle={currentCandle}
+                          viewState={viewState}
+                          setViewState={setViewState}
+                          verticalScale={verticalScale}
+                          setVerticalScale={!isMobile ? setVerticalScale : undefined}
+                        />
                       </div>
                       <div className="relative w-full h-[180px] mt-2">
                         <MacdChart candles={candles} viewState={viewState} />
@@ -611,7 +647,7 @@ export default function GameScreen() {
     <select
       id="leverage"
       className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-lg px-2 py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none"
-      value={leverage}
+      value={leverage || 100}
       onChange={e => setLeverage(Number(e.target.value))}
       style={{ minWidth: 70 }}
     >

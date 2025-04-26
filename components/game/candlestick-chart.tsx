@@ -12,6 +12,7 @@ interface CandlestickChartProps {
   currentCandle: Candle | null;
   viewState: ViewState;
   setViewState: React.Dispatch<React.SetStateAction<ViewState>>;
+  verticalScale?: number;
 }
 
 interface ViewState {
@@ -23,7 +24,7 @@ interface ViewState {
   isDragging: boolean
 }
 
-export default function CandlestickChart({ candles, currentCandle, viewState, setViewState }: CandlestickChartProps) {
+export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale }: CandlestickChartProps & { setVerticalScale?: (v: number) => void }) {
   // Referencias para los iconos
   const bullImgRef = useRef<HTMLImageElement | null>(null);
   const bearImgRef = useRef<HTMLImageElement | null>(null);
@@ -209,7 +210,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     const priceRange = maxPrice - minPrice
     const timeRange = maxTime - minTime
     const xScale = (dimensions.width / timeRange) * viewState.scale
-    const yScale = (dimensions.height / priceRange) * viewState.scale
+    const yScale = (dimensions.height / priceRange) * viewState.scale * verticalScale
 
     // Paneo completamente libre en ambos ejes
     const clampedOffsetX = viewState.offsetX;
@@ -242,6 +243,24 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     ctx.fillStyle = "#000"
     ctx.fillRect(0, 0, dimensions.width, dimensions.height)
 
+    // Línea horizontal punteada amarilla translúcida (precio actual)
+    if (allCandles.length > 0) {
+      const last = allCandles[allCandles.length - 1];
+      const lastClose = last.close;
+      const yPrice = dimensions.height - ((lastClose - minPrice) * yScale - clampedOffsetY);
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = '#FFD600';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(0, yPrice);
+      ctx.lineTo(dimensions.width, yPrice);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
 
     // Draw candles with offset
     const candleWidth = Math.min(Math.max((dimensions.width / (allCandles.length / viewState.scale)) * 1, 2), 15)
