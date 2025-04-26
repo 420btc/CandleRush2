@@ -121,6 +121,8 @@ export default function GameScreen() {
     };
     diff: number;
   }>(null);
+  // Nuevo: recordar la última apuesta notificada
+  const [lastNotifiedBetTimestamp, setLastNotifiedBetTimestamp] = useState<number | null>(null);
   const [showBetModal, setShowBetModal] = useState(false);
 
 
@@ -144,7 +146,7 @@ export default function GameScreen() {
       .sort((a, b) => ((b.resolvedAt ?? 0) - (a.resolvedAt ?? 0)))[0];
     if (
       lastResolved &&
-      (!betResult || betResult.bet.timestamp !== lastResolved.timestamp || betResult.bet.prediction !== lastResolved.prediction)
+      lastResolved.timestamp !== lastNotifiedBetTimestamp // Solo si es nueva
     ) {
       // Buscar la vela correspondiente
       const resolvedCandle = candles.find(c => Math.abs(c.timestamp - lastResolved.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
@@ -170,15 +172,16 @@ export default function GameScreen() {
           },
           diff,
         });
-        setTimeout(() => setShowBetModal(true), 10); // abrir modal tras render
+        setShowBetModal(true);
+        setLastNotifiedBetTimestamp(lastResolved.timestamp); // Marcar como notificada
+        setTimeout(() => setShowBetModal(false), 2800);
         setTimeout(() => setTriggerLose(isLost), 20);
         setTimeout(() => setTriggerWin(isWin), 20);
-        setTimeout(() => setShowBetModal(false), 2800);
         setTimeout(() => setTriggerLose(false), 1000);
         setTimeout(() => setTriggerWin(false), 1000);
       }
     }
-  }, [bets, candles, betResult]);
+  }, [bets, candles, lastNotifiedBetTimestamp]);
 
   useEffect(() => {
     if (bonusInfo && (bonusInfo.bonus > 0 || bonusInfo.message)) {
@@ -369,7 +372,7 @@ export default function GameScreen() {
         </div>
       )}
       <div className="flex flex-col gap-6">
-          <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-2 pt-4 pb-4 md:p-8 mb-2 shadow-lg min-h-[50px] w-full">
+           <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-2 pt-4 pb-4 md:p-8 mb-2 shadow-lg min-h-[50px] w-full">
             <div className="flex items-center gap-6 w-full lg:w-auto">
                <h1 className="text-2xl md:text-3xl font-extrabold text-[#FFD600] tracking-tight" data-component-name="GameScreen">Candle Rush 2.0</h1>
               <nav className="flex gap-4 ml-4">
@@ -411,8 +414,18 @@ export default function GameScreen() {
               >
                 Candle Rush 1.0&nbsp;&rarr;&nbsp;btcer.fun
               </a>
+              {/* SoundManager pequeño en la cabecera */}
+              <div className="ml-2 flex items-center">
+                <SoundManager
+                  muted={muted}
+                  onToggleMute={() => setMuted(m => !m)}
+                  triggerLose={triggerLose}
+                  triggerWin={triggerWin}
+                />
+              </div>
             </div>
           </header>
+
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-3 flex-grow h-full min-h-[0] lg:h-[calc(100vh-120px)]">
             <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:h-full">
               {/* Tarjeta principal con gráfico y controles */}
@@ -437,6 +450,7 @@ export default function GameScreen() {
                           <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
                         </div>
                       </div>
+
                       {/* Contador grande centrado debajo */}
                       <div className="w-full flex justify-center">
                         <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl my-2">
@@ -457,9 +471,7 @@ export default function GameScreen() {
                         <CandlestickChart candles={candles} currentCandle={currentCandle} />
                       </div>
                     </div>
-                    <div className="absolute top-2 right-2 z-20">
-                      <SoundManager muted={muted} onToggleMute={() => setMuted(m => !m)} triggerLose={triggerLose} triggerWin={triggerWin} />
-                    </div>
+
                   </div>
 
                   {/* Controles justo debajo del gráfico */}
@@ -557,20 +569,10 @@ export default function GameScreen() {
 
 
 
-              <Card className="bg-black border-[#FFD600] lg:hidden">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <History className="h-5 w-5" />
-                    Historial de Apuestas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <BetHistory />
-                </CardContent>
-              </Card>
+
             </div>
 
-            <div className="flex flex-col h-full lg:h-full m-0 p-0 gap-0">
+            <div className="flex flex-col h-full min-h-0 flex-1 lg:h-full m-0 p-0 gap-0">
               <Card className="bg-black border-[#FFD600]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -583,27 +585,38 @@ export default function GameScreen() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-black border-[#FFD600] w-full h-auto lg:h-full p-0 m-0">
+              <Card className="bg-black border-[#FFD600] w-full h-[420px] flex flex-col min-h-0">
                 <CardHeader className="pb-0">
                   <Tabs defaultValue="history">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center gap-2">
                       <CardTitle>Actividad</CardTitle>
-                      <TabsList className="bg-black">
-                        <TabsTrigger value="history" className="data-[state=active]:bg-[#FFD600]">
-                          <History className="h-4 w-4 mr-1" />
-                          Historial
-                        </TabsTrigger>
-                        <TabsTrigger value="achievements" className="data-[state=active]:bg-[#FFD600]">
-                          <Trophy className="h-4 w-4 mr-1" />
-                          Logros
-                        </TabsTrigger>
-                      </TabsList>
+                      <div className="flex items-center gap-1 flex-nowrap">
+                        <TabsList className="bg-black flex-nowrap gap-1">
+                          <TabsTrigger value="history" className="data-[state=active]:bg-[#FFD600]">
+                            <History className="h-4 w-4 mr-1" />
+                            Historial
+                          </TabsTrigger>
+                          <TabsTrigger value="achievements" className="data-[state=active]:bg-[#FFD600]">
+                            <Trophy className="h-4 w-4 mr-1" />
+                            Logros
+                          </TabsTrigger>
+                          <button
+                            aria-label="Eliminar historial de apuestas"
+                            title="Eliminar historial de apuestas"
+                            className="p-0.5 rounded hover:bg-red-800 bg-red-700/80 text-white flex items-center transition h-[22px] w-[22px] ml-0"
+                            style={{ minWidth: 0, minHeight: 0 }}
+                            onClick={() => { if(window.confirm('¿Seguro que deseas eliminar todo el historial de apuestas?')) window.dispatchEvent(new CustomEvent('clearBets')); }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+                          </button>
+                        </TabsList>
+                      </div>
                     </div>
                   </Tabs>
                 </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="history">
-                    <TabsContent value="history" className="mt-0">
+                <CardContent className="flex-1 min-h-0 h-full p-0">
+                  <Tabs defaultValue="history" className="h-full flex-1 min-h-0">
+                    <TabsContent value="history" className="h-full flex-1 min-h-0 p-0">
                       <BetHistory />
                     </TabsContent>
                     <TabsContent value="achievements" className="mt-0">

@@ -80,6 +80,7 @@ interface GameContextType {
   bonusInfo: { bonus: number; size: number; message: string } | null
   setBonusInfo: React.Dispatch<React.SetStateAction<{ bonus: number; size: number; message: string } | null>>
   addCoins: (amount: number) => void
+  clearBets: () => void
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
@@ -107,6 +108,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [betsHydrated, setBetsHydrated] = useState(false);
   const bets = betsByPair[currentSymbol]?.[timeframe] || [];
   const [userBalance, setUserBalance] = useState<number>(100) // Saldo inicial reducido a 100$
+
+  // Función para limpiar todas las apuestas
+  const clearBets = () => {
+    setBetsByPair({});
+    localStorage.removeItem("betsByPair");
+  };
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0)
   const [currentCandleBets, setCurrentCandleBets] = useState<number>(0)
@@ -736,7 +743,7 @@ const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
         currentSymbol,
         timeframe,
         bets,
-        betsByPair, // Añadido para cumplir el tipo y exponer globalmente
+        betsByPair,
         userBalance,
         isConnected,
         placeBet,
@@ -747,6 +754,7 @@ const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
         bonusInfo,
         setBonusInfo,
         addCoins,
+        clearBets,
       }}
     >
       {children}

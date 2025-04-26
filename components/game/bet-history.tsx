@@ -8,7 +8,7 @@ import { useState, useEffect } from "react"
 import BetResultModal from "@/components/game/bet-result-modal"
 
 export default function BetHistory() {
-  const { bets, candles } = useGame()
+  const { bets, candles, clearBets } = useGame()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedResult, setSelectedResult] = useState<any>(null)
   const [localTimes, setLocalTimes] = useState<Record<string, string>>({});
@@ -24,6 +24,13 @@ export default function BetHistory() {
     setHydrated(true);
   }, [bets]);
 
+  // Suscribirse al evento global para limpiar historial
+  useEffect(() => {
+    const handler = () => clearBets();
+    window.addEventListener('clearBets', handler);
+    return () => window.removeEventListener('clearBets', handler);
+  }, [clearBets]);
+
   if (!hydrated) {
     // Evita hydration mismatch
     return null;
@@ -38,164 +45,86 @@ export default function BetHistory() {
   }
 
   return (
-    <>
-      <ScrollArea className="h-[500px] w-full lg:h-full lg:w-full">
-        <div className="space-y-0 w-full h-full">
-        {bets
-          .slice()
-          .reverse()
-          .map((bet) => (
-            <div key={bet.id} className={`py-5 min-h-[80px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between w-full text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
-              <div className="flex items-center gap-4 w-full md:w-1/2">
-                <div className="flex flex-col items-center justify-center min-w-[36px]">
-                  <img
-                    src={bet.prediction === "BULLISH" ? "/bull.png" : "/bear.png"}
-                    alt={bet.prediction === "BULLISH" ? "Bull" : "Bear"}
-                    className="w-7 h-7 object-contain mx-auto"
-                  />
-                  <span className={`text-xs font-bold mt-1 ${bet.prediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>{bet.prediction === "BULLISH" ? "BULL" : "BEAR"}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">
-                    {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
-                  </p>
-                  <p className="text-sm text-white">{localTimes[bet.id] || ''}</p>
-                  {/* Mostrar precio de entrada */}
-                  <p className="text-xs text-yellow-200 mt-1">Entrada: {(() => {
-                    const candle = candles.reduce((prev, curr) => {
-                      return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
-                        ? curr
-                        : prev
-                    }, candles[0]);
-                    return candle?.open?.toFixed(2) ?? '-';
-                  })()}</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto justify-between">
-                <span className="font-bold text-white text-lg">${bet.amount.toFixed(2)}</span>
-
-                {bet.status === "PENDING" && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-5 w-5 text-yellow-400 animate-pulse" />
-                    <span className="text-sm bg-yellow-500/20 text-yellow-100 px-2 py-0.5 rounded-full">Pendiente</span>
+    <div className="h-full flex-1 min-h-0 w-full flex flex-col">
+      <ScrollArea className="h-full flex-1 min-h-0 w-full pb-4">
+        <div className="space-y-0">
+          {bets
+            .slice()
+            .reverse()
+            .map((bet) => (
+              <div key={bet.id} className={`py-3 min-h-[80px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between max-w-[280px] mx-auto text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
+                <div className="flex items-center gap-4 w-full md:w-1/2">
+                  <div className="flex flex-col items-center justify-center min-w-[36px]">
+                    <img
+                      src={bet.prediction === "BULLISH" ? "/bull.png" : "/bear.png"}
+                      alt={bet.prediction === "BULLISH" ? "Bull" : "Bear"}
+                      className="w-7 h-7 object-contain mx-auto"
+                    />
+                    <span className={`text-xs font-bold mt-1 ${bet.prediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>{bet.prediction === "BULLISH" ? "BULL" : "BEAR"}</span>
                   </div>
-                )}
-
-                {bet.status === "WON" && (
-                  <div className="flex items-center gap-1">
-                    <CheckCircle className="h-4 w-4 text-green-400" />
-                    {(() => {
-                       if (!candles.length) return <span className="text-green-400 font-medium">+0</span>;
-                       const resolvedCandle = candles.reduce((prev, curr) => {
-                         return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
-                           ? curr
-                           : prev
-                       }, candles[0]);
-                       if (!resolvedCandle || typeof resolvedCandle.open !== "number" || typeof resolvedCandle.close !== "number") {
-                         return <span className="text-green-400 font-medium">+0</span>;
-                       }
-                       const open = resolvedCandle.open;
-                       const close = resolvedCandle.close;
-                       const movement = Math.abs(close - open);
-                       let multiplier = 1;
-                       if (movement < 10) multiplier = 1.1;
-                       else if (movement < 20) multiplier = 1.2;
-                       else if (movement < 50) multiplier = 1.5;
-                       else if (movement < 100) multiplier = 2.5;
-                       else if (movement < 200) multiplier = 5;
-                       else if (movement < 500) multiplier = 15;
-                       else if (movement < 800) multiplier = 40;
-                       else if (movement < 1500) multiplier = 70;
-                       else multiplier = 100;
-                       const payout = Math.min(999999, bet.amount * multiplier);
-                       return <span className="text-green-400 font-medium">+${payout.toFixed(2)}</span>;
-                    })()}
-                    <button
-                      className="ml-2 p-1 rounded hover:bg-zinc-600 transition"
-                      title="Ver resultado"
-                      onClick={() => {
-                         if (!candles.length) return;
-                         const resolvedCandle = candles.reduce((prev, curr) => {
-                           return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
-                             ? curr
-                             : prev
-                         }, candles[0]);
-                         if (!resolvedCandle || typeof resolvedCandle.open !== "number" || typeof resolvedCandle.close !== "number") return;
-                         const open = resolvedCandle.open;
-                         const close = resolvedCandle.close;
-                         const movement = Math.abs(close - open);
-                         let multiplier = 1;
-                         if (movement < 10) multiplier = 1.1;
-                         else if (movement < 20) multiplier = 1.2;
-                         else if (movement < 50) multiplier = 1.5;
-                         else if (movement < 100) multiplier = 2.5;
-                         else if (movement < 200) multiplier = 5;
-                         else if (movement < 500) multiplier = 15;
-                         else if (movement < 800) multiplier = 40;
-                         else if (movement < 1500) multiplier = 70;
-                         else multiplier = 100;
-                         const payout = Math.min(999999, bet.amount * multiplier);
-                         setSelectedResult({
-                           won: bet.status === "WON",
-                           amount: payout,
-                          bet: {
-                            prediction: bet.prediction,
-                            amount: bet.amount,
-                            timestamp: bet.timestamp,
-                            symbol: bet.symbol,
-                            timeframe: bet.timeframe,
-                          },
-                          candle: resolvedCandle || { open: 0, close: 0, high: 0, low: 0 },
-                          diff: resolvedCandle ? resolvedCandle.close - resolvedCandle.open : 0,
-                        })
-                        setModalOpen(true)
-                      }}
-                    >
-                      <Eye className="h-5 w-5 text-yellow-400" />
-                    </button>
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
+                    </p>
+                    <p className="text-sm text-white">{localTimes[bet.id] || ''}</p>
+                    {/* Mostrar precio de entrada */}
+                    <p className="text-xs text-yellow-200 mt-1">Entrada: {(() => {
+                      const candle = candles.reduce((prev, curr) => {
+                        return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
+                          ? curr
+                          : prev
+                      }, candles[0]);
+                      return candle?.open?.toFixed(2) ?? '-';
+                    })()}</p>
                   </div>
-                )}
-
-                {bet.status === "LOST" && (
-                  <div className="flex items-center gap-1">
-                    <XCircle className="h-4 w-4 text-red-400" />
-                    <span className="text-red-400 font-medium">-${bet.amount.toFixed(2)}</span>
-                    <button
-                      className="ml-2 p-1 rounded hover:bg-zinc-600 transition"
-                      title="Ver resultado"
-                      onClick={() => {
-                        const resolvedCandle = candles.reduce((prev, curr) => {
-                          return Math.abs(curr.timestamp - bet.timestamp) < Math.abs((prev?.timestamp ?? 0) - bet.timestamp)
-                            ? curr
-                            : prev
-                        }, candles[0])
+                </div>
+                <div className="flex flex-col items-center gap-1 w-full">
+                  <span className="font-bold text-white text-lg">${bet.amount.toFixed(2)}</span>
+                  {bet.status === "PENDING" && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-5 w-5 text-yellow-400 animate-pulse" />
+                      <span className="text-sm bg-yellow-500/20 text-yellow-100 px-2 py-0.5 rounded-full">Pendiente</span>
+                    </div>
+                  )}
+                  {bet.status === "WON" && (
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <span className="text-sm bg-green-500/20 text-green-100 px-2 py-0.5 rounded-full">Ganada</span>
+                    </div>
+                  )}
+                  {bet.status === "LOST" && (
+                    <div className="flex items-center gap-1">
+                      <XCircle className="h-5 w-5 text-red-400" />
+                      <span className="text-sm bg-red-500/20 text-red-100 px-2 py-0.5 rounded-full">Perdida</span>
+                    </div>
+                  )}
+                  <button
+                    className={`mt-1 px-2 py-1 bg-yellow-700/20 rounded-lg text-yellow-400 transition flex items-center justify-center ${bet.status === 'PENDING' ? 'opacity-40 cursor-not-allowed' : 'hover:bg-yellow-700/40'}`}
+                    disabled={bet.status === 'PENDING'}
+                    onClick={() => {
+                      if (bet.status !== 'PENDING') {
                         setSelectedResult({
-                          won: false,
+                          won: bet.status === "WON",
                           amount: bet.amount,
-                          bet: {
-                            prediction: bet.prediction,
-                            amount: bet.amount,
-                            timestamp: bet.timestamp,
-                            symbol: bet.symbol,
-                            timeframe: bet.timeframe,
-                          },
-                          candle: resolvedCandle || { open: 0, close: 0, high: 0, low: 0 },
-                          diff: resolvedCandle ? resolvedCandle.close - resolvedCandle.open : 0,
-                        })
-                        setModalOpen(true)
-                      }}
-                    >
-                      <Eye className="h-5 w-5 text-yellow-400" />
-                    </button>
-                  </div>
-                )}
+                          bet,
+                          candle: candles.find(c => Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1],
+                          diff: (() => {
+                            const candle = candles.find(c => Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
+                            return candle ? candle.close - candle.open : 0;
+                          })()
+                        });
+                        setModalOpen(true);
+                      }
+                    }}
+                  >
+                    <Eye className="h-5 w-5 text-yellow-400" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-      </div>
-    </ScrollArea>
-    <BetResultModal open={modalOpen} onOpenChange={setModalOpen} result={selectedResult} />
-    </>
+            ))}
+        </div>
+      </ScrollArea>
+      <BetResultModal open={modalOpen} onOpenChange={setModalOpen} result={selectedResult} />
+    </div>
   )
 }

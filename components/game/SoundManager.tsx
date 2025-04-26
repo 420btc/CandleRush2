@@ -8,7 +8,11 @@ interface SoundManagerProps {
   triggerWin: boolean;
 }
 
+
 export default function SoundManager({ muted, onToggleMute, triggerLose, triggerWin }: SoundManagerProps) {
+  // Volumen de música de fondo
+  const [musicVolume, setMusicVolume] = useState(0.45);
+
   // Refs para sonidos de victoria y derrota
   const loseRef = useRef<HTMLAudioElement | null>(null);
   const winRef = useRef<HTMLAudioElement | null>(null);
@@ -22,7 +26,7 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
   useEffect(() => {
     bgRefs.current = bgTracks.map((src, idx) => {
       const audio = new Audio(src);
-      audio.volume = 0.45;
+      audio.volume = musicVolume;
       audio.preload = "auto";
       // Solo marcar como cargado cuando el primero esté listo
       if (idx === 0) {
@@ -34,6 +38,13 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
       bgRefs.current.forEach(audio => audio.pause());
     };
   }, []);
+
+  // Actualizar volumen de música de fondo en tiempo real
+  useEffect(() => {
+    bgRefs.current.forEach(audio => {
+      audio.volume = musicVolume;
+    });
+  }, [musicVolume]);
 
   // Manejar reproducción secuencial y mute
   useEffect(() => {
@@ -51,9 +62,9 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
     let fadeInVol = 0;
     const fadeStep = 0.05;
     const fadeInterval = setInterval(() => {
-      fadeInVol = Math.min(0.45, fadeInVol + fadeStep);
+      fadeInVol = Math.min(musicVolume, fadeInVol + fadeStep);
       currentAudio.volume = fadeInVol;
-      if (fadeInVol >= 0.45) {
+      if (fadeInVol >= musicVolume) {
         clearInterval(fadeInterval);
       }
     }, 40);
@@ -77,7 +88,7 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
       currentAudio.onended = null;
       currentAudio.pause();
     };
-  }, [muted, bgLoaded, currentTrack]);
+  }, [muted, bgLoaded, currentTrack, musicVolume]);
 
   // Sonido de derrota
   useEffect(() => {
@@ -105,19 +116,43 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
     }
   }, [triggerWin]);
 
-  // Botón para mutear/desmutear
+  // Botón para mutear/desmutear y slider de volumen
   return (
-    <button
-      onClick={onToggleMute}
-      className={`z-50 rounded-full p-2 border-2 border-[#FFD600] bg-black/80 text-[#FFD600] shadow-lg hover:bg-[#FFD600] hover:text-black transition-all`}
-      style={{ fontSize: 16 }}
-      aria-label={muted ? "Activar sonido" : "Desactivar sonido"}
-    >
-      {muted ? (
-        <span role="img" aria-label="Sin sonido">🔇</span>
-      ) : (
-        <span role="img" aria-label="Sonando">🔊</span>
-      )}
-    </button>
+    <div className="flex flex-col items-center gap-2 scale-[1.2] origin-right">
+      <button
+        onClick={onToggleMute}
+        className="z-50 flex items-center justify-center rounded-full p-2 border-2 border-[#FFD600] bg-black/80 text-[#FFD600] shadow-lg hover:bg-[#FFD600] hover:text-black transition-all"
+        style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, padding: 0 }}
+        aria-label={muted ? "Activar sonido" : "Desactivar sonido"}
+      >
+        {muted ? (
+          // VolumeX de lucide-react
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="#FFD600" strokeWidth={2} style={{ display: 'block', margin: 'auto' }}>
+            <path d="M9 9v6h4l5 5V4l-5 5H9z" />
+            <line x1="18" y1="6" x2="6" y2="18" stroke="#FFD600" strokeWidth={2}/>
+          </svg>
+        ) : (
+          // Volume2 de lucide-react
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="#FFD600" strokeWidth={2} style={{ display: 'block', margin: 'auto' }}>
+            <polygon points="11 5 6 9H2v6h4l5 4V5z" stroke="#FFD600" strokeLinejoin="round" strokeWidth={2} fill="none"/>
+            <path d="M19 12c0-1.657-1.343-3-3-3m3 3c0 1.657-1.343 3-3 3m3-3h0" stroke="#FFD600" strokeWidth={2} fill="none"/>
+          </svg>
+        )}
+      </button>
+      {/* Control de volumen de música */}
+      <div className="flex flex-col items-center w-24">
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={musicVolume}
+          onChange={e => setMusicVolume(Number(e.target.value))}
+          className="w-full accent-yellow-400"
+          disabled={muted}
+        />
+        <span className="text-xs text-[#FFD600] mt-1 select-none">Volumen: {(musicVolume * 100).toFixed(0)}%</span>
+      </div>
+    </div>
   );
 }
