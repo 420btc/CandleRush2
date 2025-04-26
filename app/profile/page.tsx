@@ -2,6 +2,7 @@
 import Image from "next/image";
 import UserStats from "@/components/game/user-stats";
 import BetHistory from "@/components/game/bet-history";
+import Achievements from "../../components/profile/Achievements";
 
 import { useRouter } from "next/navigation";
 
@@ -54,36 +55,31 @@ function LoginLogoutButton() {
 export default function ProfilePage() {
   const router = useRouter();
   return (
-    <main className="min-h-screen bg-black flex flex-col items-center py-10 px-4">
-      {/* Botón para volver al menú principal */}
-      <button
-        className="absolute left-4 top-4 bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded shadow-lg transition-colors"
-        onClick={() => router.push('/menu')}
-      >
-        ← Volver al Menú
-      </button>
-      <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-8">
-        {/* BOTÓN LOGIN/DESLOGIN REAL */}
-        <LoginLogoutButton />
-        {/* Avatar y nombre */}
-        <div className="flex flex-col items-center gap-2">
-          <div className="relative w-32 h-32 rounded-full border-4 border-yellow-400 overflow-hidden shadow-lg">
+    <main className="min-h-screen flex items-center justify-center relative overflow-hidden bg-black">
+      {/* Fondo de perfil centrado */}
+      <div className="fixed inset-0 flex items-center justify-center z-0">
+        <img src="/fondoperfil.png" alt="Fondo perfil" className="max-w-full max-h-screen w-auto h-auto object-contain opacity-95 drop-shadow-xl" />
+      </div>
+      {/* Perfil y logo arriba */}
+      <div className="relative z-10 w-full flex flex-col items-center pt-8">
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <div className="relative w-56 h-56 rounded-full border-4 border-yellow-400 overflow-hidden shadow-2xl bg-black/70">
             <Image src="/perfil1.png" alt="Foto de perfil" fill className="object-cover" />
           </div>
-          <span className="text-2xl font-bold text-yellow-400 mt-2">{typeof window !== "undefined" && localStorage.getItem("currentUser") ? localStorage.getItem("currentUser") : "Usuario Pro"}</span>
+          <span className="text-3xl font-black text-yellow-400 mt-2 drop-shadow">{typeof window !== "undefined" && localStorage.getItem("currentUser") ? localStorage.getItem("currentUser") : "Usuario Pro"}</span>
         </div>
-
-        {/* Estadísticas */}
-        <div className="w-full bg-zinc-900 border-2 border-yellow-400 rounded-xl p-6 shadow-xl">
-          <h2 className="text-xl font-semibold text-yellow-400 mb-4">Estadísticas</h2>
-          <UserStats />
+        {/* Botón volver y login arriba */}
+        <div className="flex flex-row gap-4 items-center mb-8">
+          <button
+            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded shadow-lg transition-colors"
+            onClick={() => router.push('/menu')}
+          >
+            ← Volver al Menú
+          </button>
+          <LoginLogoutButton />
         </div>
-
-        {/* Historial de apuestas */}
-        <div className="w-full bg-zinc-900 border-2 border-yellow-400 rounded-xl p-6 shadow-xl">
-          <h2 className="text-xl font-semibold text-yellow-400 mb-4">Historial de Apuestas</h2>
-          <BetHistory />
-        </div>
+        {/* Sección de logros */}
+        <Achievements />
       </div>
     </main>
   );
