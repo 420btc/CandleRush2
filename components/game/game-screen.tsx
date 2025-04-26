@@ -21,6 +21,7 @@ import BetResultModal from "@/components/game/bet-result-modal"
 import BetAmountFlyup from "@/components/game/BetAmountFlyup"
 
 import SoundManager from "@/components/game/SoundManager";
+import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
   // --- NUEVO: Layout 100vh sin márgenes verticales ---
@@ -182,7 +183,9 @@ export default function GameScreen() {
 
   const [showAchievement, setShowAchievement] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<number>(0)
+  const [bettingPhaseDuration, setBettingPhaseDuration] = useState<number>(10000)
   const [timeUntilNextCandle, setTimeUntilNextCandle] = useState<number>(0)
+  const [waitingPhaseDuration, setWaitingPhaseDuration] = useState<number>(49000)
 
   // Estado de sonido
   const [muted, setMuted] = useState(false);
@@ -291,6 +294,8 @@ export default function GameScreen() {
       return Math.max(0, nextPhaseTime - now)
     }
     setTimeLeft(calculateTimeLeft())
+    // Guardar duración inicial SOLO al cambiar nextPhaseTime
+    if (nextPhaseTime) setBettingPhaseDuration(nextPhaseTime - Date.now())
     const interval = setInterval(() => {
       setTimeLeft(calculateTimeLeft())
     }, 100)
@@ -305,6 +310,8 @@ export default function GameScreen() {
       return Math.max(0, nextCandleTime - now)
     }
     setTimeUntilNextCandle(calculateTimeUntilNextCandle())
+    // Guardar duración inicial SOLO al cambiar nextCandleTime
+    if (nextCandleTime) setWaitingPhaseDuration(nextCandleTime - Date.now())
     const interval = setInterval(() => {
       setTimeUntilNextCandle(calculateTimeUntilNextCandle())
     }, 100)
@@ -537,6 +544,14 @@ export default function GameScreen() {
                         </div>
                       </div>
 
+                      {/* Barra de progreso de tiempo encima del contador */}
+                      <div className="w-full flex justify-center">
+                        <ProgressBar
+                          gamePhase={gamePhase}
+                          timeLeft={gamePhase === 'BETTING' ? timeLeft : timeUntilNextCandle}
+                          phaseDuration={gamePhase === 'BETTING' ? bettingPhaseDuration : waitingPhaseDuration}
+                        />
+                      </div>
                       {/* Contador grande centrado debajo */}
                       <div className="w-full flex justify-center">
                         <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl my-2">

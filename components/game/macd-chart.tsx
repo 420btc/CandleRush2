@@ -82,11 +82,25 @@ const histPoints = histSlice;
         {/* Histograma: verde si >0, rojo si <0 */}
         {/* MACD tipo "velas" más marcadas */}
         {histPoints.map((h, i) => {
-  // Barra más gruesa y colores vivos
-  const barWidth = Math.max(6, chartWidth / barsToShow - 2);
+  const barWidth = Math.max(5, chartWidth / barsToShow - 3);
   const x = (i / barsToShow) * chartWidth - barWidth / 2;
   const y = h >= 0 ? histoY(h) : chartHeight / 2;
   const height = Math.abs(histoY(h) - chartHeight / 2);
+  // Determinar si el valle/pico se está abriendo o cerrando
+  const prev = i > 0 ? Math.abs(histPoints[i - 1]) : 0;
+  const curr = Math.abs(h);
+  let fill = '#00FF85';
+  let shadow = 'drop-shadow(0 1px 3px #00FF8533)';
+  if (h < 0) {
+    fill = '#FF2222';
+    shadow = 'drop-shadow(0 1px 3px #FF222233)';
+  }
+  // Si el valor absoluto sube, usamos color claro
+  if (curr > prev) {
+    fill = h >= 0 ? '#66FFC2' : '#FF6666';
+    shadow = h >= 0 ? 'drop-shadow(0 1px 6px #66FFC299)' : 'drop-shadow(0 1px 6px #FF666699)';
+  }
+  // Si baja, color normal (más oscuro)
   return (
     <rect
       key={i}
@@ -94,9 +108,9 @@ const histPoints = histSlice;
       y={y}
       width={barWidth}
       height={height}
-      fill={h >= 0 ? '#00FF85' : '#FF2222'}
+      fill={fill}
       opacity={h === 0 ? 0.5 : 1}
-      style={{ filter: h > 0 ? 'drop-shadow(0 2px 6px #00FF8555)' : 'drop-shadow(0 2px 6px #FF222255)' }}
+
       rx={3}
     />
   );
