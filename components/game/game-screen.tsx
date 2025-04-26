@@ -519,12 +519,6 @@ export default function GameScreen() {
                 </button>
                 <button
                   className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
-                  onClick={() => window.location.href = '/levels'}
-                >
-                  Niveles
-                </button>
-                <button
-                  className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
                   onClick={() => window.location.href = '/profile'}
                 >
                   Perfil

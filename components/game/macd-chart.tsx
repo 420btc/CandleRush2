@@ -126,17 +126,17 @@ const histPoints = histSlice;
         {/* Línea MACD */}
         <polyline
            fill="none"
-           stroke="#00FF85"
+           stroke="#a259ff"
            strokeWidth={1}
            points={macdPoints.map(p => p.join(",")).join(" ")}
            opacity={0.95}
          />
          <polyline
            fill="none"
-           stroke="#fff"
+           stroke="#FFD600"
            strokeWidth={1}
            points={signalPoints.map(p => p.join(",")).join(" ")}
-           opacity={0.8}
+           opacity={0.85}
          />
         {/* Línea central */}
         <line x1={0} y1={chartHeight / 2} x2={chartWidth} y2={chartHeight / 2} stroke="#fff" strokeDasharray="4 2" opacity={0.2} />
