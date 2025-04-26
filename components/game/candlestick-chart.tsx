@@ -5,9 +5,13 @@ import type { Candle } from "@/types/game"
 import { useGame } from "@/context/game-context"
 import { useDevice } from "@/context/device-mode-context"
 
+import React from 'react';
+
 interface CandlestickChartProps {
-  candles: Candle[]
-  currentCandle: Candle | null
+  candles: Candle[];
+  currentCandle: Candle | null;
+  viewState: ViewState;
+  setViewState: React.Dispatch<React.SetStateAction<ViewState>>;
 }
 
 interface ViewState {
@@ -19,7 +23,7 @@ interface ViewState {
   isDragging: boolean
 }
 
-export default function CandlestickChart({ candles, currentCandle }: CandlestickChartProps) {
+export default function CandlestickChart({ candles, currentCandle, viewState, setViewState }: CandlestickChartProps) {
   // Referencias para los iconos
   const bullImgRef = useRef<HTMLImageElement | null>(null);
   const bearImgRef = useRef<HTMLImageElement | null>(null);
@@ -100,14 +104,8 @@ export default function CandlestickChart({ candles, currentCandle }: Candlestick
   }, []);
 
   // Estado para la navegación del gráfico
-  const [viewState, setViewState] = useState<ViewState>({
-    offsetX: 0,
-    offsetY: 0,
-    scale: 1,
-    startX: null,
-    startY: null,
-    isDragging: false,
-  })
+  // Ahora el viewState y setViewState vienen de props, no se definen aquí
+
 
   // Función para enfocar y hacer zoom en la última vela
   const handleFocusLastCandle = useCallback(() => {
@@ -223,7 +221,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
     const clampedOffsetY = Math.min(Math.max(0, viewState.offsetY), maxOffsetY)
 
     if (clampedOffsetX !== viewState.offsetX || clampedOffsetY !== viewState.offsetY) {
-      setViewState((prev) => ({
+      setViewState((prev: ViewState) => ({
         ...prev,
         offsetX: clampedOffsetX,
         offsetY: clampedOffsetY,
@@ -447,7 +445,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
 
   // Eventos de mouse/touch para navegación
   const handleMouseDown = (e: MouseEvent) => {
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       startX: e.clientX,
       startY: e.clientY,
@@ -467,7 +465,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
     const minOffsetX = -dimensions.width / 2;
     const maxOffsetX = Math.max(0, timeRange * viewState.scale - timeRange);
 
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       offsetX: Math.min(Math.max(prev.offsetX - deltaX, minOffsetX), maxOffsetX),
       offsetY: Math.max(0, prev.offsetY + deltaY),
@@ -477,7 +475,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
   };
 
   const handleMouseUp = () => {
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       isDragging: false,
     }));
@@ -486,7 +484,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     const deltaY = e.deltaY;
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       scale: Math.min(5, Math.max(0.5, prev.scale * (1 - deltaY / 1000))),
     }));
@@ -494,7 +492,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
 
   const handleTouchStart = (e: TouchEvent) => {
     if (e.touches.length > 1) return;
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       startX: e.touches[0].clientX,
       startY: e.touches[0].clientY,
@@ -514,7 +512,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
     const minOffsetX = -dimensions.width / 2;
     const maxOffsetX = Math.max(0, timeRange * viewState.scale - timeRange);
 
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       offsetX: Math.min(Math.max(prev.offsetX - deltaX, minOffsetX), maxOffsetX),
       offsetY: Math.max(0, prev.offsetY + deltaY),
@@ -524,7 +522,7 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
   };
 
   const handleTouchEnd = () => {
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       isDragging: false,
     }));
@@ -569,14 +567,14 @@ const clampedOffsetX = Math.min(Math.max(minOffsetX, viewState.offsetX), maxOffs
   };
 
   const handleZoomIn = () => {
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       scale: Math.min(5, prev.scale * 1.2),
     }));
   };
 
   const handleZoomOut = () => {
-    setViewState((prev) => ({
+    setViewState((prev: ViewState) => ({
       ...prev,
       scale: Math.max(0.2, prev.scale / 1.2),
     }));

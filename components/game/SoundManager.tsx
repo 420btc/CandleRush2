@@ -131,11 +131,11 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
 
   // Botón para mutear/desmutear y slider de volumen
   return (
-    <div className="flex flex-col items-center gap-2 scale-[1.2] origin-right">
+    <div className="flex flex-row items-center gap-1 bg-black/80 p-2 rounded-lg shadow-lg" style={{minWidth:'unset',minHeight:'unset'}} data-component-name="SoundManager">
       <button
         onClick={onToggleMute}
-        className="z-50 flex items-center justify-center rounded-full p-2 border-2 border-[#FFD600] bg-black/80 text-[#FFD600] shadow-lg hover:bg-[#FFD600] hover:text-black transition-all"
-        style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, padding: 0 }}
+        className="flex items-center justify-center rounded p-1 border-2 border-[#FFD600] bg-transparent text-[#FFD600] hover:bg-[#FFD600] hover:text-black transition-all"
+        style={{width:28,height:28,minWidth:28,minHeight:28,padding:0}}
         aria-label={muted ? "Activar sonido" : "Desactivar sonido"}
       >
         {muted ? (
@@ -153,19 +153,17 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
         )}
       </button>
       {/* Control de volumen de música */}
-      <div className="flex flex-col items-center w-24">
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={musicVolume}
-          onChange={e => setMusicVolume(Number(e.target.value))}
-          className="w-full accent-yellow-400"
-          disabled={muted}
-        />
-        <span className="text-xs text-[#FFD600] mt-1 select-none">Volumen: {(musicVolume * 100).toFixed(0)}%</span>
-      </div>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={musicVolume}
+        onChange={e => setMusicVolume(Number(e.target.value))}
+        className="w-20 accent-yellow-400"
+        disabled={muted}
+        data-component-name="SoundManager"
+      />
     </div>
   );
 }

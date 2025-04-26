@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { useGame } from "@/context/game-context"
 import { useAuth } from "@/context/auth-context"
 import { useAchievement } from "@/context/achievement-context"
@@ -23,6 +23,18 @@ import BetAmountFlyup from "@/components/game/BetAmountFlyup"
 import SoundManager from "@/components/game/SoundManager";
 
 export default function GameScreen() {
+  // --- NUEVO: Layout 100vh sin márgenes verticales ---
+  // Aplica estilos globales solo a esta pantalla
+  React.useEffect(() => {
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    // No tocar overflow (permitir scroll)
+    return () => {
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+    };
+  }, []);
+
   // Context hooks FIRST (fixes userBalance/addCoins before use)
   const {
     gamePhase,
@@ -109,6 +121,16 @@ export default function GameScreen() {
       setBetAmount(userBalance > 0 ? userBalance : 0);
     }
   }, [userBalance]);
+
+  // Estado de sincronización de vista para gráficos
+  const [viewState, setViewState] = useState({
+    offsetX: 0,
+    offsetY: 0,
+    scale: 1,
+    startX: null,
+    startY: null,
+    isDragging: false,
+  });
 
   // Estado para apalancamiento
   const [leverage, setLeverage] = useState(1);
@@ -394,7 +416,7 @@ export default function GameScreen() {
     low: bets[bets.length - 1].entryPrice || 0,
   }
 } : null)} />
-      <div className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col">
+      <div className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col" style={{ transform: 'scaleX(1.0) scaleY(0.87)', transformOrigin: 'top center' }} >
       {bonusMessage && (
         <div className="w-full flex justify-center mt-4">
           <div className="bg-yellow-400 border-2 border-yellow-600 text-black font-bold rounded-xl px-4 py-3 text-center shadow-lg animate-pulse max-w-xl">
@@ -404,10 +426,19 @@ export default function GameScreen() {
         </div>
       )}
       <div className="flex flex-col gap-6">
-           <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-2 pt-4 pb-4 md:p-8 mb-2 shadow-lg min-h-[50px] w-full">
+        {/* SoundManager flotante */}
+        <div className="fixed bottom-1 right-4 z-50">
+          <SoundManager
+            muted={muted}
+            onToggleMute={() => setMuted(m => !m)}
+            triggerLose={triggerLose}
+            triggerWin={triggerWin}
+          />
+        </div>
+           <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-2 shadow-lg min-h-[32px] w-full">
             <div className="flex items-center gap-6 w-full lg:w-auto">
-               <h1 className="text-2xl md:text-3xl font-extrabold text-[#FFD600] tracking-tight" data-component-name="GameScreen">Candle Rush 2.0</h1>
-              <nav className="flex gap-4 ml-4">
+               <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight" data-component-name="GameScreen">Candle Rush 2.0</h1>
+              <nav className="flex gap-2 ml-2">
                 <button
                   className="text-white font-bold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-4 py-2 md:px-2 md:py-1"
                   onClick={() => window.location.href = '/menu'}
@@ -447,14 +478,7 @@ export default function GameScreen() {
                 Candle Rush 1.0&nbsp;&rarr;&nbsp;btcer.fun
               </a>
               {/* SoundManager pequeño en la cabecera */}
-              <div className="ml-2 flex items-center">
-                <SoundManager
-                  muted={muted}
-                  onToggleMute={() => setMuted(m => !m)}
-                  triggerLose={triggerLose}
-                  triggerWin={triggerWin}
-                />
-              </div>
+              
             </div>
           </header>
 
@@ -498,12 +522,12 @@ export default function GameScreen() {
                     <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
                     <CardContent className="relative p-0 bg-black rounded-b-2xl overflow-hidden">
                       <div className="relative w-full h-[420px]">
-                        <CandlestickChart candles={candles} currentCandle={currentCandle} />
+                        <CandlestickChart candles={candles} currentCandle={currentCandle} viewState={viewState} setViewState={setViewState} />
                         {/* Overlay de volumen translúcido */}
-                        <VolumeChartOverlay candles={candles} width={1200} height={60} />
+                        
                       </div>
                       <div className="relative w-full h-[180px] mt-2">
-                        <MacdChart candles={candles} />
+                        <MacdChart candles={candles} viewState={viewState} />
                       </div>
                     </CardContent>
                   </div>
@@ -516,7 +540,7 @@ export default function GameScreen() {
                       {/* Selector de monto y botones de apuesta */}
                       <div className="flex flex-col items-center gap-4 w-full">
                         {/* Joystick-style console: all controls grouped */}
-                        <div className="w-full flex flex-col sm:flex-row items-center justify-between bg-zinc-900 border-4 border-[#FFD600] rounded-3xl shadow-2xl p-6 gap-6">
+                        <div className="w-full flex flex-col sm:flex-row items-center justify-between bg-black border-4 border-[#FFD600] rounded-3xl shadow-2xl p-6 gap-6">
                           {/* Symbol and Interval selectors */}
                           <div className="flex flex-row gap-4 w-full justify-center">
                             <GameControls

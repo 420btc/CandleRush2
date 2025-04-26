@@ -23,7 +23,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/btcc.png" />
       </head>
-      <body>
+      <body className="bg-black min-h-screen">
         <DeviceModeProvider>
           <AuthProvider>
             <AchievementProvider>
