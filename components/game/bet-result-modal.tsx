@@ -18,7 +18,30 @@ interface BetResultModalProps {
 
 import type { Bet } from "@/types/game";
 
+import React, { useRef, useEffect } from "react";
+
 export default function BetResultModal({ open, onOpenChange, result }: BetResultModalProps) {
+  const liquidatedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [played, setPlayed] = React.useState(false);
+  useEffect(() => {
+    // Reset played when modal closes or result cambia
+    if (!open || !result || !(result.bet.status === 'LIQUIDATED' || result.bet.wasLiquidated)) {
+      setPlayed(false);
+      if (liquidatedAudioRef.current) {
+        liquidatedAudioRef.current.pause();
+        liquidatedAudioRef.current.currentTime = 0;
+      }
+      return;
+    }
+    if (!played) {
+      setPlayed(true);
+      if (liquidatedAudioRef.current) {
+        liquidatedAudioRef.current.currentTime = 0;
+        liquidatedAudioRef.current.play();
+      }
+    }
+  }, [open, result, played]);
+
   if (!result) return null;
   const { bet, candle } = result;
   const openPrice = bet.entryPrice ?? candle.open;
@@ -27,7 +50,9 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
   const wasLiquidated = bet.status === 'LIQUIDATED' || bet.wasLiquidated;
   const won = bet.status === 'WON';
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <audio ref={liquidatedAudioRef} src="/liquidated.wav" preload="auto" />
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="text-center max-w-lg p-8 rounded-2xl border-4 shadow-2xl border-yellow-400 bg-black">
         <DialogHeader>
           <DialogTitle className="text-3xl font-extrabold mb-1 flex items-center justify-center gap-2"
@@ -84,5 +109,6 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
         </div>
       </DialogContent>
     </Dialog>
+  </>
   );
 }

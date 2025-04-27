@@ -374,6 +374,8 @@ const [leverage, setLeverage] = useState(2000);
   const [showFlyup, setShowFlyup] = useState(false);
   const [lastFlyupAmount, setLastFlyupAmount] = useState(0);
 
+  const betAudioRef = useRef<HTMLAudioElement | null>(null);
+
   const handleBullishBet = () => {
     if (gamePhase !== "BETTING") {
       toast({
@@ -390,6 +392,11 @@ const [leverage, setLeverage] = useState(2000);
         variant: "destructive",
       });
       return;
+    }
+    // Sonido de apostar
+    if (betAudioRef.current) {
+      betAudioRef.current.currentTime = 0;
+      betAudioRef.current.play();
     }
     placeBet("BULLISH", betAmount, leverage);
     setLastFlyupAmount(betAmount);
@@ -413,6 +420,11 @@ const [leverage, setLeverage] = useState(2000);
       });
       return;
     }
+    // Sonido de apostar
+    if (betAudioRef.current) {
+      betAudioRef.current.currentTime = 0;
+      betAudioRef.current.play();
+    }
     placeBet("BEARISH", betAmount, leverage);
     setLastFlyupAmount(betAmount);
     setShowFlyup(true);
@@ -433,6 +445,7 @@ const [leverage, setLeverage] = useState(2000);
 
   return (
     <>
+      <audio ref={betAudioRef} src="/bet.mp3" preload="auto" />
       <BetAmountFlyup amount={lastFlyupAmount} trigger={showFlyup} onComplete={() => setShowFlyup(false)} />
       {/* Game Over Modal */}
       {showGameOver && (
