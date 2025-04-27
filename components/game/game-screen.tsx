@@ -554,51 +554,65 @@ export default function GameScreen() {
             triggerWin={triggerWin}
           />
         </div>
-           <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-2 shadow-lg min-h-[32px] w-full">
-            <div className="flex items-center gap-6 w-full lg:w-auto">
-               <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight" data-component-name="GameScreen">Candle Rush 2.0</h1>
-              <nav className="flex gap-2 ml-2">
-                <button
-                  className="text-white font-bold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-4 py-2 md:px-2 md:py-1"
-                  onClick={() => window.location.href = '/menu'}
-                >
-                  Menú
-                </button>
-                <button
-                  className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
-                  onClick={() => window.location.href = '/how-to-play'}
-                >
-                  Cómo jugar
-                </button>
-                <button
-                  className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
-                  onClick={() => window.location.href = '/profile'}
-                >
-                  Perfil
-                </button>
-              </nav>
-            </div>
-            <div className="flex items-center gap-2">
-              {user ? (
-                <>
-                  <button
-                    onClick={() => window.location.href = '/profile'}
-                    className="text-sm font-bold text-[#FFD600] hover:underline hover:text-yellow-300 transition px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
-                    style={{ background: 'rgba(255, 214, 0, 0.08)' }}
-                    title="Ver perfil"
-                    data-component-name="GameScreen"
-                  >
-                    {user.username}
-                  </button>
-                  <span className="font-bold text-[#FFD600]">${userBalance.toFixed(2)}</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-sm font-bold text-[#FFD600]">Invitado</span>
-                  <span className="font-bold text-[#FFD600]">$0.00</span>
-                </>
-              )}
-              <a
+           <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full" style={{ background: 'none' }}>
+  <div className="flex items-center w-full justify-between relative">
+  {/* Título a la izquierda */}
+  <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>Candle Rush 2.0</h1>
+  {/* Nav centrado absolutamente */}
+  {/* Relojes centrados */}
+  <div className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3 flex flex-row items-center gap-8 z-10">
+    <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
+      <span className="text-xs font-semibold text-[#FFD600] mb-0.5" style={{letterSpacing: '0.01em'}}>Hora local</span>
+      <span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{systemTime}</span>
+    </div>
+    <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
+      <span className="text-xs font-semibold text-[#a259ff] mb-0.5" style={{letterSpacing: '0.01em'}}>Cierre diario</span>
+      <span className="text-3xl sm:text-4xl font-extrabold text-[#a259ff] select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{dailyCloseCountdown}</span>
+    </div>
+  </div>
+  {/* Nav a la derecha */}
+  <div className="flex items-center gap-2 ml-auto">
+    <button
+      className="text-white font-bold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-4 py-2 md:px-2 md:py-1"
+      onClick={() => window.location.href = '/menu'}
+    >
+      Menú
+    </button>
+    <button
+      className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
+      onClick={() => window.location.href = '/how-to-play'}
+    >
+      Cómo jugar
+    </button>
+    <button
+      className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
+      onClick={() => window.location.href = '/profile'}
+    >
+      Perfil
+    </button>
+  </div>
+</div>
+  <div className="flex items-center gap-2">
+    {user ? (
+      <>
+        <button
+          onClick={() => window.location.href = '/profile'}
+          className="text-sm font-bold text-[#FFD600] hover:underline hover:text-yellow-300 transition px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
+          style={{ background: 'rgba(255, 214, 0, 0.08)' }}
+          title="Ver perfil"
+          data-component-name="GameScreen"
+        >
+          {user.username}
+        </button>
+        <span className="font-bold text-[#FFD600]">${userBalance.toFixed(2)}</span>
+      </>
+    ) : (
+      <>
+        <span className="text-sm font-bold text-[#FFD600]">Invitado</span>
+        <span className="font-bold text-[#FFD600]">$0.00</span>
+      </>
+    )}
+    <a
                 href="https://btcer.fun"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -626,24 +640,15 @@ export default function GameScreen() {
                           <span className="text-3xl font-bold text-[#FFD600] tracking-tight flex items-center gap-2">
                             {currentSymbol}
                           </span>
-                          <span className="text-2xl sm:text-[4rem] font-extrabold text-white drop-shadow-lg ml-2">
+                          <span
+  className="text-2xl sm:text-[4rem] font-extrabold text-white drop-shadow-lg ml-2"
+  style={{ minWidth: '230px', textAlign: 'right', display: 'inline-block' }}
+>
   {currentCandle ? `$${currentCandle.close.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
 </span>
                           <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
 {/* Reloj grande en amarillo */}
-<div className="flex flex-col items-center ml-4">
-  <span className="text-xs font-semibold text-[#FFD600] mb-0.5" style={{letterSpacing: '0.01em'}}>Hora local</span>
-  <span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] select-none" style={{letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088'}}>
-    {systemTime}
-  </span>
-</div>
-{/* Reloj de cierre diario */}
-<div className="flex flex-col items-center ml-4">
-  <span className="text-xs font-semibold text-[#a259ff] mb-0.5" style={{letterSpacing: '0.01em'}}>Cierre diario</span>
-  <span className="text-3xl sm:text-4xl font-extrabold text-[#a259ff] select-none" style={{letterSpacing: '0.02em', textShadow: '0 0 12px #a259ff88'}}>
-    {dailyCloseCountdown}
-  </span>
-</div>
+
                         </div>
                         {/* Estado de apuestas a la derecha */}
                         <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
