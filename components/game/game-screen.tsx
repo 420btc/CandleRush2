@@ -375,6 +375,8 @@ const [leverage, setLeverage] = useState(2000);
   const [lastFlyupAmount, setLastFlyupAmount] = useState(0);
 
   const betAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Ref para sonido de interacción (pulsar)
+  const pulsarAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleBullishBet = () => {
     if (gamePhase !== "BETTING") {
@@ -443,9 +445,26 @@ const [leverage, setLeverage] = useState(2000);
     return type
   }
 
+  // Preload pulsar.mp3
+  useEffect(() => {
+    pulsarAudioRef.current = new Audio('/pulsar.mp3');
+    pulsarAudioRef.current.preload = 'auto';
+  }, []);
+
+  // Función para reproducir el sonido de interacción
+  const playPulsar = () => {
+    if (pulsarAudioRef.current) {
+      pulsarAudioRef.current.currentTime = 0;
+      pulsarAudioRef.current.volume = 0.5;
+      pulsarAudioRef.current.play();
+    }
+  };
+
   return (
     <>
       <audio ref={betAudioRef} src="/bet.mp3" preload="auto" />
+      {/* Ref oculta para pulsar, por si hace falta en móviles */}
+      <audio ref={pulsarAudioRef} src="/pulsar.mp3" preload="auto" style={{display:'none'}} />
       <BetAmountFlyup amount={lastFlyupAmount} trigger={showFlyup} onComplete={() => setShowFlyup(false)} />
       {/* Game Over Modal */}
       {showGameOver && (
@@ -781,7 +800,7 @@ const [leverage, setLeverage] = useState(2000);
   id="leverage"
   className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-sm sm:text-lg px-1 py-1 sm:px-2 sm:py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none min-w-[40px] sm:min-w-[70px]"
   value={leverage || 100}
-  onChange={e => setLeverage(Number(e.target.value))}
+  onChange={e => { playPulsar(); setLeverage(Number(e.target.value)); }}
 >
 
                                   {[300, 500, 1000, 2000, 3000, 5000].map(x => (
@@ -792,7 +811,7 @@ const [leverage, setLeverage] = useState(2000);
 
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
-                                onClick={() => setBetAmount((prev) => Math.max(1, Math.floor(prev - 1)))}
+                                onClick={() => { playPulsar(); setBetAmount((prev) => Math.max(1, Math.floor(prev - 1))); }}
                                 disabled={betAmount <= 1}
                               >
                                 -1
@@ -803,7 +822,7 @@ const [leverage, setLeverage] = useState(2000);
   max={Math.floor(userBalance)}
   step={1}
   value={betAmount}
-  onChange={e => {
+  onChange={(e) => {
     const intVal = Math.floor(Number(e.target.value));
     setBetAmount(Math.max(1, Math.min(intVal, Math.floor(userBalance))));
   }}
@@ -811,13 +830,14 @@ const [leverage, setLeverage] = useState(2000);
 />
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
-                                onClick={() => setBetAmount((prev) => Math.min(Math.floor(userBalance), Math.floor(prev + 1)))}
+                                onClick={() => { playPulsar(); setBetAmount((prev) => Math.min(Math.floor(userBalance), Math.floor(prev + 1))); }}
                                 disabled={betAmount >= Math.floor(userBalance)}
                               >
                                 +1
                               </button>
                               <button
   className="bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition ml-2 text-sm sm:text-lg sm:px-4 sm:py-1 min-w-[40px] sm:min-w-[80px]"
+  onClick={() => { playPulsar(); setBetAmount(Math.floor(userBalance)); }}
   onClick={() => setBetAmount(Math.floor(userBalance))}
   disabled={userBalance < 1}
 >
