@@ -20,6 +20,8 @@ import { useDevice } from "@/context/device-mode-context"
 import { ArrowUpCircle, ArrowDownCircle, BarChart3, History, Trophy, Wallet } from "lucide-react"
 import BetResultModal from "@/components/game/bet-result-modal"
 import BetAmountFlyup from "@/components/game/BetAmountFlyup"
+import { ModalRuleta } from "@/components/ui/ModalRuleta";
+import RouletteButton from "@/components/game/RouletteButton";
 
 import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
@@ -88,6 +90,16 @@ export default function GameScreen() {
   const { user } = useAuth();
   const { achievements, unlockedAchievements } = useAchievement();
   const { toast } = useToast();
+
+  // Estado para ruleta
+  const [rouletteOpen, setRouletteOpen] = useState(false);
+  const handleRouletteWin = (prize: number) => {
+    toast({
+      title: `¡Ganaste ${prize} monedas en la ruleta!`,
+      variant: "default",
+    });
+    // Aquí podrías sumar el premio al balance si se desea
+  };
   const { isMobile } = useDevice();
 
   // Estado para escalar verticalmente la gráfica (solo PC)
@@ -550,6 +562,7 @@ const [leverage, setLeverage] = useState(2000);
     return null;
   })()}
 />
+      <ModalRuleta open={rouletteOpen} onClose={() => setRouletteOpen(false)} onWin={handleRouletteWin} />
       <div
         className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col"
         style={
@@ -586,9 +599,11 @@ const [leverage, setLeverage] = useState(2000);
            <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full" style={{ background: 'none' }}>
   <div className="flex items-center w-full justify-between relative">
   {/* Título a la izquierda */}
-  <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', textShadow: '0 0 12px #FFD60088' }}>Candle Rush 2.0</h1>
+  <div className="flex items-center">
+    <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', textShadow: '0 0 12px #FFD60088' }}>Candle Rush 2.0</h1>
+  </div>
   {/* Nav centrado absolutamente */}
-  {/* Relojes centrados */}
+  {/* Relojes centrados y botón ruleta a la derecha de los relojes */}
   <div className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3 flex flex-row items-center gap-8 z-10">
     <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
       <span className="text-xs font-semibold text-[#FFD600] mb-0.5" style={{letterSpacing: '0.01em'}}>Hora local</span>
@@ -597,6 +612,10 @@ const [leverage, setLeverage] = useState(2000);
     <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
       <span className="text-xs font-semibold text-[#a259ff] mb-0.5" style={{letterSpacing: '0.01em'}}>Cierre diario</span>
       <span className="text-3xl sm:text-4xl font-extrabold text-[#a259ff] select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{dailyCloseCountdown}</span>
+    </div>
+    {/* Botón ruleta */}
+    <div className="ml-4 flex items-center">
+      <RouletteButton onClick={() => setRouletteOpen(true)} />
     </div>
   </div>
   {/* Nav a la derecha */}
