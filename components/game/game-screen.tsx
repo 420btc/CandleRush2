@@ -217,13 +217,7 @@ export default function GameScreen() {
   const [betResult, setBetResult] = useState<null | {
     won: boolean;
     amount: number;
-    bet: {
-      prediction: "BULLISH" | "BEARISH";
-      amount: number;
-      timestamp: number;
-      symbol: string;
-      timeframe: string;
-    };
+    bet: import("@/types/game").Bet;
     candle: {
       open: number;
       close: number;
@@ -490,7 +484,7 @@ export default function GameScreen() {
   open={showBetModal}
   onOpenChange={setShowBetModal}
   result={(() => {
-    if (showBetModal && betResult && betResult.bet && typeof betResult.bet.id === 'string' && 'status' in betResult.bet) {
+    if (showBetModal && betResult && betResult.bet && typeof betResult.bet.id === 'string' && 'status' in betResult.bet && 'prediction' in betResult.bet && 'amount' in betResult.bet && 'timestamp' in betResult.bet && 'symbol' in betResult.bet && 'timeframe' in betResult.bet) {
       return { bet: betResult.bet, candle: betResult.candle };
     } else if (showBetModal && bets.length > 0) {
       const last = bets[bets.length - 1];
@@ -503,6 +497,12 @@ export default function GameScreen() {
           symbol: last.symbol,
           timeframe: last.timeframe,
           status: last.status,
+          resolvedAt: last.resolvedAt,
+          leverage: last.leverage,
+          entryPrice: last.entryPrice,
+          liquidationPrice: last.liquidationPrice,
+          wasLiquidated: last.wasLiquidated,
+          winnings: last.winnings,
         },
         candle: betResult?.candle || {
           open: last.entryPrice || 0,
@@ -557,7 +557,7 @@ export default function GameScreen() {
            <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full" style={{ background: 'none' }}>
   <div className="flex items-center w-full justify-between relative">
   {/* Título a la izquierda */}
-  <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>Candle Rush 2.0</h1>
+  <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', textShadow: '0 0 12px #FFD60088' }}>Candle Rush 2.0</h1>
   {/* Nav centrado absolutamente */}
   {/* Relojes centrados */}
   <div className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3 flex flex-row items-center gap-8 z-10">
