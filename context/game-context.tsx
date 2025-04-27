@@ -81,6 +81,7 @@ interface GameContextType {
   setBonusInfo: React.Dispatch<React.SetStateAction<{ bonus: number; size: number; message: string } | null>>
   addCoins: (amount: number) => void
   clearBets: () => void
+  clearBetsForCurrentPairAndTimeframe: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
@@ -114,6 +115,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setBetsByPair({});
     localStorage.removeItem("betsByPair");
   };
+
+  // Función para limpiar solo las apuestas del par y timeframe actual
+  const clearBetsForCurrentPairAndTimeframe = () => {
+    setBetsByPair(prev => {
+      const updated = { ...prev };
+      if (updated[currentSymbol] && updated[currentSymbol][timeframe]) {
+        updated[currentSymbol] = { ...updated[currentSymbol] };
+        delete updated[currentSymbol][timeframe];
+        // Si ya no quedan timeframes, borra el par
+        if (Object.keys(updated[currentSymbol]).length === 0) {
+          delete updated[currentSymbol];
+        }
+      }
+      // Actualiza localStorage manualmente
+      localStorage.setItem("betsByPair", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0)
   const [currentCandleBets, setCurrentCandleBets] = useState<number>(0)
@@ -873,6 +893,7 @@ const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
         setBonusInfo,
         addCoins,
         clearBets,
+        clearBetsForCurrentPairAndTimeframe,
       }}
     >
       {children}

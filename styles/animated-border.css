@@ -1,0 +1,37 @@
+.animate-border-x {
+  animation: border-x-move 1.5s linear infinite;
+}
+.animate-border-x-reverse {
+  animation: border-x-move-reverse 1.5s linear infinite;
+}
+.animate-border-y {
+  animation: border-y-move 1.5s linear infinite;
+}
+.animate-border-y-reverse {
+  animation: border-y-move-reverse 1.5s linear infinite;
+}
+
+@keyframes border-x-move {
+  0% { left: 0; right: auto; width: 0; }
+  40% { left: 0; width: 100%; }
+  60% { left: 0; width: 100%; }
+  100% { left: 100%; width: 0; }
+}
+@keyframes border-x-move-reverse {
+  0% { right: 0; left: auto; width: 0; }
+  40% { right: 0; width: 100%; }
+  60% { right: 0; width: 100%; }
+  100% { right: 100%; width: 0; }
+}
+@keyframes border-y-move {
+  0% { top: 0; bottom: auto; height: 0; }
+  40% { top: 0; height: 100%; }
+  60% { top: 0; height: 100%; }
+  100% { top: 100%; height: 0; }
+}
+@keyframes border-y-move-reverse {
+  0% { bottom: 0; top: auto; height: 0; }
+  40% { bottom: 0; height: 100%; }
+  60% { bottom: 0; height: 100%; }
+  100% { bottom: 100%; height: 0; }
+}

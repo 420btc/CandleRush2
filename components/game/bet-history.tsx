@@ -4,11 +4,13 @@ import { useGame } from "@/context/game-context"
 import { ArrowUpCircle, ArrowDownCircle, CheckCircle, XCircle, Clock, Eye } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useState, useEffect } from "react"
+import AnimatedBorder from "@/components/game/AnimatedBorder"
+import "@/styles/animated-border.css"
 
 import BetResultModal from "@/components/game/bet-result-modal"
 
 export default function BetHistory() {
-  const { bets, candles, clearBets } = useGame()
+  const { bets, candles, clearBetsForCurrentPairAndTimeframe } = useGame()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedResult, setSelectedResult] = useState<any>(null)
   const [localTimes, setLocalTimes] = useState<Record<string, string>>({});
@@ -26,10 +28,10 @@ export default function BetHistory() {
 
   // Suscribirse al evento global para limpiar historial
   useEffect(() => {
-    const handler = () => clearBets();
+    const handler = () => clearBetsForCurrentPairAndTimeframe();
     window.addEventListener('clearBets', handler);
     return () => window.removeEventListener('clearBets', handler);
-  }, [clearBets]);
+  }, [clearBetsForCurrentPairAndTimeframe]);
 
   if (!hydrated) {
     // Evita hydration mismatch
@@ -44,15 +46,18 @@ export default function BetHistory() {
     )
   }
 
-  return (
-    <div className="h-full flex-1 min-h-0 w-full flex flex-col">
-      <ScrollArea className="h-full flex-1 min-h-0 w-full pb-4">
-        <div className="space-y-0">
-          {bets
-            .slice()
-            .reverse()
-            .map((bet) => (
-              <div key={bet.id} className={`py-3 min-h-[80px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between max-w-[280px] mx-auto text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
+// ...imports y lógica previa...
+
+return (
+  <div className="h-full flex-1 min-h-0 w-full flex flex-col">
+    <ScrollArea className="h-full flex-1 min-h-0 w-full pb-4">
+      <div className="space-y-0">
+        {bets
+          .slice()
+          .reverse()
+          .map((bet) => (
+            <AnimatedBorder key={bet.id} isActive={bet.status === "PENDING"}>
+              <div className={`py-3 min-h-[80px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between max-w-[355px] mx-auto text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
                 <div className="flex items-center gap-4 w-full md:w-1/2">
                   <div className="flex flex-col items-center justify-center min-w-[36px]">
                     <img
@@ -67,7 +72,6 @@ export default function BetHistory() {
                       {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
                     </p>
                     <p className="text-sm text-white">{localTimes[bet.id] || ''}</p>
-                    {/* Mostrar precio de entrada real */}
                     <p className="text-xs text-yellow-200 mt-1">Entrada: {bet.entryPrice ? bet.entryPrice.toFixed(2) : '-'}</p>
                   </div>
                 </div>
@@ -120,10 +124,11 @@ export default function BetHistory() {
                   </button>
                 </div>
               </div>
-            ))}
-        </div>
-      </ScrollArea>
-      <BetResultModal open={modalOpen} onOpenChange={setModalOpen} result={selectedResult} />
-    </div>
-  )
+            </AnimatedBorder>
+          ))}
+      </div>
+    </ScrollArea>
+    <BetResultModal open={modalOpen} onOpenChange={setModalOpen} result={selectedResult} />
+  </div>
+)
 }
