@@ -741,7 +741,7 @@ return (
       </div>
     )}
     {/* Controles de navegación */}
-    <div className="absolute bottom-4 right-4 flex gap-2 z-40">
+    <div className="absolute top-1 right-16 flex gap-2 z-40">
       <button
         onClick={handleReset}
         className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
@@ -749,8 +749,8 @@ return (
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
+          width="10"
+          height="10"
           viewBox="0 0 24 24"
           fill="none"
           stroke="#111"
@@ -769,9 +769,9 @@ return (
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
+          width="10"
+          height="10"
+          viewBox="0 0 22 22"
           fill="none"
           stroke="#111"
           strokeWidth="2"
@@ -790,8 +790,8 @@ return (
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
+          width="10"
+          height="10"
           viewBox="0 0 24 24"
           fill="none"
           stroke="#111"
