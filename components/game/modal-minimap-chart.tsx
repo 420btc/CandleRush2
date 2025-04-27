@@ -7,10 +7,11 @@ interface ModalMinimapChartProps {
   onOpenChange: (open: boolean) => void;
   candles: Candle[];
   bets: Bet[];
+  timeframe: string;
 }
 
 // Simple minimap: line chart of close prices, overlay bets as markers
-export const ModalMinimapChart: React.FC<ModalMinimapChartProps> = ({ open, onOpenChange, candles, bets }) => {
+export const ModalMinimapChart: React.FC<ModalMinimapChartProps> = ({ open, onOpenChange, candles, bets, timeframe }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [refresh, setRefresh] = useState(0);
 
@@ -32,33 +33,49 @@ export const ModalMinimapChart: React.FC<ModalMinimapChartProps> = ({ open, onOp
     // --- Líneas verticales y horas ---
     const numDivisions = 6;
     ctx.save();
-    for (let i = 0; i < numDivisions; i++) {
-      // Para la última división, usa padRight extra
+    // Elegir 6 candles reales equidistantes (incluyendo primero y último)
+    const candleIndexes = [];
+    if (candles.length > 1) {
+      for (let i = 0; i < numDivisions; i++) {
+        candleIndexes.push(Math.round(i * (candles.length - 1) / (numDivisions - 1)));
+      }
+    } else if (candles.length === 1) {
+      candleIndexes.push(0);
+    }
+    candleIndexes.forEach((candleIdx, i) => {
       const padEnd = (i === numDivisions - 1) ? padRight : pad;
-      const x = pad + (i * (w - pad - padEnd)) / (numDivisions - 1);
-
+      const x = pad + (candleIdx * (w - pad - padEnd)) / (candles.length - 1 || 1);
       // Línea punteada
       ctx.beginPath();
       ctx.setLineDash([4, 6]);
       ctx.strokeStyle = '#888';
       ctx.lineWidth = 1;
       ctx.moveTo(x, pad);
-      ctx.lineTo(x, h - pad + 18); // bajar un poco para la hora
+      ctx.lineTo(x, h - pad + 18);
       ctx.stroke();
       ctx.setLineDash([]);
       // Hora
-      const candleIdx = Math.round(i * (candles.length - 1) / (numDivisions - 1));
       const ts = candles[candleIdx]?.timestamp;
       if (ts) {
         const date = new Date(ts);
-        const hour = date.getHours().toString().padStart(2, '0');
-        const minStr = date.getMinutes().toString().padStart(2, '0');
+        let label = '';
+        if (timeframe === '1d') {
+          // Día y mes
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          label = `${day}/${month}`;
+        } else {
+          // Hora y minuto
+          const hour = date.getHours().toString().padStart(2, '0');
+          const minStr = date.getMinutes().toString().padStart(2, '0');
+          label = `${hour}:${minStr}`;
+        }
         ctx.font = '12px monospace';
         ctx.fillStyle = '#ccc';
         ctx.textAlign = 'center';
-        ctx.fillText(`${hour}:${minStr}`, x, h - pad + 8);
+        ctx.fillText(label, x, h - pad + 8);
       }
-    }
+    });
     ctx.restore();
     // --- Línea de precio ---
     ctx.strokeStyle = "#FFD600";

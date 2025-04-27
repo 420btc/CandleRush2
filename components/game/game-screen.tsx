@@ -984,6 +984,7 @@ const [leverage, setLeverage] = useState(2000);
     onOpenChange={setOpenMinimap}
     candles={candles}
     bets={bets}
+    timeframe={timeframe}
   />
   <CardTitle className="whitespace-nowrap text-center" style={{ position: 'relative', top: '-10px' }}>Actividad</CardTitle>
   <button
