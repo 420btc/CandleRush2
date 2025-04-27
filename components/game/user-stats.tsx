@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { canAttemptMathChallenge, incrementMathChallengeCount, getMathChallengeTimeLeft, MATH_CHALLENGE_LIMIT } from "@/utils/math-challenge-limit";
 import { useGame } from "@/context/game-context";
 import { TrendingUp, TrendingDown, Percent, DollarSign } from "lucide-react";
 
@@ -68,11 +69,53 @@ export default function UserStats() {
   const [mathAnswer, setMathAnswer] = useState('');
   const [mathError, setMathError] = useState('');
   const [mathSuccess, setMathSuccess] = useState(false);
+  const [mathAttempts, setMathAttempts] = useState(0);
+  const [mathTimeLeft, setMathTimeLeft] = useState(0);
+  const [canAttempt, setCanAttempt] = useState(true);
+
+  // Obtener el progreso actual (ej: 1/3)
+  const [mathProgress, setMathProgress] = useState<{count: number, limit: number}>({count: 0, limit: MATH_CHALLENGE_LIMIT});
+
+  // Actualizar intentos y tiempo restante cada vez que se muestra el modal o cada 60s
+  useEffect(() => {
+    function updateMathState() {
+      const canTry = canAttemptMathChallenge();
+      setCanAttempt(canTry);
+      setMathTimeLeft(getMathChallengeTimeLeft());
+      // Leer progreso real desde localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const data = localStorage.getItem('math_challenge_attempts');
+          if (data) {
+            const parsed = JSON.parse(data);
+            const count = parsed && typeof parsed.count === 'number' ? parsed.count : 0;
+            setMathProgress({count, limit: MATH_CHALLENGE_LIMIT});
+            setMathAttempts(count);
+          } else {
+            setMathProgress({count: 0, limit: MATH_CHALLENGE_LIMIT});
+            setMathAttempts(0);
+          }
+        } catch {
+          setMathProgress({count: 0, limit: MATH_CHALLENGE_LIMIT});
+          setMathAttempts(0);
+        }
+      }
+    }
+    updateMathState();
+    const interval = setInterval(updateMathState, 60000);
+    return () => clearInterval(interval);
+  }, [showMathModal]);
 
   const handleCheckMath = () => {
+    if (!canAttemptMathChallenge()) {
+      setMathError('Has alcanzado el máximo de retos matemáticos por hoy.');
+      setMathSuccess(false);
+      return;
+    }
     if (mathAnswer.trim() === mathChallenge.answer) {
       setMathSuccess(true);
       setMathError('');
+      incrementMathChallengeCount();
       setTimeout(() => {
         setShowMathModal(false);
         setMathAnswer('');
@@ -122,10 +165,11 @@ export default function UserStats() {
         <div className="flex items-center gap-2">
           <span className="font-bold text-lg text-white">${balance.toFixed(2)}</span>
           <button
-            className="ml-2 px-2 py-1 rounded bg-yellow-400 text-black text-xs font-bold shadow hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            className="ml-2 px-2 py-1 rounded bg-yellow-400 text-black text-xs font-bold shadow hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:bg-zinc-500 disabled:text-zinc-300 disabled:cursor-not-allowed"
             style={{ minWidth: 24, minHeight: 24 }}
             onClick={() => setShowMathModal(true)}
-            title="Recargar monedas"
+            title={canAttempt ? "Recargar monedas" : "Máximo de retos matemáticos alcanzado (3 cada 24h)"}
+            disabled={!canAttempt}
           >
             +💰
           </button>
@@ -136,8 +180,17 @@ export default function UserStats() {
       {showMathModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="bg-zinc-900 rounded-xl p-6 shadow-lg border-2 border-yellow-400 min-w-[260px] text-center">
-            <h2 className="text-lg font-bold mb-2 text-yellow-400">¡Reto matemático!</h2>
+            <h2 className="text-lg font-bold mb-2 text-yellow-400 flex items-center justify-center gap-2">
+              ¡Reto matemático!
+              <span className="text-xs font-normal text-yellow-300 bg-yellow-400/10 px-2 py-0.5 rounded-full ml-2">{mathProgress.count}/{mathProgress.limit}</span>
+            </h2>
             <p className="mb-3 text-white">Resuelve para ganar <span className="font-bold text-yellow-300">100 monedas</span>:</p>
+            {!canAttempt && (
+              <div className="mb-2 text-red-400 font-bold">
+                Has alcanzado el máximo de retos matemáticos por 24h.<br />
+                Intenta de nuevo en {Math.floor(mathTimeLeft / 3600000)}h {Math.floor((mathTimeLeft % 3600000) / 60000)}min.
+              </div>
+            )}
             <div className="mb-3 text-xl font-mono text-yellow-200">{mathChallenge.question}</div>
             <input
               type="text"
@@ -146,11 +199,13 @@ export default function UserStats() {
               onChange={e => setMathAnswer(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleCheckMath(); }}
               autoFocus
+              disabled={!canAttempt}
             />
             <div className="flex justify-center gap-2 mt-4">
               <button
-                className="px-3 py-1 bg-green-500 hover:bg-green-400 rounded text-white font-bold"
+                className="px-3 py-1 bg-green-500 hover:bg-green-400 rounded text-white font-bold disabled:bg-zinc-500 disabled:text-zinc-300"
                 onClick={handleCheckMath}
+                disabled={!canAttempt}
               >Aceptar</button>
               <button
                 className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white font-bold"
