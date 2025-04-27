@@ -800,18 +800,6 @@ const changeSymbol = useCallback(
     (symbol: string) => {
       if (symbol === currentSymbol) return
 
-      // Check if there are pending bets
-      const pairBets = betsByPair[currentSymbol]?.[timeframe] || [];
-const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
-
-      if (hasPendingBets) {
-        toast({
-          title: "No puedes cambiar de par",
-          description: "Tienes apuestas pendientes en este par",
-          variant: "destructive",
-        })
-        return
-      }
 
       setCurrentSymbol(symbol)
       setCandles([])
@@ -827,18 +815,6 @@ const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
     (newTimeframe: string) => {
       if (newTimeframe === timeframe) return
 
-      // Check if there are pending bets
-      const pairBets = betsByPair[currentSymbol]?.[timeframe] || [];
-const hasPendingBets = pairBets.some((bet) => bet.status === "PENDING")
-
-      if (hasPendingBets) {
-        toast({
-          title: "No puedes cambiar de intervalo",
-          description: "Tienes apuestas pendientes en este intervalo",
-          variant: "destructive",
-        })
-        return
-      }
 
       setTimeframe(newTimeframe)
       setCandles([])
