@@ -705,14 +705,23 @@ if (amount <= 0 || amount > userBalance) {
 
       // Ajustar el timestamp de la apuesta para que siempre caiga dentro de la vela actual
       const candleTimestamp = currentCandle ? currentCandle.timestamp : Date.now();
-      // Calcular entryPrice y liquidationPrice según leverage
+      // Calcular entryPrice y liquidationPrice según leverage y porcentaje apostado
       const entryPrice = currentCandle ? currentCandle.close : 0;
       let liquidationPrice: number | undefined = undefined;
       if (leverage > 1 && entryPrice > 0) {
+        // Efecto super fuerte: si apuestas más del 30% del balance, la liquidación se acerca mucho
+        let baseDistance = 0.99 / leverage;
+        let dynamicDistance = baseDistance;
+        const betPercent = amount / userBalance;
+        if (betPercent > 0.3) {
+          // Aplica castigo brutal: hasta 85% de reducción del margen
+          const risk = Math.min(1, (betPercent - 0.3) / 0.7);
+          dynamicDistance = baseDistance * (1 - 0.85 * risk);
+        }
         if (prediction === "BULLISH") {
-          liquidationPrice = entryPrice * (1 - (0.99 / leverage));
+          liquidationPrice = entryPrice * (1 - dynamicDistance);
         } else {
-          liquidationPrice = entryPrice * (1 + (0.99 / leverage));
+          liquidationPrice = entryPrice * (1 + dynamicDistance);
         }
       }
       const newBet: Bet = {

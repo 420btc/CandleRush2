@@ -814,20 +814,43 @@ const [leverage, setLeverage] = useState(2000);
                             {/* Precio de liquidación estimado */}
                             {leverage && currentCandle && (
                               <div className="mt-1 text-xs text-yellow-400 text-center w-full">
-                                Precio de liquidación:
-                                <span className="font-mono ml-1">
-                                  {['BULLISH','BEARISH'].map(type => (
-                                    <span key={type}>
-                                      {type === 'BULLISH' ? 'Long' : 'Short'}: $
-                                      {type === 'BULLISH'
-                                        ? (currentCandle.close * (1 - 0.99/leverage)).toFixed(2)
-                                        : (currentCandle.close * (1 + 0.99/leverage)).toFixed(2)
-                                      }
-                                      {type === 'BULLISH' ? ' ' : ''}
-                                    </span>
-                                  ))}
-                                </span>
-                              </div>
+  <span
+    style={{
+      fontSize: '1.08rem',
+      fontWeight: 800,
+      letterSpacing: '0.01em',
+      textShadow: '0 0 6px #FFD60066, 0 0 1px #000',
+      verticalAlign: 'middle',
+      display: 'inline-block',
+      marginRight: '0.2em',
+    }}
+  >
+    Precio de liquidación:
+  </span>
+  <span className="font-mono ml-1">
+    {['BULLISH','BEARISH'].map(type => (
+      <span
+        key={type}
+        style={{
+          fontSize: '1rem', // más pequeño, no agranda la caja
+          fontWeight: 900,
+          letterSpacing: '0.01em',
+          lineHeight: 1.05,
+          textShadow: '0 0 6px #FFD60088, 0 0 1px #000',
+          verticalAlign: 'middle',
+          display: 'inline-block',
+        }}
+      >
+        {type === 'BULLISH' ? 'Long' : 'Short'}: $
+        {type === 'BULLISH'
+          ? (currentCandle.close * (1 - 0.99/leverage)).toFixed(2)
+          : (currentCandle.close * (1 + 0.99/leverage)).toFixed(2)
+        }
+        {type === 'BULLISH' ? ' ' : ''}
+      </span>
+    ))}
+  </span>
+</div>
                             )}
 
                             <input
