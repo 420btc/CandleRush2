@@ -299,7 +299,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.save();
         ctx.globalAlpha = 0.95;
         ctx.strokeStyle = '#FF2222';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2;
         ctx.setLineDash([10, 8]);
         ctx.beginPath();
         ctx.moveTo(0, yLiquid);
@@ -311,6 +311,38 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.fillStyle = '#FF2222';
         ctx.globalAlpha = 0.92;
         ctx.fillText(`Liquidación: ${activeBet.liquidationPrice.toFixed(2)}`, 8, yLiquid - 6);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
+    }
+
+    // Línea de precio de entrada para la apuesta activa
+    const entryBet = Array.isArray(bets) ? bets.find((bet: any) => bet.status === 'PENDING' && typeof bet.entryPrice === 'number') : null;
+    if (
+      entryBet &&
+      typeof entryBet.entryPrice === 'number' &&
+      dimensions.height > 0 &&
+      dimensions.width > 0 &&
+      isFinite(minPrice) &&
+      isFinite(yScale)
+    ) {
+      const yEntry = dimensions.height - ((entryBet.entryPrice - minPrice) * yScale - clampedOffsetY);
+      if (yEntry >= 0 && yEntry <= dimensions.height) {
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        ctx.strokeStyle = '#00FF85'; // verde brillante
+        ctx.lineWidth = 1.3;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(0, yEntry);
+        ctx.lineTo(dimensions.width, yEntry);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Mostrar el valor de entrada en texto pequeño a la izquierda
+        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = '#00FF85';
+        ctx.globalAlpha = 0.92;
+        ctx.fillText(`Entrada: ${entryBet.entryPrice.toFixed(2)}`, 8, yEntry - 6);
         ctx.globalAlpha = 1;
         ctx.restore();
       }
