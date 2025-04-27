@@ -47,7 +47,7 @@ export default function UserStats() {
   for (let i = bets.length - 1; i >= 0; i--) {
     if (bets[i].status === "WON") {
       realStreak++;
-    } else if (bets[i].status === "LOST") {
+    } else if (bets[i].status === "LOST" || bets[i].status === "LIQUIDATED") {
       break;
     }
   }
