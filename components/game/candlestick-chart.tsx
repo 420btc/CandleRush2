@@ -532,12 +532,36 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     drawEMA(ema200, '#2196f3'); // Azul
     drawEMA(ema365, '#22c55e'); // Verde
 
+// Mostrar precios actuales de cada EMA en la esquina superior izquierda
+const emaLabels = [
+{ name: 'EMA10', value: ema10[ema10.length - 1], color: '#a259f7' },
+{ name: 'EMA55', value: ema55[ema55.length - 1], color: '#FFD600' },
+{ name: 'EMA200', value: ema200[ema200.length - 1], color: '#2196f3' },
+{ name: 'EMA365', value: ema365[ema365.length - 1], color: '#22c55e' },
+];
+let yLabel = 18;
+emaLabels.forEach(({ name, value, color }) => {
+if (typeof value === 'number' && isFinite(value)) {
+ctx.save();
+ctx.globalAlpha = 0.7;
+ctx.font = 'bold 13px monospace';
+ctx.fillStyle = color;
+ctx.fillText(`${name}: ${value.toFixed(2)}`, 10, yLabel);
+ctx.restore();
+yLabel += 18;
+}
+});
 
+// Reset transformation
+ctx.resetTransform()
 
-    // Reset transformation
-    ctx.resetTransform()
+// Guardar el timestamp de este render
+lastRenderRef.current = Date.now()
+}, [candles, currentCandle, dimensions, isInitialized, viewState, bets])
 
-    // Guardar el timestamp de este render
+// Actualizar solo la vela actual cada segundo
+useEffect(() => {
+if (!currentCandle || !isInitialized) return
     lastRenderRef.current = Date.now()
   }, [candles, currentCandle, dimensions, isInitialized, viewState, bets])
 
