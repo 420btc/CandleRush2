@@ -77,14 +77,14 @@ const Achievements: React.FC = () => {
       </h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 w-full">
         {achievements.map((ach) => {
-          const unlocked = unlockedList.find((a) => a.id === ach.id)?.unlocked;
+          // Always show achievements as locked
           return (
             <div
               key={ach.id}
-              className={`flex flex-col items-center p-4 rounded-xl border-2 ${unlocked ? "border-yellow-400 bg-black/60" : "border-zinc-700 bg-black/30 opacity-50"} shadow-lg transition-all`}
+              className={"flex flex-col items-center p-4 rounded-xl border-2 border-zinc-700 bg-black/30 opacity-50 shadow-lg transition-all"}
             >
               <div className="mb-2">
-                {unlocked ? ach.icon : <FaLock className="text-zinc-500" size={32} />}
+                <FaLock className="text-zinc-500" size={32} />
               </div>
               <span className="font-bold text-yellow-300 text-lg text-center mb-1">{ach.name}</span>
               <span className="text-zinc-300 text-xs text-center">{ach.description}</span>

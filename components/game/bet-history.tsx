@@ -8,8 +8,10 @@ import AnimatedBorder from "@/components/game/AnimatedBorder"
 import "@/styles/animated-border.css"
 
 import BetResultModal from "@/components/game/bet-result-modal"
+import Achievements from "@/components/profile/Achievements";
 
 export default function BetHistory() {
+  const [showAchievements, setShowAchievements] = useState(false);
   const { bets, candles, clearBetsForCurrentPairAndTimeframe } = useGame()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedResult, setSelectedResult] = useState<any>(null)
@@ -50,8 +52,23 @@ export default function BetHistory() {
 
 return (
   <div className="h-full flex-1 min-h-0 w-full flex flex-col">
-    <ScrollArea className="h-full flex-1 min-h-0 w-full pb-4">
-      <div className="space-y-0">
+    <div className="flex gap-2 mb-3 justify-center">
+      <button
+        className={`px-3 py-1 rounded-lg font-bold border-2 transition-all text-sm ${!showAchievements ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black/60 text-yellow-400 border-yellow-400 hover:bg-yellow-900/30'}`}
+        onClick={() => setShowAchievements(false)}
+      >Apuestas</button>
+      <button
+        className={`px-3 py-1 rounded-lg font-bold border-2 transition-all text-sm ${showAchievements ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black/60 text-yellow-400 border-yellow-400 hover:bg-yellow-900/30'}`}
+        onClick={() => setShowAchievements(true)}
+      >Logros</button>
+    </div>
+    {showAchievements ? (
+      <div className="flex-1 w-full flex flex-col items-center justify-center">
+        <Achievements />
+      </div>
+    ) : (
+      <ScrollArea className="h-full flex-1 min-h-0 w-full pb-4">
+        <div className="space-y-0">
         {bets
           .slice()
           .reverse()
@@ -126,9 +143,11 @@ return (
               </div>
             </AnimatedBorder>
           ))}
-      </div>
-    </ScrollArea>
-    <BetResultModal open={modalOpen} onOpenChange={setModalOpen} result={selectedResult} />
-  </div>
-)
+        </div>
+      </ScrollArea>
+      )}
+      {/* El modal solo se abre cuando el usuario hace clic en el botón Eye */}
+      <BetResultModal open={modalOpen} onOpenChange={setModalOpen} result={selectedResult} />
+    </div>
+  );
 }

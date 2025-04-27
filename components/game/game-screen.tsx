@@ -18,6 +18,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useDevice } from "@/context/device-mode-context"
 import { ArrowUpCircle, ArrowDownCircle, BarChart3, History, Trophy, Wallet } from "lucide-react"
+import { FaChartArea } from "react-icons/fa";
+import type { Candle, Bet } from "@/types/game";
+import ModalMinimapChart from "@/components/game/modal-minimap-chart";
 import BetResultModal from "@/components/game/bet-result-modal"
 import BetAmountFlyup from "@/components/game/BetAmountFlyup"
 import { ModalRuleta } from "@/components/ui/ModalRuleta";
@@ -66,7 +69,8 @@ export default function GameScreen() {
   }, []);
 
   // Estado para mostrar/ocultar el volume profile
-  const [showVolumeProfile, setShowVolumeProfile] = useState(true);
+  const [showVolumeProfile, setShowVolumeProfile] = useState(false);
+  const [openMinimap, setOpenMinimap] = useState(false);
   // Context hooks FIRST (fixes userBalance/addCoins before use)
   const {
     gamePhase,
@@ -965,62 +969,37 @@ const [leverage, setLeverage] = useState(2000);
 
               <Card className="bg-black border-[#FFD600] w-full h-full flex-1 flex flex-col min-h-0">
                 <CardHeader className="pb-0">
-                  <Tabs defaultValue="history">
-                    <div className="flex justify-between items-center gap-2">
-                      <CardTitle>Actividad</CardTitle>
-                      <div className="flex items-center gap-1 flex-nowrap">
-                        <TabsList className="bg-black flex-nowrap gap-1">
-                          <TabsTrigger value="history" className="data-[state=active]:bg-[#FFD600]">
-                            <History className="h-4 w-4 mr-1" />
-                            Historial
-                          </TabsTrigger>
-                          <TabsTrigger value="achievements" className="data-[state=active]:bg-[#FFD600]">
-                            <Trophy className="h-4 w-4 mr-1" />
-                            Logros
-                          </TabsTrigger>
-                          <button
-                            aria-label="Eliminar historial de apuestas"
-                            title="Eliminar historial de apuestas"
-                            className="p-0.5 rounded hover:bg-red-800 bg-red-700/80 text-white flex items-center transition h-[22px] w-[22px] ml-0"
-                            style={{ minWidth: 0, minHeight: 0 }}
-                            onClick={() => { if(window.confirm('¿Seguro que deseas eliminar todo el historial de apuestas?')) window.dispatchEvent(new CustomEvent('clearBets')); }}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-                          </button>
-                        </TabsList>
-                      </div>
-                    </div>
-                  </Tabs>
-                </CardHeader>
-                <CardContent className="flex-1 min-h-0 h-full p-0">
-                  <Tabs defaultValue="history" className="h-full flex-1 min-h-0">
-                    <TabsContent value="history" className="h-full flex-1 min-h-0 p-0">
-                      <BetHistory />
-                    </TabsContent>
-                    <TabsContent value="achievements" className="mt-0">
-                      <div className="space-y-2">
-                        {achievements.map((achievement) => (
-                          <div
-                            key={achievement.id}
-                            className={`p-2 rounded-lg flex items-center gap-2 ${
-                              unlockedAchievements.includes(achievement.id) ? "bg-[#FFD600]" : "border-[#FFD600] opacity-50"
-                            }`}
-                          >
-                            <Trophy
-                              className={`h-5 w-5 ${
-                                unlockedAchievements.includes(achievement.id) ? "text-[#FFD600]" : "text-[#FFD600]"
-                              }`}
-                            />
-                            <div>
-                              <p className="font-medium">{achievement.title}</p>
-                              <p className="text-xs text-zinc-400">{achievement.description}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
+  <div className="flex items-center justify-center w-full relative">
+  <button
+    aria-label="Ver gráfico"
+    title="Ver gráfico"
+    className="p-0.5 rounded hover:bg-green-600 bg-green-500/90 text-white flex items-center justify-center transition h-[44px] w-[44px] mr-2 absolute left-0"
+    style={{ minWidth: 0, minHeight: 0 }}
+    onClick={() => setOpenMinimap(true)}
+  >
+    <FaChartArea className="h-[22px] w-[22px]" />
+  </button>
+  <ModalMinimapChart
+    open={openMinimap}
+    onOpenChange={setOpenMinimap}
+    candles={candles}
+    bets={bets}
+  />
+  <CardTitle className="whitespace-nowrap text-center" style={{ position: 'relative', top: '-10px' }}>Actividad</CardTitle>
+  <button
+    aria-label="Eliminar historial de apuestas"
+    title="Eliminar historial de apuestas"
+    className="p-0.5 rounded hover:bg-red-800 bg-red-700/80 text-white flex items-center justify-center transition h-[44px] w-[44px] ml-2 absolute right-0"
+    style={{ minWidth: 0, minHeight: 0 }}
+    onClick={() => { if(window.confirm('¿Seguro que deseas eliminar todo el historial de apuestas?')) window.dispatchEvent(new CustomEvent('clearBets')); }}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+  </button>
+</div>
+</CardHeader>
+<CardContent className="flex-1 min-h-0 h-full p-0">
+  <BetHistory />
+</CardContent>
               </Card>
             </div>
           </div>
