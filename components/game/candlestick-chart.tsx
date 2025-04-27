@@ -741,7 +741,7 @@ return (
       </div>
     )}
     {/* Controles de navegación */}
-    <div className="absolute top-1 right-16 flex gap-2 z-40">
+    <div className="absolute bottom-[58px] right-2 flex gap-2 z-40">
       <button
         onClick={handleReset}
         className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"

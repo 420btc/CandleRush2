@@ -30,30 +30,30 @@ export function computeVolumeProfile(candles: Candle[], priceMin: number, priceM
 
 const YELLOW = "#FFD600"; // amarillo fuerte
 
-const VolumeProfile: React.FC<VolumeProfileProps> = ({ candles, chartHeight, priceMin, priceMax, barWidth = 7, bins = 40 }) => {
+const VolumeProfile: React.FC<VolumeProfileProps> = ({ candles, chartHeight, priceMin, priceMax, barWidth = 16, bins = 100 }) => {
   const profile = computeVolumeProfile(candles, priceMin, priceMax, bins);
   const maxVol = Math.max(...profile, 1);
   return (
     <svg
       width={barWidth}
       height={chartHeight}
-      style={{ position: 'absolute', right: 0, top: 0, pointerEvents: 'none', zIndex: 3 }}
+      style={{ display: 'block', pointerEvents: 'none' }}
     >
       {profile.map((vol, i) => {
         const y = (chartHeight / bins) * i;
         const h = chartHeight / bins;
-        const w = (vol / maxVol) * (barWidth - 4); // margen
+        const w = (vol / maxVol) * (barWidth - 1); // margen derecho opcional
         const isMax = vol === maxVol;
         return (
           <rect
             key={i}
             x={barWidth - w}
-            y={y + 1}
+            y={y}
             width={w}
-            height={h - 2}
+            height={h}
             rx={h/3}
             fill={YELLOW}
-            fillOpacity={isMax ? 1 : 0.75}
+            fillOpacity={isMax ? 1 : 0.79}
             style={isMax ? { filter: 'drop-shadow(0 0 16px #FFD600), drop-shadow(0 0 32px #FFD600CC)' } : {}}
           />
         );

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react"
 import { formatTime } from "@/utils/formatTime"
 import { useGame } from "@/context/game-context"
+import VolumeProfile from "./volume-profile"
 import { useAuth } from "@/context/auth-context"
 import { useAchievement } from "@/context/achievement-context"
 import CandlestickChart from "@/components/game/candlestick-chart";
@@ -25,6 +26,7 @@ import BetResultModal from "@/components/game/bet-result-modal"
 import BetAmountFlyup from "@/components/game/BetAmountFlyup"
 import { ModalRuleta } from "@/components/ui/ModalRuleta";
 import RouletteButton from "@/components/game/RouletteButton";
+import DollarDiffCounter from "@/components/game/dollar-diff-counter";
 
 import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
@@ -682,7 +684,7 @@ const [leverage, setLeverage] = useState(2000);
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-3 flex-grow h-full min-h-[0] lg:h-[calc(100vh-120px)]">
             <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:h-full">
               {/* Tarjeta principal con gráfico y controles */}
-              <Card className="bg-black border-[#FFD600]">
+              <Card className="bg-black border-[#FFD600]" style={{ width: 'calc(99% + 26px)', maxWidth: 'none', position: 'relative' }}>
                 <CardHeader className="pb-0">
                   <div className="flex justify-between items-center">
                     <CardTitle className="flex flex-col w-full">
@@ -699,6 +701,10 @@ const [leverage, setLeverage] = useState(2000);
 >
   {currentCandle ? `$${currentCandle.close.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
 </span>
+{/* Dollar difference counter below price */}
+<div className="ml-2 flex items-center">
+  <DollarDiffCounter currentCandle={currentCandle} realtimePrice={currentCandle?.close ?? null} />
+</div>
                           <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
 {/* Reloj grande en amarillo */}
 
@@ -708,14 +714,14 @@ const [leverage, setLeverage] = useState(2000);
                           {/* Solo en desktop: mantener arriba */}
 <span className={`hidden sm:inline text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
 <button
-  className="hidden sm:inline mt-0 mb-1 self-end rounded-full p-1 bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black"
-  style={{ fontSize: 0, outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none' }}
+  className="hidden sm:inline mt-0 mb-1 self-end rounded-full p-[0.2rem] bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black"
+  style={{ fontSize: 0, outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none', transform: 'scale(0.8)' }}
   onClick={() => setShowVolumeProfile(v => !v)}
   title="Mostrar/ocultar perfil de volumen"
   type="button"
   aria-label="Mostrar/ocultar perfil de volumen"
 >
-  <BarChart3 className="w-5 h-5" />
+  <BarChart3 className="w-4 h-4" />
 </button>
                         </div>
                       </div>
@@ -739,35 +745,46 @@ const [leverage, setLeverage] = useState(2000);
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[500px] md:h-[600px] w-full relative overflow-hidden">
-                    {/* Fondo portada detrás del chart con opacidad y blur */}
-                    <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
-                    <CardContent className="relative p-0 bg-black rounded-b-2xl overflow-hidden">
-                      <div className="relative w-full h-[420px]">
-                        <CandlestickChart
-                          candles={candles}
-                          currentCandle={currentCandle}
-                          viewState={viewState}
-                          setViewState={setViewState}
-                          verticalScale={verticalScale}
-                          showVolumeProfile={showVolumeProfile}
-                          setShowVolumeProfile={setShowVolumeProfile}
-                        />
-                      </div>
-                      <div className="relative w-full h-[180px] mt-2">
-                        <MacdChart
-                          candles={allCandles}
-                          viewState={{
-                            offsetX,
-                            scale,
-                          }}
-                          startIndex={startIndex}
-                          candlesToShow={candlesToShow}
-                          height={isMobile ? 80 : 180}
-                        />
-                      </div>
-                    </CardContent>
-                  </div>
+                  <div style={{ position: 'relative', minHeight: 520 }}>
+  {/* Fondo portada detrás del chart con opacidad y blur */}
+  <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
+  <CardContent className="relative p-0 bg-black rounded-b-2xl overflow-hidden" style={{ minHeight: 420, width: 'calc(100% + 16px)', maxWidth: 'none', position: 'relative', padding: 0 }}>
+    <div className="relative" style={{ width: '100%', height: 420, minWidth: 0 }}>
+      <CandlestickChart
+        candles={candles}
+        currentCandle={currentCandle}
+        viewState={viewState}
+        setViewState={setViewState}
+        verticalScale={verticalScale}
+        showVolumeProfile={showVolumeProfile}
+        setShowVolumeProfile={setShowVolumeProfile}
+      />
+      {showVolumeProfile && (
+        <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', width: 16, background: 'black', pointerEvents: 'none', zIndex: 21 }}>
+          <VolumeProfile
+            candles={candles}
+            chartHeight={420}
+            barWidth={16}
+            priceMin={typeof verticalScale === 'object' && verticalScale.min !== undefined ? verticalScale.min : 0}
+            priceMax={typeof verticalScale === 'object' && verticalScale.max !== undefined ? verticalScale.max : 1}
+          />
+        </div>
+      )}
+    </div>
+    <div className="relative w-full h-[180px] mt-2">
+      <MacdChart
+        candles={allCandles}
+        viewState={{
+          offsetX,
+          scale,
+        }}
+        startIndex={startIndex}
+        candlesToShow={candlesToShow}
+        height={isMobile ? 80 : 180}
+      />
+    </div>
+  </CardContent>
+</div>
 
                   {/* Controles justo debajo del gráfico */}
                   <div className="mt-2 bg-black/50 rounded-lg p-2 border-[#FFD600]">
@@ -777,7 +794,7 @@ const [leverage, setLeverage] = useState(2000);
                       {/* Selector de monto y botones de apuesta */}
                       <div className="flex flex-col items-center gap-4 w-full">
                         {/* Joystick-style console: all controls grouped */}
-<div className="w-full flex flex-col sm:flex-row items-center justify-between bg-black border-4 border-[#FFD600] rounded-3xl shadow-2xl p-6 gap-6">
+<div className="w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-2 border-[#FFD600cc] rounded-lg shadow-lg p-1 sm:p-2 gap-1 sm:gap-2 mt-2.5 overflow-x-auto z-20" data-component-name="GameScreen">
   {/* SOLO EN MOVIL: Estado de apuestas y botón volumen */}
   <div className="w-full flex sm:hidden flex-row justify-between items-center mb-2">
     <span className={`text-xs font-extrabold uppercase tracking-wide drop-shadow-lg ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
