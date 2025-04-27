@@ -736,7 +736,7 @@ const [leverage, setLeverage] = useState(2000);
                       </div>
                       {/* Contador grande centrado debajo */}
                       <div className="w-full flex justify-center">
-                        <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl my-2">
+                        <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl p-0 m-0">
   {gamePhase === 'BETTING' ? formatTime(timeLeft) : formatTime(timeUntilNextCandle)}
 </span>
 
