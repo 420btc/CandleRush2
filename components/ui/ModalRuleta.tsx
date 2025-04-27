@@ -12,7 +12,12 @@ interface ModalRuletaProps {
   onWin: (prize: number) => void;
 }
 
-export const ModalRuleta: React.FC<ModalRuletaProps> = ({ open, onClose, onWin }) => {
+import { useGame } from "@/context/game-context";
+import { useToast } from "@/hooks/use-toast";
+
+export const ModalRuleta: React.FC<ModalRuletaProps> = ({ open, onClose }) => {
+  const { addCoins } = useGame();
+  const { toast } = useToast();
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<number | null>(null);
@@ -128,7 +133,14 @@ export const ModalRuleta: React.FC<ModalRuletaProps> = ({ open, onClose, onWin }
       if (effectiveAngle >= 360 - SEGMENT_ANGLE / 2) realWinner = 0;
 
       setResult(realWinner);
-      onWin(PRIZES[realWinner]);
+      const prize = PRIZES[realWinner];
+      if (typeof addCoins === 'function') {
+        addCoins(prize);
+      }
+      toast({
+        title: `¡Ganaste ${prize} monedas en la ruleta!`,
+        variant: "default",
+      });
     }, 9900);
   };
 

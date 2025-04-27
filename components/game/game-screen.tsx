@@ -98,7 +98,9 @@ export default function GameScreen() {
       title: `¡Ganaste ${prize} monedas en la ruleta!`,
       variant: "default",
     });
-    // Aquí podrías sumar el premio al balance si se desea
+    if (typeof addCoins === 'function') {
+      addCoins(prize);
+    }
   };
   const { isMobile } = useDevice();
 
@@ -874,26 +876,28 @@ const [leverage, setLeverage] = useState(2000);
   </span>
   <span className="font-mono ml-1">
     {['BULLISH','BEARISH'].map(type => (
-      <span
-        key={type}
-        style={{
-          fontSize: '1rem', // más pequeño, no agranda la caja
-          fontWeight: 900,
-          letterSpacing: '0.01em',
-          lineHeight: 1.05,
-          textShadow: '0 0 6px #FFD60088, 0 0 1px #000',
-          verticalAlign: 'middle',
-          display: 'inline-block',
-        }}
-      >
-        {type === 'BULLISH' ? 'Long' : 'Short'}: $
-        {type === 'BULLISH'
-          ? (currentCandle.close * (1 - 0.99/leverage)).toFixed(2)
-          : (currentCandle.close * (1 + 0.99/leverage)).toFixed(2)
-        }
-        {type === 'BULLISH' ? ' ' : ''}
-      </span>
-    ))}
+  <span
+    key={type}
+    style={{
+      fontSize: '1rem',
+      fontWeight: 900,
+      letterSpacing: '0.01em',
+      lineHeight: 1.05,
+      textShadow: '0 0 6px #FFD60088, 0 0 1px #000',
+      verticalAlign: 'middle',
+      display: 'inline-block',
+      color: type === 'BULLISH' ? '#22c55e' : '#ef4444', // green for Long, red for Short
+      marginRight: type === 'BULLISH' ? '1.2em' : 0 // spacing between
+    }}
+  >
+    {type === 'BULLISH' ? 'Long' : 'Short'}: $
+    {type === 'BULLISH'
+      ? (currentCandle.close * (1 - 0.99/leverage)).toFixed(2)
+      : (currentCandle.close * (1 + 0.99/leverage)).toFixed(2)
+    }
+    {type === 'BULLISH' ? ' ' : ''}
+  </span>
+))}
   </span>
 </div>
                             )}
