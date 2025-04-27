@@ -582,12 +582,6 @@ const [leverage, setLeverage] = useState(2000);
       <div className="flex flex-col gap-6">
         {/* SoundManager flotante */}
         <div className="fixed bottom-1 right-4 z-50">
-          <SoundManager
-            muted={muted}
-            onToggleMute={() => setMuted(m => !m)}
-            triggerLose={triggerLose}
-            triggerWin={triggerWin}
-          />
         </div>
            <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full" style={{ background: 'none' }}>
   <div className="flex items-center w-full justify-between relative">
@@ -656,7 +650,6 @@ const [leverage, setLeverage] = useState(2000);
               >
                 Candle Rush 1.0&nbsp;&rarr;&nbsp;btcer.fun
               </a>
-              {/* SoundManager pequeño en la cabecera */}
               
             </div>
           </header>
@@ -932,10 +925,15 @@ const [leverage, setLeverage] = useState(2000);
             <div className="flex flex-col h-full min-h-0 flex-1 lg:h-full m-0 p-0 gap-0">
               <Card className="bg-black border-[#FFD600]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Wallet className="h-5 w-5" />
-                    Estadísticas
-                  </CardTitle>
+                  <CardTitle className="flex items-center gap-2 justify-between w-full">
+  <span className="flex items-center gap-2">
+    <Wallet className="h-5 w-5" />
+    Estadísticas
+  </span>
+  <div className="ml-auto">
+    <SoundManager muted={muted} onToggleMute={() => setMuted(m => !m)} triggerLose={triggerLose} triggerWin={triggerWin} />
+  </div>
+</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <UserStats />
@@ -1011,3 +1009,6 @@ const [leverage, setLeverage] = useState(2000);
     </>
   )
 }
+
+// (SoundManager flotante eliminado de la parte inferior)
+
