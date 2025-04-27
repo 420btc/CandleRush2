@@ -607,9 +607,13 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     const deltaY = e.deltaY;
+    const allCandles = [...candles];
+    if (currentCandle) allCandles.push(currentCandle);
+    const minScale = 0.5;
+    const maxScale = Math.max(5, Math.min(24, 60 / (allCandles.length || 1)));
     setViewState((prev: ViewState) => ({
       ...prev,
-      scale: Math.min(5, Math.max(0.5, prev.scale * (1 - deltaY / 1000))),
+      scale: Math.min(maxScale, Math.max(minScale, prev.scale * (1 - deltaY / 1000))),
     }));
   };
 
@@ -690,18 +694,26 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
   };
 
   const handleZoomIn = () => {
+    const allCandles = [...candles];
+    if (currentCandle) allCandles.push(currentCandle);
+    const minScale = 1;
+    const maxScale = Math.max(10, Math.min(24, 60 / (allCandles.length || 1)));
     setViewState((prev: ViewState) => ({
       ...prev,
-      scale: Math.min(5, prev.scale * 1.2),
+      scale: Math.min(maxScale, prev.scale * 1.5),
     }));
   };
 
 const handleZoomOut = () => {
-setViewState((prev: ViewState) => ({
-  ...prev,
-  scale: Math.max(0.5, prev.scale / 1.2),
-}));
-};
+    const allCandles = [...candles];
+    if (currentCandle) allCandles.push(currentCandle);
+    const minScale = 1;
+    const maxScale = Math.max(10, Math.min(24, 60 / (allCandles.length || 1)));
+    setViewState((prev: ViewState) => ({
+      ...prev,
+      scale: Math.max(minScale, prev.scale / 1.2),
+    }));
+  };
 
 return (
     <div className="relative h-full w-full overflow-hidden select-none" style={{ minHeight: 520 }}>
@@ -723,8 +735,8 @@ return (
             candles.forEach((c: { high: number }) => { max = Math.max(max, c.high); });
             return max;
           })()}
-          barWidth={28}
-          bins={24}
+          barWidth={100}
+          bins={100}
         />
       </div>
     )}
