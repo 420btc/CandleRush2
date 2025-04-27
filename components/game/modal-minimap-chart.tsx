@@ -64,7 +64,10 @@ export const ModalMinimapChart: React.FC<ModalMinimapChartProps> = ({ open, onOp
       const y = h - pad - ((candles[idx].close - min) * (h - 2 * pad)) / (max - min || 1);
       ctx.beginPath();
       ctx.arc(x, y, 4, 0, 2 * Math.PI);
-      ctx.fillStyle = '#a259ff'; // Morado
+      let color = '#a259ff'; // Default morado
+      if (bet.prediction === 'BULLISH') color = '#22c55e'; // verde
+      else if (bet.prediction === 'BEARISH') color = '#ef4444'; // rojo
+      ctx.fillStyle = color;
       ctx.globalAlpha = 1;
       ctx.fill();
       ctx.strokeStyle = "#fff";
