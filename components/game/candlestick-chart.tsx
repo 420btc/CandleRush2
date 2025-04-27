@@ -704,7 +704,7 @@ setViewState((prev: ViewState) => ({
 };
 
 return (
-    <div className="relative h-full w-full overflow-hidden select-none" style={{ minHeight: 320 }}>
+    <div className="relative h-full w-full overflow-hidden select-none" style={{ minHeight: 520 }}>
 
     <canvas ref={canvasRef} className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0 z-10" />
     {/* Overlay: Perfil de Volumen */}
