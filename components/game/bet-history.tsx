@@ -91,6 +91,12 @@ export default function BetHistory() {
                       <span className="text-sm bg-red-500/20 text-red-100 px-2 py-0.5 rounded-full">Perdida</span>
                     </div>
                   )}
+                  {bet.status === "LIQUIDATED" && (
+                    <div className="flex items-center gap-1">
+                      <XCircle className="h-5 w-5 text-yellow-400" />
+                      <span className="text-sm bg-yellow-500/20 text-yellow-100 px-2 py-0.5 rounded-full">Liquidada</span>
+                    </div>
+                  )}
                   <button
                     className={`mt-1 px-2 py-1 bg-yellow-700/20 rounded-lg text-yellow-400 transition flex items-center justify-center ${bet.status === 'PENDING' ? 'opacity-40 cursor-not-allowed' : 'hover:bg-yellow-700/40'}`}
                     disabled={bet.status === 'PENDING'}

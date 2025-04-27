@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react"
 import { v4 as uuidv4 } from "uuid"
 import type { Candle, Bet, GamePhase } from "@/types/game"
 import { fetchHistoricalCandles, setupWebSocket } from "@/lib/binance-api"
@@ -187,6 +187,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(checkInterval)
   }, [pendingResolutions])
 
+  
   // --- SOLUCIÓN: Al hidratar apuestas y vela actual, si hay apuestas PENDING para la vela actual y no hay resolución pendiente, programar la resolución ---
   useEffect(() => {
     if (!betsHydrated || !currentCandle) return;
@@ -200,6 +201,55 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setPendingResolutions(prev => [...prev, { candle: currentCandle, time: resolutionTime }]);
     }
   }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol, pendingResolutions]);
+
+  // --- LIQUIDACIÓN INMEDIATA: Si el precio actual cruza el liquidationPrice, resolver la apuesta ya ---
+  useEffect(() => {
+    if (!betsHydrated || !currentCandle) return;
+    const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
+    let liquidated = false;
+    const updatedBets = tfBets.map(bet => {
+      if (bet.status !== 'PENDING' || !bet.liquidationPrice || !bet.entryPrice) return bet;
+      if (bet.prediction === 'BULLISH') {
+        // Liquidar si el precio actual <= liquidationPrice
+        if (currentCandle.close <= bet.liquidationPrice) {
+          liquidated = true;
+          return {
+            ...bet,
+            status: 'LIQUIDATED' as const,
+            wasLiquidated: true,
+            resolvedAt: Date.now(),
+            winnings: 0,
+            bonus: 0,
+            multiplier: 1,
+          };
+        }
+      } else {
+        // Liquidar si el precio actual >= liquidationPrice
+        if (currentCandle.close >= bet.liquidationPrice) {
+          liquidated = true;
+          return {
+            ...bet,
+            status: 'LIQUIDATED' as const,
+            wasLiquidated: true,
+            resolvedAt: Date.now(),
+            winnings: 0,
+            bonus: 0,
+            multiplier: 1,
+          };
+        }
+      }
+      return bet;
+    });
+    if (liquidated) {
+      setBetsByPair(prev => {
+        const symbolBets = { ...(prev[currentSymbol] || {}) };
+        symbolBets[timeframe] = updatedBets;
+        return { ...prev, [currentSymbol]: symbolBets };
+      });
+      // Aquí NO cambiamos la fase ni el contador. Solo se liquida la apuesta.
+      // Puedes mostrar un toast/modal si quieres feedback inmediato.
+    }
+  }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol]);
 
   // Load historical candles
   const loadHistoricalCandles = useCallback(async () => {
@@ -460,7 +510,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
              wasLiquidated = true;
              return {
                ...bet,
-               status: 'LIQUIDATED',
+               status: 'LIQUIDATED' as const,
                wasLiquidated: true,
                resolvedAt: Date.now(),
                winnings: 0,

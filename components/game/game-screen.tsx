@@ -186,19 +186,22 @@ export default function GameScreen() {
     }
   }
   // Estado para el monto de apuesta
-  const [betAmount, setBetAmount] = useState(10);
+  const [betAmount, setBetAmount] = useState(10); // Solo enteros, sin decimales
 
   // Sincroniza el monto de apuesta con el balance real
   useEffect(() => {
     if (betAmount > userBalance) {
-      setBetAmount(userBalance > 0 ? userBalance : 0);
+      setBetAmount(userBalance > 0 ? Math.floor(userBalance) : 0);
+    } else if (!Number.isInteger(betAmount)) {
+      setBetAmount(Math.floor(betAmount));
     }
   }, [userBalance]);
 
   
 
   // Estado para apalancamiento
-  const [leverage, setLeverage] = useState(100);
+  // Default leverage is now 2000x
+const [leverage, setLeverage] = useState(2000);
 
   // Calcular precio de liquidación en tiempo real
   const entryPrice = currentCandle?.close || 0;
@@ -768,7 +771,7 @@ export default function GameScreen() {
   onChange={e => setLeverage(Number(e.target.value))}
 >
 
-                                  {[100, 200, 300, 500, 1000, 2000].map(x => (
+                                  {[300, 500, 1000, 2000, 3000, 5000].map(x => (
                                     <option key={x} value={x}>{x}x</option>
                                   ))}
                                 </select>
@@ -776,7 +779,7 @@ export default function GameScreen() {
 
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
-                                onClick={() => setBetAmount((prev) => Math.max(1, prev - 1))}
+                                onClick={() => setBetAmount((prev) => Math.max(1, Math.floor(prev - 1)))}
                                 disabled={betAmount <= 1}
                               >
                                 -1
@@ -784,16 +787,19 @@ export default function GameScreen() {
                               <input
   type="number"
   min={1}
-  max={userBalance}
-  step={0.01}
+  max={Math.floor(userBalance)}
+  step={1}
   value={betAmount}
-  onChange={e => setBetAmount(Math.max(1, Math.min(Number(e.target.value), userBalance)))}
+  onChange={e => {
+    const intVal = Math.floor(Number(e.target.value));
+    setBetAmount(Math.max(1, Math.min(intVal, Math.floor(userBalance))));
+  }}
   className="w-16 sm:w-20 text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-base sm:text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none py-1 sm:py-1"
 />
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
-                                onClick={() => setBetAmount((prev) => Math.min(Math.floor(userBalance), prev + 1))}
-                                disabled={betAmount >= userBalance}
+                                onClick={() => setBetAmount((prev) => Math.min(Math.floor(userBalance), Math.floor(prev + 1)))}
+                                disabled={betAmount >= Math.floor(userBalance)}
                               >
                                 +1
                               </button>
