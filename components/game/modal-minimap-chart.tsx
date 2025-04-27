@@ -21,13 +21,46 @@ export const ModalMinimapChart: React.FC<ModalMinimapChartProps> = ({ open, onOp
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw price line
+    // Draw vertical dashed lines and time labels
     const prices = candles.map(c => c.close);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     const pad = 10;
+    const padRight = 32; // padding extra para la última hora
     const w = canvas.width;
     const h = canvas.height;
+    // --- Líneas verticales y horas ---
+    const numDivisions = 6;
+    ctx.save();
+    for (let i = 0; i < numDivisions; i++) {
+      // Para la última división, usa padRight extra
+      const padEnd = (i === numDivisions - 1) ? padRight : pad;
+      const x = pad + (i * (w - pad - padEnd)) / (numDivisions - 1);
+
+      // Línea punteada
+      ctx.beginPath();
+      ctx.setLineDash([4, 6]);
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 1;
+      ctx.moveTo(x, pad);
+      ctx.lineTo(x, h - pad + 18); // bajar un poco para la hora
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Hora
+      const candleIdx = Math.round(i * (candles.length - 1) / (numDivisions - 1));
+      const ts = candles[candleIdx]?.timestamp;
+      if (ts) {
+        const date = new Date(ts);
+        const hour = date.getHours().toString().padStart(2, '0');
+        const minStr = date.getMinutes().toString().padStart(2, '0');
+        ctx.font = '12px monospace';
+        ctx.fillStyle = '#ccc';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${hour}:${minStr}`, x, h - pad + 8);
+      }
+    }
+    ctx.restore();
+    // --- Línea de precio ---
     ctx.strokeStyle = "#FFD600";
     ctx.lineWidth = 1;
     ctx.beginPath();
