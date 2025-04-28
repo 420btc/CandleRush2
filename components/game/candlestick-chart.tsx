@@ -30,6 +30,21 @@ interface ViewState {
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile }: CandlestickChartProps & { setVerticalScale?: (v: number) => void }) {
 
+  // --- Botón de enfoque exclusivo última vela ---
+  function FocusLastCandleButton() {
+    return (
+      <button
+        className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
+        title="Enfocar última vela"
+        onClick={handleFocusLastCandle}
+        tabIndex={0}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="#111" strokeWidth="2"/><path d="M12 7v5l3 3" stroke="#111" strokeWidth="2" strokeLinecap="round"/></svg>
+      </button>
+    );
+  }
+
+
   // Referencias para los iconos
   const bullImgRef = useRef<HTMLImageElement | null>(null);
   const bearImgRef = useRef<HTMLImageElement | null>(null);
@@ -131,29 +146,49 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
 
   // Función para enfocar y hacer zoom en la última vela
   const handleFocusLastCandle = useCallback(() => {
-    if (!canvasRef.current || !canvasRef.current.parentElement) return;
-    const zoomScale = 5;
-    const { width } = canvasRef.current.parentElement.getBoundingClientRect();
-    // Usar los metadatos del último render para calcular la X real de la última vela
-    const meta = lastRenderMeta.current;
-    if (!meta || !canvasRef.current || !canvasRef.current.parentElement) return;
-    const { minTime, xScale, clampedOffsetX } = meta;
+    if (!canvasRef.current || !canvasRef.current.parentElement) {
+      alert('No se puede enfocar: canvas no disponible');
+      console.log('[Zoom Última Vela] canvasRef o parentElement no está definido');
+      return;
+    }
+    const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
     const allCandles = [...candles];
     if (currentCandle) allCandles.push(currentCandle);
-    if (allCandles.length === 0) return;
+    if (allCandles.length === 0) {
+      alert('No hay velas para enfocar');
+      console.log('[Zoom Última Vela] No hay velas para enfocar');
+      return;
+    }
+    // --- Cálculo robusto para centrar la última vela en el centro del canvas ---
     const last = allCandles[allCandles.length - 1];
-    const lastX = (last.timestamp - minTime) * xScale - clampedOffsetX;
-    // Centrar la última vela
-    const offsetXTarget = Math.max(0, lastX - width / 2);
-    const offsetYTarget = 0;
-    const targetScale = viewState.scale > 1 ? viewState.scale : zoomScale;
-    // Animación
+    const targetScale = 10;
+    let minPrice = Math.min(...allCandles.map(c => c.low));
+    let maxPrice = Math.max(...allCandles.map(c => c.high));
+    const pricePadding = (maxPrice - minPrice) * 0.50;
+    minPrice -= pricePadding;
+    maxPrice += pricePadding;
+    const priceRange = maxPrice - minPrice;
+    const timeRange = allCandles[allCandles.length - 1].timestamp - allCandles[0].timestamp;
+    const safeTimeRange = timeRange === 0 ? 1 : timeRange;
+    const xScale = (width / safeTimeRange) * targetScale;
+    const yScale = (height / priceRange) * targetScale * (verticalScale ?? 1);
+    const lastX = (last.timestamp - allCandles[0].timestamp) * xScale;
+    const lastY = height - ((last.close - minPrice) * yScale);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const targetOffsetX = lastX - centerX;
+    const targetOffsetY = lastY - centerY;
+    // Log de depuración
+    console.log('[Zoom Última Vela] Enfocando última vela:', {
+      width, height, last, targetScale, minPrice, maxPrice, priceRange, safeTimeRange, xScale, yScale, lastX, lastY, centerX, centerY, targetOffsetX, targetOffsetY
+    });
+    // --- Animación suave ---
     const start = performance.now();
-    const duration = 1000;
+    const duration = 1100;
     const initial = { ...viewState };
     const end = {
-      offsetX: offsetXTarget,
-      offsetY: offsetYTarget,
+      offsetX: targetOffsetX,
+      offsetY: targetOffsetY,
       scale: targetScale,
       startX: null,
       startY: null,
@@ -177,7 +212,7 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
       }
     }
     requestAnimationFrame(animate);
-  }, [dimensions.width, candles, currentCandle, viewState]);
+  }, [dimensions.width, dimensions.height, candles, currentCandle, viewState, verticalScale]);
 
   // Referencia para el último timestamp renderizado
   const lastRenderRef = useRef<number>(0)
@@ -201,6 +236,8 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
 }
 
     if (allCandles.length === 0) return
+    // Validación defensiva: no intentar renderizar si no hay velas
+    
 
     // Aplicar escala de dispositivo para pantallas de alta resolución
     ctx.resetTransform()
@@ -232,6 +269,28 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     const timeRange = maxTime - minTime
     const xScale = (dimensions.width / timeRange) * viewState.scale
     const yScale = (dimensions.height / priceRange) * viewState.scale * verticalScale
+
+    // VALIDACIÓN DEFENSIVA: Si algún valor es inválido, no renderices
+    if (
+      !Number.isFinite(minPrice) ||
+      !Number.isFinite(maxPrice) ||
+      !Number.isFinite(priceRange) ||
+      priceRange <= 0 ||
+      !Number.isFinite(timeRange) ||
+      timeRange <= 0 ||
+      !Number.isFinite(xScale) ||
+      !Number.isFinite(yScale) ||
+      dimensions.width <= 0 ||
+      dimensions.height <= 0
+    ) {
+      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+      ctx.save();
+      ctx.fillStyle = '#222';
+      ctx.font = 'bold 24px monospace';
+      ctx.fillText('Datos inválidos', 24, 48);
+      ctx.restore();
+      return;
+    }
 
     // Paneo completamente libre en ambos ejes
     const clampedOffsetX = viewState.offsetX;
@@ -766,6 +825,7 @@ return (
     )}
     {/* Controles de navegación */}
     <div className="absolute bottom-[58px] right-2 flex gap-2 z-40">
+      <FocusLastCandleButton />
       <button
         onClick={handleReset}
         className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"

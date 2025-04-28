@@ -54,14 +54,20 @@ export default function UserStats() {
   }
 
   // Calculate stats
-  const totalBets = bets.length
-  const wonBets = bets.filter((bet) => bet.status === "WON").length
-  const lostBets = bets.filter((bet) => bet.status === "LOST").length
-  const winRate = totalBets > 0 ? (wonBets / totalBets) * 100 : 0
+  const totalBets = bets.length;
+  const wonBets = bets.filter((bet) => bet.status === "WON").length;
+  const lostBets = bets.filter((bet) => bet.status === "LOST").length;
+  const winRate = totalBets > 0 ? (wonBets / totalBets) * 100 : 0;
 
   const balance = userBalance;
   const profitLoss = balance - 100;
   const isProfitable = profitLoss >= 0;
+
+  // --- NUEVO: Ganancias y pérdidas totales acumuladas ---
+  const totalWon = bets.filter(b => b.status === "WON" && typeof b.winnings === 'number').reduce((sum, b) => sum + (b.winnings || 0), 0);
+  const totalLost = bets.filter(b => (b.status === "LOST" || b.status === "LIQUIDATED") && typeof b.amount === 'number').reduce((sum, b) => sum + (b.amount || 0), 0);
+  // Formato separador de miles
+  const formatNum = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
   // Estado para el reto matemático
   const [showMathModal, setShowMathModal] = useState(false);
@@ -228,6 +234,21 @@ export default function UserStats() {
           <span className="text-sm text-white">Ganancias/Pérdidas</span>
         </div>
         <span className={`font-bold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{profitLoss.toFixed(2)}</span>
+      </div>
+      {/* NUEVO: Ganancias y pérdidas totales */}
+      <div className="flex items-center justify-between text-white mt-1">
+        <div className="flex items-center gap-2 text-white">
+          <DollarSign className="h-5 w-5 text-yellow-300" />
+          <span className="text-sm text-white">Ganancias totales</span>
+        </div>
+        <span className="font-bold text-lg text-yellow-300">{formatNum(totalWon)}</span>
+      </div>
+      <div className="flex items-center justify-between text-white mt-1">
+        <div className="flex items-center gap-2 text-white">
+          <DollarSign className="h-5 w-5 text-red-300" />
+          <span className="text-sm text-white">Pérdidas totales</span>
+        </div>
+        <span className="font-bold text-lg text-red-300">{formatNum(totalLost)}</span>
       </div>
       <div className="flex items-center justify-between text-white">
         <div className="flex items-center gap-2 text-white">

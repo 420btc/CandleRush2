@@ -89,12 +89,13 @@ const GameContext = createContext<GameContextType | undefined>(undefined)
 export function GameProvider({ children }: { children: ReactNode }) {
   // ...existing state...
   const addCoins = (amount: number) => {
+    // Sin límite: el usuario puede tener cualquier cantidad de monedas
     setUserBalance((prev) => {
       const newBalance = prev + amount;
       localStorage.setItem("userBalance", String(newBalance));
       return newBalance;
     });
-  }
+  } // Sin restricciones  }
   const [candleSizes, setCandleSizes] = useState<number[]>([]);
   const [bonusInfo, setBonusInfo] = useState<{ bonus: number; size: number; message: string } | null>(null);
   const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING")
@@ -557,28 +558,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
            else if (size > 25) bonus = bet.amount * 0.25;
            else if (size > 0) bonus = bet.amount * 0.10;
            if (won) {
-             // --- Nueva lógica avanzada de ganancias con apalancamiento ---
-             const priceDiff = Math.abs(candle.close - candle.open);
-             const entryPrice = bet.entryPrice || candle.open;
-             let baseWin = bet.amount * (priceDiff / entryPrice);
-             let mult = 1;
+             // --- NUEVO CÁLCULO: Payout explosivo con apalancamiento ---
+             let winningsRaw = 0;
              if (bet.leverage && bet.leverage > 1) {
-               if (priceDiff < 60) mult = 1 + (bet.leverage - 1) * 0.10;
-               else if (priceDiff < 150) mult = 1 + (bet.leverage - 1) * 0.35;
-               else if (priceDiff < 300) mult = 1 + (bet.leverage - 1) * 0.60;
-               else if (priceDiff < 500) mult = 1 + (bet.leverage - 1) * 0.85;
-               else if (priceDiff < 900) mult = bet.leverage;
-               else mult = bet.leverage * 1.1;
+               winningsRaw = bet.amount * bet.leverage;
+             } else {
+               winningsRaw = bet.amount;
              }
-             winnings = baseWin * mult;
-             // Aplicar bonus y multiplicador de racha solo a ganancias
-             winnings = winnings * multiplier + bonus;
-             // Limite duro de ganancia
-             const balance = typeof userBalance === 'number' ? userBalance : 100;
-             let maxWin = 9999;
-             if (balance >= 10000) maxWin = 4999;
-             winnings = Math.min(winnings, maxWin);
-             totalWinnings += winnings;
+             // Si quieres mantener un pequeño efecto de variación de precio, puedes sumar un extra:
+             // winningsRaw += bet.amount * priceChangePct * (bet.leverage || 1);
+             // Solo ganas si la predicción fue correcta
+             winnings = won ? winningsRaw : 0;
+             // Aplica bonus y multiplicador de racha solo si ganaste
+             if (won) winnings = winnings * multiplier + bonus;
+             // --- Eliminado límite de ganancia: ahora puedes ganar cualquier cantidad ---
+             totalWinnings += winnings; // Se suma sin límite
              wonCount++;
              lastResultWon = true;
            } else {
