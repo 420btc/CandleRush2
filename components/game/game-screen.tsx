@@ -707,7 +707,7 @@ const [leverage, setLeverage] = useState(2000);
   className="text-2xl sm:text-[4rem] font-extrabold text-white drop-shadow-lg ml-2"
   style={{ minWidth: '230px', textAlign: 'right', display: 'inline-block' }}
 >
-  {currentCandle ? `$${currentCandle.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '--'}
+  {currentCandle ? currentCandle.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
 </span>
 {/* Dollar difference counter below price */}
 <div className="ml-[101px] flex items-center">
