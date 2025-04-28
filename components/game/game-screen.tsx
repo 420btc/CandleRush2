@@ -846,7 +846,7 @@ const [leverage, setLeverage] = useState(2000);
   onChange={e => { playPulsar(); setLeverage(Number(e.target.value)); }}
 >
 
-                                  {[300, 500, 1000, 2000, 3000, 5000, 6666].map(x => (
+                                  {[300, 500, 1000, 2000, 3000, 5000, 6666, 10000].map(x => (
                                     <option key={x} value={x}>{x}x</option>
                                   ))}
                                 </select>
@@ -931,8 +931,8 @@ const [leverage, setLeverage] = useState(2000);
   >
     {type === 'BULLISH' ? 'Long' : 'Short'}: $
     {type === 'BULLISH'
-      ? (currentCandle.close * (1 - 0.99/leverage)).toFixed(2)
-      : (currentCandle.close * (1 + 0.99/leverage)).toFixed(2)
+      ? (currentCandle.close * (1 - (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)
+      : (currentCandle.close * (1 + (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)
     }
     {type === 'BULLISH' ? ' ' : ''}
   </span>
