@@ -250,9 +250,14 @@ const [leverage, setLeverage] = useState(2000);
     diff: number;
   }>(null);
   // Nuevo: recordar la última apuesta notificada
-  const [lastNotifiedBetTimestamp, setLastNotifiedBetTimestamp] = useState<number | null>(null);
+  const [lastNotifiedBetTimestamp, setLastNotifiedBetTimestamp] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('lastNotifiedBetTimestamp');
+      return saved ? Number(saved) : null;
+    }
+    return null;
+  });
   const [showBetModal, setShowBetModal] = useState(false);
-
 
   const [showAchievement, setShowAchievement] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<number>(0)
@@ -312,6 +317,9 @@ const [leverage, setLeverage] = useState(2000);
         });
         setShowBetModal(true);
         setLastNotifiedBetTimestamp(lastResolved.timestamp); // Marcar como notificada
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('lastNotifiedBetTimestamp', String(lastResolved.timestamp));
+        }
         setTimeout(() => setShowBetModal(false), 2800);
         setTimeout(() => setTriggerLose(isLost), 20);
         setTimeout(() => setTriggerWin(isWin), 20);
@@ -586,7 +594,7 @@ const [leverage, setLeverage] = useState(2000);
                 }
               : {},
             {
-              transform: 'scaleX(1.0) scaleY(0.87)',
+              transform: 'scaleX(1.0) scaleY(0.88)',
               transformOrigin: 'top center',
             }
           )
@@ -745,11 +753,11 @@ const [leverage, setLeverage] = useState(2000);
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div style={{ position: 'relative', minHeight: 520 }}>
+                  <div style={{ position: 'relative', minHeight: 430 }}>
   {/* Fondo portada detrás del chart con opacidad y blur */}
   <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
-  <CardContent className="relative p-0 bg-black rounded-b-2xl overflow-hidden" style={{ minHeight: 420, width: 'calc(100% + 16px)', maxWidth: 'none', position: 'relative', padding: 0 }}>
-    <div className="relative" style={{ width: '100%', height: 420, minWidth: 0 }}>
+  <CardContent className="relative p-0 bg-black rounded-b-2xl overflow-hidden" style={{ minHeight: 430, width: 'calc(100% + 16px)', maxWidth: 'none', position: 'relative', padding: 0 }}>
+    <div className="relative" style={{ width: '100%', height: 430, minWidth: 0 }}>
       <CandlestickChart
         candles={candles}
         currentCandle={currentCandle}
@@ -794,7 +802,7 @@ const [leverage, setLeverage] = useState(2000);
                       {/* Selector de monto y botones de apuesta */}
                       <div className="flex flex-col items-center gap-4 w-full">
                         {/* Joystick-style console: all controls grouped */}
-<div className="w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-2 border-[#FFD600cc] rounded-lg shadow-lg p-1 sm:p-2 gap-1 sm:gap-2 mt-2.5 overflow-x-auto z-20" data-component-name="GameScreen">
+<div className="w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-2 border-[#FFD600cc] rounded-lg shadow-lg p-1 sm:p-2 gap-1 sm:gap-2 mt-0 overflow-x-auto z-20" data-component-name="GameScreen">
   {/* SOLO EN MOVIL: Estado de apuestas y botón volumen */}
   <div className="w-full flex sm:hidden flex-row justify-between items-center mb-2">
     <span className={`text-xs font-extrabold uppercase tracking-wide drop-shadow-lg ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
@@ -810,7 +818,7 @@ const [leverage, setLeverage] = useState(2000);
     </button>
   </div>
                           {/* Symbol and Interval selectors */}
-                          <div className="flex flex-row gap-4 w-full justify-center">
+                          <div className="flex w-full justify-center items-center gap-6 py-1">
                             <GameControls
                               onSymbolChange={changeSymbol}
                               onTimeframeChange={changeTimeframe}
@@ -871,10 +879,20 @@ const [leverage, setLeverage] = useState(2000);
                                 +1
                               </button>
                               <button
-  className="bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition ml-2 text-sm sm:text-lg sm:px-4 sm:py-1 min-w-[40px] sm:min-w-[80px]"
-  onClick={() => { playPulsar(); setBetAmount(Math.floor(userBalance)); }}
+  className="bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition text-sm sm:text-base min-w-[40px] sm:min-w-[80px]"
+  style={{ border: '2px solid #FFD600', marginRight: 6 }}
+  onClick={() => setBetAmount(Math.max(1, Math.floor(userBalance / 2)))}
+  disabled={userBalance < 2}
+  type="button"
+>
+  50/50
+</button>
+<button
+  className="bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition text-sm sm:text-base min-w-[20px] sm:min-w-[40px] border-1 border-yellow-400"
+  style={{ marginRight: 6 }}
   onClick={() => setBetAmount(Math.floor(userBalance))}
   disabled={userBalance < 1}
+  type="button"
 >
   All In
 </button>

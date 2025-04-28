@@ -48,7 +48,7 @@ export default function BetHistory() {
 
   if (bets.length === 0) {
     return (
-      <div className="text-center py-8 text-zinc-500 w-full">
+      <div className="text-center py-4 text-zinc-500 w-full">
         <p>No hay apuestas realizadas</p>
       </div>
     )
@@ -58,7 +58,7 @@ export default function BetHistory() {
 
 return (
   <div className="h-full flex-1 min-h-0 w-full flex flex-col">
-    <div className="flex gap-2 mb-3 justify-center">
+    <div className="flex gap-2 mb-1 justify-center">
       <button
         className={`px-3 py-1 rounded-lg font-bold border-2 transition-all text-sm ${!showAchievements ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black/60 text-yellow-400 border-yellow-400 hover:bg-yellow-900/30'}`}
         onClick={() => setShowAchievements(false)}
