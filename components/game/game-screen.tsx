@@ -985,7 +985,7 @@ const [leverage, setLeverage] = useState(2000);
             </div>
 
             <div className="flex flex-col h-full min-h-0 flex-1 lg:h-full m-0 p-0 gap-0">
-              <Card className="bg-black border-[#FFD600]" style={{ borderWidth: '3px' }}>
+              <Card className="bg-black border-[#FFD600]" style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 justify-between w-full">
   <span className="flex items-center gap-2">
@@ -1002,7 +1002,7 @@ const [leverage, setLeverage] = useState(2000);
                 </CardContent>
               </Card>
 
-              <Card className="bg-black border-[#FFD600] w-full h-full flex-1 flex flex-col min-h-0" style={{ borderWidth: '3px' }}>
+              <Card className="bg-black border-[#FFD600] w-full h-full flex-1 flex flex-col min-h-0" style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
                 <CardHeader className="pb-0">
   <div className="flex items-center justify-center w-full relative">
   <button
