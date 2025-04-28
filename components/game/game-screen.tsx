@@ -846,7 +846,7 @@ const [leverage, setLeverage] = useState(2000);
   onChange={e => { playPulsar(); setLeverage(Number(e.target.value)); }}
 >
 
-                                  {[300, 500, 1000, 2000, 3000, 5000].map(x => (
+                                  {[300, 500, 1000, 2000, 3000, 5000, 6666].map(x => (
                                     <option key={x} value={x}>{x}x</option>
                                   ))}
                                 </select>
