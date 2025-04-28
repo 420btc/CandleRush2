@@ -145,9 +145,9 @@ export default function UserStats() {
           ) : (
             <span className="text-zinc-400 text-xl">🏁</span>
           )}
-          <span className="text-sm">Racha actual</span>
+          <span className="text-sm font-bold">Racha actual</span>
         </div>
-        <span className={`font-bold text-lg ${realStreak >= 3 ? "text-orange-400" : ""} ${realStreak >= 1 ? "animate-shake" : ""}`}>{realStreak}</span>
+        <span className={`font-extrabold text-lg ${realStreak >= 3 ? "text-orange-400" : ""} ${realStreak >= 1 ? "animate-shake" : ""}`}>{realStreak}</span>
       </div>
       <style jsx>{`
         @keyframes shake {
@@ -166,10 +166,10 @@ export default function UserStats() {
       <div className="flex items-center justify-between text-white">
         <div className="flex items-center gap-2 text-white">
           <DollarSign className="h-5 w-5 text-green-400" />
-          <span className="text-sm text-white">Balance</span>
+          <span className="text-sm font-bold text-white">Balance</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-bold text-lg text-white">${formatNum(userBalance)}</span>
+          <span className="font-extrabold text-lg text-white">${formatNum(userBalance)}</span>
           <button
             className="ml-2 px-2 py-1 rounded bg-yellow-400 text-black text-xs font-bold shadow hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:bg-zinc-500 disabled:text-zinc-300 disabled:cursor-not-allowed"
             style={{ minWidth: 24, minHeight: 24 }}
@@ -231,44 +231,44 @@ export default function UserStats() {
           ) : (
             <TrendingDown className="h-5 w-5 text-red-400" />
           )}
-          <span className="text-sm text-white">Ganancias/Pérdidas</span>
+          <span className="text-sm font-bold text-white">Ganancias/Pérdidas</span>
         </div>
-        <span className={`font-bold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{profitLoss.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <span className={`font-extrabold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{profitLoss.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
       </div>
       {/* NUEVO: Ganancias y pérdidas totales */}
       <div className="flex items-center justify-between text-white mt-1">
         <div className="flex items-center gap-2 text-white">
           <DollarSign className="h-5 w-5 text-yellow-300" />
-          <span className="text-sm text-white">Ganancias totales</span>
+          <span className="text-sm font-bold text-white">Ganancias totales</span>
         </div>
-        <span className="font-bold text-lg text-yellow-300">{formatNum(totalWon)}</span>
+        <span className="font-extrabold text-lg text-yellow-300">{formatNum(totalWon)}</span>
       </div>
       <div className="flex items-center justify-between text-white mt-1">
         <div className="flex items-center gap-2 text-white">
           <DollarSign className="h-5 w-5 text-red-300" />
-          <span className="text-sm text-white">Pérdidas totales</span>
+          <span className="text-sm font-bold text-white">Pérdidas totales</span>
         </div>
-        <span className="font-bold text-lg text-red-300">{formatNum(totalLost)}</span>
+        <span className="font-black text-lg text-red-300">{formatNum(totalLost)}</span>
       </div>
       <div className="flex items-center justify-between text-white">
         <div className="flex items-center gap-2 text-white">
           <Percent className="h-5 w-5 text-blue-400" />
-          <span className="text-sm text-white">Tasa de victorias</span>
+          <span className="text-sm font-bold text-white">Tasa de victorias</span>
         </div>
-        <span className="font-bold text-lg text-white">{winRate.toFixed(1)}%</span>
+        <span className="font-black text-lg text-white">{winRate.toFixed(1)}%</span>
       </div>
       <div className="grid grid-cols-3 gap-2 mt-4 text-white">
         <div className="bg-zinc-900/60 p-2 rounded-lg text-center text-white">
           <p className="text-xs text-zinc-400 text-white">Total</p>
-          <p className="font-bold text-white">{totalBets}</p>
+          <p className="font-black text-white">{totalBets}</p>
         </div>
         <div className="bg-green-900/30 p-2 rounded-lg text-center text-white">
-          <p className="text-xs text-green-400 text-white">Ganadas</p>
-          <p className="font-bold text-green-400 text-white">{wonBets}</p>
+          <p className="text-xs font-bold text-green-400 text-white">Ganadas</p>
+          <p className="font-black text-green-400 text-white">{wonBets}</p>
         </div>
         <div className="bg-red-900/30 p-2 rounded-lg text-center text-white">
-          <p className="text-xs text-red-400 text-white">Perdidas</p>
-          <p className="font-bold text-red-400 text-white">{lostBets}</p>
+          <p className="text-xs font-bold text-red-400 text-white">Perdidas</p>
+          <p className="font-black text-red-400 text-white">{lostBets}</p>
         </div>
       </div>
     </div>

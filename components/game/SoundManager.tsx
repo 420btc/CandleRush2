@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import PiFileAudioBold from "@/components/icons/PiFileAudioBold";
 
 interface SoundManagerProps {
   muted: boolean;
@@ -138,21 +139,7 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
         style={{width:28,height:28,minWidth:28,minHeight:28,padding:0}}
         aria-label={muted ? "Activar sonido" : "Desactivar sonido"}
       >
-        {muted ? (
-          // VolumeX de lucide-react
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="#FFD600" strokeWidth={2} style={{ display: 'block', margin: 'auto' }}>
-            <circle cx="12" cy="12" r="11" fill="#FFD600" fillOpacity="0.25" />
-            <path d="M9 9v6h4l5 5V4l-5 5H9z" fill="none" />
-            <line x1="18" y1="6" x2="6" y2="18" stroke="#FFD600" strokeWidth={2}/>
-          </svg>
-        ) : (
-          // Volume2 de lucide-react
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="#FFD600" strokeWidth={2} style={{ display: 'block', margin: 'auto' }}>
-            <circle cx="12" cy="12" r="11" fill="#FFD600" fillOpacity="0.25" />
-            <polygon points="11 5 6 9H2v6h4l5 4V5z" stroke="#FFD600" strokeLinejoin="round" strokeWidth={2} fill="none" />
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a9 9 0 0 1 0 14.14" stroke="#FFD600" strokeWidth={2} fill="none"/>
-          </svg>
-        )}
+        <PiFileAudioBold className="h-5 w-5" style={{ display: 'block', margin: 'auto', color: muted ? '#888' : '#FFD600' }} />
       </button>
       {/* Control de volumen de música */}
       <input
