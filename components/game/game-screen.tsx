@@ -692,7 +692,7 @@ const [leverage, setLeverage] = useState(2000);
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-3 flex-grow h-full min-h-[0] lg:h-[calc(100vh-120px)]">
             <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:h-full">
               {/* Tarjeta principal con gráfico y controles */}
-              <Card className="bg-black border-[#FFD600]" style={{ width: 'calc(99% + 26px)', maxWidth: 'none', position: 'relative' }}>
+              <Card className="bg-black" style={{ width: 'calc(101% + 26px)', maxWidth: 'none', position: 'relative', borderBottomWidth: 0, borderLeftWidth: 0, borderRightWidth: 0, borderTopWidth: 0, borderRadius: '18px 18px 12px 12px / 18px 18px 8px 8px', marginLeft: '-2%', marginBottom: '-2%', boxShadow: 'none' }}>
                 <CardHeader className="pb-0">
                   <div className="flex justify-between items-center">
                     <CardTitle className="flex flex-col w-full">
@@ -756,7 +756,7 @@ const [leverage, setLeverage] = useState(2000);
                   <div style={{ position: 'relative', minHeight: 430 }}>
   {/* Fondo portada detrás del chart con opacidad y blur */}
   <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
-  <CardContent className="relative p-0 bg-black rounded-b-2xl overflow-hidden" style={{ minHeight: 430, width: 'calc(100% + 16px)', maxWidth: 'none', position: 'relative', padding: 0 }}>
+  <CardContent className="relative p-0 bg-black rounded-b-xl overflow-hidden" style={{ minHeight: 430, width: 'calc(100% + 16px)', maxWidth: 'none', position: 'relative', padding: 0, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 }}>
     <div className="relative" style={{ width: '100%', height: 430, minWidth: 0 }}>
       <CandlestickChart
         candles={candles}
@@ -795,14 +795,14 @@ const [leverage, setLeverage] = useState(2000);
 </div>
 
                   {/* Controles justo debajo del gráfico */}
-                  <div className="mt-2 bg-black/50 rounded-lg p-2 border-[#FFD600]">
+                  <div className="mt-2 bg-black/50 rounded-lg p-2" style={{borderRadius: '0 0 10px 10px'}}>
                     <div className="flex flex-col md:flex-row gap-2 items-center justify-between">
                       {/* Bloque de información de fase eliminado (ahora está arriba) */}
 
                       {/* Selector de monto y botones de apuesta */}
                       <div className="flex flex-col items-center gap-4 w-full">
                         {/* Joystick-style console: all controls grouped */}
-<div className="w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-2 border-[#FFD600cc] rounded-lg shadow-lg p-1 sm:p-2 gap-1 sm:gap-2 mt-0 overflow-x-auto z-20" data-component-name="GameScreen">
+<div className="w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-[3px] border-[#FFD600] rounded-lg shadow-lg p-1 sm:p-2 gap-1 sm:gap-2 mt-0 overflow-x-auto z-20" data-component-name="GameScreen">
   {/* SOLO EN MOVIL: Estado de apuestas y botón volumen */}
   <div className="w-full flex sm:hidden flex-row justify-between items-center mb-2">
     <span className={`text-xs font-extrabold uppercase tracking-wide drop-shadow-lg ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
@@ -985,7 +985,7 @@ const [leverage, setLeverage] = useState(2000);
             </div>
 
             <div className="flex flex-col h-full min-h-0 flex-1 lg:h-full m-0 p-0 gap-0">
-              <Card className="bg-black border-[#FFD600]">
+              <Card className="bg-black border-[#FFD600]" style={{ borderWidth: '3px' }}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 justify-between w-full">
   <span className="flex items-center gap-2">
@@ -1002,7 +1002,7 @@ const [leverage, setLeverage] = useState(2000);
                 </CardContent>
               </Card>
 
-              <Card className="bg-black border-[#FFD600] w-full h-full flex-1 flex flex-col min-h-0">
+              <Card className="bg-black border-[#FFD600] w-full h-full flex-1 flex flex-col min-h-0" style={{ borderWidth: '3px' }}>
                 <CardHeader className="pb-0">
   <div className="flex items-center justify-center w-full relative">
   <button
