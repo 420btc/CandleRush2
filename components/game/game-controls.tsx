@@ -11,12 +11,15 @@ interface GameControlsProps {
   isConnected: boolean
 }
 
-const AVAILABLE_SYMBOLS = [
-  "BTCUSDT", "ETHUSDT", "IOTAUSDT", "ADAUSDT", "RENDERUSDT", // RENDERUSDT a la quinta posición
-  "XRPUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", // DOGEUSDT movido tras los antiguos
+const CRYPTO_SYMBOLS = [
+  "BTCUSDT", "ETHUSDT", "IOTAUSDT", "ADAUSDT", "RENDERUSDT",
+  "XRPUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT",
   "TRONUSDT", "XLMUSDT", "PEPEUSDT", "TRUMPUSDT",
-  "WLDUSDT", "LINKUSDT", "VETUSDT", "SUIUSDT"
-]
+  "WLDUSDT", "LINKUSDT", "VETUSDT", "SUIUSDT", "PAXGUSDT"
+];
+const STOCK_SYMBOLS = ["AAPL", "AMD"];
+const COMMODITY_SYMBOLS = ["GCUSD", "SIUSD"];
+const AVAILABLE_SYMBOLS = [...CRYPTO_SYMBOLS, ...STOCK_SYMBOLS, ...COMMODITY_SYMBOLS]; // Para compatibilidad con lógica existente
 
 const AVAILABLE_TIMEFRAMES = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d"]
 
@@ -38,7 +41,24 @@ export default function GameControls({
             <SelectValue placeholder="Seleccionar par" />
           </SelectTrigger>
           <SelectContent className="bg-black border-[#FFD600] text-[#FFD600] max-h-60 overflow-y-auto">
-            {AVAILABLE_SYMBOLS.map((symbol) => (
+            {/* Sección Criptomonedas */}
+            <div className="px-3 pt-2 pb-1 text-xs font-bold text-zinc-300 uppercase tracking-widest opacity-80 select-none" style={{letterSpacing:'0.12em'}}>Criptomonedas</div>
+            {CRYPTO_SYMBOLS.map((symbol) => (
+              <SelectItem key={symbol} value={symbol} className="text-[#FFD600] font-black text-lg md:text-2xl uppercase tracking-wider py-3 px-4 no-check" style={{textShadow:'0 0 8px #FFD60099, 0 0 2px #000', letterSpacing:'0.05em'}} >
+                {symbol}
+              </SelectItem>
+            ))}
+            {/* Sección Acciones */}
+            <div className="px-3 pt-3 pb-1 text-xs font-bold text-zinc-300 uppercase tracking-widest opacity-80 select-none border-t border-zinc-700 mt-2">Acciones</div>
+            {STOCK_SYMBOLS.map((symbol) => (
+              <SelectItem key={symbol} value={symbol} className="text-[#FFD600] font-black text-lg md:text-2xl uppercase tracking-wider py-3 px-4 no-check" style={{textShadow:'0 0 8px #FFD60099, 0 0 2px #000', letterSpacing:'0.05em'}} >
+                {symbol}
+              </SelectItem>
+            ))}
+
+            {/* Sección Commodities */}
+            <div className="px-3 pt-3 pb-1 text-xs font-bold text-zinc-300 uppercase tracking-widest opacity-80 select-none border-t border-zinc-700 mt-2">Commodities</div>
+            {COMMODITY_SYMBOLS.map((symbol) => (
               <SelectItem key={symbol} value={symbol} className="text-[#FFD600] font-black text-lg md:text-2xl uppercase tracking-wider py-3 px-4 no-check" style={{textShadow:'0 0 8px #FFD60099, 0 0 2px #000', letterSpacing:'0.05em'}} >
                 {symbol}
               </SelectItem>

@@ -3,6 +3,120 @@
 import React, { useEffect, useState, useRef } from "react"
 import { formatTime } from "@/utils/formatTime"
 import { useGame } from "@/context/game-context"
+
+// Componente para mostrar el estado del mercado de AAPL
+function AaplMarketStatus() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [nextOpen, setNextOpen] = useState("");
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    function checkMarket() {
+      const now = new Date();
+      const nowNY = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+      const day = nowNY.getDay(); // 0=domingo, 6=sábado
+      const hour = nowNY.getHours();
+      const minute = nowNY.getMinutes();
+      const second = nowNY.getSeconds();
+      const isWeekday = day >= 1 && day <= 5;
+      const afterOpen = hour > 9 || (hour === 9 && minute >= 30);
+      const beforeClose = hour < 16;
+      const open = isWeekday && afterOpen && beforeClose;
+      setIsOpen(open);
+      // Calcular próxima apertura si está cerrado
+      let next = "";
+      let countdownMs: number | null = null;
+      if (!open) {
+        // Si es viernes después de cierre, próxima apertura es lunes
+        if (day === 5 && hour >= 16) {
+          next = "Lunes 09:30 ET";
+          // Calcular countdown hasta el lunes 09:30 ET
+          const nextMonday = new Date(nowNY);
+          nextMonday.setDate(nowNY.getDate() + ((8 - day) % 7));
+          nextMonday.setHours(9, 30, 0, 0);
+          countdownMs = nextMonday.getTime() - nowNY.getTime();
+        } else if (day === 6) {
+          next = "Lunes 09:30 ET";
+          const nextMonday = new Date(nowNY);
+          nextMonday.setDate(nowNY.getDate() + ((8 - day) % 7));
+          nextMonday.setHours(9, 30, 0, 0);
+          countdownMs = nextMonday.getTime() - nowNY.getTime();
+        } else if (day === 0) {
+          next = "Lunes 09:30 ET";
+          const nextMonday = new Date(nowNY);
+          nextMonday.setDate(nowNY.getDate() + 1);
+          nextMonday.setHours(9, 30, 0, 0);
+          countdownMs = nextMonday.getTime() - nowNY.getTime();
+        } else if (hour < 9 || (hour === 9 && minute < 30)) {
+          next = "Hoy 09:30 ET";
+          // Calcular countdown hasta hoy a las 9:30 ET
+          const openToday = new Date(nowNY);
+          openToday.setHours(9, 30, 0, 0);
+          countdownMs = openToday.getTime() - nowNY.getTime();
+        } else if (hour >= 16) {
+          // Entre semana después de cierre
+          const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+          next = `${days[(day % 7) + 1] || "Lunes"} 09:30 ET`;
+          // Calcular countdown hasta el próximo día hábil a las 9:30 ET
+          const nextDay = new Date(nowNY);
+          nextDay.setDate(nowNY.getDate() + 1);
+          nextDay.setHours(9, 30, 0, 0);
+          countdownMs = nextDay.getTime() - nowNY.getTime();
+        }
+      }
+      setNextOpen(next);
+      setCountdown(countdownMs);
+    }
+    checkMarket();
+    const interval = setInterval(checkMarket, 1000); // refrescar cada segundo
+    return () => clearInterval(interval);
+  }, []);
+
+  // Countdown en hora local española
+  function formatCountdown(ms: number) {
+    if (ms <= 0) return "00:00:00";
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // Obtener la hora de apertura en hora española/local
+  function getNextOpenHourSpain() {
+    if (nextOpen.startsWith("Hoy")) {
+      // Calcular la hora de apertura en España hoy
+      const now = new Date();
+      // Hora de NY hoy a las 9:30
+      const nyToday = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+      nyToday.setHours(9, 30, 0, 0);
+      // Convertir esa hora a España
+      const spainTime = new Date(nyToday.toLocaleString("es-ES", { timeZone: "Europe/Madrid" }));
+      return spainTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    return null;
+  }
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      {isOpen ? (
+        <span style={{ color: '#22c55e', fontWeight: 700, fontSize: 16, textShadow: '0 0 6px #22c55e88' }}>
+          🟢 Mercado abierto (09:30-16:00 ET)
+        </span>
+      ) : (
+        <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 13, textShadow: '0 0 4px #ef444488', display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0' }}>
+          🔴 Mercado cerrado (abre: {nextOpen || '09:30 ET'})
+          {nextOpen.startsWith('Hoy') && countdown !== null && countdown > 0 && (
+            <span style={{ marginLeft: 6, color: '#ef4444', fontWeight: 800, fontSize: 13, background: '#181818', borderRadius: 5, padding: '0 7px', boxShadow: '0 0 3px #ef444488', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              ⏰ {formatCountdown(countdown)} | hora España: {getNextOpenHourSpain()}
+            </span>
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
+
 import VolumeProfile from "./volume-profile"
 import { useAuth } from "@/context/auth-context"
 import { useAchievement } from "@/context/achievement-context"
@@ -143,6 +257,25 @@ export default function GameScreen() {
   });
 
   // Sincronización de paneo/zoom para MACD y velas
+  // --- PRECIOS DINÁMICOS PARA CRYPTO Y STOCKS ---
+  // --- PRECIOS DINÁMICOS PARA CRYPTO Y STOCKS ---
+  const [stockPrice, setStockPrice] = useState<number | null>(null);
+  const [stockLoading, setStockLoading] = useState(false);
+  useEffect(() => {
+    const STOCK_SYMBOLS = ['AAPL', 'AMD'];
+    const COMMODITY_SYMBOLS = ['GCUSD', 'SIUSD'];
+    if ([...STOCK_SYMBOLS, ...COMMODITY_SYMBOLS].includes(currentSymbol)) {
+      setStockLoading(true);
+      fetch(`https://financialmodelingprep.com/api/v3/quote/${currentSymbol}?apikey=r8f4lfdgKmsqP9qfgq8dWS9jTIJM4TEx`)
+        .then(res => res.json())
+        .then(data => {
+          setStockPrice(data && data[0] ? data[0].price : null);
+          setStockLoading(false);
+        })
+        .catch(() => setStockLoading(false));
+    }
+  }, [currentSymbol]);
+
   const allCandles = currentCandle ? [...candles, currentCandle] : candles;
   const chartWidth = 1200; // Debe coincidir con ambos charts
   const scale = viewState?.scale ?? 1;
@@ -707,8 +840,14 @@ const [leverage, setLeverage] = useState(2000);
   className="text-2xl sm:text-[4rem] font-extrabold text-white drop-shadow-lg ml-2"
   style={{ minWidth: '230px', textAlign: 'right', display: 'inline-block' }}
 >
-  {currentCandle ? currentCandle.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
+  {["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol)
+    ? (stockLoading ? 'Cargando...' : (stockPrice !== null ? stockPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'))
+    : (currentCandle ? currentCandle.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--')}
 </span>
+{/* Mostrar estado de mercado para stocks y commodities */}
+{["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol) && (
+  <AaplMarketStatus />
+)}
 {/* Dollar difference counter below price */}
 <div className="ml-[101px] flex items-center">
   <DollarDiffCounter currentCandle={currentCandle} realtimePrice={currentCandle?.close ?? null} />
