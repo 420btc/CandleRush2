@@ -80,6 +80,11 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
             style={{color: '#FFD600'}}>{wasLiquidated ? (
               <>
                 Ganancia: <span className="font-mono text-2xl ml-2 text-yellow-400">0 $</span>
+                {bet.liquidationFee && bet.liquidationFee > 0 && (
+                  <div className="mt-2 text-lg font-bold text-red-500 bg-yellow-900/70 rounded-lg px-3 py-2 border border-yellow-400 animate-pulse">
+                    Penalización por liquidación: <span className="text-yellow-300">-{bet.liquidationFee.toFixed(2)} $</span>
+                  </div>
+                )}
               </>
             ) : (
               <>

@@ -169,7 +169,7 @@ export default function UserStats() {
           <span className="text-sm text-white">Balance</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-bold text-lg text-white">${balance.toFixed(2)}</span>
+          <span className="font-bold text-lg text-white">${formatNum(userBalance)}</span>
           <button
             className="ml-2 px-2 py-1 rounded bg-yellow-400 text-black text-xs font-bold shadow hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:bg-zinc-500 disabled:text-zinc-300 disabled:cursor-not-allowed"
             style={{ minWidth: 24, minHeight: 24 }}
@@ -233,7 +233,7 @@ export default function UserStats() {
           )}
           <span className="text-sm text-white">Ganancias/Pérdidas</span>
         </div>
-        <span className={`font-bold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{profitLoss.toFixed(2)}</span>
+        <span className={`font-bold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{profitLoss.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
       </div>
       {/* NUEVO: Ganancias y pérdidas totales */}
       <div className="flex items-center justify-between text-white mt-1">

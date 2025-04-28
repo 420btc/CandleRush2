@@ -27,5 +27,6 @@ export interface Bet {
   liquidationPrice?: number; // precio de liquidación
   wasLiquidated?: boolean; // true si fue liquidada antes del cierre
   winnings?: number; // ganancia real de la apuesta
+  liquidationFee?: number; // penalización por liquidación
 }
 

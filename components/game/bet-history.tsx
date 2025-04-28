@@ -108,15 +108,15 @@ return (
                         {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
                       </p>
                       <p className="text-sm text-white">{localTimes[bet.id] || ''}</p>
-                      <p className="text-xs text-yellow-200 mt-1">Entrada: {bet.entryPrice ? bet.entryPrice.toFixed(2) : '-'}</p>
+                      <p className="text-xs text-yellow-200 mt-1">Entrada: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-1 w-full">
-                    <span className="font-bold text-white text-lg">${bet.amount.toFixed(2)}</span>
+                    <span className="font-bold text-white text-lg">${bet.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     {/* LIVE PnL en pequeño */}
                     {bet.status === "PENDING" && livePnl !== null && (
                       <span className={`text-xs font-mono ${livePnlColor}`} style={{minHeight:16}}>
-                        PnL: {livePnl > 0 ? "+" : ""}{livePnl.toFixed(2)}
+                        PnL: {livePnl > 0 ? "+" : ""}{livePnl.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     )}
                     {bet.status === "PENDING" && (

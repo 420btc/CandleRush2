@@ -527,18 +527,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
              }
            }
            if (liquidationTouched) {
-             lostCount++;
-             wasLiquidated = true;
-             return {
-               ...bet,
-               status: 'LIQUIDATED' as const,
-               wasLiquidated: true,
-               resolvedAt: Date.now(),
-               winnings: 0,
-               bonus: 0,
-               multiplier: 1,
-             } as Bet;
-           }
+              lostCount++;
+              wasLiquidated = true;
+              // --- NUEVO: comisión por liquidación ---
+              const liquidationFeePct = 0.10; // 10% de comisión
+              const liquidationFee = bet.amount * liquidationFeePct;
+              setUserBalance(prev => Math.max(0, prev - liquidationFee));
+              return {
+                ...bet,
+                status: 'LIQUIDATED' as const,
+                wasLiquidated: true,
+                resolvedAt: Date.now(),
+                winnings: 0,
+                bonus: 0,
+                multiplier: 1,
+                liquidationFee,
+              } as Bet;
+            }
 
            // Si no fue liquidada, evaluar si ganó o perdió
            const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish);
@@ -560,11 +565,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
            if (won) {
              // --- NUEVO CÁLCULO: Payout explosivo con apalancamiento ---
              let winningsRaw = 0;
-             if (bet.leverage && bet.leverage > 1) {
-               winningsRaw = bet.amount * bet.leverage;
-             } else {
-               winningsRaw = bet.amount;
-             }
+             if (bet.leverage && bet.leverage > 1 && bet.entryPrice) {
+                // priceChangePct: variación relativa del precio
+                const priceChangePct = ((candle.close - bet.entryPrice) / bet.entryPrice) * (bet.prediction === "BULLISH" ? 1 : -1);
+                winningsRaw = bet.amount + bet.amount * priceChangePct * bet.leverage;
+                // Si la pérdida es igual o mayor al 100%, liquidar
+                if (winningsRaw <= 0) {
+                  winningsRaw = 0;
+                }
+              } else {
+                winningsRaw = bet.amount;
+              }
              // Si quieres mantener un pequeño efecto de variación de precio, puedes sumar un extra:
              // winningsRaw += bet.amount * priceChangePct * (bet.leverage || 1);
              // Solo ganas si la predicción fue correcta
