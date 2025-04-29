@@ -147,16 +147,12 @@ import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
   // Estado para el reloj del sistema y el contador de cierre diario
-  const [systemTime, setSystemTime] = useState<string>(() => {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  });
+  const [nowDate, setNowDate] = useState<Date>(() => new Date());
   const [dailyCloseCountdown, setDailyCloseCountdown] = useState<string>(() => {
     const now = new Date();
     const nextClose = new Date(now);
     nextClose.setHours(2, 0, 0, 0); // 2:00 AM
     if (now.getHours() >= 2) {
-      // Si ya pasó de las 2:00, calcula para el día siguiente
       nextClose.setDate(nextClose.getDate() + 1);
     }
     const diff = nextClose.getTime() - now.getTime();
@@ -167,22 +163,30 @@ export default function GameScreen() {
   });
   useEffect(() => {
     const interval = setInterval(() => {
-      const now = new Date();
-      setSystemTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-      // Actualiza el countdown de cierre diario a las 2:00 AM
-      const nextClose = new Date(now);
-      nextClose.setHours(2, 0, 0, 0); // 2:00 AM
-      if (now.getHours() >= 2) {
-        nextClose.setDate(nextClose.getDate() + 1);
-      }
-      const diff = nextClose.getTime() - now.getTime();
-      const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-      setDailyCloseCountdown(`${h}:${m}:${s}`);
+      setNowDate(new Date());
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Derivar las horas sincronizadas para cada zona horaria
+  const systemTime = nowDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const shanghaiTime = nowDate.toLocaleString('en-US', { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const chicagoTime = nowDate.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+  useEffect(() => {
+    // Actualiza el countdown de cierre diario a las 2:00 AM
+    const now = nowDate;
+    const nextClose = new Date(now);
+    nextClose.setHours(2, 0, 0, 0); // 2:00 AM
+    if (now.getHours() >= 2) {
+      nextClose.setDate(nextClose.getDate() + 1);
+    }
+    const diff = nextClose.getTime() - now.getTime();
+    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+    setDailyCloseCountdown(`${h}:${m}:${s}`);
+  }, [nowDate]);
 
   // Estado para mostrar/ocultar el volume profile
   const [showVolumeProfile, setShowVolumeProfile] = useState(false);
@@ -801,6 +805,14 @@ const [leverage, setLeverage] = useState(2000);
       <span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{systemTime}</span>
     </div>
     <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
+      <span className="text-xs font-semibold text-[#ef4444] mb-0.5" style={{letterSpacing: '0.01em', textShadow: '0 0 12px #FFD60088'}}>Hora Shanghai</span>
+  <span className="text-3xl sm:text-4xl font-extrabold select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', color: '#ef4444', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{shanghaiTime}</span>
+    </div>
+    <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
+      <span className="text-xs font-semibold text-[#60aaff] mb-0.5" style={{letterSpacing: '0.01em', textShadow: '0 0 12px #FFD60088'}}>Hora Chicago</span>
+  <span className="text-3xl sm:text-4xl font-extrabold select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', color: '#60aaff', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{chicagoTime}</span>
+    </div>
+    <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
       <span className="text-xs font-semibold text-[#a259ff] mb-0.5" style={{letterSpacing: '0.01em'}}>Cierre diario</span>
       <span className="text-3xl sm:text-4xl font-extrabold text-[#a259ff] select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{dailyCloseCountdown}</span>
     </div>
@@ -1161,7 +1173,17 @@ const [leverage, setLeverage] = useState(2000);
     }}
     disabled={autoBullish || autoBearish}
   >
-    <span style={{ position: 'relative', zIndex: 2, fontWeight: 900, fontSize: '1.08em', letterSpacing: '0.04em', textShadow: '0 0 4px #000, 0 0 2px #FFD600' }}>MIX</span>
+    <span
+  style={{
+    position: 'relative',
+    zIndex: 2,
+    fontWeight: 900,
+    fontSize: '1.08em',
+    letterSpacing: '0.04em',
+    color: '#FFD600',
+    textShadow: '0 0 2px #000, 0 0 4px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000',
+  }}
+>MIX AUTO</span>
   </button>
   <button
     className={`px-3 py-1 rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
