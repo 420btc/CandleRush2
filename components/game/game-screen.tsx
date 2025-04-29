@@ -389,6 +389,10 @@ useEffect(() => {
         userBalance >= 1 &&
         betAmount >= 1
       ) {
+        if (betAudioRef.current) {
+          betAudioRef.current.currentTime = 0;
+          betAudioRef.current.play();
+        }
         placeBet(direction, betAmount, leverage);
       }
     }, delay);
@@ -398,6 +402,42 @@ useEffect(() => {
   };
   // eslint-disable-next-line
 }, [autoMix, gamePhase, currentCandle?.timestamp, userBalance, betAmount, currentCandleBets, candles.length]);
+
+// --- Lógica de apuesta automática AUTO (bullish/bearish) ---
+useEffect(() => {
+  let timeoutId: NodeJS.Timeout | null = null;
+  if (
+    (autoBullish || autoBearish) &&
+    gamePhase === 'BETTING' &&
+    currentCandleBets < 1 &&
+    userBalance >= 1 &&
+    betAmount >= 1 &&
+    currentCandle &&
+    candles.length > 0
+  ) {
+    const direction: 'BULLISH' | 'BEARISH' = autoBullish ? 'BULLISH' : 'BEARISH';
+    const delay = Math.random() * 2000 + 250;
+    timeoutId = setTimeout(() => {
+      if (
+        (autoBullish || autoBearish) &&
+        gamePhase === 'BETTING' &&
+        currentCandleBets < 1 &&
+        userBalance >= 1 &&
+        betAmount >= 1
+      ) {
+        if (betAudioRef.current) {
+          betAudioRef.current.currentTime = 0;
+          betAudioRef.current.play();
+        }
+        placeBet(direction, betAmount, leverage);
+      }
+    }, delay);
+  }
+  return () => {
+    if (timeoutId) clearTimeout(timeoutId);
+  };
+  // eslint-disable-next-line
+}, [autoBullish, autoBearish, gamePhase, currentCandle?.timestamp, userBalance, betAmount, currentCandleBets, candles.length]);
 
   // Default leverage is now 2000x
 const [leverage, setLeverage] = useState(2000);
