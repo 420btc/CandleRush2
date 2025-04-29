@@ -945,11 +945,21 @@ const changeSymbol = useCallback(
     // Evita crear apuestas automáticas si la vela recién se ha creado y su close es igual al de la anterior
     const prevCandle = candles.length > 0 ? candles[candles.length - 1] : null;
     if (prevCandle && currentCandle.close === prevCandle.close) {
-      console.log('[AUTO BET] Esperando a que la nueva vela esté inicializada antes de crear apuesta automática.');
+      // No crear apuesta automática si la vela nueva aún no está inicializada (close igual a la anterior)
       return;
+    }
+    // Validación extra: no crear apuesta si ya hay una apuesta MIX pendiente para este timestamp
+    if (autoMix) {
+      const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
+      const lastMixBet = tfBets.filter(bet => bet.id.startsWith('auto_') && bet.status === 'PENDING').sort((a, b) => b.timestamp - a.timestamp)[0];
+      if (lastMixBet && currentCandle.timestamp <= lastMixBet.timestamp) {
+        // Ya existe una apuesta automática para esta vela o la anterior, no crear otra
+        return;
+      }
     }
     
     // Solo intentar apuesta automática si estamos en fase de apuestas y no hay apuestas en esta vela
+    // (Ajuste: solo permitir crear apuesta si la vela está correctamente inicializada y no hay apuesta MIX pendiente para este timestamp)
     const tryAutoBet = () => {
       // Calcular una cantidad de apuesta automática (entre 1 y 25% del balance)
       let autoAmount = 1;
