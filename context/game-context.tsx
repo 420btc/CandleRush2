@@ -912,6 +912,9 @@ const changeSymbol = useCallback(
   }, []);
   
   // Automatic betting system
+  // --- HISTORIAL PARA MIX ---
+  const mixHistoryRef = useRef<string[]>([]);
+
   useEffect(() => {
     if (gamePhase !== "BETTING" || !currentCandle || currentCandleBets >= 1 || userBalance < 1) return;
     
@@ -1007,12 +1010,32 @@ const changeSymbol = useCallback(
         });
       };
       
-      if (autoBullish && !autoBearish) {
+      if (autoMix && !autoBullish && !autoBearish) {
+        // MIX: elige aleatorio, pero evita alternancia estricta
+        const last3 = mixHistoryRef.current.slice(-3);
+        let direction: "BULLISH" | "BEARISH";
+        // Si las últimas 3 son alternas (ej: BULLISH, BEARISH, BULLISH), fuerza variedad
+        if (last3.length === 3 && last3[0] !== last3[1] && last3[1] !== last3[2] && last3[0] === last3[2]) {
+          // Fuerza que no siga el patrón alterno
+          direction = last3[2] === "BULLISH" ? "BULLISH" : "BEARISH";
+          // Pero con probabilidad 70% de variar
+          if (Math.random() < 0.7) direction = last3[2] === "BULLISH" ? "BEARISH" : "BULLISH";
+        } else {
+          direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+        }
+        mixHistoryRef.current.push(direction);
+        if (mixHistoryRef.current.length > 12) mixHistoryRef.current.shift();
+        createAutoBet(direction);
+      } else if (autoBullish && !autoBearish) {
         createAutoBet("BULLISH");
       } else if (autoBearish && !autoBullish) {
         createAutoBet("BEARISH");
       }
     };
+    // Reinicia historial MIX si cambia de vela
+    if (autoMix && currentCandleBets === 0) {
+      mixHistoryRef.current = [];
+    }
     
     // Pequeño retraso para dar tiempo a que se actualice la interfaz
     const timer = setTimeout(tryAutoBet, 1000);
