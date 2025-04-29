@@ -148,6 +148,7 @@ import ProgressBar from "@/components/game/progress-bar";
 export default function GameScreen() {
   // Estado para mostrar el modal de cierre diario
   const [showDailyCloseModal, setShowDailyCloseModal] = useState(false);
+  const velaDiariaAudioRef = useRef<HTMLAudioElement | null>(null);
   // Estado para guardar la fecha del último día en que se mostró el modal
   const [lastDailyCloseModalDate, setLastDailyCloseModalDate] = useState<string | null>(null);
   // Estado para el reloj del sistema y el contador de cierre diario
@@ -176,6 +177,14 @@ export default function GameScreen() {
   const systemTime = nowDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const shanghaiTime = nowDate.toLocaleString('en-US', { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   const chicagoTime = nowDate.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+  useEffect(() => {
+    // Sonido cuando aparece el modal de aviso de vela diaria
+    if (showDailyCloseModal && velaDiariaAudioRef.current) {
+      velaDiariaAudioRef.current.currentTime = 0;
+      velaDiariaAudioRef.current.play();
+    }
+  }, [showDailyCloseModal]);
 
   useEffect(() => {
     // Actualiza el countdown de cierre diario a las 2:00 AM
@@ -321,6 +330,7 @@ export default function GameScreen() {
 
   // Game Over modal state
   const [showGameOver, setShowGameOver] = useState(false);
+  const youLoseAudioRef = useRef<HTMLAudioElement | null>(null);
   const [waitTime, setWaitTime] = useState(600); // 10 min in seconds
   const [waiting, setWaiting] = useState(false);
   const [showAd, setShowAd] = useState(false);
@@ -332,6 +342,14 @@ export default function GameScreen() {
       setShowGameOver(true);
     }
   }, [userBalance, showGameOver]);
+
+  // Sonido cuando aparece el modal de Game Over
+  useEffect(() => {
+    if (showGameOver && youLoseAudioRef.current) {
+      youLoseAudioRef.current.currentTime = 0;
+      youLoseAudioRef.current.play();
+    }
+  }, [showGameOver]);
 
   // Countdown logic for wait button
   useEffect(() => {
@@ -732,6 +750,8 @@ const [leverage, setLeverage] = useState(2000);
 
   return (
     <>
+      <audio ref={velaDiariaAudioRef} src="/veladiaria.mp3" preload="auto" style={{ display: 'none' }} />
+      <audio ref={youLoseAudioRef} src="/youlose.mp3" preload="auto" style={{ display: 'none' }} />
       {/* Modal de aviso de cierre diario */}
       {showDailyCloseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
@@ -874,7 +894,7 @@ const [leverage, setLeverage] = useState(2000);
   {/* Título a la izquierda */}
   <div className="flex items-center relative">
     <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', textShadow: '0 0 12px #FFD60088' }}>Candle Rush 2.0</h1>
-    <span className="absolute left-8 text-xs font-semibold pointer-events-none select-none" style={{ color: '#FFD600', textShadow: '0 0 8px #FFD60088', letterSpacing: '0.06em', lineHeight: '1', top: '2.2em' }}>By Carlos Freire</span>
+    <span className="absolute left-8 text-xs font-semibold pointer-events-none select-none" style={{ color: '#FFD600', textShadow: '0 0 8px #FFD60088', letterSpacing: '0.06em', lineHeight: '1', top: '3.37em' }}>By Carlos Freire</span>
   </div>
   {/* Nav centrado absolutamente */}
   {/* Relojes centrados y botón ruleta a la derecha de los relojes */}

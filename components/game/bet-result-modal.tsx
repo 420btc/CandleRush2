@@ -51,7 +51,7 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
   const won = bet.status === 'WON';
   return (
     <>
-      <audio ref={liquidatedAudioRef} src="/liquidated.wav" preload="auto" />
+      <audio ref={liquidatedAudioRef} src="/liquidated.mp3" preload="auto" style={{ display: 'none' }} />
       <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="text-center max-w-lg p-8 rounded-2xl border-4 shadow-2xl border-yellow-400 bg-black">
         <DialogHeader>
