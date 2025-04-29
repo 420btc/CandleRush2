@@ -146,6 +146,10 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
+  // Estado para mostrar el modal de cierre diario
+  const [showDailyCloseModal, setShowDailyCloseModal] = useState(false);
+  // Estado para guardar la fecha del último día en que se mostró el modal
+  const [lastDailyCloseModalDate, setLastDailyCloseModalDate] = useState<string | null>(null);
   // Estado para el reloj del sistema y el contador de cierre diario
   const [nowDate, setNowDate] = useState<Date>(() => new Date());
   const [dailyCloseCountdown, setDailyCloseCountdown] = useState<string>(() => {
@@ -186,7 +190,26 @@ export default function GameScreen() {
     const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
     const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
     setDailyCloseCountdown(`${h}:${m}:${s}`);
-  }, [nowDate]);
+
+    // --- Modal de aviso 30 segundos antes del cierre diario ---
+    // El cierre es a las 2:00:00, así que el aviso es entre 1:59:30 y 2:00:00
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const second = now.getSeconds();
+    // Para evitar que se muestre más de una vez al día, usamos la fecha actual
+    const todayStr = now.toISOString().split('T')[0];
+    if (
+      hour === 1 && minute === 59 && second >= 30 && second < 60 &&
+      lastDailyCloseModalDate !== todayStr
+    ) {
+      setShowDailyCloseModal(true);
+      setLastDailyCloseModalDate(todayStr);
+    }
+    // Oculta el modal automáticamente al llegar a las 2:00:00
+    if ((hour !== 1 || minute !== 59 || second < 30) && showDailyCloseModal) {
+      setShowDailyCloseModal(false);
+    }
+  }, [nowDate, lastDailyCloseModalDate, showDailyCloseModal]);
 
   // Estado para mostrar/ocultar el volume profile
   const [showVolumeProfile, setShowVolumeProfile] = useState(false);
@@ -709,6 +732,21 @@ const [leverage, setLeverage] = useState(2000);
 
   return (
     <>
+      {/* Modal de aviso de cierre diario */}
+      {showDailyCloseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+          <div className="bg-zinc-900 rounded-2xl p-8 flex flex-col items-center border-4 border-yellow-400 shadow-2xl max-w-xs">
+            <h2 className="text-2xl font-bold text-yellow-400 mb-3">¡Cierre Diario de Bitcoin!</h2>
+            <p className="text-white mb-4 text-center">En menos de 30 segundos se cierra la vela diaria de Bitcoin.<br />¿Quieres ver el gráfico diario?</p>
+            <button
+              className="bg-yellow-400 text-black font-bold py-2 px-5 rounded-full shadow-lg mt-2 hover:bg-yellow-300 transition"
+              onClick={() => { if (typeof changeTimeframe === 'function') changeTimeframe('1d'); setShowDailyCloseModal(false); }}
+            >
+              Ir a intervalo 1D
+            </button>
+          </div>
+        </div>
+      )}
       <audio ref={betAudioRef} src="/bet.mp3" preload="auto" />
       {/* Ref oculta para pulsar, por si hace falta en móviles */}
       <audio ref={pulsarAudioRef} src="/pulsar.mp3" preload="auto" style={{display:'none'}} />
@@ -834,8 +872,9 @@ const [leverage, setLeverage] = useState(2000);
            <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full" style={{ background: 'none' }}>
   <div className="flex items-center w-full justify-between relative">
   {/* Título a la izquierda */}
-  <div className="flex items-center">
+  <div className="flex items-center relative">
     <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', textShadow: '0 0 12px #FFD60088' }}>Candle Rush 2.0</h1>
+    <span className="absolute left-8 text-xs font-semibold pointer-events-none select-none" style={{ color: '#FFD600', textShadow: '0 0 8px #FFD60088', letterSpacing: '0.06em', lineHeight: '1', top: '2.2em' }}>By Carlos Freire</span>
   </div>
   {/* Nav centrado absolutamente */}
   {/* Relojes centrados y botón ruleta a la derecha de los relojes */}
