@@ -208,8 +208,10 @@ export default function GameScreen() {
     addCoins, // might be missing in context, handle gracefully
     autoBullish,
     autoBearish,
+    autoMix,
     toggleAutoBullish,
-    toggleAutoBearish
+    toggleAutoBearish,
+    toggleAutoMix
   } = useGame();
   const { user } = useAuth();
   const { achievements, unlockedAchievements } = useAchievement();
@@ -357,6 +359,42 @@ export default function GameScreen() {
   
 
   // Estado para apalancamiento
+// --- Lógica de apuesta automática MIX ---
+useEffect(() => {
+  // Siempre una apuesta por vela, dirección 100% aleatoria
+  let timeoutId: NodeJS.Timeout | null = null;
+  if (
+    autoMix &&
+    gamePhase === 'BETTING' &&
+    currentCandleBets < 1 &&
+    userBalance >= 1 &&
+    betAmount >= 1 &&
+    currentCandle &&
+    candles.length > 0
+  ) {
+    // Dirección 100% aleatoria, nunca sesgada
+    const direction: 'BULLISH' | 'BEARISH' = Math.random() < 0.5 ? 'BULLISH' : 'BEARISH';
+    // Retardo aleatorio para realismo
+    const delay = Math.random() * 2000 + 250;
+    timeoutId = setTimeout(() => {
+      // Verifica que siga en fase de apuestas y no has apostado aún
+      if (
+        autoMix &&
+        gamePhase === 'BETTING' &&
+        currentCandleBets < 1 &&
+        userBalance >= 1 &&
+        betAmount >= 1
+      ) {
+        placeBet(direction, betAmount, leverage);
+      }
+    }, delay);
+  }
+  return () => {
+    if (timeoutId) clearTimeout(timeoutId);
+  };
+  // eslint-disable-next-line
+}, [autoMix, gamePhase, currentCandle?.timestamp, userBalance, betAmount, currentCandleBets, candles.length]);
+
   // Default leverage is now 2000x
 const [leverage, setLeverage] = useState(2000);
 
@@ -1098,22 +1136,40 @@ const [leverage, setLeverage] = useState(2000);
                           {/* Betting buttons */}
                           <div className="flex flex-col gap-2 justify-center w-full mt-2">
                             {/* Auto betting buttons - Perfectamente centrados con los botones de abajo */}
-                            <div className="grid grid-cols-2 gap-4 w-full" style={{ maxWidth: '420px', margin: '0 auto' }}>
-                              <button
-                                className={`px-3 py-1 rounded-xl ${autoBullish ? 'bg-green-500' : 'bg-green-600/40'} hover:bg-green-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center`}
-                                onClick={toggleAutoBullish}
-                                title="Apuestas automáticas BULL"
-                              >
-                                <span className="font-bold text-[#FFD600]">Automático</span>
-                              </button>
-                              <button
-                                className={`px-3 py-1 rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center`}
-                                onClick={toggleAutoBearish}
-                                title="Apuestas automáticas BEAR"
-                              >
-                                <span className="font-bold text-[#FFD600]">Automático</span>
-                              </button>
-                            </div>
+                            <div className="grid grid-cols-3 gap-3 w-full" style={{ maxWidth: '420px', margin: '0 auto' }}>
+  <button
+    className={`px-3 py-1 rounded-xl ${autoBullish ? 'bg-green-500' : 'bg-green-600/40'} hover:bg-green-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center`}
+    onClick={toggleAutoBullish}
+    title="Apuestas automáticas BULL"
+    style={{ minWidth: 0 }}
+  >
+    <span className="font-bold text-[#FFD600]">Automático</span>
+  </button>
+  <button
+    className={`px-3 py-1 rounded-xl border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center font-bold ${autoMix ? 'ring-4 ring-[#FFD600] ring-opacity-60' : ''}`}
+    onClick={toggleAutoMix}
+    title="MIX: Apuesta automática aleatoria. El color indica el modo. Si tus apuestas quedan liquidadas automáticamente, revisa el apalancamiento o tu saldo."
+    style={{
+      minWidth: 0,
+      background: autoMix
+        ? 'linear-gradient(90deg, #22c55e 50%, #ef4444 50%)'
+        : 'linear-gradient(90deg, #22c55e66 50%, #ef444466 50%)',
+      color: '#fff',
+      position: 'relative',
+      overflow: 'hidden',
+    }}
+  >
+    <span style={{ position: 'relative', zIndex: 2, fontWeight: 900, fontSize: '1.08em', letterSpacing: '0.04em', textShadow: '0 0 4px #000, 0 0 2px #FFD600' }}>MIX</span>
+  </button>
+  <button
+    className={`px-3 py-1 rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center`}
+    onClick={toggleAutoBearish}
+    title="Apuestas automáticas BEAR"
+    style={{ minWidth: 0 }}
+  >
+    <span className="font-bold text-[#FFD600]">Automático</span>
+  </button>
+</div>
                             
                             {/* Regular betting buttons - Usando el mismo grid que los botones automáticos */}
                             <div className="grid grid-cols-2 gap-4 w-full" style={{ maxWidth: '420px', margin: '0 auto' }}>

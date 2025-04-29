@@ -84,8 +84,10 @@ interface GameContextType {
   clearBetsForCurrentPairAndTimeframe: () => void;
   autoBullish: boolean;
   autoBearish: boolean;
+  autoMix: boolean;
   toggleAutoBullish: () => void;
   toggleAutoBearish: () => void;
+  toggleAutoMix: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
@@ -105,6 +107,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING")
   const [autoBullish, setAutoBullish] = useState<boolean>(false);
   const [autoBearish, setAutoBearish] = useState<boolean>(false);
+  const [autoMix, setAutoMix] = useState<boolean>(false);
+  const toggleAutoMix = () => {
+    setAutoMix((prev) => {
+      const newVal = !prev;
+      if (newVal) {
+        setAutoBullish(false);
+        setAutoBearish(false);
+      }
+      return newVal;
+    });
+  };
   const [nextPhaseTime, setNextPhaseTime] = useState<number | null>(null)
   const [nextCandleTime, setNextCandleTime] = useState<number | null>(null)
   const [candles, setCandles] = useState<Candle[]>([])
@@ -697,6 +710,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setNextPhaseTime(now + 10000); // 10 segundos de apuestas
         setNextCandleTime(now + getTimeframeInMs(timeframe));
         setCurrentCandleBets(0);
+        // Reinicia el contador también si la vela cambió realmente
         // Opcional: notificar nueva vela
         toast({
           title: "Nueva vela",
@@ -836,6 +850,7 @@ const changeSymbol = useCallback(
       setCurrentCandle(null)
       setCurrentCandleBets(0)
       setPendingResolutions([])
+      // Al cambiar símbolo, siempre reinicia el contador de apuestas de la vela
     },
     [currentSymbol, bets, toast],
   )
@@ -851,6 +866,7 @@ const changeSymbol = useCallback(
       setCurrentCandle(null)
       setCurrentCandleBets(0)
       setPendingResolutions([])
+      // Al cambiar timeframe, siempre reinicia el contador de apuestas de la vela
       // No tocamos betsByPair, solo cambiamos el timeframe actual
     },
     [timeframe, currentSymbol, bets, toast],
@@ -1044,8 +1060,10 @@ const changeSymbol = useCallback(
         clearBetsForCurrentPairAndTimeframe,
         autoBullish,
         autoBearish,
+        autoMix,
         toggleAutoBullish,
         toggleAutoBearish,
+        toggleAutoMix,
       }}
     >
       {children}
