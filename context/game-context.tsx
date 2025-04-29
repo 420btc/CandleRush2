@@ -845,6 +845,9 @@ const changeSymbol = useCallback(
       if (symbol === currentSymbol) return
 
 
+      // Si no hay apuestas activas ni pendientes en el nuevo par/timeframe, desactiva MIX
+      const hasActiveBets = betsByPair[symbol]?.[timeframe]?.some(bet => bet.status === "PENDING") ?? false;
+      if (!hasActiveBets) setAutoMix(false);
       setCurrentSymbol(symbol)
       setCandles([])
       setCurrentCandle(null)
@@ -861,6 +864,9 @@ const changeSymbol = useCallback(
       if (newTimeframe === timeframe) return
 
 
+      // Si no hay apuestas activas ni pendientes en el nuevo timeframe, desactiva MIX
+      const hasActiveBets = betsByPair[currentSymbol]?.[newTimeframe]?.some(bet => bet.status === "PENDING") ?? false;
+      if (!hasActiveBets) setAutoMix(false);
       setTimeframe(newTimeframe)
       setCandles([])
       setCurrentCandle(null)
