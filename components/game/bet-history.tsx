@@ -93,7 +93,7 @@ return (
             }
             return (
               <AnimatedBorder key={bet.id} isActive={bet.status === "PENDING"}>
-                <div className={`py-3 min-h-[80px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between max-w-[355px] mx-auto text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
+                <div className={`py-1 min-h-[56px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between max-w-[355px] mx-auto text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
                   <div className="flex items-center gap-4 w-full md:w-1/2">
                     <div className="flex flex-col items-center justify-center min-w-[36px]">
                       <img
@@ -141,7 +141,17 @@ return (
                       <div className="flex items-center gap-1">
                         <XCircle className="h-5 w-5 text-yellow-400" />
                         <span className="text-sm bg-yellow-500/20 text-yellow-100 px-2 py-0.5 rounded-full">Liquidada</span>
+                        {bet.leverage && bet.leverage > 1 && (
+                          <span className="ml-1 text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-700/80 text-yellow-300 border border-yellow-400" title={`Apalancamiento usado: ${bet.leverage}x`}>
+                            {bet.leverage}x
+                          </span>
+                        )}
                       </div>
+                    )}
+                    {bet.leverage && bet.leverage > 1 && bet.status !== "LIQUIDATED" && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-700/60 text-yellow-200 border border-yellow-400 mt-1" title={`Apalancamiento usado: ${bet.leverage}x`}>
+                        {bet.leverage}x
+                      </span>
                     )}
                     <button
                       className={`mt-1 px-2 py-1 bg-yellow-700/20 rounded-lg text-yellow-400 transition flex items-center justify-center ${bet.status === 'PENDING' ? 'opacity-40 cursor-not-allowed' : 'hover:bg-yellow-700/40'}`}
