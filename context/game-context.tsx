@@ -215,29 +215,40 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Verificar resoluciones pendientes
   useEffect(() => {
-    if (pendingResolutions.length === 0) return
+    if (pendingResolutions.length === 0) return;
 
     const checkInterval = setInterval(() => {
-      const now = Date.now()
-      const resolutionsToProcess = pendingResolutions.filter((item) => now >= item.time)
+      const now = Date.now();
+      const resolutionsToProcess = pendingResolutions.filter((item) => {
+        // Solo resolver si la vela está realmente cerrada
+        const isClosed = item.candle.isClosed;
+        const isDue = now >= item.time;
+        if (!isClosed && isDue) {
+          console.warn('[RESOLVER] Vela aún no cerrada, se pospone resolución', item.candle);
+        }
+        return isClosed && isDue;
+      });
 
       if (resolutionsToProcess.length > 0) {
         resolutionsToProcess.forEach((item) => {
-          resolveBets(item.candle)
-        })
+          console.log('[RESOLVER] Resolviendo apuestas por cierre de vela', item.candle);
+          resolveBets(item.candle);
+        });
 
-        // Eliminar las resoluciones procesadas
-        setPendingResolutions((prev) => prev.filter((item) => !resolutionsToProcess.some((r) => r.time === item.time)))
+        // Eliminar solo las resoluciones procesadas
+        setPendingResolutions((prev) => prev.filter((item) => !resolutionsToProcess.some((r) => r.time === item.time)));
       }
-    }, 1000)
+    }, 1000);
 
-    return () => clearInterval(checkInterval)
-  }, [pendingResolutions])
+    return () => clearInterval(checkInterval);
+  }, [pendingResolutions]);
 
   
   // --- SOLUCIÓN: Al hidratar apuestas y vela actual, si hay apuestas PENDING para la vela actual y no hay resolución pendiente, programar la resolución ---
   useEffect(() => {
     if (!betsHydrated || !currentCandle) return;
+    // Solo programar resolución si la vela está cerrada
+    if (!currentCandle.isClosed) return;
     const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
     const hasPending = tfBets.some(bet => bet.status === "PENDING" && bet.timestamp === currentCandle.timestamp);
     const alreadyPending = pendingResolutions.some(item => item.candle.timestamp === currentCandle.timestamp);
@@ -245,6 +256,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       // Programar la resolución para el cierre real de la vela
       const candleDuration = getTimeframeInMs(timeframe);
       const resolutionTime = currentCandle.timestamp + candleDuration;
+      console.log('[RESOLVER] Programando resolución por cierre de vela', {candle: currentCandle, resolutionTime});
       setPendingResolutions(prev => [...prev, { candle: currentCandle, time: resolutionTime }]);
     }
   }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol, pendingResolutions]);
@@ -923,7 +935,13 @@ const changeSymbol = useCallback(
 
   useEffect(() => {
     // Solo permitir apuestas automáticas si la vela está inicializada (close distinto de open)
-    if (gamePhase !== "BETTING" || !currentCandle || currentCandleBets >= 1 || userBalance < 1) return;
+    // Solo permitir una apuesta automática/MIX por vela
+    if (gamePhase !== "BETTING" || !currentCandle || currentCandleBets >= 1 || userBalance < 1) {
+      if (currentCandleBets >= 1) {
+        console.log('[AUTO BET] Ya existe una apuesta en esta vela, no se crea otra automática.');
+      }
+      return;
+    }
     // Evita crear apuestas automáticas si la vela recién se ha creado y su close es igual al de la anterior
     const prevCandle = candles.length > 0 ? candles[candles.length - 1] : null;
     if (prevCandle && currentCandle.close === prevCandle.close) {
@@ -934,7 +952,13 @@ const changeSymbol = useCallback(
     // Solo intentar apuesta automática si estamos en fase de apuestas y no hay apuestas en esta vela
     const tryAutoBet = () => {
       // Calcular una cantidad de apuesta automática (entre 1 y 25% del balance)
-      const autoAmount = Math.min(Math.max(1, userBalance * 0.05), userBalance);
+      let autoAmount = 1;
+      if (autoMix && !autoBullish && !autoBearish) {
+        const maxMix = Math.max(1, Math.floor(userBalance * 0.25));
+        autoAmount = Math.floor(Math.random() * (maxMix - 1 + 1)) + 1;
+      } else {
+        autoAmount = Math.min(Math.max(1, userBalance * 0.25), userBalance);
+      }
       
       // Reproducir sonido de apuesta (igual que en apuestas manuales)
       const playBetSound = () => {
