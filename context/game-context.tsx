@@ -916,7 +916,14 @@ const changeSymbol = useCallback(
   const mixHistoryRef = useRef<string[]>([]);
 
   useEffect(() => {
+    // Solo permitir apuestas automáticas si la vela está inicializada (close distinto de open)
     if (gamePhase !== "BETTING" || !currentCandle || currentCandleBets >= 1 || userBalance < 1) return;
+    // Evita crear apuestas automáticas si la vela recién se ha creado y su close es igual al de la anterior
+    const prevCandle = candles.length > 0 ? candles[candles.length - 1] : null;
+    if (prevCandle && currentCandle.close === prevCandle.close) {
+      console.log('[AUTO BET] Esperando a que la nueva vela esté inicializada antes de crear apuesta automática.');
+      return;
+    }
     
     // Solo intentar apuesta automática si estamos en fase de apuestas y no hay apuestas en esta vela
     const tryAutoBet = () => {
@@ -937,41 +944,42 @@ const changeSymbol = useCallback(
         
         // Calcular entryPrice y liquidationPrice
         const entryPrice = currentCandle ? currentCandle.close : 0;
-        const leverage = 5; // Leverage fijo para apuestas automáticas
+        // Apalancamiento mínimo 300x, predeterminado 2000x
+        let leverage = 2000;
+        if (leverage < 300) leverage = 300;
         
-        if (entryPrice <= 0) return;
-        
+        if (entryPrice <= 0) {
+          console.error('[AUTO BET] entryPrice inválido:', entryPrice);
+          return;
+        }
         // Cálculo del precio de liquidación
         const baseDistance = 0.99 / leverage;
         const betPercent = autoAmount / userBalance;
         let dynamicDistance = baseDistance;
-        
         if (betPercent > 0.3) {
           const risk = Math.min(1, (betPercent - 0.3) / 0.7);
           dynamicDistance = baseDistance * (1 - 0.85 * risk);
         }
-        
-        const liquidationPrice = prediction === "BULLISH" 
+        let liquidationPrice = prediction === "BULLISH" 
           ? entryPrice * (1 - dynamicDistance)
           : entryPrice * (1 + dynamicDistance);
-        
+        if (!liquidationPrice || isNaN(liquidationPrice)) {
+          console.error('[AUTO BET] liquidationPrice inválido', { entryPrice, leverage, betPercent, dynamicDistance, liquidationPrice });
+          liquidationPrice = undefined;
+        } else {
+          console.log('[AUTO BET] liquidationPrice calculado', { entryPrice, leverage, betPercent, dynamicDistance, liquidationPrice });
+        }
         // Crear la apuesta
         const candleTimestamp = currentCandle ? currentCandle.timestamp : Date.now();
-        
         // Asegurarse de que el precio de liquidación sea un número válido
-        const validLiquidationPrice = Number(liquidationPrice);
-        console.log('[AUTO BET] Precio de liquidación calculado:', liquidationPrice, 'tipo:', typeof liquidationPrice);
-        console.log('[AUTO BET] Precio de liquidación validado:', validLiquidationPrice, 'tipo:', typeof validLiquidationPrice);
-        
+        const validLiquidationPrice = (typeof liquidationPrice === 'number' && !isNaN(liquidationPrice)) ? liquidationPrice : 0;
         // Crear un ID que identifique claramente que es una apuesta automática
-        // Esto ayuda a rastrear y depurar las apuestas automáticas
         const autoId = `auto_${uuidv4()}`;
-        
         const newBet: Bet = {
           id: autoId,
           prediction,
           amount: autoAmount,
-          timestamp: candleTimestamp + Math.floor(Math.random() * 10000),
+          timestamp: candleTimestamp,
           status: "PENDING",
           symbol: currentSymbol,
           timeframe,
@@ -979,13 +987,11 @@ const changeSymbol = useCallback(
           entryPrice: entryPrice,
           liquidationPrice: validLiquidationPrice, // Usar el valor validado
           wasLiquidated: false,
-        };
-        
-        // Registro adicional para verificar la estructura completa de la apuesta
+        }
+        console.log('[AUTO BET] Precio de liquidación calculado:', liquidationPrice, 'tipo:', typeof liquidationPrice);
+        console.log('[AUTO BET] Precio de liquidación validado:', validLiquidationPrice, 'tipo:', typeof validLiquidationPrice);
         console.log('[AUTO BET] Estructura completa de la apuesta automática:', JSON.stringify(newBet));
-        
         console.log('[AUTO BET] Creando apuesta automática:', newBet);
-        
         // Actualizar betsByPair
         setBetsByPair(prev => {
           const symbolBets = { ...(prev[currentSymbol] || {}) };
