@@ -45,16 +45,34 @@ export default function UserStats() {
 
   // Calcular la racha real de victorias consecutivas
   let realStreak = 0;
-  let topStreak = 0;
+  // --- Top Racha persistente ---
+  const [topStreak, setTopStreak] = useState(0);
+  let tempStreak = 0;
   let currentStreak = 0;
   for (let i = 0; i < bets.length; i++) {
     if (bets[i].status === "WON") {
       currentStreak++;
-      if (currentStreak > topStreak) topStreak = currentStreak;
+      if (currentStreak > tempStreak) tempStreak = currentStreak;
     } else if (bets[i].status === "LOST" || bets[i].status === "LIQUIDATED") {
       currentStreak = 0;
     }
   }
+  // Al montar, lee el récord guardado
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = parseInt(localStorage.getItem('top_win_streak') || '0', 10);
+      setTopStreak(saved);
+    }
+  }, []);
+  // Si la racha calculada es mayor que el récord, actualiza localStorage y el estado
+  useEffect(() => {
+    if (tempStreak > topStreak) {
+      setTopStreak(tempStreak);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('top_win_streak', tempStreak.toString());
+      }
+    }
+  }, [tempStreak, topStreak]);
   // Racha actual (desde el final)
   for (let i = bets.length - 1; i >= 0; i--) {
     if (bets[i].status === "WON") {
