@@ -343,17 +343,51 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     }
 
     // Línea de precio de liquidación para la apuesta activa
-    // Buscar la apuesta activa (status 'PENDING' y liquidationPrice definido)
-    const activeBet = Array.isArray(bets) ? bets.find((bet: any) => bet.status === 'PENDING' && typeof bet.liquidationPrice === 'number') : null;
-    if (
-      activeBet &&
-      typeof activeBet.liquidationPrice === 'number' &&
-      dimensions.height > 0 &&
-      dimensions.width > 0 &&
-      isFinite(minPrice) &&
-      isFinite(yScale)
-    ) {
-      const yLiquid = dimensions.height - ((activeBet.liquidationPrice - minPrice) * yScale - clampedOffsetY);
+    // Asegurarse de que bets es un array y buscar todas las apuestas pendientes con liquidationPrice
+    let pendingBets: any[] = [];
+    
+    if (Array.isArray(bets)) {
+      // Primero, registrar todas las apuestas para depuración
+      console.log('Todas las apuestas disponibles:', bets.length);
+      
+      // Filtrar apuestas pendientes con precio de liquidación
+      pendingBets = bets.filter(bet => {
+        const isPending = bet.status === 'PENDING';
+        const hasLiquidationPrice = bet.liquidationPrice !== undefined && 
+                                  bet.liquidationPrice !== null && 
+                                  !isNaN(Number(bet.liquidationPrice));
+        
+        // Registrar cada apuesta para depuración
+        console.log(`Apuesta ${bet.id}:`, {
+          status: bet.status,
+          prediction: bet.prediction,
+          liquidationPrice: bet.liquidationPrice,
+          tipoDeLiquidationPrice: typeof bet.liquidationPrice,
+          esAutomatica: bet.id.includes('auto') ? 'Sí' : 'No',
+          cumpleFiltro: isPending && hasLiquidationPrice ? 'Sí' : 'No',
+          entryPrice: bet.entryPrice
+        });
+        
+        return isPending && hasLiquidationPrice;
+      });
+    }
+    
+    console.log('Apuestas pendientes con liquidationPrice:', pendingBets.length);
+    
+    // Dibujar línea de liquidación para cada apuesta pendiente
+    pendingBets.forEach((activeBet: any) => {
+      // Convertir explícitamente a número para evitar problemas de tipo
+      const liquidationPrice = Number(activeBet.liquidationPrice);
+      
+      if (
+        activeBet &&
+        !isNaN(liquidationPrice) &&
+        dimensions.height > 0 &&
+        dimensions.width > 0 &&
+        isFinite(minPrice) &&
+        isFinite(yScale)
+      ) {
+      const yLiquid = dimensions.height - ((liquidationPrice - minPrice) * yScale - clampedOffsetY);
       if (yLiquid >= 0 && yLiquid <= dimensions.height) {
         ctx.save();
         ctx.globalAlpha = 0.95;
@@ -369,43 +403,52 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.font = 'bold 14px monospace';
         ctx.fillStyle = '#FF2222';
         ctx.globalAlpha = 0.92;
-        ctx.fillText(`Liquidación: ${activeBet.liquidationPrice.toFixed(2)}`, 8, yLiquid - 6);
+        ctx.fillText(`Liquidación: ${liquidationPrice.toFixed(2)}`, 8, yLiquid - 6);
         ctx.globalAlpha = 1;
         ctx.restore();
       }
-    }
+      }
+    });
 
-    // Línea de precio de entrada para la apuesta activa
-    const entryBet = Array.isArray(bets) ? bets.find((bet: any) => bet.status === 'PENDING' && typeof bet.entryPrice === 'number') : null;
-    if (
-      entryBet &&
-      typeof entryBet.entryPrice === 'number' &&
-      dimensions.height > 0 &&
-      dimensions.width > 0 &&
-      isFinite(minPrice) &&
-      isFinite(yScale)
-    ) {
-      const yEntry = dimensions.height - ((entryBet.entryPrice - minPrice) * yScale - clampedOffsetY);
-      if (yEntry >= 0 && yEntry <= dimensions.height) {
-        ctx.save();
-        ctx.globalAlpha = 0.92;
-        ctx.strokeStyle = '#00FF85'; // verde brillante
-        ctx.lineWidth = 1.3;
-        ctx.setLineDash([6, 6]);
-        ctx.beginPath();
-        ctx.moveTo(0, yEntry);
-        ctx.lineTo(dimensions.width, yEntry);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        // Mostrar el valor de entrada en texto pequeño a la izquierda
-        ctx.font = 'bold 14px monospace';
-        ctx.fillStyle = '#00FF85';
-        ctx.globalAlpha = 0.92;
-        ctx.fillText(`Entrada: ${entryBet.entryPrice.toFixed(2)}`, 8, yEntry - 6);
-        ctx.globalAlpha = 1;
-        ctx.restore();
+    // Línea de precio de entrada para las apuestas activas
+    // Buscar todas las apuestas pendientes con entryPrice
+    const pendingEntryBets = Array.isArray(bets) ? bets.filter((bet: any) => 
+      bet.status === 'PENDING' && 
+      typeof bet.entryPrice === 'number'
+    ) : [];
+    
+    // Dibujar línea de entrada para cada apuesta pendiente
+    pendingEntryBets.forEach((entryBet: any) => {
+      if (
+        entryBet &&
+        typeof entryBet.entryPrice === 'number' &&
+        dimensions.height > 0 &&
+        dimensions.width > 0 &&
+        isFinite(minPrice) &&
+        isFinite(yScale)
+      ) {
+        const yEntry = dimensions.height - ((entryBet.entryPrice - minPrice) * yScale - clampedOffsetY);
+        if (yEntry >= 0 && yEntry <= dimensions.height) {
+          ctx.save();
+          ctx.globalAlpha = 0.92;
+          ctx.strokeStyle = '#00FF85'; // verde brillante
+          ctx.lineWidth = 1.3;
+          ctx.setLineDash([6, 6]);
+          ctx.beginPath();
+          ctx.moveTo(0, yEntry);
+          ctx.lineTo(dimensions.width, yEntry);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          // Mostrar el valor de entrada en texto pequeño a la izquierda
+          ctx.font = 'bold 14px monospace';
+          ctx.fillStyle = '#00FF85';
+          ctx.globalAlpha = 0.92;
+          ctx.fillText(`Apertura: ${entryBet.entryPrice.toFixed(2)}`, 8, yEntry - 6);
+          ctx.globalAlpha = 1;
+          ctx.restore();
+        }
       }
-    }
+    });
 
     // Draw candles with offset
     const candleWidth = Math.min(Math.max((dimensions.width / (allCandles.length / viewState.scale)) * 1, 2), 15)

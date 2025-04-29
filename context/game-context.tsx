@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react"
 import { v4 as uuidv4 } from "uuid"
 import type { Candle, Bet, GamePhase } from "@/types/game"
 import { fetchHistoricalCandles, setupWebSocket } from "@/lib/binance-api"
@@ -82,6 +82,10 @@ interface GameContextType {
   addCoins: (amount: number) => void
   clearBets: () => void
   clearBetsForCurrentPairAndTimeframe: () => void;
+  autoBullish: boolean;
+  autoBearish: boolean;
+  toggleAutoBullish: () => void;
+  toggleAutoBearish: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
@@ -99,6 +103,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [candleSizes, setCandleSizes] = useState<number[]>([]);
   const [bonusInfo, setBonusInfo] = useState<{ bonus: number; size: number; message: string } | null>(null);
   const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING")
+  const [autoBullish, setAutoBullish] = useState<boolean>(false);
+  const [autoBearish, setAutoBearish] = useState<boolean>(false);
   const [nextPhaseTime, setNextPhaseTime] = useState<number | null>(null)
   const [nextCandleTime, setNextCandleTime] = useState<number | null>(null)
   const [candles, setCandles] = useState<Candle[]>([])
@@ -108,7 +114,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Estructura: { [symbol]: { [timeframe]: Bet[] } }
   const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, Bet[]>>>({});
   const [betsHydrated, setBetsHydrated] = useState(false);
-  const bets = betsByPair[currentSymbol]?.[timeframe] || [];
+  // Usar useRef para mantener una referencia actualizada a las apuestas actuales
+  const betsRef = useRef<Bet[]>([]);
+  // Calcular bets a partir de betsByPair y mantener la referencia actualizada
+  const bets = useMemo(() => {
+    const currentBets = betsByPair[currentSymbol]?.[timeframe] || [];
+    betsRef.current = currentBets;
+    return currentBets;
+  }, [betsByPair, currentSymbol, timeframe]);
   const [userBalance, setUserBalance] = useState<number>(100) // Saldo inicial reducido a 100$
 
   // Función para limpiar todas las apuestas
@@ -733,6 +746,8 @@ if (amount <= 0 || amount > userBalance) {
       // Calcular entryPrice y liquidationPrice según leverage y porcentaje apostado
       const entryPrice = currentCandle ? currentCandle.close : 0;
       let liquidationPrice: number | undefined = undefined;
+      
+      // Asegurarse de que siempre se calcule el precio de liquidación cuando hay apalancamiento
       if (leverage > 1 && entryPrice > 0) {
         // Efecto super fuerte: si apuestas más del 30% del balance, la liquidación se acerca mucho
         let baseDistance = 0.99 / leverage;
@@ -748,6 +763,16 @@ if (amount <= 0 || amount > userBalance) {
         } else {
           liquidationPrice = entryPrice * (1 + dynamicDistance);
         }
+        
+        // Registro de depuración para verificar el cálculo del precio de liquidación
+        console.log('Creando apuesta con liquidación:', { 
+          prediction, 
+          entryPrice, 
+          liquidationPrice, 
+          leverage, 
+          dynamicDistance,
+          isAuto: autoBullish || autoBearish
+        });
       }
       const newBet: Bet = {
         id: uuidv4(),
@@ -851,6 +876,148 @@ const changeSymbol = useCallback(
   // Solo las apuestas del símbolo y timeframe actual
   // (declarada arriba, no redeclarar aquí)
 
+  // Toggle auto betting functions
+  const toggleAutoBullish = useCallback(() => {
+    setAutoBullish(prev => {
+      const newValue = !prev;
+      // Si activamos bullish, desactivamos bearish para evitar conflictos
+      if (newValue) setAutoBearish(false);
+      return newValue;
+    });
+  }, []);
+
+  const toggleAutoBearish = useCallback(() => {
+    setAutoBearish(prev => {
+      const newValue = !prev;
+      // Si activamos bearish, desactivamos bullish para evitar conflictos
+      if (newValue) setAutoBullish(false);
+      return newValue;
+    });
+  }, []);
+  
+  // Automatic betting system
+  useEffect(() => {
+    if (gamePhase !== "BETTING" || !currentCandle || currentCandleBets >= 1 || userBalance < 1) return;
+    
+    // Solo intentar apuesta automática si estamos en fase de apuestas y no hay apuestas en esta vela
+    const tryAutoBet = () => {
+      // Calcular una cantidad de apuesta automática (entre 1 y 25% del balance)
+      const autoAmount = Math.min(Math.max(1, userBalance * 0.05), userBalance);
+      
+      // Reproducir sonido de apuesta (igual que en apuestas manuales)
+      const playBetSound = () => {
+        // Crear y reproducir el sonido de apuesta
+        const betAudio = new Audio('/bet.mp3');
+        betAudio.volume = 0.5;
+        betAudio.play().catch(err => console.error('Error al reproducir sonido de apuesta:', err));
+      };
+      
+      // Crear apuesta directamente para garantizar que se establezca correctamente el precio de liquidación
+      const createAutoBet = (prediction: "BULLISH" | "BEARISH") => {
+        playBetSound();
+        
+        // Calcular entryPrice y liquidationPrice
+        const entryPrice = currentCandle ? currentCandle.close : 0;
+        const leverage = 5; // Leverage fijo para apuestas automáticas
+        
+        if (entryPrice <= 0) return;
+        
+        // Cálculo del precio de liquidación
+        const baseDistance = 0.99 / leverage;
+        const betPercent = autoAmount / userBalance;
+        let dynamicDistance = baseDistance;
+        
+        if (betPercent > 0.3) {
+          const risk = Math.min(1, (betPercent - 0.3) / 0.7);
+          dynamicDistance = baseDistance * (1 - 0.85 * risk);
+        }
+        
+        const liquidationPrice = prediction === "BULLISH" 
+          ? entryPrice * (1 - dynamicDistance)
+          : entryPrice * (1 + dynamicDistance);
+        
+        // Crear la apuesta
+        const candleTimestamp = currentCandle ? currentCandle.timestamp : Date.now();
+        
+        // Asegurarse de que el precio de liquidación sea un número válido
+        const validLiquidationPrice = Number(liquidationPrice);
+        console.log('[AUTO BET] Precio de liquidación calculado:', liquidationPrice, 'tipo:', typeof liquidationPrice);
+        console.log('[AUTO BET] Precio de liquidación validado:', validLiquidationPrice, 'tipo:', typeof validLiquidationPrice);
+        
+        // Crear un ID que identifique claramente que es una apuesta automática
+        // Esto ayuda a rastrear y depurar las apuestas automáticas
+        const autoId = `auto_${uuidv4()}`;
+        
+        const newBet: Bet = {
+          id: autoId,
+          prediction,
+          amount: autoAmount,
+          timestamp: candleTimestamp + Math.floor(Math.random() * 10000),
+          status: "PENDING",
+          symbol: currentSymbol,
+          timeframe,
+          leverage: leverage,
+          entryPrice: entryPrice,
+          liquidationPrice: validLiquidationPrice, // Usar el valor validado
+          wasLiquidated: false,
+        };
+        
+        // Registro adicional para verificar la estructura completa de la apuesta
+        console.log('[AUTO BET] Estructura completa de la apuesta automática:', JSON.stringify(newBet));
+        
+        console.log('[AUTO BET] Creando apuesta automática:', newBet);
+        
+        // Actualizar betsByPair
+        setBetsByPair(prev => {
+          const symbolBets = { ...(prev[currentSymbol] || {}) };
+          const tfBets = [...(symbolBets[timeframe] || []), newBet];
+          symbolBets[timeframe] = tfBets;
+          
+          // Guardar en localStorage para persistencia
+          const newBetsByPair = { ...prev, [currentSymbol]: symbolBets };
+          localStorage.setItem("betsByPair", JSON.stringify(newBetsByPair));
+          
+          return newBetsByPair;
+        });
+        
+        // Actualizar otros estados
+        setUserBalance(prev => prev - autoAmount);
+        setCurrentCandleBets(prev => prev + 1);
+        
+        // Notificar al usuario
+        toast({
+          title: `Apuesta automática ${prediction === "BULLISH" ? "alcista" : "bajista"} realizada`,
+          description: `Has apostado $${autoAmount.toFixed(2)} en ${currentSymbol} (${timeframe})`,
+        });
+      };
+      
+      if (autoBullish && !autoBearish) {
+        createAutoBet("BULLISH");
+      } else if (autoBearish && !autoBullish) {
+        createAutoBet("BEARISH");
+      }
+    };
+    
+    // Pequeño retraso para dar tiempo a que se actualice la interfaz
+    const timer = setTimeout(tryAutoBet, 1000);
+    return () => clearTimeout(timer);
+  }, [gamePhase, currentCandle, autoBullish, autoBearish, currentCandleBets, userBalance, currentSymbol, timeframe, toast]);
+  
+  // Forzar actualización del componente del gráfico cuando cambian las apuestas
+  useEffect(() => {
+    if (bets.length > 0) {
+      // Verificar si hay apuestas pendientes con precio de liquidación
+      const pendingBets = bets.filter(bet => 
+        bet.status === "PENDING" && 
+        typeof bet.liquidationPrice === "number"
+      );
+      
+      if (pendingBets.length > 0) {
+        console.log('Apuestas pendientes con liquidación:', pendingBets);
+      }
+    }
+  }, [bets]);
+
   return (
     <GameContext.Provider
       value={{
@@ -875,6 +1042,10 @@ const changeSymbol = useCallback(
         addCoins,
         clearBets,
         clearBetsForCurrentPairAndTimeframe,
+        autoBullish,
+        autoBearish,
+        toggleAutoBullish,
+        toggleAutoBearish,
       }}
     >
       {children}

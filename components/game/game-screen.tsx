@@ -205,7 +205,11 @@ export default function GameScreen() {
     bonusInfo,
     setBonusInfo,
     bets,
-    addCoins // might be missing in context, handle gracefully
+    addCoins, // might be missing in context, handle gracefully
+    autoBullish,
+    autoBearish,
+    toggleAutoBullish,
+    toggleAutoBearish
   } = useGame();
   const { user } = useAuth();
   const { achievements, unlockedAchievements } = useAchievement();
@@ -1092,23 +1096,44 @@ const [leverage, setLeverage] = useState(2000);
                             />
                           </div>
                           {/* Betting buttons */}
-                          <div className="flex gap-4 justify-center w-full mt-2">
-                            <button
-  className={`px-4 py-2 sm:px-8 sm:py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-lg sm:text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 min-w-[100px] sm:min-w-[160px] flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''}`}
+                          <div className="flex flex-col gap-2 justify-center w-full mt-2">
+                            {/* Auto betting buttons - Perfectamente centrados con los botones de abajo */}
+                            <div className="grid grid-cols-2 gap-4 w-full" style={{ maxWidth: '420px', margin: '0 auto' }}>
+                              <button
+                                className={`px-3 py-1 rounded-xl ${autoBullish ? 'bg-green-500' : 'bg-green-600/40'} hover:bg-green-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center`}
+                                onClick={toggleAutoBullish}
+                                title="Apuestas automáticas BULL"
+                              >
+                                <span className="font-bold text-[#FFD600]">Automático</span>
+                              </button>
+                              <button
+                                className={`px-3 py-1 rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center`}
+                                onClick={toggleAutoBearish}
+                                title="Apuestas automáticas BEAR"
+                              >
+                                <span className="font-bold text-[#FFD600]">Automático</span>
+                              </button>
+                            </div>
+                            
+                            {/* Regular betting buttons - Usando el mismo grid que los botones automáticos */}
+                            <div className="grid grid-cols-2 gap-4 w-full" style={{ maxWidth: '420px', margin: '0 auto' }}>
+                              <button
+  className={`px-4 py-2 sm:px-8 sm:py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-lg sm:text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''}`}
   onClick={() => handleBullishBet()}
   disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
 >
-                              <img src="/bull.png" alt="Bullish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
-                              <span className="font-black tracking-widest text-white">BULL</span>
-                            </button>
-                            <button
-  className={`px-4 py-2 sm:px-8 sm:py-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-lg sm:text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 min-w-[100px] sm:min-w-[160px] flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''}`}
+                                <img src="/bull.png" alt="Bullish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
+                                <span className="font-black tracking-widest text-white">BULL</span>
+                              </button>
+                              <button
+  className={`px-4 py-2 sm:px-8 sm:py-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-lg sm:text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''}`}
   onClick={() => handleBearishBet()}
   disabled={gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
 >
-                              <img src="/bear.png" alt="Bearish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
-                              <span className="font-black tracking-widest text-white">BEAR</span>
-                            </button>
+                                <img src="/bear.png" alt="Bearish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
+                                <span className="font-black tracking-widest text-white">BEAR</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
 
