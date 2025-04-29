@@ -45,6 +45,17 @@ export default function UserStats() {
 
   // Calcular la racha real de victorias consecutivas
   let realStreak = 0;
+  let topStreak = 0;
+  let currentStreak = 0;
+  for (let i = 0; i < bets.length; i++) {
+    if (bets[i].status === "WON") {
+      currentStreak++;
+      if (currentStreak > topStreak) topStreak = currentStreak;
+    } else if (bets[i].status === "LOST" || bets[i].status === "LIQUIDATED") {
+      currentStreak = 0;
+    }
+  }
+  // Racha actual (desde el final)
   for (let i = bets.length - 1; i >= 0; i--) {
     if (bets[i].status === "WON") {
       realStreak++;
@@ -58,6 +69,24 @@ export default function UserStats() {
   const wonBets = bets.filter((bet) => bet.status === "WON").length;
   const lostBets = bets.filter((bet) => bet.status === "LOST").length;
   const winRate = totalBets > 0 ? (wonBets / totalBets) * 100 : 0;
+
+  // Toro/Oso
+  const bullBets = bets.filter(b => b.prediction === 'BULLISH').length;
+  const bearBets = bets.filter(b => b.prediction === 'BEARISH').length;
+  const bullPct = totalBets > 0 ? Math.round((bullBets / totalBets) * 100) : 0;
+  const bearPct = totalBets > 0 ? 100 - bullPct : 0;
+  let bullVsBearText = '';
+  let bullVsBearIcon = '';
+  if (bullPct > bearPct) {
+    bullVsBearText = 'Eres más Toro';
+    bullVsBearIcon = '🐂';
+  } else if (bearPct > bullPct) {
+    bullVsBearText = 'Eres más Oso';
+    bullVsBearIcon = '🐻';
+  } else {
+    bullVsBearText = 'Equilibrado';
+    bullVsBearIcon = '⚖️';
+  }
 
   const balance = userBalance;
   const profitLoss = balance - 100;
@@ -137,7 +166,19 @@ export default function UserStats() {
 
   return (
     <div className="space-y-4 text-white">
-      {/* Rachas */}
+      {/* Toro/Oso y Top racha - Compacto */}
+      <div className="flex items-center justify-between text-xs mb-1">
+        <div className="flex items-center gap-1">
+          <span className="text-lg">{bullVsBearIcon}</span>
+          <span className="font-bold text-yellow-300">{bullVsBearText}</span>
+          <span className="ml-1 text-zinc-300">({bullPct}% Toro / {bearPct}% Oso)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-pink-300 font-bold">Top racha:</span>
+          <span className="font-extrabold text-pink-300">{topStreak}</span>
+        </div>
+      </div>
+      {/* Racha actual */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {realStreak >= 3 ? (
