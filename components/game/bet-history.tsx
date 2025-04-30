@@ -90,7 +90,7 @@ export default function BetHistory() {
               }
               return (
                 <AnimatedBorder key={bet.id} isActive={bet.status === "PENDING"}>
-                  <div className={`py-2 min-h-[56px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between max-w-[355px] mx-auto text-xs gap-1 ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
+                  <div className={`py-1 min-h-[48px] rounded-xl border border-yellow-400 flex flex-row items-center max-w-[355px] mx-auto text-xs gap-1 ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
                     {/* Icono y dirección */}
                     <div className="flex flex-col items-center justify-center min-w-[28px]">
                       <img
@@ -101,14 +101,14 @@ export default function BetHistory() {
                       <span className={`text-[10px] font-bold mt-0.5 ${bet.prediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>{bet.prediction === "BULLISH" ? "BULL" : "BEAR"}</span>
                     </div>
                     {/* Info principal */}
-                    <div className="flex flex-col items-start justify-center min-w-[70px] max-w-[90px] truncate">
-                      <span className="text-[11px] font-semibold text-white truncate">
+                    <div className="flex flex-col items-start justify-center min-w-[70px] max-w-[110px] truncate">
+                      <span className="text-[12px] font-semibold text-white truncate">
                         {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
                       </span>
                       <span className="text-[10px] text-white leading-tight truncate">{localTimes[bet.id] || ''}</span>
-                      <span className="text-[9px] text-yellow-200 mt-0.5 truncate">Entrada: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span>
+                      <span className="text-[10px] text-yellow-200 mt-0.5 truncate">Entry: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span>
                     </div>
-                    {/* Monto */}
+                    {/* Monto y PnL */}
                     <div className="flex flex-col items-center justify-center min-w-[60px]">
                       <span className="font-extrabold text-yellow-300 text-lg md:text-xl text-center leading-tight drop-shadow-sm" style={{letterSpacing: '0.01em'}}>
                         ${bet.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -123,61 +123,62 @@ export default function BetHistory() {
                         </span>
                       )}
                     </div>
-                    {bet.status === "PENDING" && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-5 w-5 text-yellow-400 animate-pulse" />
-                        <span className="text-sm bg-yellow-500/20 text-yellow-100 px-2 py-0.5 rounded-full">Pendiente</span>
-                      </div>
-                    )}
-                    {bet.status === "WON" && (
-                      <div className="flex items-center gap-1">
-                        <CheckCircle className="h-5 w-5 text-green-400" />
-                        <span className="text-sm bg-green-500/20 text-green-100 px-2 py-0.5 rounded-full">Ganada</span>
-                      </div>
-                    )}
-                    {bet.status === "LOST" && (
-                      <div className="flex items-center gap-1">
-                        <XCircle className="h-5 w-5 text-red-400" />
-                        <span className="text-sm bg-red-500/20 text-red-100 px-2 py-0.5 rounded-full">Perdida</span>
-                      </div>
-                    )}
-                    {bet.status === "LIQUIDATED" && (
-                      <div className="flex items-center gap-1">
-                        <XCircle className="h-5 w-5 text-yellow-400" />
-                        <span className="text-sm bg-yellow-500/20 text-yellow-100 px-2 py-0.5 rounded-full">Liquidada</span>
-                        {bet.leverage && bet.leverage > 1 && (
-                          <span className="ml-1 text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-700/80 text-yellow-300 border border-yellow-400" title={`Apalancamiento usado: ${bet.leverage}x`}>
-                            {bet.leverage}x
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {bet.leverage && bet.leverage > 1 && bet.status !== "LIQUIDATED" && (
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-700/60 text-yellow-200 border border-yellow-400 mt-1" title={`Apalancamiento usado: ${bet.leverage}x`}>
-                        {bet.leverage}x
-                      </span>
-                    )}
-                    <button
-                      className={`mt-1 px-2 py-1 bg-yellow-700/20 rounded-lg text-yellow-400 transition flex items-center justify-center ${bet.status === 'PENDING' ? 'opacity-40 cursor-not-allowed' : 'hover:bg-yellow-700/40'}`}
-                      disabled={bet.status === 'PENDING'}
-                      onClick={() => {
-                        if (bet.status !== 'PENDING') {
-                          setSelectedResult({
-                            won: bet.status === "WON",
-                            amount: bet.amount,
-                            bet,
-                            candle: candles.find(c => bet.resolvedAt ? Math.abs(c.timestamp - bet.resolvedAt) < 2 * 60 * 1000 : Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1],
-                            diff: (() => {
-                              const candle = candles.find(c => bet.resolvedAt ? Math.abs(c.timestamp - bet.resolvedAt) < 2 * 60 * 1000 : Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
-                              return candle ? candle.close - candle.open : 0;
-                            })()
-                          });
-                          setModalOpen(true);
-                        }
-                      }}
-                    >
-                      <Eye className="h-5 w-5 text-yellow-400" />
-                    </button>
+                    {/* Status + leverage badge always together */}
+                    <div className="flex items-center justify-center gap-1 w-full">
+                      {bet.status === "PENDING" && (
+                        <>
+                          <Clock className="h-5 w-5 text-yellow-400 animate-pulse" />
+                          <span className="text-sm bg-yellow-500/20 text-yellow-100 px-2 py-0.5 rounded-full">Pendiente</span>
+                        </>
+                      )}
+                      {bet.status === "WON" && (
+                        <>
+                          <CheckCircle className="h-5 w-5 text-green-400" />
+                          <span className="text-sm bg-green-500/20 text-green-100 px-2 py-0.5 rounded-full">Ganada</span>
+                        </>
+                      )}
+                      {bet.status === "LOST" && (
+                        <>
+                          <XCircle className="h-5 w-5 text-red-400" />
+                          <span className="text-sm bg-red-500/20 text-red-100 px-2 py-0.5 rounded-full">Perdida</span>
+                        </>
+                      )}
+                      {bet.status === "LIQUIDATED" && (
+                        <>
+                          <XCircle className="h-5 w-5 text-yellow-400" />
+                          <span className="text-sm bg-yellow-500/20 text-yellow-100 px-2 py-0.5 rounded-full">Liquidada</span>
+                        </>
+                      )}
+                      {bet.leverage && bet.leverage > 1 && (
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-yellow-700/80 text-yellow-200 border border-yellow-400" title={`Apalancamiento usado: ${bet.leverage}x`}>
+                          {bet.leverage}x
+                        </span>
+                      )}
+                    </div>
+                    {/* Eye button at the end, always compact */}
+                    <div className="flex items-center justify-center min-w-[32px]">
+                      <button
+                        className={`w-8 h-8 p-0 bg-yellow-700/20 rounded-lg text-yellow-400 transition flex items-center justify-center ${bet.status === 'PENDING' ? 'opacity-40 cursor-not-allowed' : 'hover:bg-yellow-700/40'}`}
+                        disabled={bet.status === 'PENDING'}
+                        onClick={() => {
+                          if (bet.status !== 'PENDING') {
+                            setSelectedResult({
+                              won: bet.status === "WON",
+                              amount: bet.amount,
+                              bet,
+                              candle: candles.find(c => bet.resolvedAt ? Math.abs(c.timestamp - bet.resolvedAt) < 2 * 60 * 1000 : Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1],
+                              diff: (() => {
+                                const candle = candles.find(c => bet.resolvedAt ? Math.abs(c.timestamp - bet.resolvedAt) < 2 * 60 * 1000 : Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
+                                return candle ? candle.close - candle.open : 0;
+                              })()
+                            });
+                            setModalOpen(true);
+                          }
+                        }}
+                      >
+                        <Eye className="h-5 w-5 text-yellow-400" />
+                      </button>
+                    </div>
                   </div>
                 </AnimatedBorder>
               );
