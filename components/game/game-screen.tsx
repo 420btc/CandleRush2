@@ -496,7 +496,14 @@ useEffect(() => {
 }, [autoBullish, autoBearish, gamePhase, currentCandle?.timestamp, userBalance, betAmount, currentCandleBets, candles.length]);
 
   // Default leverage is now 2000x
-const [leverage, setLeverage] = useState(2000);
+const [leverage, setLeverage] = useState(() => {
+  const stored = typeof window !== 'undefined' ? localStorage.getItem('autoMixLeverage') : null;
+  if (stored) {
+    const parsed = parseFloat(stored);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return 2000;
+});
 
   // Calcular precio de liquidación en tiempo real
   const entryPrice = currentCandle?.close || 0;
@@ -511,6 +518,13 @@ const [leverage, setLeverage] = useState(2000);
     : null; // función para calcular según tipo
 
   const [bonusMessage, setBonusMessage] = useState<string | null>(null);
+
+// Sincroniza leverage a localStorage cada vez que cambia
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('autoMixLeverage', String(leverage));
+  }
+}, [leverage]);
   const [bonusDetail, setBonusDetail] = useState<string | null>(null);
   const [betResult, setBetResult] = useState<null | {
     won: boolean;

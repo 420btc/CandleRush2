@@ -940,24 +940,42 @@ const changeSymbol = useCallback(
         const direction = decideMixDirection(candles);
         let finalAmount = userAmount;
         finalAmount = Math.min(finalAmount, userBalance);
+        // Leer leverage de localStorage (igual que la UI)
+        let leverage = 2000;
+        try {
+          const storedLev = localStorage.getItem('autoMixLeverage');
+          if (storedLev) {
+            const parsed = parseFloat(storedLev);
+            if (!isNaN(parsed) && parsed > 0) leverage = parsed;
+          }
+        } catch {}
         // --- SONIDO DE APUESTA ---
         if (betAudioRef.current) {
           betAudioRef.current.currentTime = 0;
           betAudioRef.current.play();
         }
-        placeBet(direction, finalAmount);
-        console.log('[AUTO MIX] Apuesta automática MIX creada (MACD)', { direction, finalAmount, candle: currentCandle.timestamp });
+        placeBet(direction, finalAmount, leverage);
+        console.log('[AUTO MIX] Apuesta automática MIX creada (MACD)', { direction, finalAmount, leverage, candle: currentCandle.timestamp });
       }).catch(() => {
         const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
         let finalAmount = userAmount;
         finalAmount = Math.min(finalAmount, userBalance);
+        // Leer leverage de localStorage (igual que la UI)
+        let leverage = 2000;
+        try {
+          const storedLev = localStorage.getItem('autoMixLeverage');
+          if (storedLev) {
+            const parsed = parseFloat(storedLev);
+            if (!isNaN(parsed) && parsed > 0) leverage = parsed;
+          }
+        } catch {}
         // --- SONIDO DE APUESTA ---
         if (betAudioRef.current) {
           betAudioRef.current.currentTime = 0;
           betAudioRef.current.play();
         }
-        placeBet(direction, finalAmount);
-        console.log('[AUTO MIX] Apuesta automática MIX creada (fallback aleatorio)', { direction, finalAmount, candle: currentCandle.timestamp });
+        placeBet(direction, finalAmount, leverage);
+        console.log('[AUTO MIX] Apuesta automática MIX creada (fallback aleatorio)', { direction, finalAmount, leverage, candle: currentCandle.timestamp });
       });
       return;
     }
