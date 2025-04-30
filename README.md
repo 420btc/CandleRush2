@@ -1,13 +1,22 @@
-<p align="center">
-  <img src="./public/portada.png" alt="CandleRush2 Portada" width="320" />
-</p>
+# CandleRush2: Crypto Betting Game
 
-# 🕯️ **CandleRush2: Crypto Betting Game** — _Documentación Científica y Técnica_
+Bienvenido a la documentación científica y técnica de CandleRush2, el juego de apuestas algorítmicas sobre velas y tendencias del mercado cripto.
 
+## Tabla de Contenidos
+- Introducción
+- Arquitectura y Estructura
+- Fundamentos y Lógica de Apuestas
+- AutoMix: Algoritmo Multi-Voto
+  - Indicadores y Señales
+  - Lógica de Decisión y Persistencia
+  - Ejemplo de Secuencia de Apuestas
+- Componentes Clave
+- Integración con Binance API
+- Memorias y Transparencia
+- Personalización y Extensión
+- Créditos y Licencia
 
-# Tabla de Contenidos
-1. [Introducción General](#introducción-general)
-2. [Arquitectura y Estructura del Proyecto](#arquitectura-y-estructura-del-proyecto)
+## Introducción
 3. [Fundamentos Matemáticos y Científicos](#fundamentos-matemáticos-y-científicos)
 4. [Sistema de Apuestas y Resolución](#sistema-de-apuestas-y-resolución)
 5. [AutoMix: Algoritmo de Decisión Multi-Voto](#automix-algoritmo-de-decisión-multi-voto)
