@@ -46,6 +46,39 @@ export function getTrendMemory(): TrendMemoryEntry[] {
   }
 }
 
+// --- Memoria para Fibonacci (máx 666) ---
+export type FibonacciMemoryEntry = {
+  timestamp: number;
+  fibVote: "BULLISH" | "BEARISH" | null;
+  level: string | null;
+  price: number;
+  levels: Record<string, number>;
+};
+
+const FIBONACCI_MEMORY_STORAGE_KEY = "fibonacciMemory";
+const FIBONACCI_MEMORY_MAX_ENTRIES = 666;
+
+export function saveFibonacciMemory(entry: FibonacciMemoryEntry) {
+  try {
+    const raw = localStorage.getItem(FIBONACCI_MEMORY_STORAGE_KEY);
+    let arr: FibonacciMemoryEntry[] = raw ? JSON.parse(raw) : [];
+    arr.push(entry);
+    if (arr.length > FIBONACCI_MEMORY_MAX_ENTRIES) arr = arr.slice(-FIBONACCI_MEMORY_MAX_ENTRIES);
+    localStorage.setItem(FIBONACCI_MEMORY_STORAGE_KEY, JSON.stringify(arr));
+  } catch (e) {
+    // Falla silenciosa
+  }
+}
+
+export function getFibonacciMemory(): FibonacciMemoryEntry[] {
+  try {
+    const raw = localStorage.getItem(FIBONACCI_MEMORY_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 // --- Memoria para RSI (máx 666) ---
 export type RsiMemoryEntry = {
   timestamp: number;

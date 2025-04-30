@@ -1,5 +1,5 @@
 import React from "react";
-import { getAutoMixMemory, AutoMixMemoryEntry, getTrendMemory, getVolumeTrendMemory, TrendMemoryEntry, VolumeTrendMemoryEntry, getValleyMemory, ValleyMemoryEntry, getRsiMemory, RsiMemoryEntry } from "@/utils/autoMixMemory";
+import { getAutoMixMemory, AutoMixMemoryEntry, getTrendMemory, getVolumeTrendMemory, TrendMemoryEntry, VolumeTrendMemoryEntry, getValleyMemory, ValleyMemoryEntry, getRsiMemory, RsiMemoryEntry, getFibonacciMemory, FibonacciMemoryEntry } from "@/utils/autoMixMemory";
 
 interface AutoMixInfoProps {
   betId: string;
@@ -37,6 +37,7 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
 
   const valleyMem = React.useMemo(() => getValleyMemory(), []);
   const rsiMem = React.useMemo(() => getRsiMemory(), []);
+  const fibonacciMem = React.useMemo(() => getFibonacciMemory(), []);
 
   const entry: AutoMixMemoryEntry | null = React.useMemo(() => {
     // Buscar por timestamp más cercano (tolerancia 60s)
@@ -46,6 +47,10 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
   const rsiEntry: RsiMemoryEntry | null = React.useMemo(() => {
     return findClosestEntry(rsiMem, betTimestamp, 60000);
   }, [rsiMem, betTimestamp]);
+
+  const fibonacciEntry: FibonacciMemoryEntry | null = React.useMemo(() => {
+    return findClosestEntry(fibonacciMem, betTimestamp, 60000);
+  }, [fibonacciMem, betTimestamp]);
 
   const trendEntry: TrendMemoryEntry | null = React.useMemo(() => {
     return findClosestEntry(trendMem, betTimestamp, 60000);
@@ -71,31 +76,34 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
         <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Dirección: <b>{entry.direction}</b></span>
         <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Resultado: <b>{entry.result}</b></span>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-0.5 mt-0.5">
+      <div className="grid grid-cols-4 gap-2 mt-2">
         {/* Mayoría */}
-        <div className={`${entry.majoritySignal === 'BULLISH' ? 'bg-green-900/70' : entry.majoritySignal === 'BEARISH' ? 'bg-red-900/70' : 'bg-black/60'} rounded px-1 py-0.5 text-yellow-300 text-[11px] leading-tight`}>
+        <div className={`${entry.majoritySignal === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : entry.majoritySignal === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
           <b>Mayoría:</b> <span className="font-mono">{entry.majoritySignal ?? '-'}</span>
         </div>
         {/* RSI */}
         <div className={`${rsiEntry?.rsiSignal === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : rsiEntry?.rsiSignal === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
-          <b>RSI:</b> <span className="font-mono">{rsiEntry?.rsiSignal ? rsiEntry.rsiSignal : 'Sin dato'} ({rsiEntry?.rsi !== undefined ? rsiEntry.rsi.toFixed(2) : 'Sin dato'})</span>
+          <b>RSI:</b> <span className="font-mono">{rsiEntry ? (rsiEntry.rsiSignal ?? 'Neutral') : 'Sin dato'} ({rsiEntry?.rsi !== undefined ? rsiEntry.rsi.toFixed(2) : 'Sin dato'})</span>
         </div>
         {/* MACD */}
         <div className={`${entry.macdSignal === 'BULLISH' ? 'bg-green-900/70' : entry.macdSignal === 'BEARISH' ? 'bg-red-900/70' : 'bg-black/60'} rounded px-1 py-0.5 text-yellow-300 text-[11px] leading-tight`}>
-          <b>MACD:</b> <span className="font-mono">{entry.macdSignal ?? '-'} (MACD: {entry.macd?.toFixed(2)}, Signal: {entry.macdSignalLine?.toFixed(2)})</span>
+          <b>MACD:</b> <span className="font-mono">{entry.macdSignal ? entry.macdSignal : 'Sin dato'} ({entry.macd !== undefined ? entry.macd.toFixed(2) : 'Sin dato'})</span>
+        </div>
+        {/* Fibonacci */}
+        <div className={`${fibonacciEntry?.fibVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : fibonacciEntry?.fibVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+          <b>Fibonacci:</b> <span className="font-mono">{fibonacciEntry?.fibVote ?? 'Sin dato'}{fibonacciEntry?.level ? ` (${fibonacciEntry.level})` : ''} {fibonacciEntry?.price !== undefined ? `@${fibonacciEntry.price.toFixed(2)}` : ''}</span>
         </div>
         {/* Valle */}
-        <div className={`${displayValleyVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : displayValleyVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
-          <b>Valle:</b> <span className="font-mono">{displayValleyVote ? displayValleyVote : 'Sin dato'}</span>
+        <div className={`${valleyEntry?.valleyVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : valleyEntry?.valleyVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+          <b>Valle:</b> <span className="font-mono">{valleyEntry?.valleyVote ?? 'Sin dato'}</span>
         </div>
         {/* Tendencia Velas */}
-        <div className={`${trendEntry?.trend === 'BULLISH' ? 'bg-green-900/70' : trendEntry?.trend === 'BEARISH' ? 'bg-red-900/70' : 'bg-black/60'} rounded px-1 py-0.5 text-yellow-300 text-[11px] leading-tight`}>
-          <b>Tendencia Velas:</b> <span className="font-mono">{trendEntry?.trend ?? 'Sin dato'}</span>
-          <span className="ml-2 text-xs">{trendEntry ? `Bull: ${trendEntry.bullishCount}, Bear: ${trendEntry.bearishCount}` : ''}</span>
+        <div className={`${trendEntry?.trend === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : trendEntry?.trend === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+          <b>Tend. Velas:</b> <span className="font-mono">{trendEntry?.trend ?? 'Sin dato'}</span>
         </div>
         {/* Tendencia Volumen */}
         <div className={`${volumeEntry?.vote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : volumeEntry?.vote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
-          <b>Tendencia Volumen:</b> <span className="font-mono">{volumeEntry?.vote ?? 'Sin dato'}</span>
+          <b>Tend. Volumen:</b> <span className="font-mono">{volumeEntry ? (volumeEntry.vote ?? 'Neutral') : 'Sin dato'}</span>
           <span className="ml-2 text-xs">{volumeEntry ? `Vol1: ${volumeEntry.avgVol1.toFixed(2)}, Vol2: ${volumeEntry.avgVol2.toFixed(2)}, ${volumeEntry.volumeTrend === 'UP' ? '▲' : '▼'} (${volumeEntry.majority})` : ''}</span>
         </div>
       </div>

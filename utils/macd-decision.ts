@@ -1,12 +1,12 @@
 import type { Candle } from "@/types/game";
-import { saveTrendMemory, saveValleyMemory, saveRsiMemory } from "./autoMixMemory";
+import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory } from "./autoMixMemory";
 
 /**
  * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD.
  * @param candles - Array de velas (ordenadas de más antigua a más reciente)
  * @returns {"BULLISH" | "BEARISH"} Dirección sugerida
  */
-export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
+export function decideMixDirection(candles: Candle[], timeframe: string = "1m"): "BULLISH" | "BEARISH" {
   if (candles.length < 66) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
 
   // --- 1. Señal de mayoría (últimas 65 velas, excluyendo la más reciente) ---
@@ -40,6 +40,53 @@ export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
   // Guardar en memoria dedicada de RSI
   try {
     saveRsiMemory({ timestamp: Date.now(), rsi, rsiSignal });
+  } catch {}
+
+  // --- 2b. Análisis Fibonacci ---
+  function calculateFibonacciLevels(candles: Candle[], timeframe: string) {
+    let windowSize = 50;
+    if (timeframe === "1m" || timeframe === "5m") windowSize = 100;
+    if (timeframe === "15m" || timeframe === "1h") windowSize = 50;
+    if (timeframe === "4h" || timeframe === "1d") windowSize = 30;
+    if (candles.length < windowSize) return null;
+    const window = candles.slice(-windowSize);
+    const high = Math.max(...window.map(c => c.high));
+    const low = Math.min(...window.map(c => c.low));
+    const levels: Record<string, number> = {
+      "0.236": high - (high - low) * 0.236,
+      "0.382": high - (high - low) * 0.382,
+      "0.5": high - (high - low) * 0.5,
+      "0.618": high - (high - low) * 0.618,
+      "0.786": high - (high - low) * 0.786,
+    };
+    return { high, low, levels };
+  }
+  function fibonacciVote(candles: Candle[], timeframe: string): {vote: "BULLISH"|"BEARISH"|null, level: string|null, price: number, levels: Record<string, number>} {
+    const fib = calculateFibonacciLevels(candles, timeframe);
+    if (!fib) return {vote: null, level: null, price: candles[candles.length-1]?.close, levels: {}};
+    const price = candles[candles.length-1]?.close;
+    let closestLevel: string|null = null;
+    let minDiff = Infinity;
+    for (const [level, val] of Object.entries(fib.levels)) {
+      const diff = Math.abs(price-val);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestLevel = level;
+      }
+    }
+    // Considerar "cerca" si está a menos del 0.2%
+    let vote: "BULLISH"|"BEARISH"|null = null;
+    if (closestLevel && minDiff/price < 0.002) {
+      // Si la última vela es alcista y rebota en nivel, voto BULLISH, si es bajista y rebota abajo, BEARISH
+      const last = candles[candles.length-1];
+      if (last.close > last.open) vote = "BULLISH";
+      if (last.close < last.open) vote = "BEARISH";
+    }
+    return {vote, level: closestLevel, price, levels: fib.levels};
+  }
+  const fibResult = fibonacciVote(candles, timeframe);
+  try {
+    saveFibonacciMemory({ timestamp: Date.now(), fibVote: fibResult.vote, level: fibResult.level, price: fibResult.price, levels: fibResult.levels });
   } catch {}
 
   // --- 3. Señal MACD (últimas 66 velas) ---
@@ -141,6 +188,9 @@ try {
   if (majoritySignal === "BEARISH") bearishVotes++;
   if (macdSignal === "BULLISH") bullishVotes++;
   if (macdSignal === "BEARISH") bearishVotes++;
+  // Fibonacci: peso bajo (0.5 voto)
+  if (fibResult.vote === "BULLISH") bullishVotes += 0.5;
+  if (fibResult.vote === "BEARISH") bearishVotes += 0.5;
 
   // --- 6. Voto por tendencia y conteo de velas (últimas 70) ---
   // Importar función de memoria de tendencia
@@ -190,12 +240,12 @@ try {
       if (avgVol2 > avgVol1) vote = "BEARISH"; // sube el volumen en tendencia bajista
     }
     // Guardar en memoria de tendencia de volumen
-    if (vote) {
-      try {
-        // @ts-ignore
-        saveVolumeTrendMemory({ timestamp: Date.now(), avgVol1, avgVol2, volumeTrend, majority, vote });
-      } catch {}
-    }
+    // Guardar siempre la memoria, aunque vote sea null
+    try {
+      // @ts-ignore
+      saveVolumeTrendMemory({ timestamp: Date.now(), avgVol1, avgVol2, volumeTrend, majority, vote: vote ?? null });
+    } catch {}
+
     return vote;
   }
   const volumeVote = volumeTrendVote(candles);

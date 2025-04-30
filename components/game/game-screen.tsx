@@ -1165,14 +1165,19 @@ useEffect(() => {
                                 <select
   id="leverage"
   className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-sm sm:text-lg px-1 py-1 sm:px-2 sm:py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none min-w-[40px] sm:min-w-[70px]"
-  value={leverage || 100}
+  value={leverage}
   onChange={e => { playPulsar(); setLeverage(Number(e.target.value)); }}
 >
-
-                                  {[300, 500, 1000, 2000, 3000, 5000, 6666, 10000].map(x => (
-                                    <option key={x} value={x}>{x}x</option>
-                                  ))}
-                                </select>
+  <option value={100} disabled={!['1d','12h','8h'].includes(timeframe)}>100x</option>
+  <option value={300}>300x</option>
+  <option value={500}>500x</option>
+  <option value={1000}>1000x</option>
+  <option value={2000}>2000x</option>
+  <option value={3000}>3000x</option>
+  <option value={5000}>5000x</option>
+  <option value={6666}>6666x</option>
+  <option value={10000}>10000x</option>
+</select>
                               </div>
 
                               <button
