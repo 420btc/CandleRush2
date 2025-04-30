@@ -399,6 +399,8 @@ const [betAmount, setBetAmount] = useState(() => {
   }
   return 10;
 });
+// Nuevo: estado separado para el input, como string
+const [betAmountInput, setBetAmountInput] = useState(() => String(betAmount));
 
   // Sincroniza el monto de apuesta con el balance real
   // Sincroniza betAmount a localStorage cada vez que cambia
@@ -1181,17 +1183,27 @@ useEffect(() => {
                                 -1
                               </button>
                               <input
-  type="number"
-  min={1}
-  max={Math.floor(userBalance)}
-  step={1}
-  value={betAmount}
-  onChange={(e) => {
-    const intVal = Math.floor(Number(e.target.value));
-    setBetAmount(Math.max(1, Math.min(intVal, Math.floor(userBalance))));
-  }}
-  className="w-16 sm:w-20 text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-base sm:text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none py-1 sm:py-1"
-/>
+        type="number"
+        min={1}
+        max={Math.floor(userBalance)}
+        step={1}
+        value={betAmountInput}
+        onChange={(e) => {
+          const val = e.target.value;
+          // Permitir vacío o solo números
+          if (/^\d*$/.test(val)) {
+            setBetAmountInput(val);
+            // Solo actualizar el número si es válido
+            const asNumber = Number(val);
+            if (val !== "" && !isNaN(asNumber)) {
+              setBetAmount(asNumber);
+            }
+          }
+        }}
+        className="w-16 sm:w-20 text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-base sm:text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none py-1 sm:py-1"
+        inputMode="numeric"
+        pattern="[0-9]*"
+      />
                               <button
                                 className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
                                 onClick={() => { playPulsar(); setBetAmount((prev) => Math.min(Math.floor(userBalance), Math.floor(prev + 1))); }}
