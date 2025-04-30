@@ -8,19 +8,21 @@ import type { Candle } from "@/types/game";
 export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
   if (candles.length < 66) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
 
-  // Tomar las últimas 66 velas
-  const last66 = candles.slice(-66);
-  // Contar verdes (alcistas) y rojas (bajistas)
-  const bullishCount = last66.filter(c => c.close > c.open).length;
-  const bearishCount = last66.length - bullishCount;
-
-  // Probabilidad 90% según mayoría
-  if (bullishCount > bearishCount) {
-    return Math.random() < 0.95 ? "BULLISH" : "BEARISH";
-  } else if (bearishCount > bullishCount) {
-    return Math.random() < 0.95 ? "BEARISH" : "BULLISH";
+  // 95% de las veces: usar mayoría de las últimas 65 velas (excluyendo la última)
+  if (Math.random() < 0.95) {
+    const last65 = candles.slice(-66, -1); // Penúltima hacia atrás
+    const bullishCount = last65.filter(c => c.close > c.open).length;
+    const bearishCount = last65.length - bullishCount;
+    if (bullishCount > bearishCount) return "BULLISH";
+    if (bearishCount > bullishCount) return "BEARISH";
+    // Empate: aleatorio
+    return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
   } else {
-    // Si empate, aleatorio
+    // 5% de las veces: usar solo la última vela
+    const last = candles[candles.length - 1];
+    if (last.close > last.open) return "BULLISH";
+    if (last.close < last.open) return "BEARISH";
+    // Doji: aleatorio
     return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
   }
 }
