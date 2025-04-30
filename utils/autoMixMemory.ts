@@ -8,6 +8,7 @@ export type AutoMixMemoryEntry = {
   majoritySignal: "BULLISH" | "BEARISH" | null;
   rsiSignal: "BULLISH" | "BEARISH" | null;
   macdSignal: "BULLISH" | "BEARISH" | null;
+  valleyVote: "BULLISH" | "BEARISH" | null;
   rsi: number;
   macd: number;
   macdSignalLine: number;
@@ -45,7 +46,38 @@ export function getTrendMemory(): TrendMemoryEntry[] {
   }
 }
 
-// --- Memoria para tendencia de volumen (máx 333) ---
+// --- Memoria para RSI (máx 666) ---
+export type RsiMemoryEntry = {
+  timestamp: number;
+  rsi: number;
+  rsiSignal: "BULLISH" | "BEARISH" | null;
+};
+
+const RSI_MEMORY_STORAGE_KEY = "rsiMemory";
+const RSI_MEMORY_MAX_ENTRIES = 666;
+
+export function saveRsiMemory(entry: RsiMemoryEntry) {
+  try {
+    const raw = localStorage.getItem(RSI_MEMORY_STORAGE_KEY);
+    let arr: RsiMemoryEntry[] = raw ? JSON.parse(raw) : [];
+    arr.push(entry);
+    if (arr.length > RSI_MEMORY_MAX_ENTRIES) arr = arr.slice(-RSI_MEMORY_MAX_ENTRIES);
+    localStorage.setItem(RSI_MEMORY_STORAGE_KEY, JSON.stringify(arr));
+  } catch (e) {
+    // Falla silenciosa
+  }
+}
+
+export function getRsiMemory(): RsiMemoryEntry[] {
+  try {
+    const raw = localStorage.getItem(RSI_MEMORY_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+// --- Memoria para tendencia de volumen (máx 666) ---
 export type VolumeTrendMemoryEntry = {
   timestamp: number;
   avgVol1: number;
@@ -56,7 +88,37 @@ export type VolumeTrendMemoryEntry = {
 };
 
 const VOLUME_TREND_STORAGE_KEY = "volumeTrendMemory";
-const VOLUME_TREND_MAX_ENTRIES = 333;
+const VOLUME_TREND_MAX_ENTRIES = 666;
+
+// --- Memoria para voto de valle (máx 666) ---
+export type ValleyMemoryEntry = {
+  timestamp: number;
+  valleyVote: "BULLISH" | "BEARISH" | null;
+};
+
+const VALLEY_MEMORY_STORAGE_KEY = "valleyMemory";
+const VALLEY_MEMORY_MAX_ENTRIES = 666;
+
+export function saveValleyMemory(entry: ValleyMemoryEntry) {
+  try {
+    const raw = localStorage.getItem(VALLEY_MEMORY_STORAGE_KEY);
+    let arr: ValleyMemoryEntry[] = raw ? JSON.parse(raw) : [];
+    arr.push(entry);
+    if (arr.length > VALLEY_MEMORY_MAX_ENTRIES) arr = arr.slice(-VALLEY_MEMORY_MAX_ENTRIES);
+    localStorage.setItem(VALLEY_MEMORY_STORAGE_KEY, JSON.stringify(arr));
+  } catch (e) {
+    // Falla silenciosa
+  }
+}
+
+export function getValleyMemory(): ValleyMemoryEntry[] {
+  try {
+    const raw = localStorage.getItem(VALLEY_MEMORY_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function saveVolumeTrendMemory(entry: VolumeTrendMemoryEntry) {
   try {
@@ -81,7 +143,7 @@ export function getVolumeTrendMemory(): VolumeTrendMemoryEntry[] {
 
 
 const STORAGE_KEY = "autoMixMemory";
-const MAX_ENTRIES = 999;
+const MAX_ENTRIES = 666;
 
 export function saveAutoMixMemory(entry: AutoMixMemoryEntry) {
   try {

@@ -1,5 +1,5 @@
 import type { Candle } from "@/types/game";
-import { saveTrendMemory } from "./autoMixMemory";
+import { saveTrendMemory, saveValleyMemory, saveRsiMemory } from "./autoMixMemory";
 
 /**
  * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD.
@@ -37,6 +37,10 @@ export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
   let rsiSignal: "BULLISH" | "BEARISH" | null = null;
   if (rsi > 70) rsiSignal = "BEARISH";
   else if (rsi < 30) rsiSignal = "BULLISH";
+  // Guardar en memoria dedicada de RSI
+  try {
+    saveRsiMemory({ timestamp: Date.now(), rsi, rsiSignal });
+  } catch {}
 
   // --- 3. Señal MACD (últimas 66 velas) ---
   function calcEMA(values: number[], period: number): number[] {
@@ -121,6 +125,10 @@ export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
     return null;
   }
   const valleyVote = detectValleyVote(candles);
+// Guardar en memoria de valle
+try {
+  saveValleyMemory({ timestamp: Date.now(), valleyVote });
+} catch {}
 
   // --- Votación proporcional: RSI, Valle, Majority y MACD (25% cada uno) ---
   let bullishVotes = 0;
