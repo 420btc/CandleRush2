@@ -85,7 +85,6 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
       <div className="font-bold text-yellow-300 text-xs mb-0.5 leading-tight">AutoMix: Decisión y votos</div>
       <div className="flex flex-wrap gap-1 mb-0.5">
         <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Dirección: <b>{entry?.direction ?? 'Sin dato'}</b></span>
-        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Resultado: <b>{entry?.result ?? 'Sin dato'}</b></span>
       </div>
       <div className={`grid gap-2 mt-2`}>
         {/* Tarjeta GRANDE de mayoría de votos ponderados */}
