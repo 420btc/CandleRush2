@@ -54,71 +54,76 @@ export default function BetHistory() {
     )
   }
 
-// ...imports y lógica previa...
-
-return (
-  <div className="h-full flex-1 min-h-0 w-full flex flex-col">
-    <div className="flex gap-2 mb-1 justify-center">
-      <button
-        className={`px-3 py-1 rounded-lg font-bold border-2 transition-all text-sm ${!showAchievements ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black/60 text-yellow-400 border-yellow-400 hover:bg-yellow-900/30'}`}
-        onClick={() => setShowAchievements(false)}
-      >Apuestas</button>
-      <button
-        className={`px-3 py-1 rounded-lg font-bold border-2 transition-all text-sm ${showAchievements ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black/60 text-yellow-400 border-yellow-400 hover:bg-yellow-900/30'}`}
-        onClick={() => setShowAchievements(true)}
-      >Logros</button>
-    </div>
-    {showAchievements ? (
-      <div className="flex-1 w-full flex flex-col items-center justify-center">
-        <Achievements />
+  return (
+    <div className="h-full flex-1 min-h-0 w-full flex flex-col">
+      <div className="flex gap-2 mb-1 justify-center">
+        <button
+          className={`px-3 py-1 rounded-lg font-bold border-2 transition-all text-sm ${!showAchievements ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black/60 text-yellow-400 border-yellow-400 hover:bg-yellow-900/30'}`}
+          onClick={() => setShowAchievements(false)}
+        >Apuestas</button>
+        <button
+          className={`px-3 py-1 rounded-lg font-bold border-2 transition-all text-sm ${showAchievements ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black/60 text-yellow-400 border-yellow-400 hover:bg-yellow-900/30'}`}
+          onClick={() => setShowAchievements(true)}
+        >Logros</button>
       </div>
-    ) : (
-      <ScrollArea className="h-full flex-1 min-h-0 w-full pb-4">
-        <div className="space-y-0">
-          {bets.slice().reverse().map((bet) => {
-            // --- LIVE PnL (solo si la apuesta está pendiente) ---
-            // --- LIVE PnL limpio y robusto ---
-            let livePnl: number | null = null;
-            let livePnlColor = "text-zinc-400";
-            // Usar siempre el precio de cierre de la vela activa
-            const priceSource = currentCandle?.close ?? candles[candles.length - 1]?.close;
-            if (bet.status === "PENDING" && bet.entryPrice && priceSource) {
-              const priceChangePct = (priceSource - bet.entryPrice) / bet.entryPrice;
-              const leverage = bet.leverage || 1;
-              // Si la predicción es bajista, el PnL se invierte
-              livePnl = bet.amount * leverage * priceChangePct * (bet.prediction === "BULLISH" ? 1 : -1);
-              if (livePnl > 0.01) livePnlColor = "text-green-400";
-              else if (livePnl < -0.01) livePnlColor = "text-red-400";
-              else livePnlColor = "text-zinc-400";
-            }
-            return (
-              <AnimatedBorder key={bet.id} isActive={bet.status === "PENDING"}>
-                <div className={`py-1 min-h-[56px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between max-w-[355px] mx-auto text-sm ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
-                  <div className="flex items-center gap-4 w-full md:w-1/2">
-                    <div className="flex flex-col items-center justify-center min-w-[36px]">
+      {showAchievements ? (
+        <div className="flex-1 w-full flex flex-col items-center justify-center">
+          <Achievements />
+        </div>
+      ) : (
+        <ScrollArea className="h-full flex-1 min-h-0 w-full pb-4">
+          <div className="space-y-0">
+            {bets.slice().reverse().map((bet) => {
+              // --- LIVE PnL (solo si la apuesta está pendiente) ---
+              // --- LIVE PnL limpio y robusto ---
+              let livePnl: number | null = null;
+              let livePnlColor = "text-zinc-400";
+              // Usar siempre el precio de cierre de la vela activa
+              const priceSource = currentCandle?.close ?? candles[candles.length - 1]?.close;
+              if (bet.status === "PENDING" && bet.entryPrice && priceSource) {
+                const priceChangePct = (priceSource - bet.entryPrice) / bet.entryPrice;
+                const leverage = bet.leverage || 1;
+                livePnl = bet.amount * leverage * priceChangePct * (bet.prediction === "BULLISH" ? 1 : -1);
+                if (livePnl > 0.01) livePnlColor = "text-green-400";
+                else if (livePnl < -0.01) livePnlColor = "text-red-400";
+                else livePnlColor = "text-zinc-400";
+              }
+              return (
+                <AnimatedBorder key={bet.id} isActive={bet.status === "PENDING"}>
+                  <div className={`py-2 min-h-[56px] rounded-xl border border-yellow-400 flex flex-col md:flex-row items-center justify-between max-w-[355px] mx-auto text-xs gap-1 ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
+                    {/* Icono y dirección */}
+                    <div className="flex flex-col items-center justify-center min-w-[28px]">
                       <img
                         src={bet.prediction === "BULLISH" ? "/bull.png" : "/bear.png"}
                         alt={bet.prediction === "BULLISH" ? "Bull" : "Bear"}
-                        className="w-7 h-7 object-contain mx-auto"
+                        className="w-5 h-5 object-contain mx-auto"
                       />
-                      <span className={`text-xs font-bold mt-1 ${bet.prediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>{bet.prediction === "BULLISH" ? "BULL" : "BEAR"}</span>
+                      <span className={`text-[10px] font-bold mt-0.5 ${bet.prediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>{bet.prediction === "BULLISH" ? "BULL" : "BEAR"}</span>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">
+                    {/* Info principal */}
+                    <div className="flex flex-col items-start justify-center min-w-[70px] max-w-[90px] truncate">
+                      <span className="text-[11px] font-semibold text-white truncate">
                         {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
-                      </p>
-                      <p className="text-sm text-white">{localTimes[bet.id] || ''}</p>
-                      <p className="text-xs text-yellow-200 mt-1">Entrada: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center gap-1 w-full">
-                    <span className="font-bold text-white text-lg">${bet.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    {/* LIVE PnL en pequeño */}
-                    {bet.status === "PENDING" && livePnl !== null && (
-                      <span className={`text-xs font-mono ${livePnlColor}`} style={{minHeight:16}}>
-                        PnL: {livePnl > 0 ? "+" : ""}{livePnl.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
-                    )}
+                      <span className="text-[10px] text-white leading-tight truncate">{localTimes[bet.id] || ''}</span>
+                      <span className="text-[9px] text-yellow-200 mt-0.5 truncate">Entrada: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span>
+                    </div>
+                    {/* Monto */}
+                    <div className="flex flex-col items-center justify-center min-w-[60px]">
+                      <span className="font-extrabold text-yellow-300 text-lg md:text-xl text-center leading-tight drop-shadow-sm" style={{letterSpacing: '0.01em'}}>
+                        ${bet.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      {/* LIVE PnL en pequeño */}
+                      {bet.status === "PENDING" && livePnl !== null && (
+                        <span
+                          className={`text-xs font-bold font-mono px-2 py-0.5 rounded-full shadow-sm border mt-1
+                            ${livePnl > 0 ? 'border-green-400 text-green-400' : livePnl < 0 ? 'border-red-400 text-red-400' : 'border-zinc-400 text-zinc-200'}`}
+                          style={{minHeight:18, letterSpacing: '0.01em', background: '#111'}}
+                        >
+                          PnL: {livePnl > 0 ? '+' : ''}{livePnl.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </div>
                     {bet.status === "PENDING" && (
                       <div className="flex items-center gap-1">
                         <Clock className="h-5 w-5 text-yellow-400 animate-pulse" />
@@ -175,14 +180,12 @@ return (
                       <Eye className="h-5 w-5 text-yellow-400" />
                     </button>
                   </div>
-                </div>
-              </AnimatedBorder>
-            );
-          })}
-        </div>
-      </ScrollArea>
-    )}
-      {/* El modal solo se abre cuando el usuario hace clic en el botón Eye */}
+                </AnimatedBorder>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      )}
       <BetResultModal open={modalOpen} onOpenChange={setModalOpen} result={selectedResult} />
     </div>
   );
