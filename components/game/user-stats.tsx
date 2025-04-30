@@ -41,6 +41,26 @@ function generateMathChallenge() {
 }
 
 export default function UserStats() {
+  // --- Password section state ---
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordMsg, setPasswordMsg] = useState("");
+
+  // --- Password handler ---
+  function handlePasswordSubmit() {
+    if (passwordInput === "420420420") {
+      if (typeof addCoins === 'function') addCoins(1500);
+      setPasswordMsg("¡Contraseña correcta! +1500 monedas");
+      setPasswordInput("");
+      setTimeout(() => {
+        setShowPasswordSection(false);
+        setPasswordMsg("");
+      }, 1800);
+    } else {
+      setPasswordMsg("Contraseña incorrecta");
+    }
+  }
+
   const { bets, userBalance, addCoins } = useGame();
 
   // Calcular la racha real de victorias consecutivas
@@ -267,16 +287,40 @@ export default function UserStats() {
               disabled={!canAttempt}
             />
             <div className="flex justify-center gap-2 mt-4">
-              <button
-                className="px-3 py-1 bg-green-500 hover:bg-green-400 rounded text-white font-bold disabled:bg-zinc-500 disabled:text-zinc-300"
-                onClick={handleCheckMath}
-                disabled={!canAttempt}
-              >Aceptar</button>
-              <button
-                className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white font-bold"
-                onClick={() => { setShowMathModal(false); setMathAnswer(''); setMathChallenge(generateMathChallenge()); }}
-              >Cancelar</button>
-            </div>
+  <button
+    className="px-3 py-1 bg-green-500 hover:bg-green-400 rounded text-white font-bold disabled:bg-zinc-500 disabled:text-zinc-300"
+    onClick={handleCheckMath}
+    disabled={!canAttempt}
+  >Aceptar</button>
+  <button
+    className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white font-bold"
+    onClick={() => { setShowMathModal(false); setMathAnswer(''); setMathChallenge(generateMathChallenge()); }}
+  >Cancelar</button>
+  <button
+    className="px-3 py-1 bg-yellow-400 hover:bg-yellow-300 rounded text-black font-bold border border-yellow-600 shadow"
+    onClick={() => setShowPasswordSection(true)}
+    type="button"
+  >Contraseña</button>
+</div>
+{showPasswordSection && (
+  <div className="mt-3 p-3 border-2 border-yellow-400 rounded-lg bg-black/80">
+    <div className="mb-2 text-yellow-300 font-bold">Introduce la contraseña secreta:</div>
+    <input
+      type="password"
+      className="w-32 px-2 py-1 rounded border border-yellow-400 text-center text-black font-bold"
+      value={passwordInput}
+      onChange={e => setPasswordInput(e.target.value)}
+      onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
+      autoFocus
+    />
+    <button
+      className="ml-2 px-3 py-1 bg-yellow-500 hover:bg-yellow-400 rounded text-black font-bold border border-yellow-600"
+      onClick={handlePasswordSubmit}
+      type="button"
+    >OK</button>
+    {passwordMsg && <div className={`mt-2 ${passwordMsg === '¡Contraseña correcta! +1500 monedas' ? 'text-green-400' : 'text-red-400'}`}>{passwordMsg}</div>}
+  </div>
+) }
             {mathError && <div className="text-red-400 mt-2">{mathError}</div>}
             {mathSuccess && <div className="text-green-400 mt-2">¡Correcto! +100 monedas</div>}
           </div>
