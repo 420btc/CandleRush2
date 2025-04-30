@@ -82,9 +82,9 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
           <b>Mayoría:</b> <span className="font-mono">{entry.majoritySignal ?? '-'}</span>
         </div>
         {/* RSI */}
-        <div className={`${rsiEntry?.rsiSignal === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : rsiEntry?.rsiSignal === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
-          <b>RSI:</b> <span className="font-mono">{rsiEntry ? (rsiEntry.rsiSignal ?? 'Neutral') : 'Sin dato'} ({rsiEntry?.rsi !== undefined ? rsiEntry.rsi.toFixed(2) : 'Sin dato'})</span>
-        </div>
+        <div className={`${(rsiEntry?.rsiSignal === 'BULLISH' || (!rsiEntry || rsiEntry.rsiSignal == null) && entry.direction === 'BULLISH') ? 'bg-green-900/70 text-yellow-300' : (rsiEntry?.rsiSignal === 'BEARISH' || (!rsiEntry || rsiEntry.rsiSignal == null) && entry.direction === 'BEARISH') ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+  <b>RSI:</b> <span className="font-mono">{rsiEntry ? (rsiEntry.rsiSignal ?? entry.direction) : entry.direction} ({rsiEntry?.rsi !== undefined ? rsiEntry.rsi.toFixed(2) : 'Sin dato'})</span>
+</div>
         {/* MACD */}
         <div className={`${entry.macdSignal === 'BULLISH' ? 'bg-green-900/70' : entry.macdSignal === 'BEARISH' ? 'bg-red-900/70' : 'bg-black/60'} rounded px-1 py-0.5 text-yellow-300 text-[11px] leading-tight`}>
           <b>MACD:</b> <span className="font-mono">{entry.macdSignal ? entry.macdSignal : 'Sin dato'} ({entry.macd !== undefined ? entry.macd.toFixed(2) : 'Sin dato'})</span>
@@ -102,10 +102,10 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
           <b>Tend. Velas:</b> <span className="font-mono">{trendEntry?.trend ?? 'Sin dato'}</span>
         </div>
         {/* Tendencia Volumen */}
-        <div className={`${volumeEntry?.vote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : volumeEntry?.vote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
-          <b>Tend. Volumen:</b> <span className="font-mono">{volumeEntry ? (volumeEntry.vote ?? 'Neutral') : 'Sin dato'}</span>
-          <span className="ml-2 text-xs">{volumeEntry ? `Vol1: ${volumeEntry.avgVol1.toFixed(2)}, Vol2: ${volumeEntry.avgVol2.toFixed(2)}, ${volumeEntry.volumeTrend === 'UP' ? '▲' : '▼'} (${volumeEntry.majority})` : ''}</span>
-        </div>
+        <div className={`${(volumeEntry?.vote === 'BULLISH' || (!volumeEntry || volumeEntry.vote == null) && entry.direction === 'BULLISH') ? 'bg-green-900/70 text-yellow-300' : (volumeEntry?.vote === 'BEARISH' || (!volumeEntry || volumeEntry.vote == null) && entry.direction === 'BEARISH') ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+  <b>Tend. Volumen:</b> <span className="font-mono">{volumeEntry ? (volumeEntry.vote ?? entry.direction) : entry.direction}</span>
+  <span className="ml-2 text-xs">{volumeEntry ? `Vol1: ${volumeEntry.avgVol1.toFixed(2)}, Vol2: ${volumeEntry.avgVol2.toFixed(2)}, ${volumeEntry.volumeTrend === 'UP' ? '▲' : '▼'} (${volumeEntry.majority})` : ''}</span>
+</div>
       </div>
     </div>
   );
