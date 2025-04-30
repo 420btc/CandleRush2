@@ -390,16 +390,31 @@ export default function GameScreen() {
     }
   }
   // Estado para el monto de apuesta
-  const [betAmount, setBetAmount] = useState(10); // Solo enteros, sin decimales
+  // Inicializa el monto de apuesta desde localStorage si existe
+const [betAmount, setBetAmount] = useState(() => {
+  const stored = typeof window !== 'undefined' ? localStorage.getItem('autoMixAmount') : null;
+  if (stored) {
+    const parsed = parseFloat(stored);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return 10;
+});
 
   // Sincroniza el monto de apuesta con el balance real
-  useEffect(() => {
-    if (betAmount > userBalance) {
-      setBetAmount(userBalance > 0 ? Math.floor(userBalance) : 0);
-    } else if (!Number.isInteger(betAmount)) {
-      setBetAmount(Math.floor(betAmount));
-    }
-  }, [userBalance]);
+  // Sincroniza betAmount a localStorage cada vez que cambia
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('autoMixAmount', String(betAmount));
+  }
+}, [betAmount]);
+
+useEffect(() => {
+  if (betAmount > userBalance) {
+    setBetAmount(userBalance > 0 ? Math.floor(userBalance) : 0);
+  } else if (!Number.isInteger(betAmount)) {
+    setBetAmount(Math.floor(betAmount));
+  }
+}, [userBalance]);
 
   
 
@@ -1002,7 +1017,7 @@ const [leverage, setLeverage] = useState(2000);
   <AaplMarketStatus />
 )}
 {/* Dollar difference counter below price */}
-<div className="ml-[101px] flex items-center">
+<div className="flex items-center ml-0 sm:ml-[101px] w-full sm:w-auto justify-center sm:justify-start">
   <DollarDiffCounter currentCandle={currentCandle} realtimePrice={currentCandle?.close ?? null} />
 </div>
                           <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>

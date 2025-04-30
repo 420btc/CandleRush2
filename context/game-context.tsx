@@ -934,17 +934,10 @@ const changeSymbol = useCallback(
           if (!isNaN(parsed) && parsed > 0) userAmount = parsed;
         }
       } catch {}
-      // Opcional: la máquina puede ajustar el monto (ejemplo: sumar 10% del balance si bullish, restar 10% si bearish)
+      // Usar siempre el monto configurado por el usuario, solo limitar por saldo disponible
       import("@/utils/macd-decision").then(({ decideMixDirection }) => {
         const direction = decideMixDirection(candles);
         let finalAmount = userAmount;
-        // Ejemplo de ajuste automático: si bullish, sumar 10% del balance; si bearish, restar 10% (pero nunca <1)
-        if (direction === "BULLISH") {
-          finalAmount += Math.max(1, Math.floor(userBalance * 0.10));
-        } else {
-          finalAmount = Math.max(1, userAmount - Math.floor(userBalance * 0.10));
-        }
-        // Limitar a saldo disponible
         finalAmount = Math.min(finalAmount, userBalance);
         placeBet(direction, finalAmount);
         console.log('[AUTO MIX] Apuesta automática MIX creada (MACD)', { direction, finalAmount, candle: currentCandle.timestamp });

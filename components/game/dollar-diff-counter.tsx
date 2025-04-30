@@ -21,13 +21,19 @@ const DollarDiffCounter: React.FC<DollarDiffCounterProps> = ({ currentCandle, re
   }
 
   return (
-    <div className="flex flex-col items-center justify-center select-none" style={{ minWidth: 120 }}>
-      <span className="text-xs text-zinc-400 mb-1 uppercase tracking-wide">Cambio actual</span>
-      <span className={`font-mono text-5xl font-extrabold drop-shadow-xl ${color}`}
-        style={{ letterSpacing: '0.02em', lineHeight: 1.1 }}>
+    <div
+      className="flex flex-col items-center justify-center select-none min-w-[90px] sm:min-w-[120px] px-1"
+      style={{ width: '100%' }}
+    >
+      <span className="text-[10px] sm:text-xs text-zinc-400 mb-0.5 sm:mb-1 uppercase tracking-wide text-center whitespace-nowrap">
+        Cambio actual
+      </span>
+      <span
+        className={`font-mono text-3xl sm:text-5xl font-extrabold drop-shadow-xl ${color}`}
+        style={{ letterSpacing: '0.01em', lineHeight: 1.1, wordBreak: 'break-all', width: '100%', textAlign: 'center' }}
+      >
         {diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(2)}` : "-"}
       </span>
-
     </div>
   );
 };
