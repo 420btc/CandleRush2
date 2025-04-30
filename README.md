@@ -4,9 +4,6 @@
 
 # 🕯️ **CandleRush2: Crypto Betting Game** — _Documentación Científica y Técnica_
 
----
-
-
 
 # Tabla de Contenidos
 1. [Introducción General](#introducción-general)
@@ -48,205 +45,84 @@ crypto-betting/
 │   ├── game/                  # Lógica y UI del juego principal
 │   └── ui/                    # Componentes de interfaz reutilizables
 ├── context/                   # Contextos globales (juego, auth, logros)
-├── hooks/                     # Custom hooks
-├── lib/                       # Lógica de integración externa (API Binance)
-├── public/                    # Archivos estáticos
-├── styles/                    # Estilos globales
-├── types/                     # Tipos TypeScript compartidos
-├── utils/                     # Utilidades matemáticas, memoria y lógica de señales
-├── package.json               # Dependencias y scripts
-└── README.md                  # Este archivo
-```
+
+## Fundamentos y Lógica de Apuestas
+
+El sistema permite apostar sobre la dirección de la siguiente vela (alcista/bajista) usando diferentes estrategias:
+- **Manual:** El usuario elige dirección y cantidad.
+- **AutoMix:** Algoritmo multi-voto que pondera varios indicadores técnicos y patrones.
+
+## AutoMix: Algoritmo Multi-Voto
+
+### Indicadores y Señales
+AutoMix pondera hasta 7 señales para decidir cada apuesta:
+- **Mayoría de Velas:** ¿Más velas alcistas o bajistas en la ventana reciente?
+- **RSI:** Señal "BULLISH" si RSI > 60, "BEARISH" si RSI < 40.
+- **MACD:** Señal según cruce de líneas (alcista o bajista).
+- **Fibonacci:** Voto alcista/bajista si el precio rebota en niveles clave.
+- **Valle:** Detección de patrones de valle (apertura/cierre).
+- **Tendencia General:** Cálculo sobre las últimas 70 velas.
+- **Tendencia de Volumen:** Análisis de la evolución del volumen y su relación con la tendencia.
+
+### Lógica de Decisión y Persistencia
+
+1. **Votación proporcional:** Cada señal suma un voto a "BULLISH" o "BEARISH". Fibonacci suma medio voto.
+2. **Zonas neutras:** Si no hay mayoría ni señal clara de RSI, la dirección se elige aleatoriamente.
+3. **Desempate:** Si hay empate de votos, decide el MACD. Si tampoco hay MACD, elige aleatorio.
+4. **Anti-persistencia:** Si las últimas 5 apuestas han sido iguales y todas pérdidas/liquidadas, la siguiente apuesta fuerza la dirección contraria.
+
+#### Ejemplo práctico de secuencia de apuestas
+
+Supón la siguiente serie de resultados:
+
+| Nº | Mayoría | RSI   | MACD   | Valle | Fib | Tend. | Vol. | Decisión | Resultado |
+|----|---------|-------|--------|-------|-----|-------|------|----------|-----------|
+| 1  | BULLISH| BULLISH| BULLISH|  -    |  -  |  -    |  -   | BULLISH  | WIN       |
+| 2  | BULLISH| null  | BEARISH|  -    |  -  |  -    |  -   | BULLISH  | LOSS      |
+| 3  | BULLISH| null  | BEARISH|  -    |  -  |  -    |  -   | BULLISH  | LOSS      |
+| 4  | BEARISH| BEARISH| BEARISH|  -    |  -  |  -    |  -   | BEARISH  | WIN       |
+| 5  | null   | null  | BULLISH|  -    |  -  |  -    |  -   | (aleatorio)| LOSS     |
+| 6  | null   | null  | BEARISH|  -    |  -  |  -    |  -   | (aleatorio)| WIN      |
+| ...| ...    | ...   | ...    | ...   | ... | ...   | ...  | ...      | ...       |
+
+- Cuando no hay mayoría ni RSI, la decisión es aleatoria.
+- Si hay empate de votos, decide MACD.
+- Si se pierde 5 veces seguidas en una dirección, la siguiente apuesta se invierte automáticamente.
+
+### Persistencia y Transparencia
+
+Todas las decisiones y señales quedan registradas en la memoria local, permitiendo auditar y analizar el comportamiento del algoritmo en cualquier momento.
+
+## Componentes Clave
+
+- **game-screen.tsx:** Pantalla principal y lógica de interacción.
+- **bet-result-modal.tsx:** Muestra el resultado de cada apuesta, con desglose de señales.
+- **bet-result-modal-automix-info.tsx:** Explica la decisión de AutoMix en detalle.
+- **autoMixMemory.ts:** Gestión y almacenamiento de señales y resultados.
+- **macd-decision.ts:** Núcleo del algoritmo de decisión multi-voto.
+
+## Integración con Binance API
+
+El sistema puede conectarse a la API de Binance para obtener datos de mercado en tiempo real, permitiendo simular apuestas sobre datos reales.
+
+## Memorias y Transparencia
+
+Cada decisión, señal y resultado se guarda en localStorage, permitiendo:
+- Revisar el histórico de apuestas y señales.
+- Auditar el comportamiento del algoritmo.
+- Analizar patrones de éxito y error.
+
+## Personalización y Extensión
+
+Puedes modificar los umbrales de los indicadores, añadir nuevas señales o cambiar la lógica de votación fácilmente editando los módulos correspondientes.
+
+## Créditos y Licencia
+
+Desarrollado por el equipo de CandleRush2. Código abierto bajo licencia MIT.
 
 ---
 
-
-
-# Fundamentos Matemáticos y Científicos
-
-#
-
-# ¿Qué es un Candlestick?
-Un candlestick es una representación gráfica de la evolución del precio de un activo en un intervalo de tiempo. Cada vela contiene:
-- **open**: precio de apertura
-- **close**: precio de cierre
-- **high**: precio máximo
-- **low**: precio mínimo
-- **volume**: volumen negociado
-
-La interpretación estadística de patrones de velas es la base de múltiples estrategias de trading cuantitativo.
-
-#
-
-# Probabilidad y Decisión
-El juego utiliza principios de probabilidad y estadística para tomar decisiones automáticas (AutoMix), simulando el razonamiento de un operador cuantitativo, pero de forma transparente y reproducible.
-
----
-
-
-
-# Sistema de Apuestas y Resolución
-
-- **Apuestas manuales**: El usuario decide dirección y cantidad.
-- **Apuestas automáticas**: Basadas en señales programadas.
-- **Apuestas AutoMix**: Decisión tomada por el algoritmo multi-voto, con desglose visible de cada señal.
-
-**Resolución:**  
-Las apuestas se resuelven al cierre de la vela objetivo. El resultado puede ser:
-- **WON**: Predicción acertada.
-- **LOST**: Predicción fallida.
-- **LIQUIDATED**: Liquidación anticipada por margen insuficiente (si se activa el apalancamiento).
-
-El modal de resultado muestra el desglose de la apuesta, y para AutoMix, un análisis detallado de los votos y señales que llevaron a la decisión.
-
----
-
-
-
-# AutoMix: Algoritmo de Decisión Multi-Voto
-
-AutoMix es el corazón científico del sistema. Su objetivo es tomar decisiones de apuesta basadas en la síntesis de múltiples señales técnicas, cada una con fundamento matemático y estadístico. El sistema es transparente y auditable: cada decisión y señal queda registrada para análisis posterior.
-
-#
-
-# Desglose de las 6 Señales (Votos)
-
-##
-
-# 1. **Mayoría de Velas**
-- **Cálculo:** Se cuentan las últimas 65 velas (excluyendo la más reciente). Si hay más bullish (cierre > apertura), se suma un voto bullish; si hay más bearish, un voto bearish.
-- **Fundamento:** La tendencia reciente suele persistir por inercia de mercado.
-
-##
-
-# 2. **RSI (Relative Strength Index)**
-- **Cálculo:**
-  \[
-  RSI = 100 - \frac{100}{1 + RS}
-  \]
-  donde \( RS = \frac{\text{ganancias medias}}{\text{pérdidas medias}} \) en las últimas 33 velas.
-- **Interpretación:**
-  - RSI > 70: sobrecompra → voto bearish.
-  - RSI < 30: sobreventa → voto bullish.
-
-##
-
-# 3. **MACD**
-- **Cálculo:**
-  - EMA12 y EMA26 sobre los cierres.
-  - MACD = EMA12 - EMA26.
-  - Señal = EMA9 del MACD.
-  - Si MACD cruza sobre señal → bullish, bajo señal → bearish.
-- **Fundamento:** El MACD es un indicador de momentum y tendencia ampliamente validado en literatura financiera.
-
-##
-
-# 4. **Valle (Apertura/Cierre)**
-- **Cálculo:** Detección de patrones de reversión (valle alcista o bajista) en la serie temporal de velas. Se analizan secuencias específicas de máximos/mínimos relativos y aperturas/cierres.
-- **Fundamento:** Los valles marcan posibles puntos de giro, basados en la teoría de ondas y patrones de reversión.
-
-##
-
-# 5. **Tendencia de Velas**
-- **Cálculo:** Últimas 70 velas, mayoría bullish o bearish.
-- **Fundamento:** Confirma tendencia de fondo y reduce el ruido de fluctuaciones cortas.
-
-##
-
-# 6. **Tendencia de Volumen**
-- **Cálculo:**
-  - Divide las últimas 30 velas en dos mitades de 15.
-  - Calcula el promedio de volumen de cada mitad.
-  - Si el volumen cae en tendencia alcista (mayoría bullish), sugiere agotamiento → voto bearish.
-  - Si el volumen sube en tendencia alcista, refuerza la tendencia → voto bullish.
-  - Lo mismo pero invertido para mayoría bearish.
-- **Fundamento:** El volumen es un validador de la fortaleza de la tendencia. Divergencias entre precio y volumen suelen anticipar giros.
-
----
-
-#
-
-# Lógica de Votación Proporcional
-
-Cada señal suma un voto a bullish o bearish. La decisión final es probabilística:
-
-\[
-P(\text{bullish}) = \frac{\text{votos bullish}}{\text{total votos}}
-\]
-
-La dirección de la apuesta se decide con un random ponderado por esa proporción. Esto introduce variabilidad, simulando la incertidumbre real de los mercados.
-
-**Ejemplo:**  
-Si hay 4 votos bullish y 2 bearish, la probabilidad de apostar bullish es 66.6%.
-
----
-
-#
-
-# Ejemplo Matemático y Persistencia
-
-Supón que para una apuesta AutoMix se obtienen los siguientes votos:
-
-- Mayoría de velas: BULLISH
-- RSI: BEARISH
-- MACD: BULLISH
-- Valle: BULLISH
-- Tendencia de velas: BEARISH
-- Tendencia de volumen: BULLISH
-
-Esto da 4 votos bullish y 2 bearish. Se almacena en memoria:
-
-```json
-{
-  "timestamp": 1681234567890,
-  "direction": "BULLISH",
-  "result": "WIN",
-  "majoritySignal": "BULLISH",
-  "rsiSignal": "BEARISH",
-  "macdSignal": "BULLISH",
-  "rsi": 28.5,
-  "macd": 0.0042,
-  "macdSignalLine": 0.0039
-}
-```
-
-Además, se guarda la tendencia de velas y volumen en memorias especializadas para análisis avanzado y backtesting.
-
----
-
-#
-
-# Justificación Estadística y Científica
-
-Cada señal está fundamentada en décadas de investigación en análisis técnico y cuantitativo:
-- **Mayoría y tendencia:** Capturan la inercia y persistencia estadística de tendencias.
-- **RSI y MACD:** Indicadores validados empíricamente en mercados líquidos.
-- **Volumen:** La teoría de Dow y estudios modernos muestran que el volumen precede al precio.
-- **Valles:** Basados en patrones de reversión, ampliamente usados en algoritmos de trading algorítmico.
-
-El sistema es auditable: toda decisión queda registrada y puede analizarse para ajustar parámetros o detectar sesgos.
-
----
-
-crypto-betting/
-├── app/                       # Rutas y layout principal
-├── components/                # Componentes UI y de juego
-│   ├── game/                  # Lógica y UI del juego principal
-│   └── ui/                    # Componentes de interfaz reutilizables
-├── context/                   # Contextos globales (juego, auth, logros)
-├── hooks/                     # Custom hooks
-├── lib/                       # Lógica de integración externa (API Binance)
-├── public/                    # Archivos estáticos
-├── styles/                    # Estilos globales
-├── types/                     # Tipos TypeScript compartidos
-├── package.json               # Dependencias y scripts
-└── README.md                  # Este archivo
-```
-
----
-
-
-
+¿Preguntas, sugerencias o mejoras? ¡Abre un issue o contribuye!
 # 6. Componentes Clave y Canvas
 
 #

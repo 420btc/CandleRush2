@@ -1,5 +1,5 @@
 import type { Candle } from "@/types/game";
-import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory } from "./autoMixMemory";
+import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry } from "./autoMixMemory";
 
 /**
  * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD.
@@ -252,8 +252,31 @@ try {
   if (volumeVote === "BULLISH") bullishVotes++;
   if (volumeVote === "BEARISH") bearishVotes++;
 
+  // --- Peso aleatorio en zonas neutras ---
+  if (!majoritySignal && rsiSignal === null) {
+    return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+  }
+
+  // --- Anti-persistencia: si últimas 5 apuestas fueron iguales y todas pérdidas/liquidadas, fuerza cambio ---
+  try {
+    const memory = getAutoMixMemory();
+    const lastN = memory.slice(-5);
+    if (
+      lastN.length === 5 &&
+      lastN.every((e: AutoMixMemoryEntry) => e.direction === lastN[0].direction) &&
+      lastN.every((e: AutoMixMemoryEntry) => e.result === "LOSS" || e.result === "LIQ")
+    ) {
+      return lastN[0].direction === "BULLISH" ? "BEARISH" : "BULLISH";
+    }
+  } catch {}
+
+  // --- Desempate con MACD ---
   const totalVotes = bullishVotes + bearishVotes;
   if (totalVotes === 0) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+  if (bullishVotes === bearishVotes) {
+    if (macdSignal) return macdSignal;
+    return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+  }
   const bullishProb = bullishVotes / totalVotes;
   return Math.random() < bullishProb ? "BULLISH" : "BEARISH";
 }
