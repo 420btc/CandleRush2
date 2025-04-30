@@ -924,6 +924,38 @@ const changeSymbol = useCallback(
         // Ya existe una apuesta automática para esta vela o la anterior, no crear otra
         return;
       }
+      // --- DECISIÓN DE DIRECCIÓN BASADA EN MACD ---
+      // Obtener el monto configurado por el usuario (ejemplo: de localStorage o estado global)
+      let userAmount = 1;
+      try {
+        const stored = localStorage.getItem('autoMixAmount');
+        if (stored) {
+          const parsed = parseFloat(stored);
+          if (!isNaN(parsed) && parsed > 0) userAmount = parsed;
+        }
+      } catch {}
+      // Opcional: la máquina puede ajustar el monto (ejemplo: sumar 10% del balance si bullish, restar 10% si bearish)
+      import("@/utils/macd-decision").then(({ decideMixDirection }) => {
+        const direction = decideMixDirection(candles);
+        let finalAmount = userAmount;
+        // Ejemplo de ajuste automático: si bullish, sumar 10% del balance; si bearish, restar 10% (pero nunca <1)
+        if (direction === "BULLISH") {
+          finalAmount += Math.max(1, Math.floor(userBalance * 0.10));
+        } else {
+          finalAmount = Math.max(1, userAmount - Math.floor(userBalance * 0.10));
+        }
+        // Limitar a saldo disponible
+        finalAmount = Math.min(finalAmount, userBalance);
+        placeBet(direction, finalAmount);
+        console.log('[AUTO MIX] Apuesta automática MIX creada (MACD)', { direction, finalAmount, candle: currentCandle.timestamp });
+      }).catch(() => {
+        const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+        let finalAmount = userAmount;
+        finalAmount = Math.min(finalAmount, userBalance);
+        placeBet(direction, finalAmount);
+        console.log('[AUTO MIX] Apuesta automática MIX creada (fallback aleatorio)', { direction, finalAmount, candle: currentCandle.timestamp });
+      });
+      return;
     }
     // Rest of the automatic betting logic...
   }, [gamePhase, currentCandle, currentCandleBets, userBalance, autoMix, currentSymbol, timeframe, betsByPair]);
