@@ -6,21 +6,102 @@ CandleRush2 es un simulador donde puedes apostar sobre la dirección futura de l
 
 ---
 
-## Arquitectura y Estructura
+## Índice
 
-El frontend está construido en React y TypeScript, con una interfaz moderna y ágil. La lógica de apuestas y señales está organizada en módulos como autoMixMemory.ts y macd-decision.ts. Todas las decisiones y resultados se almacenan localmente para su auditoría y análisis posterior.
+- [Fundamentos Matemáticos y Científicos](#fundamentos-matemáticos-y-científicos)
+- [Sistema de Apuestas y Resolución](#sistema-de-apuestas-y-resolución)
+- [AutoMix: Algoritmo de Decisión Multi-Voto](#automix-algoritmo-de-decisión-multi-voto)
+  - [Desglose de las 6 Señales](#desglose-de-las-6-señales)
+  - [Lógica de Votación Proporcional](#lógica-de-votación-proporcional)
+  - [Ejemplo Matemático y Persistencia](#ejemplo-matemático-y-persistencia)
+- [Componentes Clave y Canvas](#componentes-clave-y-canvas)
+  - [game-screen.tsx](#game-screentsx)
+  - [candlestick-chart.tsx](#candlestick-charttsx)
+  - [bet-result-modal.tsx](#bet-result-modaltsx)
+  - [autoMixMemory.ts](#automixmemoryts)
+  - [macd-decision.ts](#macd-decisionts)
+- [Integración con Binance API](#integración-con-binance-api)
+- [Memorias, Transparencia y Análisis](#memorias-transparencia-y-análisis)
+- [Extensión, Personalización y FAQ](#extensión-personalización-y-faq)
+- [Créditos y Licencia](#créditos-y-licencia)
 
 ---
 
-## Fundamentos y Lógica de Apuestas
+## Fundamentos Matemáticos y Científicos
 
-Puedes apostar manualmente, eligiendo tú mismo la dirección y el importe, o dejar que el sistema AutoMix decida por ti. AutoMix utiliza varios indicadores técnicos y patrones para intentar predecir la dirección más probable de la próxima vela.
+Explicación de los indicadores técnicos, fórmulas y lógica matemática utilizada en el sistema (RSI, MACD, Fibonacci, etc.).
 
 ---
 
-## AutoMix: Algoritmo Multi-Voto
+## Sistema de Apuestas y Resolución
 
-AutoMix analiza hasta siete señales técnicas para decidir cada apuesta:
+Descripción del flujo de una apuesta: desde la entrada, la toma de decisión, hasta la resolución (ganada, perdida, liquidada). Ejemplos prácticos y explicación de cómo se determina el resultado.
+
+---
+
+## AutoMix: Algoritmo de Decisión Multi-Voto
+
+Explicación general del algoritmo AutoMix, su objetivo y cómo integra múltiples señales para decidir.
+
+### Desglose de las 6 Señales
+
+Detalle de cada señal: cómo se calcula, qué representa y cómo influye en la decisión.
+
+### Lógica de Votación Proporcional
+
+Cómo se ponderan los votos de cada señal y cómo se llega a una decisión final.
+
+### Ejemplo Matemático y Persistencia
+
+Ejemplo concreto de una secuencia de apuestas, mostrando cómo AutoMix toma decisiones y cómo actúa la lógica anti-persistencia.
+
+---
+
+## Componentes Clave y Canvas
+
+Breve descripción de los principales archivos y componentes visuales.
+
+### game-screen.tsx
+Pantalla principal del juego y lógica de interacción.
+
+### candlestick-chart.tsx
+Componente que dibuja el gráfico de velas y visualiza las señales.
+
+### bet-result-modal.tsx
+Muestra el resultado de cada apuesta y el desglose de señales.
+
+### autoMixMemory.ts
+Módulo de almacenamiento de señales y resultados.
+
+### macd-decision.ts
+Lógica del algoritmo de decisión multi-voto basada en MACD.
+
+---
+
+## Integración con Binance API
+
+Cómo se conecta el sistema a la API de Binance para obtener datos de mercado en tiempo real.
+
+---
+
+## Memorias, Transparencia y Análisis
+
+Explicación sobre cómo se almacenan las decisiones, cómo auditar el histórico y cómo analizar patrones de éxito/error.
+
+---
+
+## Extensión, Personalización y FAQ
+
+Guía para modificar umbrales, añadir señales, personalizar la lógica y preguntas frecuentes.
+
+---
+
+## Créditos y Licencia
+
+Desarrollado por el equipo de CandleRush2. Código abierto bajo licencia MIT.
+
+¿Preguntas, sugerencias o mejoras? ¡Abre un issue o contribuye!
+
 
 - **Mayoría de velas:** Determina si han predominado las velas alcistas o bajistas en la ventana reciente.
 - **RSI:** Si el RSI supera 60 es señal alcista, si baja de 40 es bajista.
@@ -85,27 +166,6 @@ Puedes modificar los umbrales de los indicadores, añadir nuevas señales o camb
 
 Desarrollado por el equipo de CandleRush2. Código abierto bajo licencia MIT.
 
-¿Preguntas, sugerencias o mejoras? ¡Abre un issue o contribuye!
-
-3. [Fundamentos Matemáticos y Científicos](#fundamentos-matemáticos-y-científicos)
-4. [Sistema de Apuestas y Resolución](#sistema-de-apuestas-y-resolución)
-5. [AutoMix: Algoritmo de Decisión Multi-Voto](#automix-algoritmo-de-decisión-multi-voto)
-    - [Desglose de las 6 Señales](#desglose-de-las-6-señales)
-    - [Lógica de Votación Proporcional](#lógica-de-votación-proporcional)
-    - [Ejemplo Matemático y Persistencia](#ejemplo-matemático-y-persistencia)
-6. [Componentes Clave y Canvas](#componentes-clave-y-canvas)
-    - [game-screen.tsx](#game-screentsx)
-    - [candlestick-chart.tsx](#candlestick-charttsx)
-    - [bet-result-modal.tsx](#bet-result-modaltsx)
-    - [autoMixMemory.ts](#automixmemoryts)
-    - [macd-decision.ts](#macd-decisionts)
-7. [Integración con Binance API](#integración-con-binance-api)
-8. [Memorias, Transparencia y Análisis](#memorias-transparencia-y-análisis)
-9. [Extensión, Personalización y FAQ](#extensión-personalización-y-faq)
-10. [Créditos y Licencia](#créditos-y-licencia)
-
----
-
 
 
 # Introducción General
@@ -117,13 +177,15 @@ CandleRush2 es una plataforma gamificada de predicción de mercados, donde los u
 
 # Arquitectura y Estructura del Proyecto
 
-```
-crypto-betting/
-├── app/                       # Rutas y layout principal
-├── components/                # Componentes UI y de juego
-│   ├── game/                  # Lógica y UI del juego principal
-│   └── ui/                    # Componentes de interfaz reutilizables
-├── context/                   # Contextos globales (juego, auth, logros)
+El proyecto CandleRush2 está organizado para facilitar el desarrollo, la escalabilidad y la comprensión del código. A continuación se describe la estructura principal de carpetas y su propósito:
+
+- **app/**: Contiene las rutas y el layout principal de la aplicación.
+- **components/**: Incluye todos los componentes de la interfaz de usuario y del juego.
+    - Dentro de esta carpeta, `game/` alberga la lógica y la UI específica del juego principal.
+    - La subcarpeta `ui/` contiene componentes reutilizables de la interfaz.
+- **context/**: Aquí se encuentran los contextos globales, como el contexto de juego, autenticación de usuario y logros.
+
+Esta organización permite separar claramente la lógica de presentación, la gestión de estado global y los módulos reutilizables, haciendo el desarrollo más eficiente y el mantenimiento más sencillo.
 
 ## Fundamentos y Lógica de Apuestas
 
