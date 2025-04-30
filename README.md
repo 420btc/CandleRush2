@@ -2,21 +2,91 @@
 
 Bienvenido a la documentación científica y técnica de CandleRush2, el juego de apuestas algorítmicas sobre velas y tendencias del mercado cripto.
 
-## Tabla de Contenidos
-- Introducción
-- Arquitectura y Estructura
-- Fundamentos y Lógica de Apuestas
-- AutoMix: Algoritmo Multi-Voto
-  - Indicadores y Señales
-  - Lógica de Decisión y Persistencia
-  - Ejemplo de Secuencia de Apuestas
-- Componentes Clave
-- Integración con Binance API
-- Memorias y Transparencia
-- Personalización y Extensión
-- Créditos y Licencia
+CandleRush2 es un simulador donde puedes apostar sobre la dirección futura de las velas en mercados de criptomonedas. El sistema permite experimentar tanto con apuestas manuales como con estrategias automáticas, mostrando siempre la lógica detrás de cada decisión para máxima transparencia.
 
-## Introducción
+---
+
+## Arquitectura y Estructura
+
+El frontend está construido en React y TypeScript, con una interfaz moderna y ágil. La lógica de apuestas y señales está organizada en módulos como autoMixMemory.ts y macd-decision.ts. Todas las decisiones y resultados se almacenan localmente para su auditoría y análisis posterior.
+
+---
+
+## Fundamentos y Lógica de Apuestas
+
+Puedes apostar manualmente, eligiendo tú mismo la dirección y el importe, o dejar que el sistema AutoMix decida por ti. AutoMix utiliza varios indicadores técnicos y patrones para intentar predecir la dirección más probable de la próxima vela.
+
+---
+
+## AutoMix: Algoritmo Multi-Voto
+
+AutoMix analiza hasta siete señales técnicas para decidir cada apuesta:
+
+- **Mayoría de velas:** Determina si han predominado las velas alcistas o bajistas en la ventana reciente.
+- **RSI:** Si el RSI supera 60 es señal alcista, si baja de 40 es bajista.
+- **MACD:** Analiza el cruce de medias para identificar la tendencia.
+- **Fibonacci:** Detecta rebotes en niveles clave del precio.
+- **Valle:** Busca patrones de reversión en la serie de velas.
+- **Tendencia general:** Calcula la dirección predominante en las últimas 70 velas.
+- **Tendencia de volumen:** Compara cómo evoluciona el volumen respecto al precio.
+
+La decisión final se toma sumando los votos de cada señal. Si hay empate, decide el MACD. Si no hay mayoría ni RSI claro, la dirección se elige aleatoriamente. Si el sistema pierde cinco apuestas seguidas en una dirección, la siguiente apuesta se fuerza en la dirección contraria para evitar rachas largas perdedoras.
+
+### Ejemplo de funcionamiento de AutoMix
+
+Imagina que el sistema analiza las señales y obtiene:
+- Mayoría de velas: alcista
+- RSI: neutro
+- MACD: bajista
+- Valle: sin señal
+- Fibonacci: sin señal
+- Tendencia general: alcista
+- Tendencia de volumen: bajista
+
+En este caso, habría dos votos alcistas y dos bajistas. Como hay empate, el sistema mira el MACD, que es bajista, y finalmente apuesta bajista.
+
+Si todas las señales fueran neutras, la apuesta se decidiría al azar.
+
+Si el sistema apostara cinco veces seguidas en la misma dirección y perdiera todas, la sexta apuesta sería forzada en la dirección opuesta.
+
+Todas las decisiones quedan registradas para su análisis posterior.
+
+---
+
+## Componentes Clave
+
+- game-screen.tsx: Pantalla principal y lógica de interacción.
+- bet-result-modal.tsx: Muestra el resultado de cada apuesta y el desglose de señales.
+- bet-result-modal-automix-info.tsx: Explica la decisión de AutoMix en detalle.
+- autoMixMemory.ts: Almacenamiento de señales y resultados.
+- macd-decision.ts: Núcleo del algoritmo de decisión multi-voto.
+
+---
+
+## Integración con Binance API
+
+El sistema puede conectarse a la API de Binance para obtener datos de mercado en tiempo real y simular apuestas sobre datos reales.
+
+---
+
+## Memorias y Transparencia
+
+Cada decisión, señal y resultado se guarda en localStorage. Así puedes revisar el histórico, auditar el algoritmo y analizar patrones de éxito y error fácilmente.
+
+---
+
+## Personalización y Extensión
+
+Puedes modificar los umbrales de los indicadores, añadir nuevas señales o cambiar la lógica de votación editando los módulos correspondientes.
+
+---
+
+## Créditos y Licencia
+
+Desarrollado por el equipo de CandleRush2. Código abierto bajo licencia MIT.
+
+¿Preguntas, sugerencias o mejoras? ¡Abre un issue o contribuye!
+
 3. [Fundamentos Matemáticos y Científicos](#fundamentos-matemáticos-y-científicos)
 4. [Sistema de Apuestas y Resolución](#sistema-de-apuestas-y-resolución)
 5. [AutoMix: Algoritmo de Decisión Multi-Voto](#automix-algoritmo-de-decisión-multi-voto)
