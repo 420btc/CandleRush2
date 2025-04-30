@@ -156,6 +156,44 @@ export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
   if (trend === "BULLISH") bullishVotes++;
   if (trend === "BEARISH") bearishVotes++;
 
+  // --- 7. Voto por tendencia de volumen (últimas 30 velas) ---
+  // Importar función de memoria de tendencia de volumen
+  // (asegúrate de tener: import { saveVolumeTrendMemory } from "./autoMixMemory"; al inicio del archivo)
+  function volumeTrendVote(candles: Candle[]): "BULLISH" | "BEARISH" | null {
+    if (candles.length < 30) return null;
+    const last30 = candles.slice(-30);
+    const firstHalf = last30.slice(0, 15);
+    const secondHalf = last30.slice(15);
+    const avgVol1 = firstHalf.reduce((a, c) => a + (c.volume || 0), 0) / 15;
+    const avgVol2 = secondHalf.reduce((a, c) => a + (c.volume || 0), 0) / 15;
+    const bullishCount = last30.filter(c => c.close > c.open).length;
+    const bearishCount = last30.filter(c => c.close < c.open).length;
+    let majority: "BULLISH" | "BEARISH" = bullishCount >= bearishCount ? "BULLISH" : "BEARISH";
+    let volumeTrend: "UP" | "DOWN" = avgVol2 > avgVol1 ? "UP" : "DOWN";
+    let vote: "BULLISH" | "BEARISH" | null = null;
+    // Si la mayoría de las velas son bullish
+    if (bullishCount > bearishCount) {
+      if (avgVol2 < avgVol1) vote = "BEARISH"; // baja el volumen en tendencia alcista
+      if (avgVol2 > avgVol1) vote = "BULLISH"; // sube el volumen en tendencia alcista
+    }
+    // Si la mayoría son bearish
+    if (bearishCount > bullishCount) {
+      if (avgVol2 < avgVol1) vote = "BULLISH"; // baja el volumen en tendencia bajista
+      if (avgVol2 > avgVol1) vote = "BEARISH"; // sube el volumen en tendencia bajista
+    }
+    // Guardar en memoria de tendencia de volumen
+    if (vote) {
+      try {
+        // @ts-ignore
+        saveVolumeTrendMemory({ timestamp: Date.now(), avgVol1, avgVol2, volumeTrend, majority, vote });
+      } catch {}
+    }
+    return vote;
+  }
+  const volumeVote = volumeTrendVote(candles);
+  if (volumeVote === "BULLISH") bullishVotes++;
+  if (volumeVote === "BEARISH") bearishVotes++;
+
   const totalVotes = bullishVotes + bearishVotes;
   if (totalVotes === 0) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
   const bullishProb = bullishVotes / totalVotes;

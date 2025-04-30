@@ -45,6 +45,40 @@ export function getTrendMemory(): TrendMemoryEntry[] {
   }
 }
 
+// --- Memoria para tendencia de volumen (máx 333) ---
+export type VolumeTrendMemoryEntry = {
+  timestamp: number;
+  avgVol1: number;
+  avgVol2: number;
+  volumeTrend: "UP" | "DOWN";
+  majority: "BULLISH" | "BEARISH";
+  vote: "BULLISH" | "BEARISH";
+};
+
+const VOLUME_TREND_STORAGE_KEY = "volumeTrendMemory";
+const VOLUME_TREND_MAX_ENTRIES = 333;
+
+export function saveVolumeTrendMemory(entry: VolumeTrendMemoryEntry) {
+  try {
+    const raw = localStorage.getItem(VOLUME_TREND_STORAGE_KEY);
+    let arr: VolumeTrendMemoryEntry[] = raw ? JSON.parse(raw) : [];
+    arr.push(entry);
+    if (arr.length > VOLUME_TREND_MAX_ENTRIES) arr = arr.slice(-VOLUME_TREND_MAX_ENTRIES);
+    localStorage.setItem(VOLUME_TREND_STORAGE_KEY, JSON.stringify(arr));
+  } catch (e) {
+    // Falla silenciosa
+  }
+}
+
+export function getVolumeTrendMemory(): VolumeTrendMemoryEntry[] {
+  try {
+    const raw = localStorage.getItem(VOLUME_TREND_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 
 const STORAGE_KEY = "autoMixMemory";
 const MAX_ENTRIES = 999;
