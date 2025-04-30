@@ -6,19 +6,19 @@ import type { Candle } from "@/types/game";
  * @returns {"BULLISH" | "BEARISH"} Dirección sugerida
  */
 export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
-  if (candles.length < 33) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+  if (candles.length < 66) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
 
-  // Tomar las últimas 33 velas
-  const last33 = candles.slice(-33);
+  // Tomar las últimas 66 velas
+  const last66 = candles.slice(-66);
   // Contar verdes (alcistas) y rojas (bajistas)
-  const bullishCount = last33.filter(c => c.close > c.open).length;
-  const bearishCount = last33.length - bullishCount;
+  const bullishCount = last66.filter(c => c.close > c.open).length;
+  const bearishCount = last66.length - bullishCount;
 
   // Probabilidad 90% según mayoría
   if (bullishCount > bearishCount) {
-    return Math.random() < 0.9 ? "BULLISH" : "BEARISH";
+    return Math.random() < 0.95 ? "BULLISH" : "BEARISH";
   } else if (bearishCount > bullishCount) {
-    return Math.random() < 0.9 ? "BEARISH" : "BULLISH";
+    return Math.random() < 0.95 ? "BEARISH" : "BULLISH";
   } else {
     // Si empate, aleatorio
     return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
@@ -27,8 +27,8 @@ export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
 
 // Para uso futuro: exportar la proporción
 export function getMacdBullishRatio(candles: Candle[]): number {
-  if (candles.length < 33) return 0.5;
-  const last33 = candles.slice(-33);
-  const bullishCount = last33.filter(c => c.close > c.open).length;
-  return bullishCount / 33;
+  if (candles.length < 66) return 0.5;
+  const last66 = candles.slice(-66);
+  const bullishCount = last66.filter(c => c.close > c.open).length;
+  return bullishCount / 66;
 }
