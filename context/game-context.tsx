@@ -900,6 +900,7 @@ const changeSymbol = useCallback(
   // Automatic betting system
   // --- HISTORIAL PARA MIX ---
   const mixHistoryRef = useRef<string[]>([]);
+  const betAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Solo permitir apuestas automáticas si la vela está inicializada (close distinto de open)
@@ -939,12 +940,22 @@ const changeSymbol = useCallback(
         const direction = decideMixDirection(candles);
         let finalAmount = userAmount;
         finalAmount = Math.min(finalAmount, userBalance);
+        // --- SONIDO DE APUESTA ---
+        if (betAudioRef.current) {
+          betAudioRef.current.currentTime = 0;
+          betAudioRef.current.play();
+        }
         placeBet(direction, finalAmount);
         console.log('[AUTO MIX] Apuesta automática MIX creada (MACD)', { direction, finalAmount, candle: currentCandle.timestamp });
       }).catch(() => {
         const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
         let finalAmount = userAmount;
         finalAmount = Math.min(finalAmount, userBalance);
+        // --- SONIDO DE APUESTA ---
+        if (betAudioRef.current) {
+          betAudioRef.current.currentTime = 0;
+          betAudioRef.current.play();
+        }
         placeBet(direction, finalAmount);
         console.log('[AUTO MIX] Apuesta automática MIX creada (fallback aleatorio)', { direction, finalAmount, candle: currentCandle.timestamp });
       });
