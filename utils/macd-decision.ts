@@ -78,6 +78,57 @@ export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
   if (macdSignal === "BULLISH") bullishVotes++;
   if (macdSignal === "BEARISH") bearishVotes++;
 
+  // --- 5. Voto por apertura/cierre de valle (ventana amplia) ---
+  function detectValleyVote(candles: Candle[]): "BULLISH" | "BEARISH" | null {
+    if (candles.length < 66) return null;
+    const window = candles.slice(-66);
+    // Detectar apertura/cierre de valle en la ventana amplia
+    for (let i = 2; i < window.length - 1; i++) {
+      const prev2 = window[i - 2];
+      const prev1 = window[i - 1];
+      const curr = window[i];
+      const next = window[i + 1];
+      // Apertura de valle alcista: mínimo local seguido de vela verde
+      if (
+        prev2.close > prev1.close &&
+        prev1.close < curr.close &&
+        curr.close > curr.open // verde
+      ) {
+        return "BULLISH";
+      }
+      // Apertura de valle bajista: máximo local seguido de vela roja
+      if (
+        prev2.close < prev1.close &&
+        prev1.close > curr.close &&
+        curr.close < curr.open // roja
+      ) {
+        return "BEARISH";
+      }
+      // Cierre de valle alcista: tras subida, aparece una roja
+      if (
+        prev2.close < prev1.close &&
+        prev1.close < curr.close &&
+        next.close < curr.close &&
+        curr.close < curr.open // roja
+      ) {
+        return "BEARISH";
+      }
+      // Cierre de valle bajista: tras bajada, aparece una verde
+      if (
+        prev2.close > prev1.close &&
+        prev1.close > curr.close &&
+        next.close > curr.close &&
+        curr.close > curr.open // verde
+      ) {
+        return "BULLISH";
+      }
+    }
+    return null;
+  }
+  const valleyVote = detectValleyVote(candles);
+  if (valleyVote === "BULLISH") bullishVotes++;
+  if (valleyVote === "BEARISH") bearishVotes++;
+
   if (bullishVotes > bearishVotes) return "BULLISH";
   if (bearishVotes > bullishVotes) return "BEARISH";
   // Empate: aleatorio
