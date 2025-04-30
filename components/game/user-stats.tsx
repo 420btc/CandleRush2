@@ -316,20 +316,20 @@ export default function UserStats() {
         </div>
         <span className="font-black text-lg text-white">{winRate.toFixed(1)}%</span>
       </div>
-      <div className="grid grid-cols-3 gap-2 mt-4 text-white">
-        <div className="bg-zinc-900/60 p-2 rounded-lg text-center text-white">
-          <p className="text-xs text-zinc-400 text-white">Total</p>
-          <p className="font-black text-white">{totalBets}</p>
+      <div className="grid grid-cols-3 gap-2 mt-4 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif]">
+        <div className="bg-zinc-900/80 border border-yellow-300/40 p-2 rounded-lg text-center text-white">
+          <p className="text-xs font-bold text-yellow-200 drop-shadow-sm">Total</p>
+          <p className="font-black text-white text-shadow-lg" style={{textShadow:'0 1px 6px #FFD60055'}}>{totalBets}</p>
         </div>
-        <div className="bg-green-900/30 p-2 rounded-lg text-center text-white">
-          <p className="text-xs font-bold text-green-400 text-white">Ganadas</p>
-          <p className="font-black text-green-400 text-white">{wonBets}</p>
+        <div className="bg-green-900/50 border border-green-400/30 p-2 rounded-lg text-center text-white">
+          <p className="text-xs font-bold text-green-300 drop-shadow-sm">Ganadas</p>
+          <p className="font-black text-green-200 text-shadow-lg" style={{textShadow:'0 1px 6px #00FF8555'}}>{wonBets}</p>
         </div>
-        <div className="bg-red-900/30 p-2 rounded-lg text-center text-white">
-          <p className="text-xs font-bold text-red-400 text-white">Perdidas</p>
-          <p className="font-black text-red-400 text-white">{lostBets}</p>
+        <div className="bg-red-900/50 border border-red-400/30 p-2 rounded-lg text-center text-white">
+          <p className="text-xs font-bold text-red-300 drop-shadow-sm">Perdidas</p>
+          <p className="font-black text-red-200 text-shadow-lg" style={{textShadow:'0 1px 6px #FF222255'}}>{lostBets}</p>
         </div>
       </div>
     </div>
-  )
+  );
 }
