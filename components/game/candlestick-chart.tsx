@@ -510,10 +510,16 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         // Si la vela tiene apuestas, dibujar un glow (resplandor)
         if (candleBets && candleBets.length > 0) {
           ctx.save();
-          ctx.shadowColor = '#fff666'; // Glow amarillo puro, más fuerte
-          ctx.shadowBlur = 9;
-          ctx.globalAlpha = 3;
+          ctx.shadowColor = '#fff666'; // Glow amarillo más suave
+          ctx.shadowBlur = 3;
+          ctx.globalAlpha = 1.2;
           ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+          // Si la vela tiene apuestas, dibujar un borde amarillo punteado (estático)
+          ctx.strokeStyle = '#FFD700';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 4]);
+          ctx.strokeRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+          ctx.setLineDash([]);
           ctx.restore();
         }
         // Draw candle body
@@ -522,15 +528,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
         ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
-        // Si la vela tiene apuestas, dibujar un borde amarillo
-        if (candleBets && candleBets.length > 0) {
-          ctx.strokeStyle = '#FFD700';
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([6, 4]);
-          ctx.lineDashOffset = -((Date.now() / 10) % 20); // animación más rápida
-          ctx.strokeRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
-          ctx.setLineDash([]);
-        }
+
         ctx.restore();
 
        // Draw wicks
