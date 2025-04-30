@@ -7,7 +7,29 @@ import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, 
  * @returns {"BULLISH" | "BEARISH"} Dirección sugerida
  */
 export function decideMixDirection(candles: Candle[], timeframe: string = "1m"): "BULLISH" | "BEARISH" {
-  if (candles.length < 66) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+  // --- 0. 5% de probabilidad de decisión completamente aleatoria ---
+  if (Math.random() < 0.05) {
+    const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+    // Guardar memoria con wasRandom: true
+    try {
+      const entry: AutoMixMemoryEntry = {
+        timestamp: Date.now(),
+        direction,
+        result: null,
+        majoritySignal: null,
+        rsiSignal: null,
+        macdSignal: null,
+        valleyVote: null,
+        rsi: 0,
+        macd: 0,
+        macdSignalLine: 0,
+        wasRandom: true,
+      };
+      // @ts-ignore
+      saveAutoMixMemory(entry);
+    } catch {}
+    return direction;
+  }
 
   // --- 1. Señal de mayoría (últimas 65 velas, excluyendo la más reciente) ---
   const last65 = candles.slice(-66, -1);
@@ -181,16 +203,15 @@ try {
   let bullishVotes = 0;
   let bearishVotes = 0;
   if (rsiSignal === "BULLISH") bullishVotes++;
-  if (rsiSignal === "BEARISH") bearishVotes++;
   if (valleyVote === "BULLISH") bullishVotes++;
   if (valleyVote === "BEARISH") bearishVotes++;
   if (majoritySignal === "BULLISH") bullishVotes++;
   if (majoritySignal === "BEARISH") bearishVotes++;
   if (macdSignal === "BULLISH") bullishVotes++;
   if (macdSignal === "BEARISH") bearishVotes++;
-  // Fibonacci: peso bajo (0.5 voto)
-  if (fibResult.vote === "BULLISH") bullishVotes += 0.5;
-  if (fibResult.vote === "BEARISH") bearishVotes += 0.5;
+  // Fibonacci: peso bajo (2 votos)
+  if (fibResult.vote === "BULLISH") bullishVotes += 2;
+  if (fibResult.vote === "BEARISH") bearishVotes += 2;
 
   // --- 6. Voto por tendencia y conteo de velas (últimas 70) ---
   // Importar función de memoria de tendencia

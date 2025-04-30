@@ -12,6 +12,7 @@ export type AutoMixMemoryEntry = {
   rsi: number;
   macd: number;
   macdSignalLine: number;
+  wasRandom?: boolean; // true si la apuesta fue aleatoria
 };
 
 // --- Memoria para tendencia y conteo de velas (máx 666) ---

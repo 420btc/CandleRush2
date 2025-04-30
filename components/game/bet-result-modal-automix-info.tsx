@@ -34,58 +34,136 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
   const autoMixMem = React.useMemo(() => getAutoMixMemory(), []);
   const trendMem = React.useMemo(() => getTrendMemory(), []);
   const volumeMem = React.useMemo(() => getVolumeTrendMemory(), []);
-
   const valleyMem = React.useMemo(() => getValleyMemory(), []);
   const rsiMem = React.useMemo(() => getRsiMemory(), []);
   const fibonacciMem = React.useMemo(() => getFibonacciMemory(), []);
 
+  // --- Inicialización de todas las entradas de memoria ---
   const entry: AutoMixMemoryEntry | null = React.useMemo(() => {
-    // Buscar por timestamp más cercano (tolerancia 60s)
     return findClosestEntry(autoMixMem, betTimestamp, 60000);
   }, [autoMixMem, betTimestamp]);
-
-  const rsiEntry: RsiMemoryEntry | null = React.useMemo(() => {
-    return findClosestEntry(rsiMem, betTimestamp, 60000);
-  }, [rsiMem, betTimestamp]);
-
-  const fibonacciEntry: FibonacciMemoryEntry | null = React.useMemo(() => {
-    return findClosestEntry(fibonacciMem, betTimestamp, 60000);
-  }, [fibonacciMem, betTimestamp]);
-
-  const trendEntry: TrendMemoryEntry | null = React.useMemo(() => {
-    return findClosestEntry(trendMem, betTimestamp, 60000);
-  }, [trendMem, betTimestamp]);
-
-  const volumeEntry: VolumeTrendMemoryEntry | null = React.useMemo(() => {
-    return findClosestEntry(volumeMem, betTimestamp, 60000);
-  }, [volumeMem, betTimestamp]);
-
-  const valleyEntry: ValleyMemoryEntry | null = React.useMemo(() => {
-    return findClosestEntry(valleyMem, betTimestamp, 60000);
-  }, [valleyMem, betTimestamp]);
-
-  if (!entry) return null;
+  const rsiEntry: RsiMemoryEntry | null = React.useMemo(() => findClosestEntry(rsiMem, betTimestamp, 60000), [rsiMem, betTimestamp]);
+  const fibonacciEntry: FibonacciMemoryEntry | null = React.useMemo(() => findClosestEntry(fibonacciMem, betTimestamp, 60000), [fibonacciMem, betTimestamp]);
+  const trendEntry: TrendMemoryEntry | null = React.useMemo(() => findClosestEntry(trendMem, betTimestamp, 60000), [trendMem, betTimestamp]);
+  const volumeEntry: VolumeTrendMemoryEntry | null = React.useMemo(() => findClosestEntry(volumeMem, betTimestamp, 60000), [volumeMem, betTimestamp]);
+  const valleyEntry: ValleyMemoryEntry | null = React.useMemo(() => findClosestEntry(valleyMem, betTimestamp, 60000), [valleyMem, betTimestamp]);
 
   // Determinar el voto de valle a mostrar: prioridad memoria de valle, luego memoria principal, luego 'Sin dato'
-  const displayValleyVote = valleyEntry?.valleyVote ?? entry.valleyVote ?? null;
+  const displayValleyVote = valleyEntry?.valleyVote ?? entry?.valleyVote ?? null;
+
+  // --- Cálculo de mayoría de votos ponderados SOLO si no fue aleatorio ---
+  const getMajorityVotes = () => {
+    let bullishVotes = 0;
+    let bearishVotes = 0;
+    if (rsiEntry?.rsiSignal === "BULLISH") bullishVotes += 2;
+    if (rsiEntry?.rsiSignal === "BEARISH") bearishVotes += 2;
+    if (displayValleyVote === "BULLISH") bullishVotes++;
+    if (displayValleyVote === "BEARISH") bearishVotes++;
+    if (entry?.majoritySignal === "BULLISH") bullishVotes++;
+    if (entry?.majoritySignal === "BEARISH") bearishVotes++;
+    if (entry?.macdSignal === "BULLISH") bullishVotes++;
+    if (entry?.macdSignal === "BEARISH") bearishVotes++;
+    if (fibonacciEntry?.fibVote === "BULLISH") bullishVotes += 2;
+    if (fibonacciEntry?.fibVote === "BEARISH") bearishVotes += 2;
+    if (trendEntry?.trend === "BULLISH") bullishVotes++;
+    if (trendEntry?.trend === "BEARISH") bearishVotes++;
+    if (volumeEntry?.vote === "BULLISH") bullishVotes++;
+    if (volumeEntry?.vote === "BEARISH") bearishVotes++;
+    const totalVotes = bullishVotes + bearishVotes;
+    let mainMajority = null;
+    if (bullishVotes > bearishVotes) mainMajority = 'BULLISH';
+    else if (bearishVotes > bullishVotes) mainMajority = 'BEARISH';
+    else if (bullishVotes === bearishVotes && totalVotes > 0) mainMajority = 'EMPATE';
+    return {bullishVotes, bearishVotes, totalVotes, mainMajority};
+  };
+  const {bullishVotes, bearishVotes, totalVotes, mainMajority} = entry?.wasRandom ? {bullishVotes:0,bearishVotes:0,totalVotes:0,mainMajority:null} : getMajorityVotes();
+
+  if (!entry) return null;
 
   return (
     <div className="mt-1 rounded-lg border-2 border-yellow-400 bg-black/90 p-1 text-left shadow-md">
       <div className="font-bold text-yellow-300 text-xs mb-0.5 leading-tight">AutoMix: Decisión y votos</div>
       <div className="flex flex-wrap gap-1 mb-0.5">
-        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Dirección: <b>{entry.direction}</b></span>
-        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Resultado: <b>{entry.result}</b></span>
+        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Dirección: <b>{entry?.direction ?? 'Sin dato'}</b></span>
+        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Resultado: <b>{entry?.result ?? 'Sin dato'}</b></span>
       </div>
-      <div className="grid grid-cols-4 gap-2 mt-2">
-        {/* Mayoría */}
-        <div className={`${entry.majoritySignal === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : entry.majoritySignal === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
-          <b>Mayoría:</b> <span className="font-mono">{entry.majoritySignal ?? '-'}</span>
+      <div className={`grid gap-2 mt-2`}>
+        {/* Tarjeta GRANDE de mayoría de votos ponderados */}
+        {(() => {
+          // Cálculo de votos ponderados
+          let bullishVotes = 0;
+          let bearishVotes = 0;
+          // RSI: 2 votos
+          if (rsiEntry?.rsiSignal === "BULLISH") bullishVotes += 2;
+          if (rsiEntry?.rsiSignal === "BEARISH") bearishVotes += 2;
+          // Valle
+          if (displayValleyVote === "BULLISH") bullishVotes++;
+          if (displayValleyVote === "BEARISH") bearishVotes++;
+          // MajoritySignal
+          if (entry?.majoritySignal === "BULLISH") bullishVotes++;
+          if (entry?.majoritySignal === "BEARISH") bearishVotes++;
+          // MACD
+          if (entry?.macdSignal === "BULLISH") bullishVotes++;
+          if (entry?.macdSignal === "BEARISH") bearishVotes++;
+          // Fibonacci: 2 votos
+          if (fibonacciEntry?.fibVote === "BULLISH") bullishVotes += 2;
+          if (fibonacciEntry?.fibVote === "BEARISH") bearishVotes += 2;
+          // Tendencia
+          if (trendEntry?.trend === "BULLISH") bullishVotes++;
+          if (trendEntry?.trend === "BEARISH") bearishVotes++;
+          // Tendencia volumen
+          if (volumeEntry?.vote === "BULLISH") bullishVotes++;
+          if (volumeEntry?.vote === "BEARISH") bearishVotes++;
+          const totalVotes = bullishVotes + bearishVotes;
+          const pctBull = totalVotes > 0 ? (bullishVotes / totalVotes * 100).toFixed(1) : '0.0';
+          const pctBear = totalVotes > 0 ? (bearishVotes / totalVotes * 100).toFixed(1) : '0.0';
+          let mainMajority = null;
+          if (bullishVotes > bearishVotes) mainMajority = 'BULLISH';
+          else if (bearishVotes > bullishVotes) mainMajority = 'BEARISH';
+          else if (bullishVotes === bearishVotes && totalVotes > 0) mainMajority = 'EMPATE';
+          return (
+            <>
+              <div className={`col-span-4 md:col-span-8 bg-black/80 text-yellow-200 rounded px-2 py-1 text-[14px] font-bold flex items-center justify-center border-2 border-yellow-400 shadow-lg mb-2`}>
+                <span className="text-lg">🔝 Mayoría de votos: <b>{mainMajority === 'EMPATE' ? 'Empate' : (mainMajority ?? 'Sin dato')}</b> <span className="text-xs">({pctBull}% Bullish / {pctBear}% Bearish)</span></span>
+<span className="block text-[10px] text-white font-light mt-0.5">Nota: Fibonacci y RSI valen 2 votos</span>
+              </div>
+              {/* Desglose de votos */}
+              <div className="col-span-4 md:col-span-8 flex flex-row gap-2 justify-center mb-2">
+                <span className="bg-green-900/70 text-yellow-300 rounded px-2 py-0.5 text-xs font-mono">Bullish: {bullishVotes}</span>
+                <span className="bg-red-900/70 text-yellow-300 rounded px-2 py-0.5 text-xs font-mono">Bearish: {bearishVotes}</span>
+                <span className="bg-neutral-800/80 text-neutral-300 rounded px-2 py-0.5 text-xs font-mono">Total: {totalVotes}</span>
+<span className="text-[10px] text-neutral-300 font-mono ml-2 align-middle">
+  RSI:{rsiEntry?.rsiSignal === 'BULLISH' ? '+2' : rsiEntry?.rsiSignal === 'BEARISH' ? '-2' : '0'},
+  Fib:{fibonacciEntry?.fibVote === 'BULLISH' ? '+2' : fibonacciEntry?.fibVote === 'BEARISH' ? '-2' : '0'},
+  Mayoría:{entry?.majoritySignal === 'BULLISH' ? '+1' : entry?.majoritySignal === 'BEARISH' ? '-1' : '0'},
+  MACD:{entry?.macdSignal === 'BULLISH' ? '+1' : entry?.macdSignal === 'BEARISH' ? '-1' : '0'},
+  Valle:{displayValleyVote === 'BULLISH' ? '+1' : displayValleyVote === 'BEARISH' ? '-1' : '0'},
+  Tend:{trendEntry?.trend === 'BULLISH' ? '+1' : trendEntry?.trend === 'BEARISH' ? '-1' : '0'},
+  Vol:{volumeEntry?.vote === 'BULLISH' ? '+1' : volumeEntry?.vote === 'BEARISH' ? '-1' : '0'}
+</span>
+              </div>
+            </>
+          );
+        })()}
+        {/* Octava tarjeta: Aleatoria */}
+        {entry.wasRandom && (
+          <div className="col-span-4 md:col-span-8 bg-yellow-400 text-black rounded px-2 py-1 text-[15px] font-bold flex items-center justify-center border-2 border-yellow-600 animate-pulse mb-2">
+            <span>🃏 Decisión <b>ALEATORIA</b> (5%)</span>
+          </div>
+        )}
+        {/* Tarjetas individuales */}
+        {/* RSI Detallado */}
+        <div className={`${rsiEntry?.rsiSignal === 'BULLISH' || entry?.rsiSignal === 'BULLISH'
+  ? 'bg-green-900/70'
+  : (rsiEntry?.rsiSignal === 'BEARISH' || entry?.rsiSignal === 'BEARISH')
+    ? 'bg-red-900/70'
+    : (rsiEntry?.rsi !== undefined && rsiEntry.rsi >= 40 && rsiEntry.rsi <= 60)
+      ? 'bg-blue-900/70' // zona neutra (RSI entre 40-60)
+      : 'bg-neutral-800/80'
+} text-yellow-300 rounded px-1 py-0.5 text-[11px] leading-tight`}>
+          <b>RSI:</b> <span className="font-mono">{rsiEntry?.rsiSignal === 'BULLISH' ? 'BULLISH' : rsiEntry?.rsiSignal === 'BEARISH' ? 'BEARISH' : (rsiEntry?.rsi !== undefined && rsiEntry.rsi >= 40 && rsiEntry.rsi <= 60) ? 'Zona neutra' : 'Sin dato'} ({rsiEntry?.rsi !== undefined ? rsiEntry.rsi.toFixed(2) : 'Sin dato'})</span>
         </div>
-        {/* RSI */}
-        <div className={`${(rsiEntry?.rsiSignal === 'BULLISH' || (!rsiEntry || rsiEntry.rsiSignal == null) && entry.direction === 'BULLISH') ? 'bg-green-900/70 text-yellow-300' : (rsiEntry?.rsiSignal === 'BEARISH' || (!rsiEntry || rsiEntry.rsiSignal == null) && entry.direction === 'BEARISH') ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
-  <b>RSI:</b> <span className="font-mono">{rsiEntry ? (rsiEntry.rsiSignal ?? entry.direction) : entry.direction} ({rsiEntry?.rsi !== undefined ? rsiEntry.rsi.toFixed(2) : 'Sin dato'})</span>
-</div>
-        {/* MACD */}
+        {/* MACD Detallado */}
         <div className={`${entry.macdSignal === 'BULLISH' ? 'bg-green-900/70' : entry.macdSignal === 'BEARISH' ? 'bg-red-900/70' : 'bg-black/60'} rounded px-1 py-0.5 text-yellow-300 text-[11px] leading-tight`}>
           <b>MACD:</b> <span className="font-mono">{entry.macdSignal ? entry.macdSignal : 'Sin dato'} ({entry.macd !== undefined ? entry.macd.toFixed(2) : 'Sin dato'})</span>
         </div>
@@ -93,7 +171,7 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
         <div className={`${fibonacciEntry?.fibVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : fibonacciEntry?.fibVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
           <b>Fibonacci:</b> <span className="font-mono">{fibonacciEntry?.fibVote ?? 'Sin dato'}{fibonacciEntry?.level ? ` (${fibonacciEntry.level})` : ''} {fibonacciEntry?.price !== undefined ? `@${fibonacciEntry.price.toFixed(2)}` : ''}</span>
         </div>
-        {/* Valle */}
+        {/* Valle Detallado */}
         <div className={`${valleyEntry?.valleyVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : valleyEntry?.valleyVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
           <b>Valle:</b> <span className="font-mono">{valleyEntry?.valleyVote ?? 'Sin dato'}</span>
         </div>
@@ -102,10 +180,10 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
           <b>Tend. Velas:</b> <span className="font-mono">{trendEntry?.trend ?? 'Sin dato'}</span>
         </div>
         {/* Tendencia Volumen */}
-        <div className={`${(volumeEntry?.vote === 'BULLISH' || (!volumeEntry || volumeEntry.vote == null) && entry.direction === 'BULLISH') ? 'bg-green-900/70 text-yellow-300' : (volumeEntry?.vote === 'BEARISH' || (!volumeEntry || volumeEntry.vote == null) && entry.direction === 'BEARISH') ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
-  <b>Tend. Volumen:</b> <span className="font-mono">{volumeEntry ? (volumeEntry.vote ?? entry.direction) : entry.direction}</span>
-  <span className="ml-2 text-xs">{volumeEntry ? `Vol1: ${volumeEntry.avgVol1.toFixed(2)}, Vol2: ${volumeEntry.avgVol2.toFixed(2)}, ${volumeEntry.volumeTrend === 'UP' ? '▲' : '▼'} (${volumeEntry.majority})` : ''}</span>
-</div>
+        <div className={`${(volumeEntry?.vote === 'BULLISH' || (!volumeEntry && entry?.direction === 'BULLISH')) ? 'bg-green-900/70 text-yellow-300' : (volumeEntry?.vote === 'BEARISH' || (!volumeEntry && entry?.direction === 'BEARISH')) ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+          <b>Tend. Volumen:</b> <span className="font-mono">{volumeEntry ? (volumeEntry.vote ?? entry?.direction ?? 'Sin dato') : (entry?.direction ?? 'Sin dato')}</span>
+          <span className="ml-2 text-xs">{volumeEntry ? `Vol1: ${volumeEntry.avgVol1?.toFixed(2)}, Vol2: ${volumeEntry.avgVol2?.toFixed(2)}, ${volumeEntry.volumeTrend === 'UP' ? '▲' : '▼'} (${volumeEntry.majority})` : ''}</span>
+        </div>
       </div>
     </div>
   );
