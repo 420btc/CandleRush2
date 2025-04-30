@@ -35,8 +35,8 @@ export function decideMixDirection(candles: Candle[], timeframe: string = "1m"):
   }
   const rsi = calcRSI(candles);
   let rsiSignal: "BULLISH" | "BEARISH" | null = null;
-  if (rsi > 70) rsiSignal = "BEARISH";
-  else if (rsi < 30) rsiSignal = "BULLISH";
+  if (rsi > 60) rsiSignal = "BULLISH";
+  else if (rsi < 40) rsiSignal = "BEARISH";
   // Guardar en memoria dedicada de RSI
   try {
     saveRsiMemory({ timestamp: Date.now(), rsi, rsiSignal });

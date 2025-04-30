@@ -126,9 +126,7 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
             </div>
           </div>
           {/* SOLO para apuestas AutoMix: mostrar desglose de votos y decisión */}
-          {isAutoMixBet(bet) && (
-            <BetResultAutoMixInfo betId={bet.id} betTimestamp={bet.timestamp} />
-          )}
+          <BetResultAutoMixInfo betId={bet.id} betTimestamp={bet.timestamp} />
         </div>
       </DialogContent>
     </Dialog>
