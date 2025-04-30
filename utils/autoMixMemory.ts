@@ -28,6 +28,12 @@ export function saveAutoMixMemory(entry: AutoMixMemoryEntry) {
   }
 }
 
+export function clearAutoMixMemory() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {}
+}
+
 export function getAutoMixMemory(): AutoMixMemoryEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
