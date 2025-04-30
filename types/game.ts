@@ -17,6 +17,7 @@ export interface Bet {
   prediction: "BULLISH" | "BEARISH"
   amount: number
   timestamp: number
+  candleTimestamp: number; // NUEVO: timestamp exacto de la vela a la que pertenece la apuesta
   status: "PENDING" | "WON" | "LOST" | "LIQUIDATED"
   resolvedAt?: number
   symbol: string

@@ -552,7 +552,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setBetsByPair((prev) => {
         const symbolBets = { ...(prev[currentSymbol] || {}) };
         let tfBets = (symbolBets[timeframe] || []).map((bet) => {
-           if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet;
+           // SOLO resolver apuestas de la vela que se está cerrando (usando candleTimestamp)
+           if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe || bet.candleTimestamp !== candle.timestamp) return bet;
 
            // Lógica de liquidación automática para apuestas con leverage
            let wasLiquidated = false;
@@ -771,6 +772,7 @@ if (amount <= 0 || amount > userBalance) {
         prediction,
         amount,
         timestamp: candleTimestamp + Math.floor(Math.random() * 10000), // Simula aleatorio dentro de la vela
+        candleTimestamp: candleTimestamp, // NUEVO: timestamp exacto de la vela
         status: "PENDING",
         symbol: currentSymbol,
         timeframe,
