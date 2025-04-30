@@ -13,6 +13,39 @@ export type AutoMixMemoryEntry = {
   macdSignalLine: number;
 };
 
+// --- Memoria para tendencia y conteo de velas (máx 666) ---
+export type TrendMemoryEntry = {
+  timestamp: number;
+  bullishCount: number;
+  bearishCount: number;
+  trend: "BULLISH" | "BEARISH" | null;
+};
+
+const TREND_STORAGE_KEY = "trendMemory";
+const TREND_MAX_ENTRIES = 666;
+
+export function saveTrendMemory(entry: TrendMemoryEntry) {
+  try {
+    const raw = localStorage.getItem(TREND_STORAGE_KEY);
+    let arr: TrendMemoryEntry[] = raw ? JSON.parse(raw) : [];
+    arr.push(entry);
+    if (arr.length > TREND_MAX_ENTRIES) arr = arr.slice(-TREND_MAX_ENTRIES);
+    localStorage.setItem(TREND_STORAGE_KEY, JSON.stringify(arr));
+  } catch (e) {
+    // Falla silenciosa
+  }
+}
+
+export function getTrendMemory(): TrendMemoryEntry[] {
+  try {
+    const raw = localStorage.getItem(TREND_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+
 const STORAGE_KEY = "autoMixMemory";
 const MAX_ENTRIES = 999;
 

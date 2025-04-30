@@ -1,4 +1,5 @@
 import type { Candle } from "@/types/game";
+import { saveTrendMemory } from "./autoMixMemory";
 
 /**
  * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD.
@@ -132,6 +133,28 @@ export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
   if (majoritySignal === "BEARISH") bearishVotes++;
   if (macdSignal === "BULLISH") bullishVotes++;
   if (macdSignal === "BEARISH") bearishVotes++;
+
+  // --- 6. Voto por tendencia y conteo de velas (últimas 70) ---
+  // Importar función de memoria de tendencia
+  // (asegúrate de tener: import { saveTrendMemory } from "./autoMixMemory"; al inicio del archivo)
+  function trendVote(candles: Candle[]): "BULLISH" | "BEARISH" | null {
+    if (candles.length < 70) return null;
+    const last70 = candles.slice(-70);
+    const bullishCount = last70.filter(c => c.close > c.open).length;
+    const bearishCount = last70.filter(c => c.close < c.open).length;
+    let trend: "BULLISH" | "BEARISH" | null = null;
+    if (bullishCount > bearishCount) trend = "BULLISH";
+    else if (bearishCount > bullishCount) trend = "BEARISH";
+    // Guardar en memoria de tendencia
+    try {
+      // @ts-ignore
+      saveTrendMemory({ timestamp: Date.now(), bullishCount, bearishCount, trend });
+    } catch {}
+    return trend;
+  }
+  const trend = trendVote(candles);
+  if (trend === "BULLISH") bullishVotes++;
+  if (trend === "BEARISH") bearishVotes++;
 
   const totalVotes = bullishVotes + bearishVotes;
   if (totalVotes === 0) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
