@@ -16,8 +16,8 @@ export function decideMixDirection(candles: Candle[]): "BULLISH" | "BEARISH" {
   if (bullishCount > bearishCount) majoritySignal = "BULLISH";
   else if (bearishCount > bullishCount) majoritySignal = "BEARISH";
 
-  // --- 2. Señal RSI (última vela usando 14 previas) ---
-  function calcRSI(candles: Candle[], period = 14): number {
+  // --- 2. Señal RSI (última vela usando 33 previas) ---
+  function calcRSI(candles: Candle[], period = 33): number {
     if (candles.length < period + 1) return 50;
     let gains = 0, losses = 0;
     for (let i = candles.length - period; i < candles.length; i++) {
