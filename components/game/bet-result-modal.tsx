@@ -19,6 +19,20 @@ interface BetResultModalProps {
 import type { Bet } from "@/types/game";
 
 import React, { useRef, useEffect } from "react";
+import { BetResultAutoMixInfo } from "./bet-result-modal-automix-info";
+import { getAutoMixMemory } from "@/utils/autoMixMemory";
+
+// Helper para detectar si una apuesta es AutoMix
+function isAutoMixBet(bet: Bet): boolean {
+  // Busca una entrada en la memoria de AutoMix con timestamp cercano y misma dirección
+  try {
+    const mem = getAutoMixMemory();
+    return mem.some(e => Math.abs(e.timestamp - bet.timestamp) < 60000 && e.direction === bet.prediction);
+  } catch {
+    return false;
+  }
+}
+
 
 export default function BetResultModal({ open, onOpenChange, result }: BetResultModalProps) {
   const liquidatedAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -111,6 +125,10 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
               <div className={`font-mono text-xl break-words ${diff > 0 ? "text-green-400" : diff < 0 ? "text-red-400" : "text-white"}`}>{diff > 0 ? "+" : ""}${diff.toFixed(2)}</div>
             </div>
           </div>
+          {/* SOLO para apuestas AutoMix: mostrar desglose de votos y decisión */}
+          {isAutoMixBet(bet) && (
+            <BetResultAutoMixInfo betId={bet.id} betTimestamp={bet.timestamp} />
+          )}
         </div>
       </DialogContent>
     </Dialog>
