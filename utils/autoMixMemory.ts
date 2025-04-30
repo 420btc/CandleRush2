@@ -14,7 +14,7 @@ export type AutoMixMemoryEntry = {
 };
 
 const STORAGE_KEY = "autoMixMemory";
-const MAX_ENTRIES = 500;
+const MAX_ENTRIES = 999;
 
 export function saveAutoMixMemory(entry: AutoMixMemoryEntry) {
   try {
