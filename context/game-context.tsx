@@ -936,27 +936,110 @@ const changeSymbol = useCallback(
         }
       } catch {}
       // Usar siempre el monto configurado por el usuario, solo limitar por saldo disponible
-      import("@/utils/macd-decision").then(({ decideMixDirection }) => {
-        const direction = decideMixDirection(candles);
-        let finalAmount = userAmount;
-        finalAmount = Math.min(finalAmount, userBalance);
-        // Leer leverage de localStorage (igual que la UI)
-        let leverage = 2000;
-        try {
-          const storedLev = localStorage.getItem('autoMixLeverage');
-          if (storedLev) {
-            const parsed = parseFloat(storedLev);
-            if (!isNaN(parsed) && parsed > 0) leverage = parsed;
-          }
-        } catch {}
-        // --- SONIDO DE APUESTA ---
-        if (betAudioRef.current) {
-          betAudioRef.current.currentTime = 0;
-          betAudioRef.current.play();
-        }
-        placeBet(direction, finalAmount, leverage);
-        console.log('[AUTO MIX] Apuesta automática MIX creada (MACD)', { direction, finalAmount, leverage, candle: currentCandle.timestamp });
-      }).catch(() => {
+      Promise.all([
+  import("@/utils/macd-decision"),
+  import("@/utils/autoMixMemory")
+]).then(([macdMod, memMod]) => {
+  const { decideMixDirection } = macdMod;
+  const { shouldInvertDecision } = memMod;
+  // Obtener señales detalladas
+  const candlesSlice = candles.slice();
+  const last65 = candlesSlice.slice(-66, -1);
+  const bullishCount = last65.filter(c => c.close > c.open).length;
+  const bearishCount = last65.length - bullishCount;
+  let majoritySignal: "BULLISH" | "BEARISH" | null = null;
+  if (bullishCount > bearishCount) majoritySignal = "BULLISH";
+  else if (bearishCount > bullishCount) majoritySignal = "BEARISH";
+  // RSI
+  function calcRSI(candles: any[], period = 14): number {
+    if (candles.length < period + 1) return 50;
+    let gains = 0, losses = 0;
+    for (let i = candles.length - period; i < candles.length; i++) {
+      const diff = candles[i].close - candles[i - 1].close;
+      if (diff > 0) gains += diff;
+      else losses -= diff;
+    }
+    if (gains + losses === 0) return 50;
+    const avgGain = gains / period;
+    const avgLoss = losses / period;
+    if (avgLoss === 0) return 100;
+    const rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+  }
+  const rsi = calcRSI(candlesSlice);
+  let rsiSignal: "BULLISH" | "BEARISH" | null = null;
+  if (rsi > 70) rsiSignal = "BEARISH";
+  else if (rsi < 30) rsiSignal = "BULLISH";
+  // MACD
+  function calcEMA(values: number[], period: number): number[] {
+    const k = 2 / (period + 1);
+    let emaArr: number[] = [];
+    let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+    emaArr[period - 1] = ema;
+    for (let i = period; i < values.length; i++) {
+      ema = values[i] * k + ema * (1 - k);
+      emaArr[i] = ema;
+    }
+    return emaArr;
+  }
+  const closes = candlesSlice.slice(-66).map((c: any) => c.close);
+  const ema12 = calcEMA(closes, 12);
+  const ema26 = calcEMA(closes, 26);
+  let macdLineArr: number[] = [];
+  for (let i = 0; i < closes.length; i++) {
+    if (ema12[i] !== undefined && ema26[i] !== undefined) {
+      macdLineArr[i] = ema12[i] - ema26[i];
+    } else {
+      macdLineArr[i] = 0;
+    }
+  }
+  const signalLineArr = calcEMA(macdLineArr.filter(x => x !== undefined), 9);
+  const macd = macdLineArr[macdLineArr.length - 1];
+  const macdSignalLine = signalLineArr[signalLineArr.length - 1];
+  let macdSignal: "BULLISH" | "BEARISH" | null = null;
+  if (macd > macdSignalLine) macdSignal = "BULLISH";
+  else if (macd < macdSignalLine) macdSignal = "BEARISH";
+
+  // Decisión base
+  let direction = decideMixDirection(candles);
+  // Consultar memoria: si la combinación es perdedora, invertir
+  if (shouldInvertDecision(majoritySignal, rsiSignal, macdSignal)) {
+    direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
+    console.log('[AUTO MIX] Dirección invertida por memoria');
+  }
+  let finalAmount = userAmount;
+  finalAmount = Math.min(finalAmount, userBalance);
+  // Leer leverage de localStorage (igual que la UI)
+  let leverage = 2000;
+  try {
+    const storedLev = localStorage.getItem('autoMixLeverage');
+    if (storedLev) {
+      const parsed = parseFloat(storedLev);
+      if (!isNaN(parsed) && parsed > 0) leverage = parsed;
+    }
+  } catch {}
+  // --- SONIDO DE APUESTA ---
+  if (betAudioRef.current) {
+    betAudioRef.current.currentTime = 0;
+    betAudioRef.current.play();
+  }
+  placeBet(direction, finalAmount, leverage);
+  // Guardar memoria (async, no bloquea)
+  import("@/utils/autoMixMemory").then(({ saveAutoMixMemory }) => {
+    saveAutoMixMemory({
+      timestamp: Date.now(),
+      direction,
+      result: null,
+      majoritySignal,
+      rsiSignal,
+      macdSignal,
+      rsi,
+      macd,
+      macdSignalLine,
+    });
+  });
+  console.log('[AUTO MIX] Apuesta automática MIX creada (MACD+MEM)', { direction, finalAmount, leverage, candle: currentCandle.timestamp, majoritySignal, rsiSignal, macdSignal, rsi, macd, macdSignalLine });
+}).catch(() => {
         const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
         let finalAmount = userAmount;
         finalAmount = Math.min(finalAmount, userBalance);
