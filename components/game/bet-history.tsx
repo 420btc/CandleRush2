@@ -116,9 +116,8 @@ export default function BetHistory() {
                       {/* LIVE PnL en pequeño */}
                       {bet.status === "PENDING" && livePnl !== null && (
                         <span
-                          className={`text-xs font-bold font-mono px-2 py-0.5 rounded-full shadow-sm border mt-1
-                            ${livePnl > 0 ? 'border-green-400 text-green-400' : livePnl < 0 ? 'border-red-400 text-red-400' : 'border-zinc-400 text-zinc-200'}`}
-                          style={{minHeight:18, letterSpacing: '0.01em', background: '#111'}}
+                          className={`text-xs font-bold font-mono px-2 py-0.5 rounded-full shadow-sm border mt-1 ${livePnl > 0 ? 'border-green-400 bg-green-600/80' : livePnl < 0 ? 'border-red-400 bg-red-700/80' : 'border-zinc-400 bg-black'} text-white`}
+                          style={{minHeight:18, letterSpacing: '0.01em'}}
                         >
                           PnL: {livePnl > 0 ? '+' : ''}{livePnl.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
