@@ -152,9 +152,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (currentUser) {
       const data = loadUserData(currentUser);
       setUserBalance(data.balance ?? 100);
-      setBetsByPair(data.betsByPair ?? {});
+      // Corrige betsByPair: añade candleTimestamp si falta
+      const migratedBetsByPair = {} as typeof data.betsByPair;
+      for (const pair in (data.betsByPair ?? {})) {
+        migratedBetsByPair[pair] = {};
+        for (const tf in data.betsByPair[pair]) {
+          migratedBetsByPair[pair][tf] = data.betsByPair[pair][tf].map((bet: any) => ({
+            ...bet,
+            candleTimestamp: bet.candleTimestamp ?? bet.timestamp,
+          }));
+        }
+      }
+      setBetsByPair(migratedBetsByPair);
       setAchievements(data.achievements ?? []);
-      setAutoMixMemory(data.autoMixMemory ?? []);
+      // Corrige autoMixMemory: añade valleyVote y otros campos si faltan
+      const migratedAutoMixMemory = (data.autoMixMemory ?? []).map((entry: any) => ({
+        valleyVote: entry.valleyVote ?? null,
+        ...entry,
+      }));
+      setAutoMixMemory(migratedAutoMixMemory);
     }
   }, [currentUser]);
 
@@ -1105,7 +1121,7 @@ const changeSymbol = useCallback(
   placeBet(direction, finalAmount, leverage);
   // Guardar memoria (async, no bloquea)
   import("@/utils/autoMixMemory").then(({ saveAutoMixMemory }) => {
-    saveAutoMixMemory({
+    const newEntry = {
       timestamp: Date.now(),
       direction,
       result: null,
@@ -1115,7 +1131,9 @@ const changeSymbol = useCallback(
       rsi,
       macd,
       macdSignalLine,
-    });
+      valleyVote: null, // Valor por defecto para compatibilidad
+    };
+    saveAutoMixMemory(newEntry);
   });
   console.log('[AUTO MIX] Apuesta automática MIX creada (MACD+MEM)', { direction, finalAmount, leverage, candle: currentCandle.timestamp, majoritySignal, rsiSignal, macdSignal, rsi, macd, macdSignalLine });
 }).catch(() => {

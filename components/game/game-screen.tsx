@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useRef } from "react"
+import Login from "@/components/login";
 import { formatTime } from "@/utils/formatTime"
 import { useGame } from "@/context/game-context"
 
@@ -146,6 +147,7 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
+  const [stockPrice, setStockPrice] = useState<number | null>(null);
   const { currentUser, setCurrentUser, userBalance } = useGame();
   const [showUserModal, setShowUserModal] = useState(false);
   // Estado para mostrar el modal de cierre diario
@@ -1030,7 +1032,7 @@ useEffect(() => {
           >Cerrar sesión</button>
         </div>
       ) : (
-        <Login onLogin={(username) => {
+        <Login onLogin={(username: string) => {
           setCurrentUser(username);
           setShowUserModal(false);
         }} />
