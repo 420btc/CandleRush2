@@ -72,7 +72,7 @@ interface GameContextType {
   betsByPair: Record<string, Record<string, Bet[]>>
   userBalance: number
   isConnected: boolean
-  placeBet: (prediction: "BULLISH" | "BEARISH", amount: number, leverage?: number) => void
+  placeBet: (prediction: "BULLISH" | "BEARISH", amount: number, leverage?: number, options?: { esAutomatica?: 'Sí' | 'No'; autoType?: 'MIX' | 'AUTO' | 'MANUAL' }) => Bet
   changeSymbol: (symbol: string) => void
   changeTimeframe: (timeframe: string) => void
   currentCandleBets: number
@@ -803,14 +803,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Place a bet
   const placeBet = useCallback(
-    (prediction: "BULLISH" | "BEARISH", amount: number, leverage: number = 1) => {
+    (prediction: "BULLISH" | "BEARISH", amount: number, leverage: number = 1, options?: { esAutomatica?: 'Sí' | 'No', autoType?: 'MIX' | 'AUTO' | 'MANUAL' }): Bet => {
       if (gamePhase !== "BETTING") {
         toast({
           title: "No puedes apostar ahora",
           description: "Solo puedes apostar en los primeros 10 segundos de cada vela",
           variant: "destructive",
         })
-        return
+        throw new Error("No puedes apostar ahora");
       }
 
       // Verificar si ya se alcanzó el límite de apuestas para esta vela
@@ -820,7 +820,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           description: "Solo puedes hacer 1 apuesta por vela",
           variant: "destructive",
         })
-        return
+        throw new Error("Límite de apuestas alcanzado");
       }
 
       // Obtener apuestas actuales del par/timeframe
@@ -832,7 +832,7 @@ if (amount <= 0 || amount > userBalance) {
           description: "No tienes suficiente saldo",
           variant: "destructive",
         })
-        return
+        throw new Error("Cantidad inválida");
       }
 
       // Ajustar el timestamp de la apuesta para que siempre caiga dentro de la vela actual
@@ -881,6 +881,9 @@ if (amount <= 0 || amount > userBalance) {
         entryPrice: entryPrice,
         liquidationPrice: leverage > 1 ? liquidationPrice : undefined,
         wasLiquidated: false,
+        esAutomatica: options?.esAutomatica,
+
+        autoType: options?.autoType,
       }
       console.log('[BET] Intentando apostar', { prediction, amount, gamePhase, currentCandleBets, candleTimestamp, currentCandle });
 
@@ -905,6 +908,7 @@ if (amount <= 0 || amount > userBalance) {
         title: `Apuesta ${prediction === "BULLISH" ? "alcista" : "bajista"} realizada`,
         description: `Has apostado $${amount.toFixed(2)} en ${currentSymbol} (${timeframe})`,
       })
+      return newBet;
     },
     [gamePhase, userBalance, currentSymbol, timeframe, bets.length, currentCandleBets, toast, unlockAchievement],
   )
@@ -1127,12 +1131,13 @@ const changeSymbol = useCallback(
     betAudioRef.current.currentTime = 0;
     betAudioRef.current.play();
   }
-  placeBet(direction, finalAmount, leverage);
+  const bet = placeBet(direction as "BULLISH" | "BEARISH", finalAmount, leverage, { esAutomatica: 'Sí', autoType: 'MIX' });
   // Guardar memoria (async, no bloquea)
   import("@/utils/autoMixMemory").then(({ saveAutoMixMemory }) => {
     const newEntry = {
+      betId: bet?.id || `auto_${Date.now()}`,
       timestamp: Date.now(),
-      direction,
+      direction: direction as "BULLISH" | "BEARISH",
       result: null,
       majoritySignal,
       rsiSignal,
@@ -1141,6 +1146,7 @@ const changeSymbol = useCallback(
       macd,
       macdSignalLine,
       valleyVote: null, // Valor por defecto para compatibilidad
+      volumeVote: null, // Valor por defecto requerido
     };
     saveAutoMixMemory(newEntry);
   });
@@ -1163,7 +1169,25 @@ const changeSymbol = useCallback(
           betAudioRef.current.currentTime = 0;
           betAudioRef.current.play();
         }
-        placeBet(direction, finalAmount, leverage);
+        const bet = placeBet(direction as "BULLISH" | "BEARISH", finalAmount, leverage, { esAutomatica: 'Sí', autoType: 'MIX' });
+        import("@/utils/autoMixMemory").then(({ saveAutoMixMemory }) => {
+          const newEntry = {
+            betId: bet?.id || `auto_${Date.now()}`,
+            timestamp: Date.now(),
+            direction: direction as "BULLISH" | "BEARISH",
+            result: null,
+            majoritySignal: null,
+            rsiSignal: null,
+            macdSignal: null,
+            rsi: 0,
+            macd: 0,
+            macdSignalLine: 0,
+            valleyVote: null,
+            volumeVote: null,
+            wasRandom: true
+          };
+          saveAutoMixMemory(newEntry);
+        });
         console.log('[AUTO MIX] Apuesta automática MIX creada (fallback aleatorio)', { direction, finalAmount, leverage, candle: currentCandle.timestamp });
       });
       return;

@@ -362,6 +362,7 @@ try {
     // Guardar memoria incluyendo volumeVote
     try {
       const entry: AutoMixMemoryEntry = {
+        betId: 'random-bet',
         timestamp: Date.now(),
         direction: Math.random() < 0.5 ? "BULLISH" : "BEARISH",
         result: null,
@@ -417,6 +418,7 @@ try {
   // Guardar memoria principal incluyendo volumeVote
   try {
     const entry: AutoMixMemoryEntry = {
+      betId: 'macd-bet',
       timestamp: Date.now(),
       direction,
       result: null,

@@ -13,6 +13,8 @@ export interface Candle {
 }
 
 export interface Bet {
+  esAutomatica?: 'Sí' | 'No';
+  autoType?: 'MIX' | 'AUTO' | 'MANUAL';
   id: string
   prediction: "BULLISH" | "BEARISH"
   amount: number

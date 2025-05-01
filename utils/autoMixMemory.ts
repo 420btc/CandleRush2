@@ -2,6 +2,7 @@
 // Guarda y consulta el historial de resultados de apuestas automáticas
 
 export type AutoMixMemoryEntry = {
+  betId: string;
   timestamp: number;
   direction: "BULLISH" | "BEARISH";
   result: "WIN" | "LOSS" | "LIQ" | null;

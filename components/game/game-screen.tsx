@@ -452,7 +452,7 @@ useEffect(() => {
           betAudioRef.current.currentTime = 0;
           betAudioRef.current.play();
         }
-        placeBet(direction, betAmount, leverage);
+        placeBet(direction, betAmount, leverage, { esAutomatica: 'Sí', autoType: 'AUTO' });
       }
     }, delay);
   }
@@ -488,7 +488,7 @@ useEffect(() => {
           betAudioRef.current.currentTime = 0;
           betAudioRef.current.play();
         }
-        placeBet(direction, betAmount, leverage);
+        placeBet(direction, betAmount, leverage, { esAutomatica: 'Sí', autoType: 'AUTO' });
 setLastFlyupAmount(betAmount);
 setShowFlyup(true);
       }
@@ -591,6 +591,7 @@ useEffect(() => {
             prediction: lastResolved.prediction,
             amount: lastResolved.amount,
             timestamp: lastResolved.timestamp,
+            candleTimestamp: lastResolved.candleTimestamp,
             symbol: lastResolved.symbol,
             timeframe: lastResolved.timeframe,
             status: lastResolved.status,
@@ -722,7 +723,7 @@ useEffect(() => {
       betAudioRef.current.currentTime = 0;
       betAudioRef.current.play();
     }
-    placeBet("BULLISH", betAmount, leverage);
+    placeBet("BULLISH", betAmount, leverage, { esAutomatica: 'No' });
     setLastFlyupAmount(betAmount);
     setShowFlyup(true);
   }
@@ -749,7 +750,7 @@ useEffect(() => {
       betAudioRef.current.currentTime = 0;
       betAudioRef.current.play();
     }
-    placeBet("BEARISH", betAmount, leverage);
+    placeBet("BEARISH", betAmount, leverage, { esAutomatica: 'No' });
     setLastFlyupAmount(betAmount);
     setShowFlyup(true);
   }
@@ -864,19 +865,20 @@ useEffect(() => {
       const last = bets[bets.length - 1];
       return {
         bet: {
-          id: String(last.id),
-          prediction: last.prediction,
-          amount: last.amount,
-          timestamp: last.timestamp,
-          symbol: last.symbol,
-          timeframe: last.timeframe,
-          status: last.status,
-          resolvedAt: last.resolvedAt,
-          leverage: last.leverage,
-          entryPrice: last.entryPrice,
-          liquidationPrice: last.liquidationPrice,
-          wasLiquidated: last.wasLiquidated,
-          winnings: last.winnings,
+              id: String(last.id),
+              prediction: last.prediction,
+              amount: last.amount,
+              timestamp: last.timestamp,
+              candleTimestamp: last.candleTimestamp,
+              symbol: last.symbol,
+              timeframe: last.timeframe,
+              status: last.status,
+              resolvedAt: last.resolvedAt,
+              leverage: last.leverage,
+              entryPrice: last.entryPrice,
+              liquidationPrice: last.liquidationPrice,
+              wasLiquidated: last.wasLiquidated,
+              winnings: last.winnings,
         },
         candle: betResult?.candle || {
           open: last.entryPrice || 0,
