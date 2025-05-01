@@ -61,6 +61,7 @@ export function decideMixDirection(candles: Candle[], timeframe: string = "1m"):
         rsi: 0,
         macd: 0,
         macdSignalLine: 0,
+        volumeVote: null,
         wasRandom: true,
       };
       // @ts-ignore
@@ -247,9 +248,9 @@ try {
   if (majoritySignal === "BEARISH") bearishVotes++;
   if (macdSignal === "BULLISH") bullishVotes++;
   if (macdSignal === "BEARISH") bearishVotes++;
-  // Fibonacci: peso bajo (2 votos)
-  if (fibResult.vote === "BULLISH") bullishVotes += 2;
-  if (fibResult.vote === "BEARISH") bearishVotes += 2;
+  // Fibonacci: 1 voto
+  if (fibResult.vote === "BULLISH") bullishVotes++;
+  if (fibResult.vote === "BEARISH") bearishVotes++;
 
   // --- 6. Voto por tendencia y conteo de velas (últimas 70) ---
   // Importar función de memoria de tendencia
@@ -313,7 +314,28 @@ try {
 
   // --- Peso aleatorio en zonas neutras ---
   if (!majoritySignal && rsiSignal === null) {
-    return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+    // Guardar memoria incluyendo volumeVote
+    try {
+      const entry: AutoMixMemoryEntry = {
+        timestamp: Date.now(),
+        direction: Math.random() < 0.5 ? "BULLISH" : "BEARISH",
+        result: null,
+        majoritySignal,
+        rsiSignal,
+        macdSignal,
+        valleyVote,
+        rsi,
+        macd: macdLine,
+        macdSignalLine: signalLine,
+        volumeVote,
+        wasRandom: true,
+      };
+      // @ts-ignore
+      saveAutoMixMemory(entry);
+      return entry.direction;
+    } catch {
+      return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+    }
   }
 
   // --- Anti-persistencia: si últimas 5 apuestas fueron iguales y todas pérdidas/liquidadas, fuerza cambio ---
@@ -345,6 +367,25 @@ try {
   if (checkShouldInvertDecision(majoritySignal, rsiSignal, macdSignal)) {
     direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
   }
+  // Guardar memoria principal incluyendo volumeVote
+  try {
+    const entry: AutoMixMemoryEntry = {
+      timestamp: Date.now(),
+      direction,
+      result: null,
+      majoritySignal,
+      rsiSignal,
+      macdSignal,
+      valleyVote,
+      rsi,
+      macd: macdLine,
+      macdSignalLine: signalLine,
+      volumeVote,
+      wasRandom: false,
+    };
+    // @ts-ignore
+    saveAutoMixMemory(entry);
+  } catch {}
   return direction;
 }
 

@@ -12,6 +12,7 @@ export type AutoMixMemoryEntry = {
   rsi: number;
   macd: number;
   macdSignalLine: number;
+  volumeVote: "BULLISH" | "BEARISH" | null;
   wasRandom?: boolean; // true si la apuesta fue aleatoria
 };
 

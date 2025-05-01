@@ -27,6 +27,7 @@ const LABELS: Record<string, string> = {
   macdSignal: 'MACD',
   trend: 'Tendencia Velas',
   volume: 'Tendencia Volumen',
+  volumeVote: 'Voto Volumen',
 };
 
 export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTimestamp }) => {
@@ -55,20 +56,24 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
   const getMajorityVotes = () => {
     let bullishVotes = 0;
     let bearishVotes = 0;
-    if (rsiEntry?.rsiSignal === "BULLISH") bullishVotes += 2;
-    if (rsiEntry?.rsiSignal === "BEARISH") bearishVotes += 2;
+    if (rsiEntry?.rsiSignal === "BULLISH") bullishVotes++;
+    if (rsiEntry?.rsiSignal === "BEARISH") bearishVotes++;
     if (displayValleyVote === "BULLISH") bullishVotes++;
     if (displayValleyVote === "BEARISH") bearishVotes++;
     if (entry?.majoritySignal === "BULLISH") bullishVotes++;
     if (entry?.majoritySignal === "BEARISH") bearishVotes++;
     if (entry?.macdSignal === "BULLISH") bullishVotes++;
     if (entry?.macdSignal === "BEARISH") bearishVotes++;
+    if (fibonacciEntry?.fibVote === "BULLISH") bullishVotes++;
+    if (fibonacciEntry?.fibVote === "BEARISH") bearishVotes++;
     if (fibonacciEntry?.fibVote === "BULLISH") bullishVotes += 2;
     if (fibonacciEntry?.fibVote === "BEARISH") bearishVotes += 2;
     if (trendEntry?.trend === "BULLISH") bullishVotes++;
     if (trendEntry?.trend === "BEARISH") bearishVotes++;
-    if (volumeEntry?.vote === "BULLISH") bullishVotes++;
-    if (volumeEntry?.vote === "BEARISH") bearishVotes++;
+    // Usar volumeVote de la entrada principal si está disponible, sino fallback a volumeEntry?.vote
+    const displayVolumeVote = entry?.volumeVote ?? volumeEntry?.vote ?? null;
+    if (displayVolumeVote === "BULLISH") bullishVotes++;
+    if (displayVolumeVote === "BEARISH") bearishVotes++;
     const totalVotes = bullishVotes + bearishVotes;
     let mainMajority = null;
     if (bullishVotes > bearishVotes) mainMajority = 'BULLISH';
@@ -80,7 +85,32 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
 
   if (!entry) return null;
 
-  return (
+  // Mostrar mensaje especial si la apuesta fue aleatoria
+  if (entry.wasRandom) {
+    return (
+      <div className="mt-1 rounded-lg border-2 border-yellow-400 bg-black/90 p-3 text-left shadow-md">
+        <div className="font-bold text-yellow-300 text-xs mb-1 leading-tight">AutoMix: Decisión aleatoria</div>
+        <div className="text-white text-sm">
+          Esta apuesta fue tomada de forma <b>aleatoria</b> (modo suerte, 5%), por lo que no hay desglose de votos de señales.<br />
+          <span className="text-yellow-400">La decisión fue tomada al azar para simular el factor de suerte.</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Calcular señales presentes y total
+const totalSignals = 7;
+const signalsPresent = [
+  rsiEntry?.rsiSignal,
+  fibonacciEntry?.fibVote,
+  entry?.majoritySignal,
+  entry?.macdSignal,
+  displayValleyVote,
+  trendEntry?.trend,
+  volumeEntry?.vote
+].filter(v => v === "BULLISH" || v === "BEARISH").length;
+
+return (
     <div className="mt-1 rounded-lg border-2 border-yellow-400 bg-black/90 p-1 text-left shadow-md">
       <div className="font-bold text-yellow-300 text-xs mb-0.5 leading-tight">AutoMix: Decisión y votos</div>
       <div className="flex flex-wrap gap-1 mb-0.5">
@@ -92,9 +122,9 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
           // Cálculo de votos ponderados
           let bullishVotes = 0;
           let bearishVotes = 0;
-          // RSI: 2 votos
-          if (rsiEntry?.rsiSignal === "BULLISH") bullishVotes += 2;
-          if (rsiEntry?.rsiSignal === "BEARISH") bearishVotes += 2;
+          // RSI: 1 voto
+          if (rsiEntry?.rsiSignal === "BULLISH") bullishVotes++;
+          if (rsiEntry?.rsiSignal === "BEARISH") bearishVotes++;
           // Valle
           if (displayValleyVote === "BULLISH") bullishVotes++;
           if (displayValleyVote === "BEARISH") bearishVotes++;
@@ -104,9 +134,9 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
           // MACD
           if (entry?.macdSignal === "BULLISH") bullishVotes++;
           if (entry?.macdSignal === "BEARISH") bearishVotes++;
-          // Fibonacci: 2 votos
-          if (fibonacciEntry?.fibVote === "BULLISH") bullishVotes += 2;
-          if (fibonacciEntry?.fibVote === "BEARISH") bearishVotes += 2;
+          // Fibonacci: 1 voto
+          if (fibonacciEntry?.fibVote === "BULLISH") bullishVotes++;
+          if (fibonacciEntry?.fibVote === "BEARISH") bearishVotes++;
           // Tendencia
           if (trendEntry?.trend === "BULLISH") bullishVotes++;
           if (trendEntry?.trend === "BEARISH") bearishVotes++;
@@ -120,25 +150,36 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
           if (bullishVotes > bearishVotes) mainMajority = 'BULLISH';
           else if (bearishVotes > bullishVotes) mainMajority = 'BEARISH';
           else if (bullishVotes === bearishVotes && totalVotes > 0) mainMajority = 'EMPATE';
+          // Calcular señales presentes y total
+          const totalSignals = 7;
+          const signalsPresent = [
+            rsiEntry?.rsiSignal,
+            fibonacciEntry?.fibVote,
+            entry?.majoritySignal,
+            entry?.macdSignal,
+            displayValleyVote,
+            trendEntry?.trend,
+            volumeEntry?.vote
+          ].filter(v => v === "BULLISH" || v === "BEARISH").length;
           return (
             <>
               <div className={`col-span-4 md:col-span-8 bg-black/80 text-yellow-200 rounded px-2 py-1 text-[14px] font-bold flex items-center justify-center border-2 border-yellow-400 shadow-lg mb-2`}>
                 <span className="text-lg">🔝 Mayoría de votos: <b>{mainMajority === 'EMPATE' ? 'Empate' : (mainMajority ?? 'Sin dato')}</b> <span className="text-xs">({pctBull}% Bullish / {pctBear}% Bearish)</span></span>
-<span className="block text-[10px] text-white font-light mt-0.5">Nota: Fibonacci y RSI valen 2 votos</span>
+<span className="block text-[10px] text-white font-light mt-0.5">Nota: Todas las señales valen 1 voto</span>
               </div>
               {/* Desglose de votos */}
               <div className="col-span-4 md:col-span-8 flex flex-row gap-2 justify-center mb-2">
                 <span className="bg-green-900/70 text-yellow-300 rounded px-2 py-0.5 text-xs font-mono">Bullish: {bullishVotes}</span>
                 <span className="bg-red-900/70 text-yellow-300 rounded px-2 py-0.5 text-xs font-mono">Bearish: {bearishVotes}</span>
-                <span className="bg-neutral-800/80 text-neutral-300 rounded px-2 py-0.5 text-xs font-mono">Total: {totalVotes}</span>
+                <span className="bg-neutral-800/80 text-neutral-300 rounded px-2 py-0.5 text-xs font-mono">Total: {signalsPresent}/{totalSignals}</span>
 <span className="text-[10px] text-neutral-300 font-mono ml-2 align-middle">
-  RSI:{rsiEntry?.rsiSignal === 'BULLISH' ? '+2' : rsiEntry?.rsiSignal === 'BEARISH' ? '-2' : '0'},
-  Fib:{fibonacciEntry?.fibVote === 'BULLISH' ? '+2' : fibonacciEntry?.fibVote === 'BEARISH' ? '-2' : '0'},
-  Mayoría:{entry?.majoritySignal === 'BULLISH' ? '+1' : entry?.majoritySignal === 'BEARISH' ? '-1' : '0'},
-  MACD:{entry?.macdSignal === 'BULLISH' ? '+1' : entry?.macdSignal === 'BEARISH' ? '-1' : '0'},
-  Valle:{displayValleyVote === 'BULLISH' ? '+1' : displayValleyVote === 'BEARISH' ? '-1' : '0'},
-  Tend:{trendEntry?.trend === 'BULLISH' ? '+1' : trendEntry?.trend === 'BEARISH' ? '-1' : '0'},
-  Vol:{volumeEntry?.vote === 'BULLISH' ? '+1' : volumeEntry?.vote === 'BEARISH' ? '-1' : '0'}
+  RSI:{rsiEntry?.rsiSignal === 'BULLISH' ? '+1' : rsiEntry?.rsiSignal === 'BEARISH' ? '-1' : 'Sin dato'},
+  Fib:{fibonacciEntry?.fibVote === 'BULLISH' ? '+1' : fibonacciEntry?.fibVote === 'BEARISH' ? '-1' : 'Sin dato'},
+  Mayoría:{entry?.majoritySignal === 'BULLISH' ? '+1' : entry?.majoritySignal === 'BEARISH' ? '-1' : 'Sin dato'},
+  MACD:{entry?.macdSignal === 'BULLISH' ? '+1' : entry?.macdSignal === 'BEARISH' ? '-1' : 'Sin dato'},
+  Valle:{displayValleyVote === 'BULLISH' ? '+1' : displayValleyVote === 'BEARISH' ? '-1' : 'Sin dato'},
+  Tend:{trendEntry?.trend === 'BULLISH' ? '+1' : trendEntry?.trend === 'BEARISH' ? '-1' : 'Sin dato'},
+  Vol:{volumeEntry?.vote === 'BULLISH' ? '+1' : volumeEntry?.vote === 'BEARISH' ? '-1' : 'Sin dato'}
 </span>
               </div>
             </>
@@ -182,6 +223,10 @@ export const BetResultAutoMixInfo: React.FC<AutoMixInfoProps> = ({ betId, betTim
         <div className={`${(volumeEntry?.vote === 'BULLISH' || (!volumeEntry && entry?.direction === 'BULLISH')) ? 'bg-green-900/70 text-yellow-300' : (volumeEntry?.vote === 'BEARISH' || (!volumeEntry && entry?.direction === 'BEARISH')) ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
           <b>Tend. Volumen:</b> <span className="font-mono">{volumeEntry ? (volumeEntry.vote ?? entry?.direction ?? 'Sin dato') : (entry?.direction ?? 'Sin dato')}</span>
           <span className="ml-2 text-xs">{volumeEntry ? `Vol1: ${volumeEntry.avgVol1?.toFixed(2)}, Vol2: ${volumeEntry.avgVol2?.toFixed(2)}, ${volumeEntry.volumeTrend === 'UP' ? '▲' : '▼'} (${volumeEntry.majority})` : ''}</span>
+        </div>
+        {/* Mayoría */}
+        <div className={`${entry?.majoritySignal === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : entry?.majoritySignal === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+          <b>Mayoría:</b> <span className="font-mono">{entry?.majoritySignal ?? 'Sin dato'}</span>
         </div>
       </div>
     </div>
