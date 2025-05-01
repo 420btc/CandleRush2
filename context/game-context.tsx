@@ -69,7 +69,7 @@ interface GameContextType {
   currentSymbol: string
   timeframe: string
   bets: Bet[]
-  betsByPair: Record<string, Record<string, Bet[]>> // NUEVO: todas las apuestas globales
+  betsByPair: Record<string, Record<string, Bet[]>>
   userBalance: number
   isConnected: boolean
   placeBet: (prediction: "BULLISH" | "BEARISH", amount: number, leverage?: number) => void
@@ -88,11 +88,87 @@ interface GameContextType {
   toggleAutoBullish: () => void;
   toggleAutoBearish: () => void;
   toggleAutoMix: () => void;
+  currentUser: string | null;
+  setCurrentUser: (u: string | null) => void;
+  achievements: string[];
+  setAchievements: (a: string[]) => void;
+  autoMixMemory: any[];
+  setAutoMixMemory: (m: any[]) => void;
+  saveUserData: (username: string, data: any) => void;
+  loadUserData: (username: string) => any;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
 
 export function GameProvider({ children }: { children: ReactNode }) {
+  // --- PERSISTENCIA POR USUARIO ---
+  const [currentUser, setCurrentUser] = useState<string | null>(typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null);
+  const [userBalance, setUserBalance] = useState<number>(100);
+  const [achievements, setAchievements] = useState<string[]>([]);
+  const [autoMixMemory, setAutoMixMemory] = useState<any[]>([]); // Ajusta el tipo según tu definición
+  const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, any[]>>>({});
+
+  function saveUserData(username: string, data: any) {
+    localStorage.setItem(`userData_${username}`, JSON.stringify(data));
+  }
+  function loadUserData(username: string) {
+    const raw = localStorage.getItem(`userData_${username}`);
+    const isGuest = username.startsWith('invitado-') || username.startsWith('guest-');
+    const now = Date.now();
+    const EXPIRATION_MS = 48 * 60 * 60 * 1000; // 48 horas
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (isGuest) {
+        // Verifica expiración
+        if (!data.guestExpiresAt || now > data.guestExpiresAt) {
+          // Expirado: reinicia datos
+          const guestData = {
+            balance: 100,
+            betsByPair: {},
+            achievements: [],
+            autoMixMemory: [],
+            guestExpiresAt: now + EXPIRATION_MS,
+          };
+          localStorage.setItem(`userData_${username}`, JSON.stringify(guestData));
+          return guestData;
+        }
+      }
+      return data;
+    }
+    // Si no existe, crea datos nuevos
+    const initialData = {
+      balance: 100,
+      betsByPair: {},
+      achievements: [],
+      autoMixMemory: [],
+      ...(isGuest ? { guestExpiresAt: now + EXPIRATION_MS } : {}),
+    };
+    localStorage.setItem(`userData_${username}`, JSON.stringify(initialData));
+    return initialData;
+  }
+
+  // --- Restaurar datos al login ---
+  useEffect(() => {
+    if (currentUser) {
+      const data = loadUserData(currentUser);
+      setUserBalance(data.balance ?? 100);
+      setBetsByPair(data.betsByPair ?? {});
+      setAchievements(data.achievements ?? []);
+      setAutoMixMemory(data.autoMixMemory ?? []);
+    }
+  }, [currentUser]);
+
+  // --- Sincroniza datos del usuario cada vez que cambian cosas clave ---
+  useEffect(() => {
+    if (currentUser) {
+      saveUserData(currentUser, {
+        balance: userBalance,
+        betsByPair,
+        achievements,
+        autoMixMemory,
+      });
+    }
+  }, [currentUser, userBalance, betsByPair, achievements, autoMixMemory]);
   // ...existing state...
   const addCoins = (amount: number) => {
     // Sin límite: el usuario puede tener cualquier cantidad de monedas
@@ -125,7 +201,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentSymbol, setCurrentSymbol] = useState<string>("BTCUSDT")
   const [timeframe, setTimeframe] = useState<string>("1m")
   // Estructura: { [symbol]: { [timeframe]: Bet[] } }
-  const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, Bet[]>>>({});
+  // (eliminado: declaración duplicada de betsByPair y setBetsByPair, ahora está al inicio de GameProvider)
   const [betsHydrated, setBetsHydrated] = useState(false);
   // Usar useRef para mantener una referencia actualizada a las apuestas actuales
   const betsRef = useRef<Bet[]>([]);
@@ -137,7 +213,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     betsRef.current = currentBets;
     return currentBets;
   }, [betsByPair, currentSymbol, timeframe]);
-  const [userBalance, setUserBalance] = useState<number>(100) // Saldo inicial reducido a 100$
+// --- FIN PERSISTENCIA ---
 
   // Función para limpiar todas las apuestas
   const clearBets = () => {
@@ -809,13 +885,16 @@ if (amount <= 0 || amount > userBalance) {
   )
 
   // Change symbol
-  // Al cerrar sesión, limpiar apuestas y balance
+  // Al cerrar sesión, limpiar usuario activo, pero NO borrar datos persistentes
 useEffect(() => {
   window.addEventListener("logout", () => {
+    setCurrentUser(null);
     setBetsByPair({});
     setUserBalance(100);
-    localStorage.removeItem("betsByPair");
-    localStorage.removeItem("userBalance");
+    setAchievements([]);
+    setAutoMixMemory([]);
+    localStorage.removeItem("currentUser");
+    // NO borres userData_{username}
   });
   return () => window.removeEventListener("logout", () => {});
 }, []);
@@ -1095,6 +1174,14 @@ const changeSymbol = useCallback(
         toggleAutoBullish,
         toggleAutoBearish,
         toggleAutoMix,
+        currentUser,
+        setCurrentUser,
+        achievements,
+        setAchievements,
+        autoMixMemory,
+        setAutoMixMemory,
+        saveUserData,
+        loadUserData,
       }}
     >
       {children}

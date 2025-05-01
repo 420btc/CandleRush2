@@ -146,6 +146,8 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
+  const { currentUser, setCurrentUser, userBalance } = useGame();
+  const [showUserModal, setShowUserModal] = useState(false);
   // Estado para mostrar el modal de cierre diario
   const [showDailyCloseModal, setShowDailyCloseModal] = useState(false);
   const velaDiariaAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -230,7 +232,6 @@ export default function GameScreen() {
     timeframe,
     candles,
     currentCandle,
-    userBalance,
     placeBet,
     changeSymbol,
     changeTimeframe,
@@ -300,8 +301,6 @@ export default function GameScreen() {
 
   // Sincronización de paneo/zoom para MACD y velas
   // --- PRECIOS DINÁMICOS PARA CRYPTO Y STOCKS ---
-  // --- PRECIOS DINÁMICOS PARA CRYPTO Y STOCKS ---
-  const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [stockLoading, setStockLoading] = useState(false);
   useEffect(() => {
     const STOCK_SYMBOLS = ['AAPL', 'AMD'];
@@ -488,6 +487,8 @@ useEffect(() => {
           betAudioRef.current.play();
         }
         placeBet(direction, betAmount, leverage);
+setLastFlyupAmount(betAmount);
+setShowFlyup(true);
       }
     }, delay);
   }
@@ -974,25 +975,69 @@ useEffect(() => {
   </div>
 </div>
   <div className="flex items-center gap-2">
-    {user ? (
-      <>
-        <button
-          onClick={() => window.location.href = '/profile'}
-          className="text-sm font-bold text-[#FFD600] hover:underline hover:text-yellow-300 transition px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
-          style={{ background: 'rgba(255, 214, 0, 0.08)' }}
-          title="Ver perfil"
-          data-component-name="GameScreen"
-        >
-          {user.username}
-        </button>
-        <span className="font-bold text-[#FFD600]">${userBalance.toFixed(2)}</span>
-      </>
-    ) : (
-      <>
-        <span className="text-sm font-bold text-[#FFD600]">Invitado</span>
-        <span className="font-bold text-[#FFD600]">$0.00</span>
-      </>
-    )}
+    {/* BOTÓN USUARIO/MODAL LOGIN */}
+{currentUser ? (
+  <>
+    <button
+      className="text-sm font-bold text-[#FFD600] hover:underline hover:text-yellow-300 transition px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
+      style={{ background: 'rgba(255, 214, 0, 0.08)' }}
+      title="Cuenta"
+      data-component-name="GameScreen"
+      onClick={() => setShowUserModal(true)}
+    >
+      {currentUser}
+    </button>
+    <span className="font-bold text-[#FFD600]">${userBalance?.toFixed(2) ?? '0.00'}</span>
+  </>
+) : (
+  <>
+    <button
+      className="text-sm font-bold text-[#FFD600] hover:underline hover:text-yellow-300 transition px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
+      style={{ background: 'rgba(255, 214, 0, 0.08)' }}
+      title="Iniciar sesión"
+      data-component-name="GameScreen"
+      onClick={() => setShowUserModal(true)}
+    >
+      Invitado
+    </button>
+    <span className="font-bold text-[#FFD600]">$0.00</span>
+  </>
+)}
+{/* MODAL LOGIN/LOGOUT */}
+{showUserModal && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className="bg-zinc-900 p-6 rounded-lg shadow-lg relative">
+      <button
+        className="absolute top-2 right-2 text-white text-xl font-bold"
+        onClick={() => setShowUserModal(false)}
+      >×</button>
+      {currentUser ? (
+        <div className="flex flex-col items-center gap-4 min-w-[260px]">
+          <span className="text-2xl font-bold text-yellow-300">{currentUser}</span>
+          {currentUser.startsWith('invitado-') || currentUser.startsWith('guest-') ? (
+            <div className="bg-yellow-100 text-yellow-800 rounded px-3 py-2 text-sm font-semibold text-center mb-2 border border-yellow-300 shadow">
+              Tus datos (apuestas, saldo, logros) se guardarán solo durante <b>48 horas</b>.<br/>
+              Después de ese tiempo, se borrarán automáticamente.
+            </div>
+          ) : null}
+          <button
+            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded shadow"
+            onClick={() => {
+              setCurrentUser(null);
+              localStorage.removeItem('currentUser');
+              setShowUserModal(false);
+            }}
+          >Cerrar sesión</button>
+        </div>
+      ) : (
+        <Login onLogin={(username) => {
+          setCurrentUser(username);
+          setShowUserModal(false);
+        }} />
+      )}
+    </div>
+  </div>
+)}
     <a
                 href="https://btcer.fun"
                 target="_blank"
