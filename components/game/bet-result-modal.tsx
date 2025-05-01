@@ -71,10 +71,23 @@ function BetSignalsBreakdown({ bet }: { bet: Bet }) {
 
   // Buscar primero por betId, luego por timestamp si no hay match exacto
   const entry = React.useMemo(() => {
-    if (!bet.id) return findClosestEntry(autoMixMem, bet.timestamp, 60000);
+    let found = null;
+    if (!bet.id) {
+      found = findClosestEntry(autoMixMem, bet.timestamp, 60000);
+      if (!found) {
+        console.warn('[BET RESULT MODAL][MEMORY] No se encontró entrada AutoMix por timestamp', { bet });
+        console.log('[BET RESULT MODAL][MEMORY] Memoria actual:', autoMixMem.slice(-5));
+      }
+      return found;
+    }
     const byId = autoMixMem.find(e => e.betId === bet.id);
     if (byId) return byId;
-    return findClosestEntry(autoMixMem, bet.timestamp, 60000);
+    found = findClosestEntry(autoMixMem, bet.timestamp, 60000);
+    if (!found) {
+      console.warn('[BET RESULT MODAL][MEMORY] No se encontró entrada AutoMix por betId ni timestamp', { bet });
+      console.log('[BET RESULT MODAL][MEMORY] Memoria actual:', autoMixMem.slice(-5));
+    }
+    return found;
   }, [autoMixMem, bet.id, bet.timestamp]);
   const rsiEntry = React.useMemo(() => findClosestEntry(rsiMem, bet.timestamp, 60000), [rsiMem, bet.timestamp]);
   const fibonacciEntry = React.useMemo(() => findClosestEntry(fibonacciMem, bet.timestamp, 60000), [fibonacciMem, bet.timestamp]);

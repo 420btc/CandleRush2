@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react"
 import { v4 as uuidv4 } from "uuid"
+import { getAutoMixMemory } from "@/utils/autoMixMemory"
 import type { Candle, Bet, GamePhase } from "@/types/game"
 import { fetchHistoricalCandles, setupWebSocket } from "@/lib/binance-api"
 import { useToast } from "@/hooks/use-toast"
@@ -1186,7 +1187,17 @@ const changeSymbol = useCallback(
             volumeVote: null,
             wasRandom: true
           };
-          saveAutoMixMemory(newEntry);
+         console.log('[AUTO MIX][MEMORY] Guardando entrada:', newEntry);
+    saveAutoMixMemory(newEntry);
+    setTimeout(() => {
+      try {
+        const mem = getAutoMixMemory();
+        console.log('[AUTO MIX][MEMORY] Estado actual de memoria tras guardar:', mem.slice(-5));
+      } catch (e) {
+        console.error('[AUTO MIX][MEMORY] Error leyendo memoria tras guardar', e);
+      }
+    }, 200);
+
         });
         console.log('[AUTO MIX] Apuesta automática MIX creada (fallback aleatorio)', { direction, finalAmount, leverage, candle: currentCandle.timestamp });
       });

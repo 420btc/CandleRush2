@@ -452,7 +452,8 @@ useEffect(() => {
           betAudioRef.current.currentTime = 0;
           betAudioRef.current.play();
         }
-        placeBet(direction, betAmount, leverage, { esAutomatica: 'Sí', autoType: 'AUTO' });
+        console.log('[AUTO MIX][DEBUG] Lanzando apuesta MIX con flags correctos', { direction, betAmount, leverage, esAutomatica: 'Sí', autoType: 'MIX' });
+        placeBet(direction, betAmount, leverage, { esAutomatica: 'Sí', autoType: 'MIX' });
       }
     }, delay);
   }
@@ -488,7 +489,8 @@ useEffect(() => {
           betAudioRef.current.currentTime = 0;
           betAudioRef.current.play();
         }
-        placeBet(direction, betAmount, leverage, { esAutomatica: 'Sí', autoType: 'AUTO' });
+        console.log('[AUTO MIX][DEBUG] Lanzando apuesta MIX con flags correctos', { direction, betAmount, leverage, esAutomatica: 'Sí', autoType: 'MIX' });
+        placeBet(direction, betAmount, leverage, { esAutomatica: 'Sí', autoType: 'MIX' });
 setLastFlyupAmount(betAmount);
 setShowFlyup(true);
       }

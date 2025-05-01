@@ -378,8 +378,7 @@ try {
         emaPositionVote: emaPositionVote ?? null,
         wasRandom: true,
       };
-      // @ts-ignore
-      saveAutoMixMemory(entry);
+      // Guardado de memoria eliminado aquí: ahora solo se guarda tras placeBet con el betId real.
       return entry.direction;
     } catch {
       return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
@@ -433,8 +432,7 @@ try {
       crossSignal: crossSignal ?? null,
       wasRandom: false,
     };
-    // @ts-ignore
-    saveAutoMixMemory(entry);
+    // Guardado de memoria eliminado aquí: ahora solo se guarda tras placeBet con el betId real.
   } catch {}
   return direction;
 }
