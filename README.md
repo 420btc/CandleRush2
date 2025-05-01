@@ -72,7 +72,7 @@ Descripción del flujo de una apuesta: desde la entrada, la toma de decisión, h
 
 ## AutoMix: Algoritmo de Decisión Multi-Voto
 
-Explicación general del algoritmo AutoMix, su objetivo y cómo integra múltiples señales para decidir.
+Explicación general del algoritmo AutoMix, su objetivo y cómo integra múltiples señales para decidir. ( Ver mas abajo )
 
 ### Desglose de las 6 Señales
 
@@ -129,7 +129,7 @@ Guía para modificar umbrales, añadir señales, personalizar la lógica y pregu
 
 ## Créditos y Licencia
 
-Desarrollado por el equipo de CandleRush2. Código abierto bajo licencia MIT.
+Desarrollado por Carlos Freire. Código abierto bajo licencia MIT.
 
 ¿Preguntas, sugerencias o mejoras? ¡Abre un issue o contribuye!
 
