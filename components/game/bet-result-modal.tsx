@@ -111,6 +111,9 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
             <span className={bet.prediction === "BULLISH" ? "text-green-300" : "text-red-300"}>{bet.prediction === "BULLISH" ? "Alcista" : "Bajista"}</span>
             <span className="text-yellow-400 ml-2">{bet.symbol} <span className="text-white">({bet.timeframe})</span></span>
           </div>
+          <div className="text-2xl font-extrabold text-white mt-2 mb-2" style={{letterSpacing:'0.03em'}}>
+            {new Date(bet.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' })}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full mt-6 text-base">
             <div className="rounded-xl p-4 min-w-[90px] border-2 border-yellow-400 bg-black flex flex-col items-center">
               <div className="text-yellow-400 mb-1">Apertura</div>
