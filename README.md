@@ -1,29 +1,60 @@
 # CandleRush2: Crypto Betting Game
 
-Bienvenido a la documentación científica y técnica de CandleRush2, el juego de apuestas algorítmicas sobre velas y tendencias del mercado cripto.
-
-CandleRush2 es un simulador donde puedes apostar sobre la dirección futura de las velas en mercados de criptomonedas. El sistema permite experimentar tanto con apuestas manuales como con estrategias automáticas, mostrando siempre la lógica detrás de cada decisión para máxima transparencia.
+> Simulador de apuestas algorítmicas sobre velas y tendencias del mercado cripto. 
+> ¡Apuesta manual o automáticamente y explora la lógica detrás de cada decisión!
 
 ---
 
-## Índice
+## 🗂️ Índice Rápido
 
-- [Fundamentos Matemáticos y Científicos](#fundamentos-matemáticos-y-científicos)
-- [Sistema de Apuestas y Resolución](#sistema-de-apuestas-y-resolución)
-- [AutoMix: Algoritmo de Decisión Multi-Voto](#automix-algoritmo-de-decisión-multi-voto)
-  - [Desglose de las 6 Señales](#desglose-de-las-6-señales)
-  - [Lógica de Votación Proporcional](#lógica-de-votación-proporcional)
-  - [Ejemplo Matemático y Persistencia](#ejemplo-matemático-y-persistencia)
-- [Componentes Clave y Canvas](#componentes-clave-y-canvas)
-  - [game-screen.tsx](#game-screentsx)
-  - [candlestick-chart.tsx](#candlestick-charttsx)
-  - [bet-result-modal.tsx](#bet-result-modaltsx)
-  - [autoMixMemory.ts](#automixmemoryts)
-  - [macd-decision.ts](#macd-decisionts)
-- [Integración con Binance API](#integración-con-binance-api)
-- [Memorias, Transparencia y Análisis](#memorias-transparencia-y-análisis)
-- [Extensión, Personalización y FAQ](#extensión-personalización-y-faq)
-- [Créditos y Licencia](#créditos-y-licencia)
+- [🚀 Resumen y Propósito](#resumen-y-propósito)
+- [🛠️ Cómo empezar](#cómo-empezar)
+- [🔢 Fundamentos Técnicos](#fundamentos-técnicos)
+- [🎲 Cómo Funciona el Juego](#cómo-funciona-el-juego)
+- [🤖 AutoMix: Algoritmo Multi-Voto](#automix-algoritmo-multi-voto)
+- [🧩 Componentes Principales y Arquitectura](#componentes-principales-y-arquitectura)
+- [🔌 Integración Binance API](#integración-binance-api)
+- [🧠 Memorias y Transparencia](#memorias-y-transparencia)
+- [⚙️ Personalización y FAQ](#personalización-y-faq)
+- [👥 Créditos y Licencia](#créditos-y-licencia)
+
+---
+
+# 🚀 Resumen y Propósito
+
+CandleRush2 es una plataforma gamificada de predicción de mercados, donde los usuarios apuestan sobre el comportamiento de velas japonesas (candlesticks) en criptomonedas. El objetivo es ofrecer una experiencia educativa, transparente y científicamente fundamentada, combinando análisis técnico, probabilidad y gamificación.
+
+---
+
+# 🛠️ Cómo empezar
+
+**Requisitos mínimos:**
+- Node.js >= 18
+- npm >= 9
+- Navegador moderno
+
+**Instalación:**
+```bash
+npm install
+```
+
+**Ejecución en local:**
+```bash
+npm run dev
+```
+
+**Estructura de carpetas:**
+- `app/`: Rutas y layout principal
+- `components/`: Componentes de UI y lógica del juego
+  - `game/`: Lógica y UI específica del juego
+  - `ui/`: Componentes reutilizables
+- `context/`: Contextos globales (juego, usuario, logros)
+
+---
+
+# 🚀 Resumen Rápido
+
+CandleRush2 es una plataforma gamificada de predicción de mercados, donde los usuarios apuestan sobre el comportamiento de velas japonesas (candlesticks) en criptomonedas. El objetivo es ofrecer una experiencia educativa, transparente y científicamente fundamentada, combinando análisis técnico, probabilidad y gamificación.
 
 ---
 
@@ -368,29 +399,6 @@ Implementa la lógica de cálculo de señales técnicas (RSI, MACD, mayoría, et
 
 
 
-# Instalación y Puesta en Marcha
-
-1. **Clona el repositorio:**
-   ```bash
-   git clone https://github.com/420btc/CandleRush2.git
-   cd CandleRush2
-   ```
-2. **Instala dependencias:**
-   ```bash
-   npm install
-   # o
-   pnpm install
-   ```
-3. **Configura variables de entorno:**
-   - Si necesitas claves para la API de Binance u otros servicios, crea un archivo `.env.local` siguiendo el ejemplo de `.env.example` (si existe).
-4. **Ejecuta el servidor de desarrollo:**
-   ```bash
-   npm run dev
-   # o
-   pnpm dev
-   ```
-5. **Abre el navegador:**
-   - Accede a `http://localhost:3000`
 
 ---
 
@@ -429,7 +437,6 @@ Implementa la lógica de cálculo de señales técnicas (RSI, MACD, mayoría, et
 
 Este proyecto está bajo la licencia MIT. Consulta el archivo LICENSE para más detalles.
 
----
 
 
 
