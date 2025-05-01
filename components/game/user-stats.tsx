@@ -126,9 +126,16 @@ export default function UserStats() {
     bullVsBearIcon = '⚖️';
   }
 
-  const balance = userBalance;
-  const profitLoss = balance - 100;
-  const isProfitable = profitLoss >= 0;
+  // Ganancias/Pérdidas solo de apuestas (ignora retos, ruleta, etc)
+  const netBetProfit = bets.reduce((acc, bet) => {
+    if (bet.status === "WON" && typeof bet.winnings === "number" && typeof bet.amount === "number") {
+      return acc + (bet.winnings - bet.amount);
+    } else if ((bet.status === "LOST" || bet.status === "LIQUIDATED") && typeof bet.amount === "number") {
+      return acc - bet.amount;
+    }
+    return acc;
+  }, 0);
+  const isProfitable = netBetProfit >= 0;
 
   // --- NUEVO: Ganancias y pérdidas totales acumuladas ---
   const totalWon = bets.filter(b => b.status === "WON" && typeof b.winnings === 'number').reduce((sum, b) => sum + (b.winnings || 0), 0);
@@ -334,9 +341,9 @@ export default function UserStats() {
           ) : (
             <TrendingDown className="h-5 w-5 text-red-400" />
           )}
-          <span className="text-sm font-bold text-white">Ganancias/Pérdidas</span>
+          <span className="text-sm font-bold text-white">Ganancias/Pérdidas (solo apuestas)</span>
         </div>
-        <span className={`font-extrabold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{profitLoss.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <span className={`font-extrabold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{netBetProfit.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
       </div>
       {/* NUEVO: Ganancias y pérdidas totales */}
       <div className="flex items-center justify-between text-white mt-1">
