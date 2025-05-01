@@ -632,6 +632,55 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     drawEMA(ema200, '#2196f3'); // Azul
     drawEMA(ema365, '#22c55e'); // Verde
 
+    // === DIBUJAR CÍRCULOS EN CRUCES DE EMAS ===
+    // Helper para detectar cruces
+    // Dibuja un círculo de cruce con dos colores (mitad y mitad)
+    function drawEMACrossCircles(
+      emaA: (number|null)[],
+      emaB: (number|null)[],
+      colorA: string,
+      colorB: string
+    ) {
+      if (!ctx) return;
+      for (let i = 1; i < emaA.length; i++) {
+        if (emaA[i-1] === null || emaB[i-1] === null || emaA[i] === null || emaB[i] === null) continue;
+        // Detectar cruce: producto de diferencias cambia de signo
+        const prevDiff = emaA[i-1]! - emaB[i-1]!;
+        const currDiff = emaA[i]! - emaB[i]!;
+        if ((prevDiff === 0 || currDiff === 0) || (prevDiff * currDiff > 0)) continue; // No hay cruce
+        // Calcular punto de cruce por interpolación lineal
+        const t = Math.abs(prevDiff) / (Math.abs(prevDiff) + Math.abs(currDiff));
+        const candlePrev = allCandles[i-1];
+        const candleCurr = allCandles[i];
+        const crossTimestamp = candlePrev.timestamp + t * (candleCurr.timestamp - candlePrev.timestamp);
+        const crossPrice = emaA[i-1]! + t * (emaA[i]! - emaA[i-1]!);
+        const x = (crossTimestamp - minTime) * xScale - clampedOffsetX;
+        const y = dimensions.height - ((crossPrice - minPrice) * yScale - clampedOffsetY);
+        // Dibuja el círculo mitad-mitad
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI, false);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = colorA;
+        ctx.shadowColor = 'transparent';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, 6, Math.PI, 2 * Math.PI, false);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = colorB;
+        ctx.shadowColor = 'transparent';
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    // Pares de EMAs a comparar y sus colores
+    drawEMACrossCircles(ema10, ema55, '#a259f7', '#FFD600');
+    drawEMACrossCircles(ema55, ema200, '#FFD600', '#2196f3');
+    drawEMACrossCircles(ema200, ema365, '#2196f3', '#22c55e');
+    drawEMACrossCircles(ema10, ema200, '#a259f7', '#2196f3');
+    drawEMACrossCircles(ema10, ema365, '#a259f7', '#22c55e');
+    drawEMACrossCircles(ema55, ema365, '#FFD600', '#22c55e');
+
 // Mostrar precios actuales de cada EMA en la esquina superior izquierda
 const emaLabels = [
 { name: 'EMA10', value: ema10[ema10.length - 1], color: '#a259f7' },
