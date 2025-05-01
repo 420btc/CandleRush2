@@ -13,6 +13,8 @@ export type AutoMixMemoryEntry = {
   macd: number;
   macdSignalLine: number;
   volumeVote: "BULLISH" | "BEARISH" | null;
+  crossSignal?: "GOLDEN_CROSS" | "DEATH_CROSS" | null;
+  emaPositionVote?: "BULLISH" | "BEARISH" | null;
   wasRandom?: boolean; // true si la apuesta fue aleatoria
 };
 
@@ -191,6 +193,8 @@ export function saveAutoMixMemory(entry: AutoMixMemoryEntry) {
     // Falla silenciosa
   }
 }
+
+
 
 export function clearAutoMixMemory() {
   try {

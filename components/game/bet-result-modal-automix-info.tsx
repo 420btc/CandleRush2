@@ -7,7 +7,7 @@ interface AutoMixInfoProps {
 }
 
 // Utilidad para encontrar la entrada de memoria más cercana a un timestamp dado
-function findClosestEntry<T extends { timestamp: number }>(arr: T[], timestamp: number, toleranceMs: number = 60000): T | null {
+function findClosestEntry<T extends { timestamp: number }>(arr: T[], timestamp: number, toleranceMs: number = 180000): T | null {
   if (!arr.length) return null;
   let closest: T | null = null;
   let minDiff = toleranceMs;
@@ -114,7 +114,22 @@ return (
     <div className="mt-1 rounded-lg border-2 border-yellow-400 bg-black/90 p-1 text-left shadow-md">
       <div className="font-bold text-yellow-300 text-xs mb-0.5 leading-tight">AutoMix: Decisión y votos</div>
       <div className="flex flex-wrap gap-1 mb-0.5">
-        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">Dirección: <b>{entry?.direction ?? 'Sin dato'}</b></span>
+        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">
+          Dirección: <b>{entry?.direction ?? 'Sin dato'}</b>
+          {(() => {
+            if (entry?.emaPositionVote === 'BULLISH') return ' (EMA 55/200: BULLISH)';
+            if (entry?.emaPositionVote === 'BEARISH') return ' (EMA 55/200: BEARISH)';
+            if (entry && 'emaPositionVote' in entry && entry.emaPositionVote === null) return ' (EMA 55/200: Zona neutra)';
+            if (!entry || !('emaPositionVote' in entry)) return ' (EMA 55/200: Sin dato)';
+            return '';
+          })()}
+        </span>
+        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">
+          {entry?.crossSignal === 'GOLDEN_CROSS' && 'Golden Cross: Se produjo un cruce alcista'}
+          {entry?.crossSignal === 'DEATH_CROSS' && 'Death Cross: Se produjo un cruce bajista'}
+          {entry && 'crossSignal' in entry && entry.crossSignal === null && 'No hubo Golden Cross ni Death Cross en este momento (se comprobó, pero no ocurrió ningún cruce).'}
+          {(!entry || !('crossSignal' in entry)) && 'No se pudo comprobar el cruce para esta apuesta (dato no disponible).'}
+        </span>
       </div>
       <div className={`grid gap-2 mt-2`}>
         {/* Tarjeta GRANDE de mayoría de votos ponderados */}

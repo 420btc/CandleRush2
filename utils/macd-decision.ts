@@ -45,6 +45,74 @@ export function decideMixDirection(candles: Candle[], timeframe: string = "1m"):
     }
   }
 
+  // --- EMA 55/200 Position Vote ---
+  function calcEMA(values: number[], period: number): number[] {
+    if (values.length < period) return [];
+    const k = 2 / (period + 1);
+    let emaArr: number[] = [];
+    let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+    emaArr[period - 1] = ema;
+    for (let i = period; i < values.length; i++) {
+      ema = values[i] * k + ema * (1 - k);
+      emaArr[i] = ema;
+    }
+    return emaArr;
+  }
+  const closes = candles.map(c => c.close);
+  let emaPositionVote: "BULLISH" | "BEARISH" | null = null;
+  if (closes.length >= 55) {
+    const ema55 = calcEMA(closes, 55);
+    const ema200 = calcEMA(closes, 200);
+    const last6 = closes.slice(-6);
+    const lastEma55 = ema55.slice(-6);
+    const lastEma200 = ema200.slice(-6);
+    const allAbove = last6.every((close, i) => close > lastEma55[i] && close > lastEma200[i]);
+    const allBelow = last6.every((close, i) => close < lastEma55[i] && close < lastEma200[i]);
+    if (allAbove) emaPositionVote = "BULLISH";
+    else if (allBelow) emaPositionVote = "BEARISH";
+    else emaPositionVote = null;
+  }
+
+  // --- Golden Cross / Death Cross ---
+  // (definición única al inicio de decideMixDirection)
+function simpleMovingAverage(values: number[], period: number): number[] {
+    if (values.length < period) return [];
+    const result: number[] = [];
+    for (let i = period - 1; i < values.length; i++) {
+      const sum = values.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+      result.push(sum / period);
+    }
+    return result;
+  }
+  // (definición única al inicio de decideMixDirection)
+type CrossType = "GOLDEN_CROSS" | "DEATH_CROSS" | null;
+  // (definición única al inicio de decideMixDirection)
+function detectCross(candles: Candle[], shortPeriod = 50, longPeriod = 200): CrossType {
+    const closes = candles.map(c => c.close);
+    const smaShort = simpleMovingAverage(closes, shortPeriod);
+    const smaLong = simpleMovingAverage(closes, longPeriod);
+    const offset = smaShort.length - smaLong.length;
+    if (offset < 0) return null;
+    if (smaLong.length < 2) return null;
+    const prevShort = smaShort[smaShort.length - 2];
+    const prevLong = smaLong[smaLong.length - 2];
+    const currShort = smaShort[smaShort.length - 1];
+    const currLong = smaLong[smaLong.length - 1];
+    if (prevShort < prevLong && currShort > currLong) {
+      return "GOLDEN_CROSS";
+    }
+    if (prevShort > prevLong && currShort < currLong) {
+      return "DEATH_CROSS";
+    }
+    return null;
+  }
+  // (definición única al inicio de decideMixDirection)
+const crossSignal = detectCross(candles);
+  // (definición única al inicio de decideMixDirection)
+let crossVote: "BULLISH" | "BEARISH" | null = null;
+  if (crossSignal === "GOLDEN_CROSS") crossVote = "BULLISH";
+  if (crossSignal === "DEATH_CROSS") crossVote = "BEARISH";
+
   // --- 0. 5% de probabilidad de decisión completamente aleatoria ---
   if (Math.random() < 0.05) {
     const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
@@ -62,6 +130,8 @@ export function decideMixDirection(candles: Candle[], timeframe: string = "1m"):
         macd: 0,
         macdSignalLine: 0,
         volumeVote: null,
+        crossSignal: crossSignal ?? null,
+        emaPositionVote: emaPositionVote ?? null,
         wasRandom: true,
       };
       // @ts-ignore
@@ -96,12 +166,16 @@ export function decideMixDirection(candles: Candle[], timeframe: string = "1m"):
   }
   const rsi = calcRSI(candles);
   let rsiSignal: "BULLISH" | "BEARISH" | null = null;
-  if (rsi > 60) rsiSignal = "BULLISH";
+  if (rsi > 50) rsiSignal = "BULLISH";
   else if (rsi < 40) rsiSignal = "BEARISH";
   // Guardar en memoria dedicada de RSI
   try {
     saveRsiMemory({ timestamp: Date.now(), rsi, rsiSignal });
   } catch {}
+
+  // --- 2a. Golden Cross / Death Cross ---
+  // (definición única al inicio de decideMixDirection)
+// (Definición ya incluida arriba, eliminar duplicados aquí)
 
   // --- 2b. Análisis Fibonacci ---
   function calculateFibonacciLevels(candles: Candle[], timeframe: string) {
@@ -151,22 +225,12 @@ export function decideMixDirection(candles: Candle[], timeframe: string = "1m"):
   } catch {}
 
   // --- 3. Señal MACD (últimas 66 velas) ---
-  function calcEMA(values: number[], period: number): number[] {
-    const k = 2 / (period + 1);
-    let emaArr: number[] = [];
-    let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
-    emaArr[period - 1] = ema;
-    for (let i = period; i < values.length; i++) {
-      ema = values[i] * k + ema * (1 - k);
-      emaArr[i] = ema;
-    }
-    return emaArr;
-  }
-  const closes = candles.slice(-66).map(c => c.close);
-  const ema12 = calcEMA(closes, 12);
-  const ema26 = calcEMA(closes, 26);
+
+  const closes66 = candles.slice(-66).map(c => c.close);
+  const ema12 = calcEMA(closes66, 12);
+  const ema26 = calcEMA(closes66, 26);
   let macdLineArr: number[] = [];
-  for (let i = 0; i < closes.length; i++) {
+  for (let i = 0; i < closes66.length; i++) {
     if (ema12[i] !== undefined && ema26[i] !== undefined) {
       macdLineArr[i] = ema12[i] - ema26[i];
     } else {
@@ -312,6 +376,13 @@ try {
   if (volumeVote === "BULLISH") bullishVotes++;
   if (volumeVote === "BEARISH") bearishVotes++;
 
+  // --- 8. Voto por Golden Cross/Death Cross ---
+  if (crossVote === "BULLISH") bullishVotes++;
+  if (crossVote === "BEARISH") bearishVotes++;
+  // --- 9. Voto por posición EMA 55/200 ---
+  if (emaPositionVote === "BULLISH") bullishVotes++;
+  if (emaPositionVote === "BEARISH") bearishVotes++;
+
   // --- Peso aleatorio en zonas neutras ---
   if (!majoritySignal && rsiSignal === null) {
     // Guardar memoria incluyendo volumeVote
@@ -328,6 +399,8 @@ try {
         macd: macdLine,
         macdSignalLine: signalLine,
         volumeVote,
+        crossSignal: crossSignal ?? null,
+        emaPositionVote: emaPositionVote ?? null,
         wasRandom: true,
       };
       // @ts-ignore
@@ -381,6 +454,7 @@ try {
       macd: macdLine,
       macdSignalLine: signalLine,
       volumeVote,
+      crossSignal: crossSignal ?? null,
       wasRandom: false,
     };
     // @ts-ignore
