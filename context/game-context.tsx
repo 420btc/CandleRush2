@@ -108,6 +108,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [autoMixMemory, setAutoMixMemory] = useState<any[]>([]); // Ajusta el tipo según tu definición
   const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, any[]>>>({});
 
+  // --- LIMPIEZA DE ESTADO AL CAMBIAR USUARIO (LOGOUT/LOGIN) ---
+  useEffect(() => {
+    // Si el usuario cambia (logout o login), limpia apuestas y otros estados
+    clearBets();
+    setUserBalance(100); // Resetear balance a valor inicial
+    setAchievements([]); // Limpiar logros
+    setAutoMixMemory([]); // Limpiar memoria de mix
+  }, [currentUser]);
+
   function saveUserData(username: string, data: any) {
     localStorage.setItem(`userData_${username}`, JSON.stringify(data));
   }
