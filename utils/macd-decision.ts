@@ -7,6 +7,44 @@ import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, 
  * @returns {"BULLISH" | "BEARISH"} Dirección sugerida
  */
 export function decideMixDirection(candles: Candle[], timeframe: string = "1m"): "BULLISH" | "BEARISH" {
+  // --- HISTORIAL DE ÉXITO/FRACASO POR COMBINACIÓN ---
+  // Se analiza ANTES de devolver la decisión final
+  // (esto se aplicará tras calcular signals y antes de devolver dirección)
+  function checkShouldInvertDecision(majoritySignal: "BULLISH" | "BEARISH" | null, rsiSignal: "BULLISH" | "BEARISH" | null, macdSignal: "BULLISH" | "BEARISH" | null): boolean {
+    try {
+      const memory = getAutoMixMemory();
+      // Filtra por la combinación de señales actual
+      const similares = memory.filter(e =>
+        e.majoritySignal === majoritySignal &&
+        e.rsiSignal === rsiSignal &&
+        e.macdSignal === macdSignal
+      );
+      // --- 1. BLOQUES DE 3 DERROTAS ---
+      let blocksOf3Losses = 0;
+      for (let i = 0; i <= similares.length - 3; i++) {
+        if (
+          (similares[i].result === "LOSS" || similares[i].result === "LIQ") &&
+          (similares[i+1].result === "LOSS" || similares[i+1].result === "LIQ") &&
+          (similares[i+2].result === "LOSS" || similares[i+2].result === "LIQ")
+        ) {
+          blocksOf3Losses++;
+          i += 2; // Salta al siguiente bloque (no solapa)
+        }
+      }
+      if (blocksOf3Losses >= 2) return true;
+      // --- 2. TASA DE DERROTA HISTÓRICA ---
+      if (similares.length >= 5) {
+        const perdidas = similares.filter(e => e.result === "LOSS" || e.result === "LIQ").length;
+        if (perdidas / similares.length > 0.7) {
+          return true;
+        }
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   // --- 0. 5% de probabilidad de decisión completamente aleatoria ---
   if (Math.random() < 0.05) {
     const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
@@ -293,13 +331,21 @@ try {
 
   // --- Desempate con MACD ---
   const totalVotes = bullishVotes + bearishVotes;
-  if (totalVotes === 0) return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
-  if (bullishVotes === bearishVotes) {
-    if (macdSignal) return macdSignal;
-    return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+  let direction: "BULLISH" | "BEARISH";
+  if (totalVotes === 0) direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+  else if (bullishVotes === bearishVotes) {
+    if (macdSignal) direction = macdSignal;
+    else direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+  } else {
+    const bullishProb = bullishVotes / totalVotes;
+    direction = Math.random() < bullishProb ? "BULLISH" : "BEARISH";
   }
-  const bullishProb = bullishVotes / totalVotes;
-  return Math.random() < bullishProb ? "BULLISH" : "BEARISH";
+
+  // --- LÓGICA DE INVERSIÓN POR HISTORIAL DE FRACASO ---
+  if (checkShouldInvertDecision(majoritySignal, rsiSignal, macdSignal)) {
+    direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
+  }
+  return direction;
 }
 
 // Para uso futuro: exportar la proporción
