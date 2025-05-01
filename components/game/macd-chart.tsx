@@ -138,6 +138,46 @@ const histPoints = histSlice;
            points={signalPoints.map(p => p.join(",")).join(" ")}
            opacity={0.85}
          />
+         {/* Cruces MACD/Signal: círculos mitad-mitad */}
+         {macdSlice.slice(1).map((currMacd, i) => {
+           const prevMacd = macdSlice[i];
+           const prevSignal = signalSlice[i];
+           const currSignal = signalSlice[i+1];
+           if (
+             prevMacd === undefined || prevSignal === undefined ||
+             currMacd === undefined || currSignal === undefined
+           ) return null;
+           const prevDiff = prevMacd - prevSignal;
+           const currDiff = currMacd - currSignal;
+           if ((prevDiff === 0 || currDiff === 0) || (prevDiff * currDiff > 0)) return null; // No hay cruce
+           // Interpolación lineal para el punto exacto
+           const t = Math.abs(prevDiff) / (Math.abs(prevDiff) + Math.abs(currDiff));
+           const xPrev = (i / (barsToShow - 1)) * chartWidth;
+           const xCurr = ((i+1) / (barsToShow - 1)) * chartWidth;
+           const yPrev = chartHeight / 2 - (prevMacd / maxAbs) * (chartHeight / 2 - 10);
+           const yCurr = chartHeight / 2 - (currMacd / maxAbs) * (chartHeight / 2 - 10);
+           const x = xPrev + t * (xCurr - xPrev);
+           const y = yPrev + t * (yCurr - yPrev);
+           const r = 6;
+           // SVG: dos semicircunferencias con path
+           return (
+             <g key={i+"-cross"}>
+               <path
+                 d={`M ${x - r},${y} a${r},${r} 0 1,1 ${2*r},0`}
+                 fill="none"
+                 stroke="#a259ff"
+                 strokeWidth={2}
+               />
+               <path
+                 d={`M ${x + r},${y} a${r},${r} 0 1,1 -${2*r},0`}
+                 fill="none"
+                 stroke="#FFD600"
+                 strokeWidth={2}
+               />
+             </g>
+           );
+         })}
+
         {/* Línea central */}
         <line x1={0} y1={chartHeight / 2} x2={chartWidth} y2={chartHeight / 2} stroke="#fff" strokeDasharray="4 2" opacity={0.2} />
       </svg>
