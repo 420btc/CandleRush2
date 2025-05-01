@@ -113,32 +113,6 @@ let crossVote: "BULLISH" | "BEARISH" | null = null;
   if (crossSignal === "GOLDEN_CROSS") crossVote = "BULLISH";
   if (crossSignal === "DEATH_CROSS") crossVote = "BEARISH";
 
-  // --- 0. 5% de probabilidad de decisión completamente aleatoria ---
-  if (Math.random() < 0.05) {
-    const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
-    // Guardar memoria con wasRandom: true
-    try {
-      const entry: AutoMixMemoryEntry = {
-        timestamp: Date.now(),
-        direction,
-        result: null,
-        majoritySignal: null,
-        rsiSignal: null,
-        macdSignal: null,
-        valleyVote: null,
-        rsi: 0,
-        macd: 0,
-        macdSignalLine: 0,
-        volumeVote: null,
-        crossSignal: crossSignal ?? null,
-        emaPositionVote: emaPositionVote ?? null,
-        wasRandom: true,
-      };
-      // @ts-ignore
-      saveAutoMixMemory(entry);
-    } catch {}
-    return direction;
-  }
 
   // --- 1. Señal de mayoría (últimas 65 velas, excluyendo la más reciente) ---
   const last65 = candles.slice(-66, -1);
