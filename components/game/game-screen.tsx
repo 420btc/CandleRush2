@@ -935,7 +935,18 @@ useEffect(() => {
   {/* Título a la izquierda */}
   <div className="flex items-center relative">
     <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', textShadow: '0 0 12px #FFD60088' }}>Candle Rush 2.0</h1>
-    <span className="absolute left-8 text-xs font-semibold pointer-events-none select-none" style={{ color: '#FFD600', textShadow: '0 0 8px #FFD60088', letterSpacing: '0.06em', lineHeight: '1', top: '3.37em' }}>By Carlos Freire</span>
+    <a
+      href="https://x.com/CarlosFreire0"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="absolute left-8 text-xs font-semibold select-none"
+      style={{ color: '#FFD600', textShadow: '0 0 8px #FFD60088', letterSpacing: '0.06em', lineHeight: '1', top: '3.37em', cursor: 'pointer', textDecoration: 'none' }}
+      onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
+      onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
+      aria-label="Twitter de Carlos Freire"
+    >
+      By Carlos Freire
+    </a>
   </div>
   {/* Nav centrado absolutamente */}
   {/* Relojes centrados y botón ruleta a la derecha de los relojes */}
