@@ -142,12 +142,15 @@ import BetResultModal from "@/components/game/bet-result-modal"
 import BetAmountFlyup from "@/components/game/BetAmountFlyup"
 import { ModalRuleta } from "@/components/ui/ModalRuleta";
 import RouletteButton from "@/components/game/RouletteButton";
+import BlockInfoModal from "@/components/game/BlockInfoModal";
 import DollarDiffCounter from "@/components/game/dollar-diff-counter";
 
 import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
+  // ...otros estados
+  const [showBlockInfoModal, setShowBlockInfoModal] = useState(false);
   // Estado global para mostrar/ocultar círculos de cruce EMA/MACD
   const [showCrossCircles, setShowCrossCircles] = React.useState(true);
   const [stockPrice, setStockPrice] = useState<number | null>(null);
@@ -953,11 +956,11 @@ useEffect(() => {
   <div className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3 flex flex-row items-center gap-4 z-10">
   {/* Nuevo botón al principio del grupo de relojes */}
   <button
-    onClick={() => alert('Nuevo botón')}
+    onClick={() => setShowBlockInfoModal(true)}
     className="mr-4 flex items-center justify-center rounded-full border-2 border-yellow-400 bg-black hover:bg-yellow-400/20 transition p-1 shadow focus:outline-none focus:ring-2 focus:ring-yellow-500"
     style={{ width: 32, height: 32, minWidth: 32, minHeight: 32 }}
-    title="Nuevo Botón"
-    aria-label="Nuevo Botón"
+    title="Últimos bloques Bitcoin"
+    aria-label="Últimos bloques Bitcoin"
     tabIndex={0}
   >
     {/* Icono de estrella */}
@@ -983,6 +986,9 @@ useEffect(() => {
     </div>
     {/* Botón ruleta */}
     <div className="ml-4 flex items-center">
+
+      {/* Modal info bloques Bitcoin */}
+      <BlockInfoModal open={showBlockInfoModal} onClose={() => setShowBlockInfoModal(false)} />
       <RouletteButton onClick={() => setRouletteOpen(true)} />
     </div>
   </div>
