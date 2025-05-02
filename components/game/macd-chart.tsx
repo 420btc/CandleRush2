@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import type { Candle } from "@/types/game";
+import { calculateADX } from "@/utils/adx";
 
 // Utilidad para calcular el MACD
 function calculateMACD(closes: number[], fast = 12, slow = 26, signal = 9) {
@@ -33,7 +34,7 @@ interface MacdChartProps {
   candlesToShow?: number;
 }
 
-export default function MacdChart({ candles, viewState, startIndex: externalStartIndex, candlesToShow: externalCandlesToShow, height = 180 }: MacdChartProps & { height?: number }) {
+export default function MacdChart({ candles, viewState, startIndex: externalStartIndex, candlesToShow: externalCandlesToShow, height = 180, showCrossCircles = true }: MacdChartProps & { height?: number, showCrossCircles?: boolean }) {
   // Extraer precios de cierre
   const closes = useMemo(() => candles.map(c => c.close), [candles]);
   const { macd, signal, histogram } = useMemo(() => calculateMACD(closes), [closes]);
@@ -75,8 +76,17 @@ const macdPoints = points(macdSlice);
 const signalPoints = points(signalSlice);
 const histPoints = histSlice;
 
+  // Calcular ADX para el mismo rango de velas
+  const adxArr = useMemo(() => calculateADX(candles.slice(startIndex, endIndex)), [candles, startIndex, endIndex]);
+  // Normalizar ADX para escalarlo al chartHeight (0-100)
+  const adxPoints = adxArr.map((v, i) => v == null ? null : [
+    (i / (barsToShow - 1)) * chartWidth,
+    chartHeight - (v / 100) * (chartHeight - 14) - 7 // margen arriba/abajo
+  ]).filter(Boolean) as [number, number][];
+
   return (
-    <div className="w-full mt-4" style={{ pointerEvents: 'none' }}>
+    <div className="w-full mt-4">
+
       <svg
         width="100%"
         height={chartHeight}
@@ -84,6 +94,38 @@ const histPoints = histSlice;
         preserveAspectRatio="none"
         style={{ background: "#000", display: 'block' }}
       >
+        {/* Índice de valores en la esquina inferior izquierda */}
+        {(() => {
+          const lastIdx = barsToShow - 1;
+          const macdVal = macdSlice[lastIdx]?.toFixed(2) ?? '--';
+          const signalVal = signalSlice[lastIdx]?.toFixed(2) ?? '--';
+          let adxVal = '--';
+          for (let i = barsToShow - 1; i >= 0; i--) {
+            if (adxArr[i] != null) { adxVal = adxArr[i]!.toFixed(2); break; }
+          }
+          let y = chartHeight - 38;
+          const dy = 12;
+          return (
+            <g opacity={0.55}>
+              <text x="2" y={y} fill="#a259ff" fontSize="10" fontWeight="bold">MACD: <tspan fill="#fff" fontWeight="normal">{macdVal}</tspan></text>
+              <text x="2" y={y+=dy} fill="#FFD600" fontSize="10" fontWeight="bold">Signal: <tspan fill="#fff" fontWeight="normal">{signalVal}</tspan></text>
+              <text x="2" y={y+=dy} fill="#fff" fontSize="10" fontWeight="bold">ADX: <tspan fill="#fff" fontWeight="normal">{adxVal}</tspan></text>
+            </g>
+          );
+        })()}
+        {/* Línea ADX blanca */}
+        {adxPoints.length > 1 && (
+          <polyline
+            fill="none"
+            stroke="#fff"
+            strokeWidth={1}
+            points={adxArr.map((v, i) => v == null ? null : [
+              (i / (barsToShow - 1)) * chartWidth,
+              chartHeight - (v / 100) * (chartHeight - 30) - 15 // menos maximizado, margen 15px
+            ]).filter(Boolean).map(p => p!.join(",")).join(" ")}
+            opacity={0.7}
+          />
+        )}
         {/* Histograma: verde si >0, rojo si <0 */}
         {/* MACD tipo "velas" más marcadas */}
         {histPoints.map((h, i) => {
@@ -139,7 +181,7 @@ const histPoints = histSlice;
            opacity={0.85}
          />
          {/* Cruces MACD/Signal: círculos mitad-mitad */}
-         {macdSlice.slice(1).map((currMacd, i) => {
+         {showCrossCircles && macdSlice.slice(1).map((currMacd, i) => {
            const prevMacd = macdSlice[i];
            const prevSignal = signalSlice[i];
            const currSignal = signalSlice[i+1];

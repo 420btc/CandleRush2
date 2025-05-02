@@ -10,6 +10,8 @@ import VolumeProfile from './volume-profile';
 import { BarChart3 } from 'lucide-react';
 
 interface CandlestickChartProps {
+  showCrossCircles?: boolean;
+  setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void;
   candles: Candle[];
   currentCandle: Candle | null;
   viewState: ViewState;
@@ -28,21 +30,15 @@ interface ViewState {
   isDragging: boolean
 }
 
-export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile }: CandlestickChartProps & { setVerticalScale?: (v: number) => void }) {
+export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
+  // Log para depuración del prop showCrossCircles
+  React.useEffect(() => {
+    console.log('[EMA CIRCLES][CandlestickChart] Prop showCrossCircles cambió:', showCrossCircles);
+  }, [showCrossCircles]);
+
 
   // --- Botón de enfoque exclusivo última vela ---
-  function FocusLastCandleButton() {
-    return (
-      <button
-        className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
-        title="Enfocar última vela"
-        onClick={handleFocusLastCandle}
-        tabIndex={0}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="#111" strokeWidth="2"/><path d="M12 7v5l3 3" stroke="#111" strokeWidth="2" strokeLinecap="round"/></svg>
-      </button>
-    );
-  }
+  // [ELIMINADO] Botón único para mostrar/ocultar cruces EMA/MACD
 
 
   // Referencias para los iconos
@@ -673,14 +669,17 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.restore();
       }
     }
-    // Pares de EMAs a comparar y sus colores
-    drawEMACrossCircles(ema10, ema55, '#a259f7', '#FFD600');
-    drawEMACrossCircles(ema55, ema200, '#FFD600', '#2196f3');
-    drawEMACrossCircles(ema200, ema365, '#2196f3', '#22c55e');
-    drawEMACrossCircles(ema10, ema200, '#a259f7', '#2196f3');
-    drawEMACrossCircles(ema10, ema365, '#a259f7', '#22c55e');
-    drawEMACrossCircles(ema55, ema365, '#FFD600', '#22c55e');
-
+    if (showCrossCircles === true) {
+      console.log('[EMA CIRCLES] Mostrando círculos EMA porque showCrossCircles === true');
+      drawEMACrossCircles(ema10, ema55, '#a259f7', '#FFD600');
+      drawEMACrossCircles(ema55, ema200, '#FFD600', '#2196f3');
+      drawEMACrossCircles(ema200, ema365, '#2196f3', '#22c55e');
+      drawEMACrossCircles(ema10, ema200, '#a259f7', '#2196f3');
+      drawEMACrossCircles(ema10, ema365, '#a259f7', '#22c55e');
+      drawEMACrossCircles(ema55, ema365, '#FFD600', '#22c55e');
+    } else {
+      console.log('[EMA CIRCLES] NO se muestran círculos EMA porque showCrossCircles !== true:', showCrossCircles);
+    }
 // Mostrar precios actuales de cada EMA en la esquina superior izquierda
 const emaLabels = [
 { name: 'EMA10', value: ema10[ema10.length - 1], color: '#a259f7' },
@@ -914,8 +913,8 @@ return (
       </div>
     )}
     {/* Controles de navegación */}
-    <div className="absolute bottom-[58px] right-2 flex gap-2 z-40">
-      <FocusLastCandleButton />
+    <div className="absolute bottom-[58px] right-2 flex gap-2 z-40" data-component-name="CandlestickChart">
+      {/* [ELIMINADO] <ToggleCrossCirclesButton /> */}
       <button
         onClick={handleReset}
         className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"

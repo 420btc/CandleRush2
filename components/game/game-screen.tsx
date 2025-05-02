@@ -147,6 +147,8 @@ import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
 export default function GameScreen() {
+  // Estado global para mostrar/ocultar círculos de cruce EMA/MACD
+  const [showCrossCircles, setShowCrossCircles] = React.useState(true);
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const { currentUser, setCurrentUser, userBalance } = useGame();
   const [showUserModal, setShowUserModal] = useState(false);
@@ -1068,7 +1070,7 @@ useEffect(() => {
                         {/* Precio BTC grande a la izquierda */}
                         <div className="flex items-center gap-4">
                           <BarChart3 className="h-5 w-5" />
-                          <span className="text-3xl font-bold text-[#FFD600] tracking-tight flex items-center gap-2">
+                          <span className="text-3xl font-bold text-[#FFD600] tracking-tight ml-2" style={{ minWidth: '230px', textAlign: 'right', display: 'inline-block' }}>
                             {currentSymbol}
                           </span>
                           <span
@@ -1133,14 +1135,16 @@ useEffect(() => {
   <CardContent className="relative p-0 bg-black rounded-b-xl overflow-hidden" style={{ minHeight: 430, width: 'calc(100% + 16px)', maxWidth: 'none', position: 'relative', padding: 0, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 }}>
     <div className="relative" style={{ width: '100%', height: 430, minWidth: 0 }}>
       <CandlestickChart
-        candles={candles}
-        currentCandle={currentCandle}
-        viewState={viewState}
-        setViewState={setViewState}
-        verticalScale={verticalScale}
-        showVolumeProfile={showVolumeProfile}
-        setShowVolumeProfile={setShowVolumeProfile}
-      />
+          candles={candles}
+          currentCandle={currentCandle}
+          viewState={viewState}
+          setViewState={setViewState}
+          verticalScale={verticalScale}
+          showVolumeProfile={showVolumeProfile}
+          setShowVolumeProfile={setShowVolumeProfile}
+          showCrossCircles={showCrossCircles}
+          setShowCrossCircles={setShowCrossCircles}
+        />
       {showVolumeProfile && (
         <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', width: 16, background: 'black', pointerEvents: 'none', zIndex: 21 }}>
           <VolumeProfile
