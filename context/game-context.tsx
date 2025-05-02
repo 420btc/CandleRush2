@@ -274,6 +274,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [winStreak, setWinStreak] = useState<number>(0)
   const [streakMultiplier, setStreakMultiplier] = useState<number>(1)
 
+  // Manejar evento de eliminación de apuesta
+  useEffect(() => {
+    const handleDeleteBet = (event: CustomEvent<{ betId: string }>) => {
+      const { betId } = event.detail;
+      setBetsByPair(prev => {
+        const updated = { ...prev };
+        if (updated[currentSymbol] && updated[currentSymbol][timeframe]) {
+          const currentBets = updated[currentSymbol][timeframe];
+          const filteredBets = currentBets.filter(bet => bet.id !== betId);
+          updated[currentSymbol] = { ...updated[currentSymbol] };
+          updated[currentSymbol][timeframe] = filteredBets;
+          // Actualizar localStorage manualmente
+          localStorage.setItem("betsByPair", JSON.stringify(updated));
+        }
+        return updated;
+      });
+    };
+
+    window.addEventListener('deleteBet', handleDeleteBet as EventListener);
+    return () => window.removeEventListener('deleteBet', handleDeleteBet as EventListener);
+  }, [currentSymbol, timeframe]);
+
   // --- PERSISTENCIA LOCAL ---
   // Cargar datos guardados al iniciar
   useEffect(() => {

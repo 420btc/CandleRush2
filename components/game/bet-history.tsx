@@ -24,6 +24,16 @@ export default function BetHistory() {
   const [localTimes, setLocalTimes] = useState<Record<string, string>>({});
   const [hydrated, setHydrated] = useState(false);
 
+  // Función para eliminar una apuesta específica
+  const deleteBet = (betId: string) => {
+    if (window.confirm('¿Seguro que deseas eliminar esta apuesta?')) {
+      // Filtrar el bet del array local
+      const updatedBets = bets.filter(b => b.id !== betId);
+      // Dispatchar el evento para que se actualice el estado global
+      window.dispatchEvent(new CustomEvent('deleteBet', { detail: { betId } }));
+    }
+  };
+
   useEffect(() => {
     // Solo calcular en cliente
     const times: Record<string, string> = {};
@@ -93,6 +103,14 @@ export default function BetHistory() {
                   <div className={`py-1 min-h-[48px] rounded-xl border border-yellow-400 flex flex-row items-center max-w-[355px] mx-auto text-xs gap-1 ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
                     {/* Icono y dirección */}
                     <div className="flex flex-col items-center justify-center min-w-[28px]">
+                      {/* Botón de eliminar */}
+                      <button
+                        className="absolute right-1.5 top-1 p-0.25 rounded-full bg-black/50 hover:bg-black/70 transition"
+                        onClick={() => deleteBet(bet.id)}
+                        aria-label="Eliminar apuesta"
+                      >
+                        <XCircle className="w-3 h-3 text-red-400" />
+                      </button>
                       <img
                         src={bet.prediction === "BULLISH" ? "/bull.png" : "/bear.png"}
                         alt={bet.prediction === "BULLISH" ? "Bull" : "Bear"}
