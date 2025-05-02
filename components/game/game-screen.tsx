@@ -950,22 +950,36 @@ useEffect(() => {
   </div>
   {/* Nav centrado absolutamente */}
   {/* Relojes centrados y botón ruleta a la derecha de los relojes */}
-  <div className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3 flex flex-row items-center gap-8 z-10">
-    <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
-      <span className="text-xs font-semibold text-[#FFD600] mb-0.5" style={{letterSpacing: '0.01em'}}>Hora local</span>
-      <span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{systemTime}</span>
-    </div>
+  <div className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3 flex flex-row items-center gap-4 z-10">
+  {/* Nuevo botón al principio del grupo de relojes */}
+  <button
+    onClick={() => alert('Nuevo botón')}
+    className="mr-4 flex items-center justify-center rounded-full border-2 border-yellow-400 bg-black hover:bg-yellow-400/20 transition p-1 shadow focus:outline-none focus:ring-2 focus:ring-yellow-500"
+    style={{ width: 32, height: 32, minWidth: 32, minHeight: 32 }}
+    title="Nuevo Botón"
+    aria-label="Nuevo Botón"
+    tabIndex={0}
+  >
+    {/* Icono de estrella */}
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ display: 'block', margin: 'auto' }}>
+      <polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18.5 5.5,22 7,14.5 2,9.5 9,9" fill="#FFD600" stroke="#FFD600" strokeWidth="1.5" />
+    </svg>
+  </button>
+  <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
+    <span className="text-xs font-semibold text-[#FFD600] mb-0.5" style={{letterSpacing: '0.01em'}}>Hora local</span>
+    <span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] select-none leading-tight" style={{ minWidth: '180px', width: '180px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>{systemTime}</span>
+  </div>
     <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
       <span className="text-xs font-semibold text-[#ef4444] mb-0.5" style={{letterSpacing: '0.01em', textShadow: '0 0 12px #FFD60088'}}>Hora Shanghai</span>
-  <span className="text-3xl sm:text-4xl font-extrabold select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', color: '#ef4444', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{shanghaiTime}</span>
+  <span className="text-3xl sm:text-4xl font-extrabold select-none leading-tight" style={{ minWidth: '180px', width: '180px', display: 'inline-block', letterSpacing: '0.02em', color: '#ef4444', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>{shanghaiTime}</span>
     </div>
     <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
       <span className="text-xs font-semibold text-[#60aaff] mb-0.5" style={{letterSpacing: '0.01em', textShadow: '0 0 12px #FFD60088'}}>Hora Chicago</span>
-  <span className="text-3xl sm:text-4xl font-extrabold select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', color: '#60aaff', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{chicagoTime}</span>
+  <span className="text-3xl sm:text-4xl font-extrabold select-none leading-tight" style={{ minWidth: '180px', width: '180px', display: 'inline-block', letterSpacing: '0.02em', color: '#60aaff', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>{chicagoTime}</span>
     </div>
     <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
       <span className="text-xs font-semibold text-[#a259ff] mb-0.5" style={{letterSpacing: '0.01em'}}>Cierre diario</span>
-      <span className="text-3xl sm:text-4xl font-extrabold text-[#a259ff] select-none leading-tight" style={{ minWidth: '90px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem' }}>{dailyCloseCountdown}</span>
+      <span className="text-3xl sm:text-4xl font-extrabold text-[#a259ff] select-none leading-tight" style={{ minWidth: '180px', width: '180px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>{dailyCloseCountdown}</span>
     </div>
     {/* Botón ruleta */}
     <div className="ml-4 flex items-center">
