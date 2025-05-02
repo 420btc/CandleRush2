@@ -34,7 +34,7 @@ const BlockInfoModal: React.FC<BlockInfoModalProps> = ({ open, onClose }) => {
   // Permite refrescar manualmente
   const fetchBlocks = () => {
     setLoading(true);
-    fetch('https://api.blockchair.com/bitcoin/blocks?limit=10')
+    fetch('https://api.blockchair.com/bitcoin/blocks?limit=12')
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.data)) {
@@ -54,14 +54,11 @@ const BlockInfoModal: React.FC<BlockInfoModalProps> = ({ open, onClose }) => {
   };
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     if (open) {
       setLoading(true);
       fetchBlocks();
-      // El refresco automático puede causar problemas de datos, así que solo refrescamos manualmente ahora
-      // interval = setInterval(fetchBlocks, 1000);
     }
-    return () => { if (interval) clearInterval(interval); };
+    return () => {};
   }, [open]);
 
   if (!open) return null;
@@ -103,39 +100,83 @@ const BlockInfoModal: React.FC<BlockInfoModalProps> = ({ open, onClose }) => {
         ) : error ? (
           <div className="text-red-400 text-center">{error}</div>
         ) : (
-          <div className="flex flex-col gap-2 w-full px-2 pb-4" style={{overflowY: 'auto'}}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full px-2 pb-4" style={{overflowY: 'auto'}}>
             {Array.isArray(blocks) && blocks.length > 0 ? blocks.map((block: any) => (
-              <div
-                key={block.id}
-                className="rounded-md px-2 py-2 flex flex-col gap-2 shadow" style={{ background: '#FFD600', color: 'white', border: '1px solid #FFD600', fontSize: 13, minHeight: 0, margin: 0 }}
-                style={{ background: '#FFD600', color: 'white', border: '1px solid #FFD600', fontSize: 13, minHeight: 0 }}
-              >
-                <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-center">
-                  <span className="font-bold text-white">Altura:</span> <span className="font-mono text-black">{block.id}</span>
-                  <span className="font-bold text-white">Hash:</span> <span className="break-all text-black font-mono">{block.hash}</span>
-                  <span className="font-bold text-white">Fecha:</span> <span className="text-black">{block.time}</span>
-                  <span className="font-bold text-white">Txs:</span> <span className="text-black">{block.transaction_count}</span>
-                  <span className="font-bold text-white">Tamaño:</span> <span className="text-black">{block.size} bytes</span>
-                  <span className="font-bold text-white">Reward:</span> <span className="text-black">{block.reward} sat</span>
-                  <span className="font-bold text-white">Minero:</span> <span className="text-black">{block.miner}</span>
-                  <span className="font-bold text-white">Nonce:</span> <span className="text-black">{block.nonce}</span>
-                  <span className="font-bold text-white">Dificultad:</span> <span className="text-black">{block.difficulty}</span>
-                  <span className="font-bold text-white">Merkle:</span> <span className="break-all text-black font-mono">{block.merkle_root}</span>
-                  <span className="font-bold text-white">Versión:</span> <span className="text-black">{block.version}</span>
-                  <span className="font-bold text-white">Bits:</span> <span className="text-black">{block.bits}</span>
-                  <span className="font-bold text-white">Peso:</span> <span className="text-black">{block.weight}</span>
-                  <span className="font-bold text-white">Fee:</span> <span className="text-black">{block.fee}</span>
-                  {block.extra_data && <><span className="font-bold text-white">Extra:</span> <span className="break-all text-black">{block.extra_data}</span></>}
-                  {block.signature && <><span className="font-bold text-white">Signature:</span> <span className="break-all text-black">{block.signature}</span></>}
-                </div>
-              </div>
-            )) : (
-              <div className="text-white text-center py-4">No hay datos de bloques disponibles.</div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+               <div
+                 key={block.id}
+                 className="rounded-lg flex flex-col items-center justify-center p-2 border-2 border-yellow-400 bg-gradient-to-br from-yellow-400/50 to-yellow-400/30 backdrop-blur-sm"
+                 style={{
+                   width: '150px',
+                   height: '250px',
+                   fontSize: '0.65rem',
+                   position: 'relative',
+                   overflow: 'hidden',
+                   border: '2px solid #FFD600',
+                   background: 'radial-gradient(circle at center, rgba(255,214,0,0.5) 0%, rgba(255,214,0,0.3) 100%)',
+                   boxShadow: '0 6px 24px rgba(255,214,0,0.2)'
+                 }}
+               >
+                 <div className="flex flex-col gap-1 w-full text-center">
+                   <div className="font-bold text-white">#{block.id}</div>
+                   <div className="grid grid-cols-2 gap-1 w-full">
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Hash:</span>
+                       <span className="text-xs text-black font-mono break-all">{block.hash.slice(0, 8)}...</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Fecha:</span>
+                       <span className="text-xs text-black">{block.time}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Txs:</span>
+                       <span className="text-xs text-black">{block.transaction_count}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Tamaño:</span>
+                       <span className="text-xs text-black">{block.size} bytes</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Reward:</span>
+                       <span className="text-xs text-black">{block.reward} sat</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Minero:</span>
+                       <span className="text-xs text-black">{block.miner}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Nonce:</span>
+                       <span className="text-xs text-black">{block.nonce}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Dificultad:</span>
+                       <span className="text-xs text-black">{block.difficulty}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Versión:</span>
+                       <span className="text-xs text-black">{block.version}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Bits:</span>
+                       <span className="text-xs text-black">{block.bits}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Peso:</span>
+                       <span className="text-xs text-black">{block.weight}</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-medium text-white">Fee:</span>
+                       <span className="text-xs text-black">{block.fee}</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             )) : (
+               <div className="text-white text-center py-4">No hay datos de bloques disponibles.</div>
+             )}
+           </div>
+         )}
+       </div>
+     </div>
   );
 
   return ReactDOM.createPortal(modalContent, document.body);
