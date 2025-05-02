@@ -293,7 +293,8 @@ try {
   // --- Votación proporcional: RSI, Valle, Majority y MACD (25% cada uno) ---
   let bullishVotes = 0;
   let bearishVotes = 0;
-  if (rsiSignal === "BULLISH") bullishVotes++;
+  if (rsiSignal === "BULLISH") bullishVotes += 0.5;
+  if (rsiSignal === "BEARISH") bearishVotes += 0.5;
   if (valleyVote === "BULLISH") bullishVotes++;
   if (valleyVote === "BEARISH") bearishVotes++;
   if (majoritySignal === "BULLISH") bullishVotes++;
@@ -368,15 +369,15 @@ try {
   if (crossVote === "BULLISH") bullishVotes++;
   if (crossVote === "BEARISH") bearishVotes++;
   // --- 9. Voto por posición EMA 55/200 ---
-  if (emaPositionVote === "BULLISH") bullishVotes++;
-  if (emaPositionVote === "BEARISH") bearishVotes++;
+  if (emaPositionVote === "BULLISH") bullishVotes += 0.5;
+  if (emaPositionVote === "BEARISH") bearishVotes += 0.5;
 
   // --- Voto Whale Trades (si se pasa como parámetro) ---
   let whaleVote: "BULLISH" | "BEARISH" | null = null;
   if (whaleTrades && Array.isArray(whaleTrades)) {
     whaleVote = getWhaleVote(whaleTrades, Date.now());
-    if (whaleVote === "BULLISH") bullishVotes++;
-    if (whaleVote === "BEARISH") bearishVotes++;
+    if (whaleVote === "BULLISH") bullishVotes += 2;
+    if (whaleVote === "BEARISH") bearishVotes += 2;
   }
   // --- 9. Voto ADX+memoria ---
   let adxMemoryVote: "BULLISH" | "BEARISH" | null = getAdxMemoryVote(candles);
