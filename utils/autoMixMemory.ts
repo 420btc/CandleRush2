@@ -183,7 +183,7 @@ export function getVolumeTrendMemory(): VolumeTrendMemoryEntry[] {
 
 
 const STORAGE_KEY = "autoMixMemory";
-const MAX_ENTRIES = 10000;
+const MAX_ENTRIES = 666;
 
 export function saveAutoMixMemory(entry: AutoMixMemoryEntry) {
   try {
