@@ -14,6 +14,7 @@ export type AutoMixMemoryEntry = {
   macd: number;
   macdSignalLine: number;
   volumeVote: "BULLISH" | "BEARISH" | null;
+  whaleVote?: "BULLISH" | "BEARISH" | null;
   crossSignal?: "GOLDEN_CROSS" | "DEATH_CROSS" | null;
   emaPositionVote?: "BULLISH" | "BEARISH" | null;
   wasRandom?: boolean; // true si la apuesta fue aleatoria

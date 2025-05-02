@@ -1,12 +1,25 @@
 import type { Candle } from "@/types/game";
 import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry } from "./autoMixMemory";
+import type { WhaleTrade } from "@/hooks/useWhaleTrades";
+import { getWhaleVote } from "./whale-vote";
 
 /**
  * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD.
  * @param candles - Array de velas (ordenadas de más antigua a más reciente)
  * @returns {"BULLISH" | "BEARISH"} Dirección sugerida
  */
-export function decideMixDirection(candles: Candle[], timeframe: string = "1m"): "BULLISH" | "BEARISH" {
+/**
+ * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD y, opcionalmente, el voto de whale trades.
+ * @param candles - Array de velas (ordenadas de más antigua a más reciente)
+ * @param timeframe - Timeframe (por defecto 1m)
+ * @param whaleTrades - (Opcional) Lista de whale trades recientes. Si se pasa, añade un voto extra según el balance de compras/ventas en el último minuto.
+ * @returns {"BULLISH" | "BEARISH"} Dirección sugerida
+ */
+export function decideMixDirection(
+  candles: Candle[],
+  timeframe: string = "1m",
+  whaleTrades?: WhaleTrade[]
+): "BULLISH" | "BEARISH" {
   // --- HISTORIAL DE ÉXITO/FRACASO POR COMBINACIÓN ---
   // Se analiza ANTES de devolver la decisión final
   // (esto se aplicará tras calcular signals y antes de devolver dirección)
@@ -357,6 +370,13 @@ try {
   if (emaPositionVote === "BULLISH") bullishVotes++;
   if (emaPositionVote === "BEARISH") bearishVotes++;
 
+  // --- Voto Whale Trades (si se pasa como parámetro) ---
+  let whaleVote: "BULLISH" | "BEARISH" | null = null;
+  if (whaleTrades && Array.isArray(whaleTrades)) {
+    whaleVote = getWhaleVote(whaleTrades, Date.now());
+    if (whaleVote === "BULLISH") bullishVotes++;
+    if (whaleVote === "BEARISH") bearishVotes++;
+  }
   // --- Peso aleatorio en zonas neutras ---
   if (!majoritySignal && rsiSignal === null) {
     // Guardar memoria incluyendo volumeVote
@@ -374,6 +394,7 @@ try {
         macd: macdLine,
         macdSignalLine: signalLine,
         volumeVote,
+        whaleVote,
         crossSignal: crossSignal ?? null,
         emaPositionVote: emaPositionVote ?? null,
         wasRandom: true,
@@ -429,6 +450,7 @@ try {
       macd: macdLine,
       macdSignalLine: signalLine,
       volumeVote,
+      whaleVote,
       crossSignal: crossSignal ?? null,
       wasRandom: false,
     };
