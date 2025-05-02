@@ -93,6 +93,40 @@ export type RsiMemoryEntry = {
   rsiSignal: "BULLISH" | "BEARISH" | null;
 };
 
+// --- Memoria para Estructura de Mercado (máx 666) ---
+export type MarketStructureMemoryEntry = {
+  timestamp: number;
+  timeframe: string;
+  vote: "BULLISH" | "BEARISH" | null;
+  supportLevels: number[];
+  resistanceLevels: number[];
+  currentTrend: "UP" | "DOWN" | "SIDEWAYS";
+};
+
+const MARKET_STRUCTURE_MEMORY_STORAGE_KEY = "marketStructureMemory";
+const MARKET_STRUCTURE_MEMORY_MAX_ENTRIES = 666;
+
+export function saveMarketStructureMemory(entry: MarketStructureMemoryEntry) {
+  try {
+    const raw = localStorage.getItem(MARKET_STRUCTURE_MEMORY_STORAGE_KEY);
+    let arr: MarketStructureMemoryEntry[] = raw ? JSON.parse(raw) : [];
+    arr.push(entry);
+    if (arr.length > MARKET_STRUCTURE_MEMORY_MAX_ENTRIES) arr = arr.slice(-MARKET_STRUCTURE_MEMORY_MAX_ENTRIES);
+    localStorage.setItem(MARKET_STRUCTURE_MEMORY_STORAGE_KEY, JSON.stringify(arr));
+  } catch (e) {
+    // Falla silenciosa
+  }
+}
+
+export function getMarketStructureMemory(): MarketStructureMemoryEntry[] {
+  try {
+    const raw = localStorage.getItem(MARKET_STRUCTURE_MEMORY_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 const RSI_MEMORY_STORAGE_KEY = "rsiMemory";
 const RSI_MEMORY_MAX_ENTRIES = 666;
 

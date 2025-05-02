@@ -3,6 +3,7 @@ import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, 
 import type { WhaleTrade } from "@/hooks/useWhaleTrades";
 import { getWhaleVote } from "./whale-vote";
 import { getAdxMemoryVote } from "./adx-vote";
+import { detectMarketStructure } from './market-structure';
 
 /**
  * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD.
@@ -304,6 +305,11 @@ try {
   // Fibonacci: 1 voto
   if (fibResult.vote === "BULLISH") bullishVotes++;
   if (fibResult.vote === "BEARISH") bearishVotes++;
+
+  // --- 8. Voto por Estructura de Mercado ---
+  const marketStructure = detectMarketStructure(candles);
+  if (marketStructure.vote === "BULLISH") bullishVotes++;
+  if (marketStructure.vote === "BEARISH") bearishVotes++;
 
   // --- 6. Voto por tendencia y conteo de velas (últimas 70) ---
   // Importar función de memoria de tendencia
