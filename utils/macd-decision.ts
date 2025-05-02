@@ -2,6 +2,7 @@ import type { Candle } from "@/types/game";
 import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry } from "./autoMixMemory";
 import type { WhaleTrade } from "@/hooks/useWhaleTrades";
 import { getWhaleVote } from "./whale-vote";
+import { getAdxMemoryVote } from "./adx-vote";
 
 /**
  * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD.
@@ -377,6 +378,11 @@ try {
     if (whaleVote === "BULLISH") bullishVotes++;
     if (whaleVote === "BEARISH") bearishVotes++;
   }
+  // --- 9. Voto ADX+memoria ---
+  let adxMemoryVote: "BULLISH" | "BEARISH" | null = getAdxMemoryVote(candles);
+  if (adxMemoryVote === "BULLISH") bullishVotes++;
+  if (adxMemoryVote === "BEARISH") bearishVotes++;
+
   // --- Peso aleatorio en zonas neutras ---
   if (!majoritySignal && rsiSignal === null) {
     // Guardar memoria incluyendo volumeVote
@@ -397,6 +403,7 @@ try {
         whaleVote,
         crossSignal: crossSignal ?? null,
         emaPositionVote: emaPositionVote ?? null,
+        adxMemoryVote,
         wasRandom: true,
       };
       // Guardado de memoria eliminado aquí: ahora solo se guarda tras placeBet con el betId real.
@@ -451,6 +458,7 @@ try {
       macdSignalLine: signalLine,
       volumeVote,
       whaleVote,
+      adxMemoryVote,
       crossSignal: crossSignal ?? null,
       wasRandom: false,
     };

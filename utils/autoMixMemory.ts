@@ -15,6 +15,7 @@ export type AutoMixMemoryEntry = {
   macdSignalLine: number;
   volumeVote: "BULLISH" | "BEARISH" | null;
   whaleVote?: "BULLISH" | "BEARISH" | null;
+  adxMemoryVote?: "BULLISH" | "BEARISH" | null;
   crossSignal?: "GOLDEN_CROSS" | "DEATH_CROSS" | null;
   emaPositionVote?: "BULLISH" | "BEARISH" | null;
   wasRandom?: boolean; // true si la apuesta fue aleatoria
@@ -182,7 +183,7 @@ export function getVolumeTrendMemory(): VolumeTrendMemoryEntry[] {
 
 
 const STORAGE_KEY = "autoMixMemory";
-const MAX_ENTRIES = 666;
+const MAX_ENTRIES = 10000;
 
 export function saveAutoMixMemory(entry: AutoMixMemoryEntry) {
   try {
