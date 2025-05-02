@@ -1209,7 +1209,7 @@ const changeSymbol = useCallback(
             valleyVote: null,
             volumeVote: null,
             wasRandom: true,
-            consecutiveBets: 1 // Añadir la propiedad faltante
+            consecutiveBets: 1
           };
          console.log('[AUTO MIX][MEMORY] Guardando entrada:', newEntry);
     saveAutoMixMemory(newEntry);
