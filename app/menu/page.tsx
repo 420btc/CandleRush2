@@ -161,7 +161,7 @@ export default function MenuPage() {
         ))}
       </div>
       <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">
-        v1.0.0 &copy; CandleRush 2025 &middot; <span className="text-yellow-400 font-semibold">By Carlos Freire</span>
+        v1.0.3 &copy; CandleRush 2025 &middot; <span className="text-yellow-400 font-semibold">By Carlos Freire</span>
       </footer>
       {/* Reloj digital */}
       <Clock />
