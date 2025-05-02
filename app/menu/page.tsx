@@ -129,6 +129,9 @@ export default function MenuPage() {
       <img src="/portada.png" alt="Portada" className="absolute inset-0 w-full h-full object-cover z-0 opacity-70 pointer-events-none select-none" draggable="false" />
       <div className="relative z-10 w-full flex flex-col items-center">
       <div className="flex flex-col items-center mb-10">
+        <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight italic uppercase mb-2" style={{fontStyle: 'italic'}}>
+          CANDLE RUSH 2
+        </span>
         <div className="flex items-center gap-4 mb-2">
           <svg height="60" width="60" viewBox="0 0 32 32" fill="none">
             <circle cx="16" cy="16" r="16" fill="#FFD600" />
@@ -157,7 +160,9 @@ export default function MenuPage() {
           </Link>
         ))}
       </div>
-      <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">v1.0.0 &copy; CandleRush 2025</footer>
+      <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">
+        v1.0.0 &copy; CandleRush 2025 &middot; <span className="text-yellow-400 font-semibold">By Carlos Freire</span>
+      </footer>
       {/* Reloj digital */}
       <Clock />
       </div>
