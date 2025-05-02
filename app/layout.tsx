@@ -6,6 +6,7 @@ import { AuthProvider } from '../context/auth-context'
 import { AchievementProvider } from '../context/achievement-context'
 import { GameProvider } from '../context/game-context'
 import { Analytics } from '@vercel/analytics/react';
+import BtcTitleUpdater from "./BtcTitleUpdater";
 
 export const metadata: Metadata = {
   title: 'Candle Rush!',
@@ -24,6 +25,8 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/btcc.png" />
       </head>
+      {/* Actualiza el título con el precio BTC en vivo */}
+      <BtcTitleUpdater />
       <body className="bg-black min-h-screen">
         <DeviceModeProvider>
           <AuthProvider>
