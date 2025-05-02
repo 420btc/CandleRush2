@@ -109,23 +109,59 @@ const histPoints = histSlice;
             <g opacity={0.55}>
               <text x="2" y={y} fill="#a259ff" fontSize="10" fontWeight="bold">MACD: <tspan fill="#fff" fontWeight="normal">{macdVal}</tspan></text>
               <text x="2" y={y+=dy} fill="#FFD600" fontSize="10" fontWeight="bold">Signal: <tspan fill="#fff" fontWeight="normal">{signalVal}</tspan></text>
-              <text x="2" y={y+=dy} fill="#fff" fontSize="10" fontWeight="bold">ADX: <tspan fill="#fff" fontWeight="normal">{adxVal}</tspan></text>
+              <text x="2" y={y+=dy} fontSize="10" fontWeight="bold">
+                <tspan fill="#22c55e">A</tspan>
+                <tspan fill="#ef4444">D</tspan>
+                <tspan fill="#22c55e">X</tspan>
+                <tspan fill="#fff">: </tspan>
+                <tspan fill="#fff" fontWeight="normal">{adxVal}</tspan>
+              </text>
             </g>
           );
         })()}
         {/* Línea ADX blanca */}
-        {adxPoints.length > 1 && (
-          <polyline
-            fill="none"
-            stroke="#fff"
-            strokeWidth={1}
-            points={adxArr.map((v, i) => v == null ? null : [
+        {/* ADX coloreado por zonas */}
+        {(() => {
+          if (barsToShow < 2) return null;
+          // Prepara segmentos de color
+          const segments: { color: string; points: [number, number][] }[] = [];
+          let currentColor = null;
+          let currentSegment: [number, number][] = [];
+          for (let i = 0; i < barsToShow; i++) {
+            const v = adxArr[i];
+            if (v == null) continue;
+            let color = '#fff';
+            let opacity = 0.7;
+            if (v > 25) color = '#22c55e'; // verde fuerte
+            else if (v < 20) color = '#ef4444'; // rojo débil
+            // blanco translúcido para neutro
+            const point: [number, number] = [
               (i / (barsToShow - 1)) * chartWidth,
-              chartHeight - (v / 100) * (chartHeight - 30) - 15 // menos maximizado, margen 15px
-            ]).filter(Boolean).map(p => p!.join(",")).join(" ")}
-            opacity={0.7}
-          />
-        )}
+              chartHeight - (v / 100) * (chartHeight - 30) - 15
+            ];
+            if (currentColor === null) {
+              currentColor = color;
+              currentSegment = [point];
+            } else if (color === currentColor) {
+              currentSegment.push(point);
+            } else {
+              if (currentSegment.length > 1) segments.push({ color: currentColor, points: [...currentSegment] });
+              currentColor = color;
+              currentSegment = [currentSegment[currentSegment.length-1], point];
+            }
+          }
+          if (currentSegment.length > 1) segments.push({ color: currentColor!, points: currentSegment });
+          return segments.map((seg, idx) => (
+            <polyline
+              key={idx}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth={1}
+              points={seg.points.map(p => p.join(",")).join(" ")}
+              opacity={0.7}
+            />
+          ));
+        })()}
         {/* Histograma: verde si >0, rojo si <0 */}
         {/* MACD tipo "velas" más marcadas */}
         {histPoints.map((h, i) => {
