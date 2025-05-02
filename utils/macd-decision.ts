@@ -1,9 +1,14 @@
 import type { Candle } from "@/types/game";
-import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry } from "./autoMixMemory";
+import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry, getMarketStructureMemory } from "./autoMixMemory";
 import type { WhaleTrade } from "@/hooks/useWhaleTrades";
 import { getWhaleVote } from "./whale-vote";
 import { getAdxMemoryVote } from "./adx-vote";
 import { detectMarketStructure } from './market-structure';
+
+interface DecisionAnalysis {
+  shouldInvert: boolean;
+  consecutiveBets: number;
+}
 
 /**
  * Decide la dirección de apuesta para AutoMix según las últimas 33 velas del MACD.
@@ -25,7 +30,12 @@ export function decideMixDirection(
   // --- HISTORIAL DE ÉXITO/FRACASO POR COMBINACIÓN ---
   // Se analiza ANTES de devolver la decisión final
   // (esto se aplicará tras calcular signals y antes de devolver dirección)
-  function checkShouldInvertDecision(majoritySignal: "BULLISH" | "BEARISH" | null, rsiSignal: "BULLISH" | "BEARISH" | null, macdSignal: "BULLISH" | "BEARISH" | null): boolean {
+interface DecisionAnalysis {
+  shouldInvert: boolean;
+  consecutiveBets: number;
+}
+
+  function checkShouldInvertDecision(majoritySignal: "BULLISH" | "BEARISH" | null, rsiSignal: "BULLISH" | "BEARISH" | null, macdSignal: "BULLISH" | "BEARISH" | null): DecisionAnalysis {
     try {
       const memory = getAutoMixMemory();
       // Filtra por la combinación de señales actual
@@ -34,6 +44,7 @@ export function decideMixDirection(
         e.rsiSignal === rsiSignal &&
         e.macdSignal === macdSignal
       );
+      
       // --- 1. BLOQUES DE 3 DERROTAS ---
       let blocksOf3Losses = 0;
       for (let i = 0; i <= similares.length - 3; i++) {
@@ -46,17 +57,54 @@ export function decideMixDirection(
           i += 2; // Salta al siguiente bloque (no solapa)
         }
       }
-      if (blocksOf3Losses >= 2) return true;
+      if (blocksOf3Losses >= 2) return { shouldInvert: true, consecutiveBets: 1 };
+      
       // --- 2. TASA DE DERROTA HISTÓRICA ---
       if (similares.length >= 5) {
         const perdidas = similares.filter(e => e.result === "LOSS" || e.result === "LIQ").length;
         if (perdidas / similares.length > 0.7) {
-          return true;
+          return { shouldInvert: true, consecutiveBets: 1 };
         }
       }
-      return false;
+
+      // --- 3. ANÁLISIS DE SOPORTES Y RESISTENCIAS ---
+      const lastTrade = memory[memory.length - 1];
+      if (lastTrade && lastTrade.result === "WIN" && lastTrade.consecutiveBets) {
+        // Verificar si la última apuesta ganadora fue cerca de un soporte/resistencia
+        const marketStructure = getMarketStructureMemory();
+        const lastPrice = candles[candles.length - 1].close;
+        // Usar la última entrada de memoria de estructura de mercado
+        const latestStructure = marketStructure[marketStructure.length - 1];
+        const nearSupport = latestStructure?.supportLevels.some((level: number) => 
+          Math.abs((lastPrice - level) / level) < 0.005 // Umbral del 0.5%
+        ) ?? false;
+        const nearResistance = latestStructure?.resistanceLevels.some((level: number) => 
+          Math.abs((lastPrice - level) / level) < 0.005 // Umbral del 0.5%
+        ) ?? false;
+
+        // Si estamos cerca de un soporte/resistencia y la tendencia es favorable
+        if ((nearSupport && majoritySignal === "BULLISH") || (nearResistance && majoritySignal === "BEARISH")) {
+          // Contar cuántas apuestas consecutivas similares han ganado
+          let consecutiveWins = 0;
+          for (let i = memory.length - 1; i >= 0; i--) {
+            const trade = memory[i];
+            if (trade.majoritySignal === majoritySignal && trade.result === "WIN") {
+              consecutiveWins++;
+            } else {
+              break;
+            }
+          }
+          
+          // Si hemos tenido 2 o más ganancias consecutivas cerca del mismo nivel
+          if (consecutiveWins >= 2) {
+            return { shouldInvert: false, consecutiveBets: consecutiveWins + 1 };
+          }
+        }
+      }
+      
+      return { shouldInvert: false, consecutiveBets: 1 };
     } catch {
-      return false;
+      return { shouldInvert: false, consecutiveBets: 1 };
     }
   }
 
@@ -300,8 +348,10 @@ try {
   if (valleyVote === "BEARISH") bearishVotes++;
   if (majoritySignal === "BULLISH") bullishVotes++;
   if (majoritySignal === "BEARISH") bearishVotes++;
-  if (macdSignal === "BULLISH") bullishVotes++;
-  if (macdSignal === "BEARISH") bearishVotes++;
+  // Asegurar que macdSignal es del tipo correcto antes de usarlo en votos
+  const validMacdSignal = macdSignal === "BULLISH" ? "BULLISH" : macdSignal === "BEARISH" ? "BEARISH" : "BULLISH";
+  if (validMacdSignal === "BULLISH") bullishVotes++;
+  if (validMacdSignal === "BEARISH") bearishVotes++;
   // Fibonacci: 1 voto
   if (fibResult.vote === "BULLISH") bullishVotes++;
   if (fibResult.vote === "BEARISH") bearishVotes++;
@@ -391,7 +441,6 @@ try {
   if (adxMemoryVote === "BEARISH") bearishVotes++;
 
 
-
   // --- Mejorada: Detección de rachas ganadoras/perdedoras ---
   try {
     const memory = getAutoMixMemory();
@@ -441,42 +490,44 @@ try {
   let direction: "BULLISH" | "BEARISH";
   if (totalVotes === 0) direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
   else if (bullishVotes === bearishVotes) {
-    if (macdSignal) direction = macdSignal;
-    else direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+    // Asegurar que macdSignal es del tipo correcto antes de usarlo
+    const validMacdSignal = macdSignal === "BULLISH" ? "BULLISH" : macdSignal === "BEARISH" ? "BEARISH" : "BULLISH";
+    direction = validMacdSignal;
   } else {
     const bullishProb = bullishVotes / totalVotes;
     direction = Math.random() < bullishProb ? "BULLISH" : "BEARISH";
   }
 
   // --- LÓGICA DE INVERSIÓN POR HISTORIAL DE FRACASO Y PATRONES ---
-  if (checkShouldInvertDecision(majoritySignal, rsiSignal, macdSignal)) {
-    // Si hay una racha ganadora, ignorar la inversión
-    try {
-      const memory = getAutoMixMemory();
-      const lastN = memory.slice(-2);
-      if (
-        lastN.length === 2 &&
-        lastN.every(e => e.result === "WIN") &&
-        lastN.every(e => e.direction === direction)
-      ) {
-        // Mantener dirección en racha ganadora
-        return direction;
-      }
-    } catch {}
-    
-    // Si no hay racha ganadora, proceder con la inversión
-    direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
-  }
-  // Guardar memoria principal incluyendo volumeVote
+  const { shouldInvert, consecutiveBets } = checkShouldInvertDecision(majoritySignal, rsiSignal, macdSignal);
+  
+  // Si hay una racha ganadora, ignorar la inversión
+  try {
+    const memory = getAutoMixMemory();
+    const lastN = memory.slice(-2);
+    if (
+      lastN.length === 2 &&
+      lastN.every(e => e.result === "WIN") &&
+      lastN.every(e => e.direction === direction)
+    ) {
+      // Mantener dirección en racha ganadora
+      return direction;
+    }
+  } catch {}
+  
+  // Si no hay racha ganadora, proceder con la inversión
+  const finalDirection = shouldInvert ? (direction === "BULLISH" ? "BEARISH" : "BULLISH") : direction;
+
   try {
     const entry: AutoMixMemoryEntry = {
       betId: 'macd-bet',
       timestamp: Date.now(),
-      direction,
+      direction: finalDirection,
       result: null,
       majoritySignal,
       rsiSignal,
       macdSignal,
+      consecutiveBets,
       valleyVote,
       rsi,
       macd: macdLine,

@@ -19,6 +19,7 @@ export type AutoMixMemoryEntry = {
   crossSignal?: "GOLDEN_CROSS" | "DEATH_CROSS" | null;
   emaPositionVote?: "BULLISH" | "BEARISH" | null;
   wasRandom?: boolean; // true si la apuesta fue aleatoria
+  consecutiveBets: number; // Número de apuestas consecutivas con esta estrategia
 };
 
 // --- Memoria para tendencia y conteo de velas (máx 666) ---

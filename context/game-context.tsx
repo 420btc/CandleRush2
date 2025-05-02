@@ -1170,6 +1170,7 @@ const changeSymbol = useCallback(
       macdSignalLine,
       valleyVote: null, // Valor por defecto para compatibilidad
       volumeVote: null, // Valor por defecto requerido
+      consecutiveBets: 1
     };
     saveAutoMixMemory(newEntry);
   });
@@ -1207,7 +1208,8 @@ const changeSymbol = useCallback(
             macdSignalLine: 0,
             valleyVote: null,
             volumeVote: null,
-            wasRandom: true
+            wasRandom: true,
+            consecutiveBets: 1 // Añadir la propiedad faltante
           };
          console.log('[AUTO MIX][MEMORY] Guardando entrada:', newEntry);
     saveAutoMixMemory(newEntry);

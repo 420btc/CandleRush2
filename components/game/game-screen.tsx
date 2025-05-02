@@ -1183,8 +1183,8 @@ useEffect(() => {
             candles={candles}
             chartHeight={420}
             barWidth={16}
-            priceMin={typeof verticalScale === 'object' && verticalScale.min !== undefined ? verticalScale.min : 0}
-            priceMax={typeof verticalScale === 'object' && verticalScale.max !== undefined ? verticalScale.max : 1}
+            priceMin={verticalScale ? verticalScale : 0}
+            priceMax={verticalScale ? verticalScale : 1}
           />
         </div>
       )}
