@@ -37,10 +37,17 @@ function isAutoMixBet(bet: Bet): boolean {
 // --- COMPONENTE DE DESGLOSE DE SEÑALES/VOTOS ---
 import { getAutoMixMemory, getTrendMemory, getVolumeTrendMemory, getValleyMemory, getRsiMemory, getFibonacciMemory } from "@/utils/autoMixMemory";
 
-function findClosestEntry<T extends { timestamp: number }>(arr: T[], timestamp: number, toleranceMs: number = 180000): T | null {
+function findClosestEntry<T extends { timestamp: number }>(arr: T[], timestamp: number, toleranceMs: number = 300000): T | null {
   if (!arr.length) return null;
+  
+  // Primero intentar encontrar una coincidencia exacta
+  const exactMatch = arr.find(e => e.timestamp === timestamp);
+  if (exactMatch) return exactMatch;
+  
+  // Si no hay coincidencia exacta, buscar la más cercana dentro del rango de tolerancia
   let closest: T | null = null;
   let minDiff = toleranceMs;
+  
   for (const entry of arr) {
     const diff = Math.abs(entry.timestamp - timestamp);
     if (diff < minDiff) {
@@ -48,6 +55,13 @@ function findClosestEntry<T extends { timestamp: number }>(arr: T[], timestamp: 
       closest = entry;
     }
   }
+  
+  // Si encontramos algo dentro del rango de tolerancia, lo devolvemos
+  if (closest && minDiff <= toleranceMs) {
+    return closest;
+  }
+  
+  // Si no encontramos nada dentro del rango de tolerancia, devolvemos el más cercano
   return closest;
 }
 
