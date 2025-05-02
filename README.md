@@ -9,10 +9,11 @@
 
 - [🚀 Resumen y Propósito](#resumen-y-propósito)
 - [🛠️ Cómo empezar](#cómo-empezar)
-- [🔢 Fundamentos Técnicos](#fundamentos-técnicos)
 - [🎲 Cómo Funciona el Juego](#cómo-funciona-el-juego)
 - [🤖 AutoMix: Algoritmo Multi-Voto](#automix-algoritmo-multi-voto)
-- [🧩 Componentes Principales y Arquitectura](#componentes-principales-y-arquitectura)
+- [📊 Sistema de Votos y Decisión](#sistema-de-votos-y-decisión)
+- [🎯 Detección de Rachas](#detección-de-rachas)
+- [🧩 Componentes Principales](#componentes-principales)
 - [🔌 Integración Binance API](#integración-binance-api)
 - [🧠 Memorias y Transparencia](#memorias-y-transparencia)
 - [⚙️ Personalización y FAQ](#personalización-y-faq)
@@ -52,155 +53,147 @@ npm run dev
 
 ---
 
-# 🚀 Resumen Rápido
+# 🎲 Cómo Funciona el Juego
 
-CandleRush2 es una plataforma gamificada de predicción de mercados, donde los usuarios apuestan sobre el comportamiento de velas japonesas (candlesticks) en criptomonedas. El objetivo es ofrecer una experiencia educativa, transparente y científicamente fundamentada, combinando análisis técnico, probabilidad y gamificación.
-
----
-
-## Fundamentos Matemáticos y Científicos
-
-Explicación de los indicadores técnicos, fórmulas y lógica matemática utilizada en el sistema (RSI, MACD, Fibonacci, etc.).
+El juego simula apuestas sobre el movimiento del precio de criptomonedas usando análisis técnico. Los usuarios pueden:
+- Hacer apuestas manuales
+- Usar el sistema AutoMix para apuestas automáticas
+- Ver resultados en tiempo real
+- Analizar patrones y señales técnicas
 
 ---
 
-## Sistema de Apuestas y Resolución
+# 🤖 AutoMix: Algoritmo Multi-Voto
 
-Descripción del flujo de una apuesta: desde la entrada, la toma de decisión, hasta la resolución (ganada, perdida, liquidada). Ejemplos prácticos y explicación de cómo se determina el resultado.
+AutoMix es el cerebro del sistema que toma decisiones de trading basadas en múltiples señales técnicas. Utiliza una combinación de indicadores clásicos y patrones de mercado.
 
----
+### Indicadores Principales
 
-## AutoMix: Algoritmo de Decisión Multi-Voto
-
-Explicación general del algoritmo AutoMix, su objetivo y cómo integra múltiples señales para decidir. ( Ver mas abajo )
-
-### Desglose de las 6 Señales
-
-Detalle de cada señal: cómo se calcula, qué representa y cómo influye en la decisión.
-
-### Lógica de Votación Proporcional
-
-Cómo se ponderan los votos de cada señal y cómo se llega a una decisión final.
-
-### Ejemplo Matemático y Persistencia
-
-Ejemplo concreto de una secuencia de apuestas, mostrando cómo AutoMix toma decisiones y cómo actúa la lógica anti-persistencia.
+AutoMix integra los siguientes indicadores:
+- **Mayoría de velas:** Análisis de las últimas 70 velas
+- **RSI (Relative Strength Index):** Señal alcista cuando supera 50, bajista cuando baja de 40
+- **MACD (Moving Average Convergence Divergence):** Señal alcista cuando la línea MACD está por encima de la línea de señal
+- **Fibonacci:** Detecta rebotes en niveles clave (0.236, 0.382, 0.5, 0.618, 0.786)
+- **Valle:** Identifica patrones de apertura y cierre de valles alcistas y bajistas
+- **Tendencia general:** Análisis de las últimas 70 velas
+- **Tendencia de volumen:** Análisis del volumen en las últimas 30 velas
+- **Golden Cross/Death Cross:** Señales basadas en cruces de medias móviles
+- **Posición EMA 55/200:** Posición del precio respecto a medias móviles a largo plazo
+- **Whale Trades:** Análisis de operaciones de grandes inversores
+- **ADX + Memoria:** Indicador de fuerza de tendencia con memoria histórica
 
 ---
 
-## Componentes Clave y Canvas
+# 📊 Sistema de Votos y Decisión
 
-Breve descripción de los principales archivos y componentes visuales.
+### Sistema de Votación Proporcional
 
-### game-screen.tsx
-Pantalla principal del juego y lógica de interacción.
+Cada señal contribuye con un peso específico:
+- **Indicadores principales:** 1 voto (Mayoría, RSI, MACD, Fibonacci, Valle, Tendencia)
+- **Indicadores secundarios:** 0.5 votos (EMA 55/200)
+- **Whale Trades:** 2 votos (debido a su importancia)
 
-### candlestick-chart.tsx
-Componente que dibuja el gráfico de velas y visualiza las señales.
+Total posible: 12.5 votos por lado (BULLISH/BEARISH)
 
-### bet-result-modal.tsx
-Muestra el resultado de cada apuesta y el desglose de señales.
+### Proceso de Decisión
 
-### autoMixMemory.ts
-Módulo de almacenamiento de señales y resultados.
-
-### macd-decision.ts
-Lógica del algoritmo de decisión multi-voto basada en MACD.
-
----
-
-## Integración con Binance API
-
-Cómo se conecta el sistema a la API de Binance para obtener datos de mercado en tiempo real.
+1. Cada señal aporta su voto según su dirección
+2. Se suman todos los votos BULLISH y BEARISH
+3. Si hay empate, el MACD decide
+4. Si no hay mayoría ni RSI claro, la dirección se elige aleatoriamente
 
 ---
 
-## Memorias, Transparencia y Análisis
+# 🎯 Detección de Rachas
 
-Explicación sobre cómo se almacenan las decisiones, cómo auditar el histórico y cómo analizar patrones de éxito/error.
+AutoMix incluye un sistema avanzado de detección de rachas ganadoras/perdedoras:
 
----
+### Detección de Pérdidas
 
-## Extensión, Personalización y FAQ
+- Revisa las últimas 15 trades
+- Cambia dirección después de 4 pérdidas consecutivas en la misma dirección
+- Resetea contadores cuando cambia de dirección
 
-Guía para modificar umbrales, añadir señales, personalizar la lógica y preguntas frecuentes.
+### Detección de Ganancias
 
----
+- Mantiene la dirección actual después de 2 ganancias consecutivas
+- Ignora inversiones basadas en patrones cuando hay una racha ganadora
+- Ayuda a mantener tendencias ganadoras
 
-## Créditos y Licencia
+### Beneficios del Sistema de Rachas
 
-Desarrollado por Carlos Freire. Código abierto bajo licencia MIT.
-
-¿Preguntas, sugerencias o mejoras? ¡Abre un issue o contribuye!
-
-
-- **Mayoría de velas:** Analiza las últimas 65 velas (excluyendo la más reciente) para determinar si predominan las velas alcistas o bajistas.
-- **RSI:** Señal alcista cuando el RSI supera 50, bajista cuando baja de 40.
-- **MACD:** Señal alcista cuando la línea MACD está por encima de la línea de señal, bajista cuando está por debajo.
-- **Fibonacci:** Detecta rebotes en niveles clave (0.236, 0.382, 0.5, 0.618, 0.786) del precio.
-- **Valle:** Identifica patrones de apertura y cierre de valles alcistas y bajistas en la serie de velas.
-- **Tendencia general:** Calcula la dirección predominante en las últimas 70 velas.
-- **Tendencia de volumen:** Compara el volumen promedio de las últimas 30 velas para detectar cambios en la presión de compra/venta.
-- **Golden Cross/Death Cross:** Señal alcista cuando la SMA50 cruza por encima de la SMA200, bajista cuando cruza por debajo.
-- **Posición EMA 55/200:** Evalúa si el precio está por encima o debajo de las medias móviles exponenciales a largo plazo.
-- **Whale Trades:** Analiza el balance de operaciones de grandes inversores (ballenas) en el último minuto.
-- **ADX + Memoria:** Utiliza el indicador ADX junto con el historial de decisiones para mejorar la precisión.
-- **Anti-persistencia:** Si las últimas 5 apuestas fueron en la misma dirección y todas pérdidas/liquidadas, fuerza cambio de dirección.
-
-La decisión final se toma sumando los votos de cada señal. Si hay empate, decide el MACD. Si no hay mayoría ni RSI claro, la dirección se elige aleatoriamente. Si el sistema pierde cinco apuestas seguidas en una dirección, la siguiente apuesta se fuerza en la dirección contraria para evitar rachas largas perdedoras.
-
-### Ejemplo de funcionamiento de AutoMix
-
-Imagina que el sistema analiza las señales y obtiene:
-- Mayoría de velas: alcista
-- RSI: neutro
-- MACD: bajista
-- Valle: sin señal
-- Fibonacci: sin señal
-- Tendencia general: alcista
-- Tendencia de volumen: bajista
-
-En este caso, habría dos votos alcistas y dos bajistas. Como hay empate, el sistema mira el MACD, que es bajista, y finalmente apuesta bajista.
-
-Si todas las señales fueran neutras, la apuesta se decidiría al azar.
-
-Si el sistema apostara cinco veces seguidas en la misma dirección y perdiera todas, la sexta apuesta sería forzada en la dirección opuesta.
-
-Todas las decisiones quedan registradas para su análisis posterior.
+- Reacción más rápida a pérdidas
+- Mantenimiento de tendencias ganadoras
+- Mejor gestión del riesgo
+- Equilibrio entre agresividad y conservadurismo
 
 ---
 
-## Componentes Clave
+# 🧩 Componentes Principales
 
-- game-screen.tsx: Pantalla principal y lógica de interacción.
-- bet-result-modal.tsx: Muestra el resultado de cada apuesta y el desglose de señales.
-- bet-result-modal-automix-info.tsx: Explica la decisión de AutoMix en detalle.
-- autoMixMemory.ts: Almacenamiento de señales y resultados.
-- macd-decision.ts: Núcleo del algoritmo de decisión multi-voto.
+### Componentes Principales
 
----
+- `game-screen.tsx`: Pantalla principal y lógica de interacción
+- `candlestick-chart.tsx`: Gráfico de velas y señales técnicas
+- `bet-result-modal.tsx`: Resultados de apuestas y análisis
+- `autoMixMemory.ts`: Almacenamiento de señales y resultados
+- `macd-decision.ts`: Lógica central de decisión multi-voto
 
-## Integración con Binance API
+### Sistema de Memoria
 
-El sistema puede conectarse a la API de Binance para obtener datos de mercado en tiempo real y simular apuestas sobre datos reales.
-
----
-
-## Memorias y Transparencia
-
-Cada decisión, señal y resultado se guarda en localStorage. Así puedes revisar el histórico, auditar el algoritmo y analizar patrones de éxito y error fácilmente.
+- Todas las decisiones se almacenan en localStorage
+- Registro histórico completo de trades
+- Posibilidad de auditar y analizar patrones
+- Transparencia en el proceso de decisión
 
 ---
 
-## Personalización y Extensión
+# 🔌 Integración Binance API
 
-Puedes modificar los umbrales de los indicadores, añadir nuevas señales o cambiar la lógica de votación editando los módulos correspondientes.
+El sistema puede conectarse a la API de Binance para:
+- Obtener datos de mercado en tiempo real
+- Simular apuestas sobre datos reales
+- Mantener sincronización con el mercado
+- Validar señales técnicas con datos actuales
 
 ---
 
-## Créditos y Licencia
+# 🧠 Memorias y Transparencia
 
-Desarrollado por el equipo de CandleRush2. Código abierto bajo licencia MIT.
+### Sistema de Memoria
+
+- Almacena todas las señales y decisiones
+- Permite análisis posterior de patrones
+- Facilita auditoría del sistema
+- Mantiene histórico de trades y resultados
+
+### Transparencia
+
+- Todas las decisiones son registradas
+- Posibilidad de revisar el proceso de decisión
+- Análisis de patrones de éxito y error
+- Verificación de señales técnicas
+
+---
+
+# ⚙️ Personalización y FAQ
+
+### Personalización
+
+- Modificación de umbrales de indicadores
+- Añadido de nuevas señales
+- Personalización de lógica de votación
+- Ajuste de parámetros de rachas
+
+### FAQ
+
+- ¿Cómo funciona AutoMix?
+- ¿Cómo se toman las decisiones?
+- ¿Qué indicadores se usan?
+- ¿Cómo se gestiona el riesgo?
+- ¿Cómo se analizan las rachas?
+
+---
 
 
 
@@ -241,12 +234,27 @@ AutoMix pondera hasta 7 señales para decidir cada apuesta:
 - **Tendencia General:** Cálculo sobre las últimas 70 velas.
 - **Tendencia de Volumen:** Análisis de la evolución del volumen y su relación con la tendencia.
 
-### Lógica de Decisión y Persistencia
+### Lógica de Decisión y Detección de Rachas
 
-1. **Votación proporcional:** Cada señal suma un voto a "BULLISH" o "BEARISH". Fibonacci suma medio voto.
-2. **Zonas neutras:** Si no hay mayoría ni señal clara de RSI, la dirección se elige aleatoriamente.
-3. **Desempate:** Si hay empate de votos, decide el MACD. Si tampoco hay MACD, elige aleatorio.
-4. **Anti-persistencia:** Si las últimas 5 apuestas han sido iguales y todas pérdidas/liquidadas, la siguiente apuesta fuerza la dirección contraria.
+1. **Votación proporcional:** Cada señal suma un voto a "BULLISH" o "BEARISH".
+   - Indicadores principales: 1 voto
+   - Indicadores secundarios: 0.5 votos
+   - Whale Trades: 2 votos
+   - Total posible: 12.5 votos por lado
+
+2. **Detección de Rachas:**
+   - **Pérdidas:**
+     - Revisa las últimas 15 trades
+     - Cambia dirección después de 4 pérdidas consecutivas
+     - Resetea contadores cuando cambia de dirección
+   - **Ganancias:**
+     - Mantiene dirección después de 2 ganancias consecutivas
+     - Ignora inversiones basadas en patrones
+     - Ayuda a mantener tendencias ganadoras
+
+3. **Zonas neutras:** Si no hay mayoría ni señal clara de RSI, la dirección se elige aleatoriamente.
+
+4. **Desempate:** Si hay empate de votos, decide el MACD. Si tampoco hay MACD, elige aleatorio.
 
 #### Ejemplo práctico de secuencia de apuestas
 
@@ -266,17 +274,33 @@ Supón la siguiente serie de resultados:
 - Si hay empate de votos, decide MACD.
 - Si se pierde 5 veces seguidas en una dirección, la siguiente apuesta se invierte automáticamente.
 
+### Beneficios del Sistema de Rachas
+
+- **Reacción más rápida a pérdidas:** Cambia dirección después de 4 pérdidas consecutivas
+- **Mantenimiento de tendencias ganadoras:** Mantiene dirección después de 2 ganancias
+- **Mejor gestión del riesgo:** Evita rachas largas perdedoras
+- **Equilibrio:** Combina agresividad y conservadurismo
+
 ### Persistencia y Transparencia
 
 Todas las decisiones y señales quedan registradas en la memoria local, permitiendo auditar y analizar el comportamiento del algoritmo en cualquier momento.
 
 ## Componentes Clave
 
-- **game-screen.tsx:** Pantalla principal y lógica de interacción.
-- **bet-result-modal.tsx:** Muestra el resultado de cada apuesta, con desglose de señales.
-- **bet-result-modal-automix-info.tsx:** Explica la decisión de AutoMix en detalle.
-- **autoMixMemory.ts:** Gestión y almacenamiento de señales y resultados.
-- **macd-decision.ts:** Núcleo del algoritmo de decisión multi-voto.
+### Componentes Principales
+
+- `game-screen.tsx`: Pantalla principal y lógica de interacción
+- `candlestick-chart.tsx`: Renderizado de velas y señales en canvas
+- `bet-result-modal.tsx`: Resultados de apuestas y análisis
+- `autoMixMemory.ts`: Almacenamiento de señales y resultados
+- `macd-decision.ts`: Lógica central de decisión multi-voto
+
+### Sistema de Memoria
+
+- Todas las decisiones se almacenan en localStorage
+- Registro histórico completo de trades
+- Posibilidad de auditar y analizar patrones
+- Transparencia en el proceso de decisión
 
 ## Integración con Binance API
 
@@ -293,16 +317,9 @@ Cada decisión, señal y resultado se guarda en localStorage, permitiendo:
 
 Puedes modificar los umbrales de los indicadores, añadir nuevas señales o cambiar la lógica de votación fácilmente editando los módulos correspondientes.
 
-## Créditos y Licencia
-
-Desarrollado por el equipo de CandleRush2. Código abierto bajo licencia MIT.
-
----
-
-¿Preguntas, sugerencias o mejoras? ¡Abre un issue o contribuye!
 # 6. Componentes Clave y Canvas
 
-#
+Breve descripción de los principales archivos y componentes visuales.
 
 # 6.1 `game-screen.tsx`: Orquestador Principal
 Gestiona el ciclo de vida del juego, estado global (apuestas, historial, saldo, logros) y renderiza subcomponentes clave. Orquesta la llegada de velas nuevas, resolución de apuestas y actualización de la UI. Utiliza React Context para compartir estado entre componentes y asegurar la sincronización de datos en tiempo real.
@@ -449,7 +466,7 @@ Este proyecto está bajo la licencia MIT. Consulta el archivo LICENSE para más 
 
 - Inspirado por la emoción de los mercados financieros y la gamificación educativa.
 - Gracias a las librerías open source que hacen posible este proyecto: React, Next.js, TailwindCSS, Radix UI, Lucide Icons y Binance API.
-- **Autor:** Carlos Freire
+- **Autor:** Carlos Pastor Freire
 
 ---
 

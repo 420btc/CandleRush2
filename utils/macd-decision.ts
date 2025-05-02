@@ -392,16 +392,47 @@ try {
 
 
 
-  // --- Anti-persistencia: si últimas 5 apuestas fueron iguales y todas pérdidas/liquidadas, fuerza cambio ---
+  // --- Mejorada: Detección de rachas ganadoras/perdedoras ---
   try {
     const memory = getAutoMixMemory();
-    const lastN = memory.slice(-5);
-    if (
-      lastN.length === 5 &&
-      lastN.every((e: AutoMixMemoryEntry) => e.direction === lastN[0].direction) &&
-      lastN.every((e: AutoMixMemoryEntry) => e.result === "LOSS" || e.result === "LIQ")
-    ) {
-      return lastN[0].direction === "BULLISH" ? "BEARISH" : "BULLISH";
+    const lastN = memory.slice(-15); // Revisar 15 trades para mejor contexto
+    
+    // Contadores
+    let consecutiveLosses = 0;
+    let consecutiveWins = 0;
+    let lastDirection: "BULLISH" | "BEARISH" | null = null;
+    
+    // Analizar cada trade
+    for (let i = lastN.length - 1; i >= 0; i--) {
+      const trade = lastN[i];
+      
+      // Si cambia de dirección, resetear contadores
+      if (trade.direction !== lastDirection) {
+        lastDirection = trade.direction;
+        consecutiveLosses = 0;
+        consecutiveWins = 0;
+      }
+      
+      // Contar pérdidas consecutivas
+      if ((trade.result === "LOSS" || trade.result === "LIQ") && trade.direction === lastDirection) {
+        consecutiveLosses++;
+        consecutiveWins = 0; // Resetear wins
+      }
+      // Contar ganancias consecutivas
+      else if (trade.result === "WIN" && trade.direction === lastDirection) {
+        consecutiveWins++;
+        consecutiveLosses = 0; // Resetear losses
+      }
+    }
+
+    // Lógica de inversión mejorada
+    if (consecutiveLosses >= 4) { // Cambiar después de 4 pérdidas consecutivas
+      return lastDirection === "BULLISH" ? "BEARISH" : "BULLISH";
+    }
+    
+    // Mantener dirección en rachas ganadoras
+    if (consecutiveWins >= 2) { // Mantener dirección después de 2 ganancias consecutivas
+      return lastDirection;
     }
   } catch {}
 
@@ -417,8 +448,23 @@ try {
     direction = Math.random() < bullishProb ? "BULLISH" : "BEARISH";
   }
 
-  // --- LÓGICA DE INVERSIÓN POR HISTORIAL DE FRACASO ---
+  // --- LÓGICA DE INVERSIÓN POR HISTORIAL DE FRACASO Y PATRONES ---
   if (checkShouldInvertDecision(majoritySignal, rsiSignal, macdSignal)) {
+    // Si hay una racha ganadora, ignorar la inversión
+    try {
+      const memory = getAutoMixMemory();
+      const lastN = memory.slice(-2);
+      if (
+        lastN.length === 2 &&
+        lastN.every(e => e.result === "WIN") &&
+        lastN.every(e => e.direction === direction)
+      ) {
+        // Mantener dirección en racha ganadora
+        return direction;
+      }
+    } catch {}
+    
+    // Si no hay racha ganadora, proceder con la inversión
     direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
   }
   // Guardar memoria principal incluyendo volumeVote
