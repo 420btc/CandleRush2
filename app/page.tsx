@@ -9,7 +9,7 @@ import Loading from "@/components/ui/loading"
 import { redirect } from "next/navigation";
 
 export default function Home() {
-  redirect("/game");
+  redirect("/menu");
   return (
     <DeviceModeProvider>
       <AuthProvider>

@@ -7,7 +7,7 @@ const menuItems = [
   {
     label: "Jugar",
     description: "Ir al juego principal",
-    href: "/",
+    href: "/game",
     icon: (
       <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-green-500"><path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
     ),
