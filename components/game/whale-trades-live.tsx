@@ -32,7 +32,7 @@ export default function WhaleTradesLive() {
   return (
     <div className="flex flex-col items-center w-full">
       <div className="bg-black/80 p-1 rounded-lg shadow-lg max-w-xs w-full">
-        <div className="text-xs text-zinc-400 mb-1 font-bold">Whale Trades (BTCUSDT, ≥ $10,000)</div>
+        <div className="text-xs text-zinc-400 mb-1 font-bold">Whale Alert <span style={{ color: '#FFD600' }}>Binance</span> Spot BTCUSDT &gt;10K</div>
         <ul className="space-y-0.5" style={{ maxHeight: '168px', minHeight: '168px', overflowY: 'auto' }}>
           {trades.length === 0 && <li className="text-zinc-500 italic">No whale trades</li>}
           {trades.map((t) => (
