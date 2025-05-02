@@ -28,7 +28,7 @@ function useBinanceWhaleTrades({ minUsd = 10000, limit = 16 } = {}) {
 }
 
 export default function WhaleTradesLive() {
-  const trades = useBinanceWhaleTrades({ minUsd: 10000, limit: 16 });
+  const trades = useBinanceWhaleTrades({ minUsd: 10000, limit: 99 });
   return (
     <div className="flex flex-col items-center w-full">
       <div className="bg-black/80 p-1 rounded-lg shadow-lg max-w-xs w-full">
