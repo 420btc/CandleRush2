@@ -140,8 +140,7 @@ export default function MenuPage() {
         </div>
         <span className="text-yellow-200 text-lg font-bold tracking-widest uppercase">Bitcoin</span>
       </div>
-      {/* Whale Trades debajo del precio BTC */}
-      <WhaleTrades />
+
       <div className="flex flex-col gap-8 w-full max-w-lg">
         {menuItems.map((item) => (
           <Link
