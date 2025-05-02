@@ -97,10 +97,11 @@ export type RsiMemoryEntry = {
 export type MarketStructureMemoryEntry = {
   timestamp: number;
   timeframe: string;
-  vote: "BULLISH" | "BEARISH" | null;
+  vote: 'BULLISH' | 'BEARISH' | null;
   supportLevels: number[];
   resistanceLevels: number[];
-  currentTrend: "UP" | "DOWN" | "SIDEWAYS";
+  currentTrend: 'UP' | 'DOWN' | 'SIDEWAYS';
+  voteWeight: number;
 };
 
 const MARKET_STRUCTURE_MEMORY_STORAGE_KEY = "marketStructureMemory";

@@ -308,8 +308,8 @@ try {
 
   // --- 8. Voto por Estructura de Mercado ---
   const marketStructure = detectMarketStructure(candles);
-  if (marketStructure.vote === "BULLISH") bullishVotes++;
-  if (marketStructure.vote === "BEARISH") bearishVotes++;
+  if (marketStructure.vote === "BULLISH") bullishVotes += marketStructure.voteWeight;
+  if (marketStructure.vote === "BEARISH") bearishVotes += marketStructure.voteWeight;
 
   // --- 6. Voto por tendencia y conteo de velas (últimas 70) ---
   // Importar función de memoria de tendencia

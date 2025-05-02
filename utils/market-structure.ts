@@ -6,71 +6,27 @@ interface MarketStructureResult {
   resistanceLevels: number[];
   currentTrend: 'UP' | 'DOWN' | 'SIDEWAYS';
   vote: 'BULLISH' | 'BEARISH' | null;
+  voteWeight: number;
 }
 
-export function detectMarketStructure(candles: Candle[], timeframe: string = '1m'): MarketStructureResult {
-  // Verificar si hay memoria reciente
-  const memory = getMarketStructureMemory();
-  const latestEntry = memory[memory.length - 1];
-  
-  // Si hay memoria reciente y el timeframe es el mismo, usarla
-  if (latestEntry && latestEntry.timeframe === timeframe && 
-      Date.now() - latestEntry.timestamp < 60000) { // 1 minuto
-    return {
-      supportLevels: latestEntry.supportLevels,
-      resistanceLevels: latestEntry.resistanceLevels,
-      currentTrend: latestEntry.currentTrend,
-      vote: latestEntry.vote
-    };
-  }
+// Actualizar el tipo de la memoria para incluir voteWeight
+export type MarketStructureMemoryEntry = {
+  timestamp: number;
+  timeframe: string;
+  vote: 'BULLISH' | 'BEARISH' | null;
+  supportLevels: number[];
+  resistanceLevels: number[];
+  currentTrend: 'UP' | 'DOWN' | 'SIDEWAYS';
+  voteWeight: number;
+};
 
-  // Ajustar parámetros según el timeframe
-  const timeframes: Record<string, { lookback: number; levels: number; threshold: number }> = {
-    '1m': { lookback: 10, levels: 3, threshold: 0.005 },
-    '5m': { lookback: 15, levels: 3, threshold: 0.007 },
-    '15m': { lookback: 20, levels: 2, threshold: 0.01 },
-    '30m': { lookback: 25, levels: 2, threshold: 0.015 },
-    '1h': { lookback: 30, levels: 2, threshold: 0.02 },
-    '4h': { lookback: 40, levels: 2, threshold: 0.03 },
-    '1d': { lookback: 50, levels: 1, threshold: 0.05 }
-  };
-
-  const params = timeframes[timeframe] || timeframes['1m'];
-  const { lookback, levels, threshold } = params;
-
-  const highs = candles.map(c => c.high);
-  const lows = candles.map(c => c.low);
-  
-  // Encontrar máximos y mínimos locales con parámetros ajustados
-  const localMaxima = findLocalExtremes(highs, true, lookback);
-  const localMinima = findLocalExtremes(lows, false, lookback);
-  
-  // Calcular niveles de soporte y resistencia con número ajustado de niveles
-  const supportLevels = getLevels(localMinima, levels);
-  const resistanceLevels = getLevels(localMaxima, levels);
-  
-  // Determinar la tendencia actual con umbral ajustado
-  const currentTrend = determineTrend(candles, supportLevels, resistanceLevels, threshold);
-  
-  // Generar voto basado en la estructura
-  const vote = generateVote(currentTrend, candles, supportLevels, resistanceLevels, threshold);
-  
-  // Guardar en memoria
-  saveMarketStructureMemory({
-    timestamp: Date.now(),
-    timeframe,
-    vote,
-    supportLevels,
-    resistanceLevels,
-    currentTrend
-  });
-
-  return {
-    supportLevels,
-    resistanceLevels,
-    currentTrend,
-    vote
-  };
+// Actualizar el tipo de la memoria para incluir voteWeight
+interface MarketStructureResult {
+  supportLevels: number[];
+  resistanceLevels: number[];
+  currentTrend: 'UP' | 'DOWN' | 'SIDEWAYS';
+  vote: 'BULLISH' | 'BEARISH' | null;
+  voteWeight: number;
 }
 
 function findLocalExtremes(prices: number[], isMax: boolean, lookback: number): number[] {
@@ -112,11 +68,11 @@ function determineTrend(candles: Candle[], supportLevels: number[], resistanceLe
   const lastHigh = candles[candles.length - 1].high;
   
   // Verificar si el precio está cerca de algún nivel con umbral ajustado
-  const nearSupport = supportLevels.some(level => 
+  const nearSupport = supportLevels.some((level: number) => 
     Math.abs((lastPrice - level) / level) < threshold
   );
   
-  const nearResistance = resistanceLevels.some(level => 
+  const nearResistance = resistanceLevels.some((level: number) => 
     Math.abs((lastPrice - level) / level) < threshold
   );
   
@@ -132,42 +88,112 @@ function determineTrend(candles: Candle[], supportLevels: number[], resistanceLe
   }
 }
 
-function generateVote(trend: 'UP' | 'DOWN' | 'SIDEWAYS', candles: Candle[], supportLevels: number[], resistanceLevels: number[], threshold: number): 'BULLISH' | 'BEARISH' | null {
+function generateVote(trend: 'UP' | 'DOWN' | 'SIDEWAYS', candles: Candle[], supportLevels: number[], resistanceLevels: number[], threshold: number): { vote: 'BULLISH' | 'BEARISH' | null; weight: number } {
   const lastPrice = candles[candles.length - 1].close;
   
-  // Si estamos en tendencia alcista y cerca de soporte
-  if (trend === 'UP' && supportLevels.some(level => 
+  // Base weight of 2 votes
+  let weight = 2;
+  
+  // Generate vote based on structure
+  if (trend === 'UP' && supportLevels.some((level: number) => 
     Math.abs((lastPrice - level) / level) < threshold
   )) {
-    return 'BULLISH';
+    return { vote: 'BULLISH', weight };
   }
   
-  // Si estamos en tendencia bajista y cerca de resistencia
-  if (trend === 'DOWN' && resistanceLevels.some(level => 
+  if (trend === 'DOWN' && resistanceLevels.some((level: number) => 
     Math.abs((lastPrice - level) / level) < threshold
   )) {
-    return 'BEARISH';
+    return { vote: 'BEARISH', weight };
   }
   
-  // Si estamos en tendencia lateral y rompiendo niveles
+  // If we're in sideways trend and breaking levels
   if (trend === 'SIDEWAYS') {
     const lastCandle = candles[candles.length - 1];
     const prevCandle = candles[candles.length - 2];
     
-    // Si rompe resistencia
-    if (lastCandle.high > prevCandle.high && resistanceLevels.some(level => 
+    // If breaking resistance
+    if (lastCandle.high > prevCandle.high && resistanceLevels.some((level: number) => 
       Math.abs((lastCandle.high - level) / level) < threshold
     )) {
-      return 'BULLISH';
+      return { vote: 'BULLISH', weight };
     }
     
-    // Si rompe soporte
-    if (lastCandle.low < prevCandle.low && supportLevels.some(level => 
+    // If breaking support
+    if (lastCandle.low < prevCandle.low && supportLevels.some((level: number) => 
       Math.abs((lastCandle.low - level) / level) < threshold
     )) {
-      return 'BEARISH';
+      return { vote: 'BEARISH', weight };
     }
   }
   
-  return null;
+  return { vote: null, weight: 0 };
+}
+
+export function detectMarketStructure(candles: Candle[], timeframe: string = '1m'): MarketStructureResult {
+  // Verificar si hay memoria reciente
+  const memory = getMarketStructureMemory();
+  const latestEntry = memory[memory.length - 1];
+  
+  // Si hay memoria reciente y el timeframe es el mismo, usarla
+  if (latestEntry && latestEntry.timeframe === timeframe && 
+      Date.now() - latestEntry.timestamp < 60000) { // 1 minuto
+    return {
+      supportLevels: latestEntry.supportLevels,
+      resistanceLevels: latestEntry.resistanceLevels,
+      currentTrend: latestEntry.currentTrend,
+      vote: latestEntry.vote,
+      voteWeight: latestEntry.voteWeight
+    };
+  }
+
+  // Ajustar parámetros según el timeframe
+  const timeframes: Record<string, { lookback: number; levels: number; threshold: number }> = {
+    '1m': { lookback: 10, levels: 3, threshold: 0.005 },
+    '5m': { lookback: 15, levels: 3, threshold: 0.007 },
+    '15m': { lookback: 20, levels: 2, threshold: 0.01 },
+    '30m': { lookback: 25, levels: 2, threshold: 0.015 },
+    '1h': { lookback: 30, levels: 2, threshold: 0.02 },
+    '4h': { lookback: 40, levels: 2, threshold: 0.03 },
+    '1d': { lookback: 50, levels: 1, threshold: 0.05 }
+  };
+
+  const params = timeframes[timeframe] || timeframes['1m'];
+  const { lookback, levels, threshold } = params;
+
+  const highs = candles.map(c => c.high);
+  const lows = candles.map(c => c.low);
+  
+  // Encontrar máximos y mínimos locales con parámetros ajustados
+  const localMaxima = findLocalExtremes(highs, true, lookback);
+  const localMinima = findLocalExtremes(lows, false, lookback);
+  
+  // Calcular niveles de soporte y resistencia con número ajustado de niveles
+  const supportLevels = getLevels(localMinima, levels);
+  const resistanceLevels = getLevels(localMaxima, levels);
+  
+  // Determinar la tendencia actual con umbral ajustado
+  const currentTrend = determineTrend(candles, supportLevels, resistanceLevels, threshold);
+  
+  // Generar voto basado en la estructura
+  const { vote, weight } = generateVote(currentTrend, candles, supportLevels, resistanceLevels, threshold);
+  
+  // Guardar en memoria
+  saveMarketStructureMemory({
+    timestamp: Date.now(),
+    timeframe,
+    vote,
+    voteWeight: weight,
+    supportLevels,
+    resistanceLevels,
+    currentTrend
+  });
+
+  return {
+    supportLevels,
+    resistanceLevels,
+    currentTrend,
+    vote,
+    voteWeight: weight
+  };
 }
