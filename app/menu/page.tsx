@@ -125,8 +125,10 @@ export default function MenuPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-black relative overflow-hidden" style={{background: 'linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.82) 100%)'}}>
-      {/* Fondo portada solo para el menú */}
-      <img src="/portada.png" alt="Portada" className="absolute inset-0 w-full h-full object-cover z-0 opacity-70 pointer-events-none select-none" draggable="false" />
+       {/* Fondo portada solo para el menú */}
+       <div className="absolute inset-0 z-0 opacity-70 pointer-events-none select-none transform scale-131">
+         <img src="/portada.png" alt="Portada" className="w-full h-full object-cover" draggable="false" />
+       </div>
       <div className="relative z-10 w-full flex flex-col items-center">
       <div className="flex flex-col items-center mb-10">
         <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight italic uppercase mb-2" style={{fontStyle: 'italic'}}>

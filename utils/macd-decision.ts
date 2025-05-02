@@ -383,35 +383,7 @@ try {
   if (adxMemoryVote === "BULLISH") bullishVotes++;
   if (adxMemoryVote === "BEARISH") bearishVotes++;
 
-  // --- Peso aleatorio en zonas neutras ---
-  if (!majoritySignal && rsiSignal === null) {
-    // Guardar memoria incluyendo volumeVote
-    try {
-      const entry: AutoMixMemoryEntry = {
-        betId: 'random-bet',
-        timestamp: Date.now(),
-        direction: Math.random() < 0.5 ? "BULLISH" : "BEARISH",
-        result: null,
-        majoritySignal,
-        rsiSignal,
-        macdSignal,
-        valleyVote,
-        rsi,
-        macd: macdLine,
-        macdSignalLine: signalLine,
-        volumeVote,
-        whaleVote,
-        crossSignal: crossSignal ?? null,
-        emaPositionVote: emaPositionVote ?? null,
-        adxMemoryVote,
-        wasRandom: true,
-      };
-      // Guardado de memoria eliminado aquí: ahora solo se guarda tras placeBet con el betId real.
-      return entry.direction;
-    } catch {
-      return Math.random() < 0.5 ? "BULLISH" : "BEARISH";
-    }
-  }
+
 
   // --- Anti-persistencia: si últimas 5 apuestas fueron iguales y todas pérdidas/liquidadas, fuerza cambio ---
   try {

@@ -134,13 +134,18 @@ Desarrollado por Carlos Freire. Código abierto bajo licencia MIT.
 ¿Preguntas, sugerencias o mejoras? ¡Abre un issue o contribuye!
 
 
-- **Mayoría de velas:** Determina si han predominado las velas alcistas o bajistas en la ventana reciente.
-- **RSI:** Si el RSI supera 60 es señal alcista, si baja de 40 es bajista.
-- **MACD:** Analiza el cruce de medias para identificar la tendencia.
-- **Fibonacci:** Detecta rebotes en niveles clave del precio.
-- **Valle:** Busca patrones de reversión en la serie de velas.
+- **Mayoría de velas:** Analiza las últimas 65 velas (excluyendo la más reciente) para determinar si predominan las velas alcistas o bajistas.
+- **RSI:** Señal alcista cuando el RSI supera 50, bajista cuando baja de 40.
+- **MACD:** Señal alcista cuando la línea MACD está por encima de la línea de señal, bajista cuando está por debajo.
+- **Fibonacci:** Detecta rebotes en niveles clave (0.236, 0.382, 0.5, 0.618, 0.786) del precio.
+- **Valle:** Identifica patrones de apertura y cierre de valles alcistas y bajistas en la serie de velas.
 - **Tendencia general:** Calcula la dirección predominante en las últimas 70 velas.
-- **Tendencia de volumen:** Compara cómo evoluciona el volumen respecto al precio.
+- **Tendencia de volumen:** Compara el volumen promedio de las últimas 30 velas para detectar cambios en la presión de compra/venta.
+- **Golden Cross/Death Cross:** Señal alcista cuando la SMA50 cruza por encima de la SMA200, bajista cuando cruza por debajo.
+- **Posición EMA 55/200:** Evalúa si el precio está por encima o debajo de las medias móviles exponenciales a largo plazo.
+- **Whale Trades:** Analiza el balance de operaciones de grandes inversores (ballenas) en el último minuto.
+- **ADX + Memoria:** Utiliza el indicador ADX junto con el historial de decisiones para mejorar la precisión.
+- **Anti-persistencia:** Si las últimas 5 apuestas fueron en la misma dirección y todas pérdidas/liquidadas, fuerza cambio de dirección.
 
 La decisión final se toma sumando los votos de cada señal. Si hay empate, decide el MACD. Si no hay mayoría ni RSI claro, la dirección se elige aleatoriamente. Si el sistema pierde cinco apuestas seguidas en una dirección, la siguiente apuesta se fuerza en la dirección contraria para evitar rachas largas perdedoras.
 
