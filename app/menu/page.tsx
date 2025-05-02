@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+
 const menuItems = [
   {
     label: "Jugar",
@@ -39,6 +40,57 @@ function Clock() {
   return (
     <div className="mt-2 text-white text-base font-mono tracking-widest select-none drop-shadow-lg">
       {time.toLocaleTimeString()}
+    </div>
+  );
+}
+
+// WhaleTrades Binance Spot WebSocket (solo BTCUSDT, >10k USD, scrollable)
+function useBinanceWhaleTrades({ minUsd = 10000, limit = 16 } = {}) {
+  const [trades, setTrades] = useState<any[]>([]);
+  useEffect(() => {
+    let active = true;
+    const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
+    ws.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        const price = parseFloat(msg.p);
+        const amount = parseFloat(msg.q);
+        const usd = price * amount;
+        if (usd < minUsd) return;
+        setTrades(trades => [{
+          id: msg.t,
+          price,
+          amount,
+          usd,
+          side: msg.m ? "sell" : "buy",
+          time: msg.T,
+        }, ...trades].slice(0, limit));
+      } catch {}
+    };
+    return () => { active = false; ws.close(); };
+  }, [minUsd, limit]);
+  return trades;
+}
+
+function WhaleTrades() {
+  const trades = useBinanceWhaleTrades({ minUsd: 10000, limit: 16 });
+  return (
+    <div className="flex flex-col items-center w-full mb-8">
+      <div className="bg-black/80 p-2 rounded-lg shadow-lg max-w-xs w-full">
+        <div className="text-xs text-zinc-400 mb-1 font-bold">Whale Trades (BTCUSDT, &ge; $10,000)</div>
+        <ul className="space-y-1 max-h-64 overflow-y-auto pr-1">
+          {trades.length === 0 && <li className="text-zinc-500 italic">No whale trades</li>}
+          {trades.map((t) => (
+            <li key={t.id}
+                className={`flex items-center justify-between px-2 py-1 rounded text-xs ${t.side === "buy" ? "bg-green-900/40" : "bg-red-900/40"}`}>
+              <span className="font-bold">{t.side === "buy" ? "Buy" : "Sell"}</span>
+              <span className="mx-1">{t.side === "buy" ? "🟢" : "🔴"}</span>
+              <span>${t.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              <span className="ml-2 text-zinc-400">{new Date(t.time).toLocaleTimeString()}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -88,6 +140,8 @@ export default function MenuPage() {
         </div>
         <span className="text-yellow-200 text-lg font-bold tracking-widest uppercase">Bitcoin</span>
       </div>
+      {/* Whale Trades debajo del precio BTC */}
+      <WhaleTrades />
       <div className="flex flex-col gap-8 w-full max-w-lg">
         {menuItems.map((item) => (
           <Link

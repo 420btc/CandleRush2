@@ -127,6 +127,7 @@ import VolumeChartOverlay from "@/components/game/volume-chart-overlay";
 import GameControls from "@/components/game/game-controls"
 import GameTimer from "@/components/game/game-timer"
 import BetHistory from "@/components/game/bet-history"
+import WhaleTradesLive from "@/components/game/whale-trades-live";
 import UserStats from "@/components/game/user-stats"
 // import AchievementNotification from "@/components/game/achievement-notification";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -1443,6 +1444,7 @@ useEffect(() => {
 </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  <WhaleTradesLive />
                   <UserStats />
                 </CardContent>
               </Card>
