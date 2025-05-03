@@ -122,6 +122,7 @@ import VolumeProfile from "./volume-profile"
 import { useAuth } from "@/context/auth-context"
 import { useAchievement } from "@/context/achievement-context"
 import CandlestickChart from "@/components/game/candlestick-chart";
+import { GiMiner } from "react-icons/gi";
 import MacdChart from "@/components/game/macd-chart";
 import VolumeChartOverlay from "@/components/game/volume-chart-overlay";
 import GameControls from "@/components/game/game-controls"
@@ -964,9 +965,7 @@ useEffect(() => {
     tabIndex={0}
   >
     {/* Icono de estrella */}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ display: 'block', margin: 'auto' }}>
-      <polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18.5 5.5,22 7,14.5 2,9.5 9,9" fill="#FFD600" stroke="#FFD600" strokeWidth="1.5" />
-    </svg>
+    <GiMiner className="w-6 h-6 text-yellow-400" />
   </button>
   <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
     <span className="text-xs font-semibold text-[#FFD600] mb-0.5" style={{letterSpacing: '0.01em'}}>Hora local</span>

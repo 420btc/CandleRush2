@@ -670,7 +670,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       }
     }
     if (showCrossCircles === true) {
-      console.log('[EMA CIRCLES] Mostrando círculos EMA porque showCrossCircles === true');
+
       drawEMACrossCircles(ema10, ema55, '#a259f7', '#FFD600');
       drawEMACrossCircles(ema55, ema200, '#FFD600', '#2196f3');
       drawEMACrossCircles(ema200, ema365, '#2196f3', '#22c55e');

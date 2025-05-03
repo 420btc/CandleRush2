@@ -33,10 +33,10 @@ function useBinanceWhaleTrades({ minUsd = 10000, limit = 16 } = {}) {
 export default function WhaleTradesLive() {
   const [showSmallLiquidations, setShowSmallLiquidations] = useState(false);
   const trades = useBinanceWhaleTrades({ minUsd: 10000, limit: 99 });
-  const liquidations = useLiquidations({ symbol: 'BTCUSDT', minSize: 10000, limit: 99 });
+  const { liquidations: liquidationList, isConnected } = useLiquidations({ symbol: 'BTCUSDT', minSize: 10000, limit: 99 });
   
   // Combinar trades y liquidaciones en un solo array
-  const events = [...trades, ...liquidations]
+  const events = [...trades, ...liquidationList]
     .sort((a, b) => b.time - a.time)
     .slice(0, 99);
 
@@ -45,12 +45,17 @@ export default function WhaleTradesLive() {
       <div className="bg-black/80 p-1 rounded-lg shadow-lg max-w-xs w-full">
         <div className="flex justify-between items-center">
           <div className="text-xs text-zinc-400 mb-1 font-bold">Whale Alert <span style={{ color: '#FFD600' }}>Binance</span> Spot &amp; Futures BTCUSDT &gt;10K</div>
-          <button
-            onClick={() => setShowSmallLiquidations(!showSmallLiquidations)}
-            className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
-          >
-            {showSmallLiquidations ? 'Hide Small' : 'Show Small'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSmallLiquidations(!showSmallLiquidations)}
+              className="text-zinc-400 hover:text-zinc-200 transition-colors w-6 h-6 rounded-full border-2 border-yellow-400 flex items-center justify-center text-center"
+            >
+              <span className="text-center">{showSmallLiquidations ? '💀' : '💀'}</span>
+            </button>
+            <span className="text-[8px] text-white">
+              {liquidationList.length} <span className="text-white">live</span> <span className="text-yellow-300">liquidations</span>
+            </span>
+          </div>
         </div>
         <ul className="space-y-0.5" style={{ maxHeight: '168px', minHeight: '168px', overflowY: 'auto' }}>
           {events.length === 0 && <li className="text-zinc-500 italic">No whale trades or liquidations</li>}

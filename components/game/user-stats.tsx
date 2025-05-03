@@ -210,30 +210,30 @@ export default function UserStats() {
   };
 
   return (
-    <div className="space-y-4 text-white">
+    <div className="space-y-3.6 text-white">
       {/* Toro/Oso y Top racha - Compacto */}
-      <div className="flex items-center justify-between text-xs mb-1">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between text-xs mb-0.9">
+        <div className="flex items-center gap-0.5">
           <span className="text-lg">{bullVsBearIcon}</span>
-          <span className="font-bold text-yellow-300">{bullVsBearText}</span>
-          <span className="ml-1 text-zinc-300">({bullPct}% Toro / {bearPct}% Oso)</span>
+          <span className="font-bold text-yellow-300 text-sm">{bullVsBearText}</span>
+          <span className="ml-1 text-zinc-300 text-sm">({bullPct}% Toro / {bearPct}% Oso)</span>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="text-pink-300 font-bold">Top racha:</span>
-          <span className="font-extrabold text-pink-300">{topStreak}</span>
+        <div className="flex items-center gap-0.5">
+          <span className="text-pink-300 font-bold text-sm">Top racha:</span>
+          <span className="font-extrabold text-pink-300 text-sm">{topStreak}</span>
         </div>
       </div>
       {/* Racha actual */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center gap-1">
           {realStreak >= 3 ? (
-            <span className="text-orange-400 animate-pulse text-2xl">🔥</span>
+            <span className="text-orange-400 animate-pulse text-lg">🔥</span>
           ) : (
-            <span className="text-zinc-400 text-xl">🏁</span>
+            <span className="text-zinc-400 text-lg">🏁</span>
           )}
           <span className="text-sm font-bold">Racha actual</span>
         </div>
-        <span className={`font-extrabold text-lg ${realStreak >= 3 ? "text-orange-400" : ""} ${realStreak >= 1 ? "animate-shake" : ""}`}>{realStreak}</span>
+        <span className={`font-extrabold text-base ${realStreak >= 3 ? "text-orange-400" : ""} ${realStreak >= 1 ? "animate-shake" : ""}`}>{realStreak}</span>
       </div>
       <style jsx>{`
         @keyframes shake {
@@ -255,7 +255,7 @@ export default function UserStats() {
           <span className="text-sm font-bold text-white">Balance</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-extrabold text-lg text-white">${formatNum(userBalance)}</span>
+          <span className="font-extrabold text-lg text-yellow-300">${formatNum(userBalance)}</span>
           <button
             className="ml-2 px-2 py-1 rounded bg-yellow-400 text-black text-xs font-bold shadow hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:bg-zinc-500 disabled:text-zinc-300 disabled:cursor-not-allowed"
             style={{ minWidth: 24, minHeight: 24 }}
@@ -341,24 +341,17 @@ export default function UserStats() {
           ) : (
             <TrendingDown className="h-5 w-5 text-red-400" />
           )}
-          <span className="text-sm font-bold text-white">Ganancias/Pérdidas (solo apuestas)</span>
+          <span className="text-sm font-bold text-white">Ganancias/Pérdidas</span>
         </div>
         <span className={`font-extrabold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{netBetProfit.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
       </div>
-      {/* NUEVO: Ganancias y pérdidas totales */}
-      <div className="flex items-center justify-between text-white mt-1">
+      {/* Liquidaciones */}
+      <div className="flex items-center justify-between text-white" style={{ marginTop: '0.125rem' }}>
         <div className="flex items-center gap-2 text-white">
-          <DollarSign className="h-5 w-5 text-yellow-300" />
-          <span className="text-sm font-bold text-white">Ganancias totales</span>
+          <span className="text-lg">💀</span>
+          <span className="text-sm font-bold text-red-400">Liquidaciones</span>
         </div>
-        <span className="font-extrabold text-lg text-yellow-300">{formatNum(totalWon)}</span>
-      </div>
-      <div className="flex items-center justify-between text-white mt-1">
-        <div className="flex items-center gap-2 text-white">
-          <DollarSign className="h-5 w-5 text-red-300" />
-          <span className="text-sm font-bold text-white">Pérdidas totales</span>
-        </div>
-        <span className="font-black text-lg text-red-300">{formatNum(totalLost)}</span>
+        <span className="font-black text-lg text-red-400">{bets.filter(b => b.status === "LIQUIDATED").length}</span>
       </div>
       <div className="flex items-center justify-between text-white">
         <div className="flex items-center gap-2 text-white">
@@ -367,7 +360,7 @@ export default function UserStats() {
         </div>
         <span className="font-black text-lg text-white">{winRate.toFixed(1)}%</span>
       </div>
-      <div className="grid grid-cols-3 gap-2 mt-4 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif]">
+      <div className="grid grid-cols-3 gap-1.8 mt-3.6 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif]">
         <div className="bg-zinc-900/80 border border-yellow-300/40 p-2 rounded-lg text-center text-white">
           <p className="text-xs font-bold text-yellow-200 drop-shadow-sm">Total</p>
           <p className="font-black text-white text-shadow-lg" style={{textShadow:'0 1px 6px #FFD60055'}}>{totalBets}</p>
