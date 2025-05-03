@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SplineScene } from "@/components/ui/splite";
+import { SiBitcoinsv } from "react-icons/si";
 
 
 const menuItems = [
@@ -110,20 +111,21 @@ export default function MenuPage() {
 
     async function fetchBTC() {
       try {
-        setLoading(true);
         const res = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT");
         const data = await res.json();
-        setBtcPrice(Number(data.price).toLocaleString("en-US", { maximumFractionDigits: 2 }));
+        const newPrice = Number(data.price).toLocaleString("en-US", { maximumFractionDigits: 2 });
+        // Solo actualizamos si el precio es diferente
+        if (newPrice !== btcPrice) {
+          setBtcPrice(newPrice);
+        }
       } catch (e) {
-        setBtcPrice("-");
-      } finally {
-        setLoading(false);
+        // No mostramos ningún mensaje de error
       }
     }
     fetchBTC();
-    const interval = setInterval(fetchBTC, 5000);
+    const interval = setInterval(fetchBTC, 1000); // Actualizar cada segundo
     return () => clearInterval(interval);
-  }, [isClient]);
+  }, [isClient, btcPrice]);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-black relative overflow-hidden" style={{background: 'linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.82) 100%)'}}>
@@ -137,15 +139,11 @@ export default function MenuPage() {
           CANDLE RUSH 2
         </span>
         <div className="flex items-center gap-4 mb-2">
-          <svg height="60" width="60" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="16" fill="#FFD600" />
-            <text x="16" y="22" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#222">₿</text>
-          </svg>
-          <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight">
-            {isClient ? (loading ? <span className="animate-pulse">...</span> : `$${btcPrice}`) : <span className="opacity-0">00000</span>}
+          <SiBitcoinsv className="text-yellow-400 text-4xl md:text-6xl" />
+          <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight transition-none">
+            ${btcPrice}
           </span>
         </div>
-        <span className="text-yellow-200 text-lg font-bold tracking-widest uppercase">Bitcoin</span>
       </div>
       {/* Spline 3D Scene */}
       <div className="w-full h-[400px]">
