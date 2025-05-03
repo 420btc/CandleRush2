@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SplineScene } from "@/components/ui/splite";
 
 
 const menuItems = [
@@ -106,6 +107,7 @@ export default function MenuPage() {
 
   useEffect(() => {
     if (!isClient) return;
+
     async function fetchBTC() {
       try {
         setLoading(true);
@@ -144,6 +146,13 @@ export default function MenuPage() {
           </span>
         </div>
         <span className="text-yellow-200 text-lg font-bold tracking-widest uppercase">Bitcoin</span>
+      </div>
+      {/* Spline 3D Scene */}
+      <div className="w-full h-[400px] mb-2">
+        <SplineScene 
+          scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+          className="w-full h-full"
+        />
       </div>
 
       <div className="flex flex-col gap-8 w-full max-w-lg">
