@@ -916,7 +916,7 @@ return (
       </div>
     )}
     {/* Controles de navegación */}
-    <div className="absolute bottom-4 right-2 flex gap-2 z-40" data-component-name="CandlestickChart">
+    <div className="absolute bottom-14 right-2 flex gap-2 z-40" data-component-name="CandlestickChart">
       {/* Estilos adicionales para móvil */}
       <style jsx>{`
         @media (max-width: 768px) {
