@@ -45,21 +45,48 @@ export default function UserStats() {
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordMsg, setPasswordMsg] = useState("");
+  const [customCoins, setCustomCoins] = useState(1500); // Estado para las monedas personalizadas
 
   // --- Password handler ---
   function handlePasswordSubmit() {
-    if (passwordInput === "420420420") {
+    // Verificar si es la contraseña para agregar monedas personalizadas
+    if (passwordInput.startsWith("custom:")) {
+      const [_, amountStr] = passwordInput.split(":");
+      const amount = parseInt(amountStr, 10);
+      if (!isNaN(amount)) {
+        setCustomCoins(prev => prev + amount);
+        setPasswordMsg(`¡Contraseña correcta! +${amount} monedas`);
+        if (typeof addCoins === 'function') addCoins(amount);
+      } else {
+        setPasswordMsg("Formato de cantidad inválido");
+      }
+    } else if (passwordInput === "420420420") {
       if (typeof addCoins === 'function') addCoins(1500);
       setPasswordMsg("¡Contraseña correcta! +1500 monedas");
-      setPasswordInput("");
-      setTimeout(() => {
-        setShowPasswordSection(false);
-        setPasswordMsg("");
-      }, 1800);
     } else {
       setPasswordMsg("Contraseña incorrecta");
     }
+    setPasswordInput("");
+    setTimeout(() => {
+      setShowPasswordSection(false);
+      setPasswordMsg("");
+    }, 1800);
   }
+
+  // Guardar las monedas personalizadas en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('custom_coins', customCoins.toString());
+    }
+  }, [customCoins]);
+
+  // Cargar las monedas personalizadas al montar
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCoins = parseInt(localStorage.getItem('custom_coins') || '1500', 10);
+      setCustomCoins(savedCoins);
+    }
+  }, []);
 
   const { bets, userBalance, addCoins } = useGame();
 
