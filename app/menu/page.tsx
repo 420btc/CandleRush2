@@ -152,21 +152,30 @@ export default function MenuPage() {
           className="w-full h-full"
         />
       </div>
-      <div className="flex flex-col w-full max-w-lg space-y-4">
+      <div className="flex flex-col w-full max-w-lg space-y-4 relative">
         {menuItems.map((item) => (
-          <Link
-            href={item.href}
-            key={item.label}
-            className="group flex items-center gap-4 p-4 rounded-2xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer text-yellow-200 hover:border-yellow-300 text-lg font-extrabold tracking-tight"
-            style={{ boxShadow: '0 0 40px #FFD60055' }}
-          >
+          <div key={item.label} className="relative">
+            {item.label === "Jugar" && (
+              <Link
+                href="/infomix"
+                className="absolute -top-2 right-0 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-medium hover:bg-yellow-300 transition-colors"
+              >
+                Conoce a AutoMix 🤖
+              </Link>
+            )}
+            <Link
+              href={item.href}
+              className="group flex items-center gap-4 p-4 rounded-2xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer text-yellow-200 hover:border-yellow-300 text-lg font-extrabold tracking-tight"
+              style={{ boxShadow: '0 0 40px #FFD60055' }}
+            >
             <span className="transition-transform group-hover:scale-125 drop-shadow-lg" style={{width:32,height:32}}>{item.icon}</span>
             <span className="flex flex-col">
               <span className="text-lg font-extrabold group-hover:text-black text-yellow-200">{item.label}</span>
               <span className="text-yellow-300 text-sm group-hover:text-black font-medium">{item.description}</span>
             </span>
           </Link>
-        ))}
+        </div>)
+        )}
       </div>
       <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">
         v1.0.3 &copy; CandleRush 2025 &middot; <span className="text-yellow-400 font-semibold">By Carlos Freire</span>

@@ -105,3 +105,14 @@ html, body, #__next {
     color: #fff;
   }
 }
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

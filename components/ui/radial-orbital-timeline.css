@@ -1,0 +1,29 @@
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-button {
+  background: linear-gradient(45deg, #4CAF50 0%, #8BC34A 25%, #FF4444 50%, #E53935 75%, #C62828 100%);
+  background-size: 400% 400%;
+  animation: gradient 10s ease infinite;
+}
+
+.gradient-button-lg {
+  @apply md:w-32 md:h-32 w-16 h-16;
+}
+
+.gradient-button-lg:hover {
+  animation: gradient 2s ease infinite;
+}
+
+.gradient-button:hover {
+  animation: gradient 2s ease infinite;
+}
