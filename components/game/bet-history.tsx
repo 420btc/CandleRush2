@@ -121,7 +121,7 @@ export default function BetHistory() {
                     {/* Info principal */}
                     <div className="flex flex-col items-start justify-center min-w-[70px] max-w-[110px] truncate">
                       <span className="text-[12px] font-semibold text-white truncate">
-                        {bet.prediction === "BULLISH" ? "Alcista" : "Bajista"} {bet.timeframe?.replace("m", "min")}
+                        {bet.prediction === "BULLISH" ? "Bull" : "Bear"} {bet.timeframe?.replace("m", "min")}
                       </span>
                       <span className="text-[10px] text-white leading-tight truncate">{localTimes[bet.id] || ''}</span>
                       <span className="text-[10px] text-yellow-200 mt-0.5 truncate">Entry: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span>
