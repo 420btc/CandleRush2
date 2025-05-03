@@ -50,12 +50,12 @@ export default function UserStats() {
   // --- Password handler ---
   function handlePasswordSubmit() {
     // Verificar si es la contraseña para agregar monedas personalizadas
-    if (passwordInput.startsWith("custom:")) {
+    if (passwordInput.startsWith("fumar:")) {
       const [_, amountStr] = passwordInput.split(":");
       const amount = parseInt(amountStr, 10);
       if (!isNaN(amount)) {
         setCustomCoins(prev => prev + amount);
-        setPasswordMsg(`¡Contraseña correcta! +${amount} monedas`);
+        setPasswordMsg(`¡Fumaste ${amount} monedas!`);
         if (typeof addCoins === 'function') addCoins(amount);
       } else {
         setPasswordMsg("Formato de cantidad inválido");
