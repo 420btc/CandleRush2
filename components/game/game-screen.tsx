@@ -1561,8 +1561,8 @@ useEffect(() => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 justify-between w-full">
   <span className="flex items-center gap-2">
-    <Wallet className="h-5 w-5" />
-    Estadísticas
+    <Wallet className="h-5 w-5 text-white" />
+    <span className="text-white">Estadísticas</span>
   </span>
   <div className="ml-auto">
     <SoundManager muted={muted} onToggleMute={() => setMuted(m => !m)} triggerLose={triggerLose} triggerWin={triggerWin} />
