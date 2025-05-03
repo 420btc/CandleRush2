@@ -131,7 +131,7 @@ export default function MenuPage() {
        <div className="absolute inset-0 z-0 opacity-70 pointer-events-none select-none transform scale-131">
          <img src="/portada.png" alt="Portada" className="w-full h-full object-cover" draggable="false" />
        </div>
-      <div className="relative z-10 w-full flex flex-col items-center">
+      <div className="relative z-10 w-full flex flex-col items-center -mt-2.5">
       <div className="flex flex-col items-center mb-10">
         <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight italic uppercase mb-2" style={{fontStyle: 'italic'}}>
           CANDLE RUSH 2
@@ -148,14 +148,13 @@ export default function MenuPage() {
         <span className="text-yellow-200 text-lg font-bold tracking-widest uppercase">Bitcoin</span>
       </div>
       {/* Spline 3D Scene */}
-      <div className="w-full h-[400px] mb-2">
+      <div className="w-full h-[400px]">
         <SplineScene 
           scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
           className="w-full h-full"
         />
       </div>
-
-      <div className="flex flex-col gap-8 w-full max-w-lg">
+      <div className="flex flex-col w-full max-w-lg space-y-4">
         {menuItems.map((item) => (
           <Link
             href={item.href}
