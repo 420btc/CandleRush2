@@ -238,8 +238,58 @@ export default function UserStats() {
 
   return (
     <div className="space-y-3.6 text-white">
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .stats-container {
+            height: 60px;
+            overflow-y: auto;
+            padding: 1px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+          }
+          .stats-item {
+            padding: 0.1rem 0;
+            font-size: 0.6rem;
+            line-height: 1.1;
+            height: 12px;
+            margin: 0;
+          }
+          .stats-icon {
+            width: 0.8rem;
+            height: 0.8rem;
+          }
+          .stats-number {
+            font-size: 0.65rem;
+            line-height: 1;
+          }
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.1rem;
+            height: 30px;
+            flex: 1;
+            overflow-y: auto;
+          }
+          .stats-card {
+            padding: 0.1rem;
+            font-size: 0.5rem;
+            height: 14px;
+          }
+          .stats-container .grid p {
+            margin: 0;
+            padding: 0.05rem 0;
+            font-size: 0.5rem;
+          }
+          .stats-container .grid > div {
+            height: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+        }
+      `}</style>
       {/* Toro/Oso y Top racha - Compacto */}
-      <div className="flex items-center justify-between text-xs mb-0.9">
+      <div className="flex items-center justify-between text-xs mb-0.9 stats-item">
         <div className="flex items-center gap-0.5">
           <span className="text-lg">{bullVsBearIcon}</span>
           <span className="font-bold text-yellow-300 text-sm">{bullVsBearText}</span>
@@ -251,7 +301,7 @@ export default function UserStats() {
         </div>
       </div>
       {/* Racha actual */}
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-xs stats-item">
         <div className="flex items-center gap-1">
           {realStreak >= 3 ? (
             <span className="text-orange-400 animate-pulse text-lg">🔥</span>
@@ -281,7 +331,7 @@ export default function UserStats() {
           <DollarSign className="h-5 w-5 text-green-400" />
           <span className="text-sm font-bold text-white">Balance</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 stats-item">
           <span className="font-extrabold text-lg text-yellow-300">${formatNum(userBalance)}</span>
           <button
             className="ml-2 px-2 py-1 rounded bg-yellow-400 text-black text-xs font-bold shadow hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:bg-zinc-500 disabled:text-zinc-300 disabled:cursor-not-allowed"
@@ -387,18 +437,18 @@ export default function UserStats() {
         </div>
         <span className="font-black text-lg text-white">{winRate.toFixed(1)}%</span>
       </div>
-      <div className="grid grid-cols-3 gap-1.8 mt-3.6 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif]">
+      <div className="grid grid-cols-3 gap-1.8 mt-3.6 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif] stats-grid">
         <div className="bg-zinc-900/80 border border-yellow-300/40 p-2 rounded-lg text-center text-white">
-          <p className="text-xs font-bold text-yellow-200 drop-shadow-sm">Total</p>
-          <p className="font-black text-white text-shadow-lg" style={{textShadow:'0 1px 6px #FFD60055'}}>{totalBets}</p>
+          <p className="text-xs font-bold text-yellow-200 drop-shadow-sm stats-item">Total</p>
+          <p className="font-black text-white text-shadow-lg stats-number" style={{textShadow:'0 1px 6px #FFD60055'}}>{totalBets}</p>
         </div>
         <div className="bg-green-900/50 border border-green-400/30 p-2 rounded-lg text-center text-white">
-          <p className="text-xs font-bold text-green-300 drop-shadow-sm">Ganadas</p>
-          <p className="font-black text-green-200 text-shadow-lg" style={{textShadow:'0 1px 6px #00FF8555'}}>{wonBets}</p>
+          <p className="text-xs font-bold text-green-300 drop-shadow-sm stats-item">Ganadas</p>
+          <p className="font-black text-green-200 text-shadow-lg stats-number" style={{textShadow:'0 1px 6px #00FF8555'}}>{wonBets}</p>
         </div>
         <div className="bg-red-900/50 border border-red-400/30 p-2 rounded-lg text-center text-white">
-          <p className="text-xs font-bold text-red-300 drop-shadow-sm">Perdidas</p>
-          <p className="font-black text-red-200 text-shadow-lg" style={{textShadow:'0 1px 6px #FF222255'}}>{lostBets}</p>
+          <p className="text-xs font-bold text-red-300 drop-shadow-sm stats-item">Perdidas</p>
+          <p className="font-black text-red-200 text-shadow-lg stats-number" style={{textShadow:'0 1px 6px #FF222255'}}>{lostBets}</p>
         </div>
       </div>
     </div>

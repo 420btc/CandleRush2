@@ -888,7 +888,10 @@ const handleZoomOut = () => {
   };
 
 return (
-    <div className="relative h-full w-full overflow-hidden select-none" style={{ minHeight: 520 }}>
+    <div className="relative h-full w-full overflow-hidden select-none" style={{ 
+      minHeight: isMobile ? '80vh' : 520, 
+      height: isMobile ? '80vh' : 'auto'
+    }}>
 
     <canvas ref={canvasRef} className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0 z-10" />
     {/* Overlay: Perfil de Volumen */}
@@ -913,7 +916,19 @@ return (
       </div>
     )}
     {/* Controles de navegación */}
-    <div className="absolute bottom-[58px] right-2 flex gap-2 z-40" data-component-name="CandlestickChart">
+    <div className="absolute bottom-4 right-2 flex gap-2 z-40" data-component-name="CandlestickChart">
+      {/* Estilos adicionales para móvil */}
+      <style jsx>{`
+        @media (max-width: 768px) {
+          div[data-component-name="CandlestickChart"] {
+            bottom: 20px;
+            right: 10px;
+          }
+          button {
+            padding: 0.5rem;
+          }
+        }
+      `}</style>
       {/* [ELIMINADO] <ToggleCrossCirclesButton /> */}
       <button
         onClick={handleReset}

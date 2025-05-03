@@ -152,6 +152,96 @@ import ProgressBar from "@/components/game/progress-bar";
 export default function GameScreen() {
   // ...otros estados
   const [showBlockInfoModal, setShowBlockInfoModal] = useState(false);
+
+  // Estilos globales para móvil y prevención de scroll horizontal
+  const mobileStyles = (
+    <style jsx global>{`
+      @media (max-width: 768px) {
+        * {
+          box-sizing: border-box;
+        }
+        body {
+          overflow-x: hidden;
+        }
+        /* Ajustar el viewport para que sea más alto en móvil */
+        @viewport {
+          height: 120vh;
+        }
+        .grid {
+          height: 120vh;
+          padding-bottom: env(safe-area-inset-bottom);
+          overflow-x: hidden;
+          overflow-y: auto;
+          padding-bottom: 120px;
+        }
+        .text-4xl {
+          font-size: 1.5rem !important;
+        }
+        .text-[4rem] {
+          font-size: 1.5rem !important;
+        }
+        .header-container {
+          overflow-x: hidden;
+          max-width: 100vw;
+          width: 100%;
+        }
+        .header-content {
+          width: 100%;
+          min-width: 100%;
+          max-width: 100%;
+        }
+        .controls-container {
+          width: 100%;
+          max-width: 400px;
+          margin: 0 auto;
+        }
+        .controls-row {
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+        .controls-input {
+          width: 100%;
+          max-width: 120px;
+        }
+        .controls-button {
+          padding: 0.3rem 0.8rem;
+          font-size: 0.8rem;
+        }
+        .controls-select {
+          min-width: 80px;
+          padding: 0.3rem;
+        }
+        /* Estilos para los botones de apuesta en móvil */
+        .bet-buttons-container {
+          max-height: 120px;
+          overflow-y: auto;
+          padding: 4px;
+        }
+        .bet-buttons-row {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 4px;
+          margin: 4px 0;
+        }
+        .bet-button {
+          flex: 1;
+          min-width: 80px;
+          max-width: 120px;
+          padding: 8px 12px;
+          font-size: 0.8rem;
+          line-height: 1.2;
+        }
+        .bet-button-label {
+          font-size: 0.7rem;
+          margin-bottom: 2px;
+        }
+        /* Ajuste para el padding bottom del contenedor principal */
+        .game-container {
+          padding-bottom: 120px !important;
+        }
+      }
+    `}</style>
+  );
   // Estado global para mostrar/ocultar círculos de cruce EMA/MACD
   const [showCrossCircles, setShowCrossCircles] = React.useState(true);
   const [stockPrice, setStockPrice] = useState<number | null>(null);
@@ -277,7 +367,7 @@ export default function GameScreen() {
   const { isMobile } = useDevice();
 
   // Estado para escalar verticalmente la gráfica (solo PC)
-  const [verticalScale, setVerticalScale] = useState(1.5);
+  const [verticalScale, setVerticalScale] = useState(isMobile ? 1.0 : 1.5);
   // --- NUEVO: Layout 100vh sin márgenes verticales ---
   // Aplica estilos globales solo a esta pantalla
   React.useEffect(() => {
@@ -289,6 +379,15 @@ export default function GameScreen() {
       document.body.style.padding = '';
     };
   }, []);
+
+  // --- Estilos responsivos ---
+  const containerStyle = {
+    height: isMobile ? '100vh' : 'auto',
+    overflow: isMobile ? 'auto' : 'visible',
+  };
+
+  // Ajustar el zoom vertical para móvil
+  const mobileVerticalScale = isMobile ? 1.0 : 1.5;
 
   // Estado de sincronización de vista para gráficos
   interface ViewState {
@@ -1090,10 +1189,32 @@ useEffect(() => {
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-3 flex-grow h-full min-h-[0] lg:h-[calc(100vh-120px)]">
-            <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-3 flex-grow h-full min-h-[0] lg:h-[calc(100vh-120px)] header-container">
+            {mobileStyles}
+            {/* Ajuste de altura para móvil */}
+            <style jsx>{`
+              @media (max-width: 768px) {
+                .grid {
+                  height: 100vh;
+                  padding-bottom: env(safe-area-inset-bottom);
+                }
+              }
+            `}</style>
+            <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:h-full header-content">
               {/* Tarjeta principal con gráfico y controles */}
-              <Card className="bg-black" style={{ width: 'calc(101% + 26px)', maxWidth: 'none', position: 'relative', borderBottomWidth: 0, borderLeftWidth: 0, borderRightWidth: 0, borderTopWidth: 0, borderRadius: '18px 18px 12px 12px / 18px 18px 8px 8px', marginLeft: '-2%', marginBottom: '-2%', boxShadow: 'none' }}>
+              <Card className="bg-black" style={{ 
+                width: isMobile ? '100%' : 'calc(101% + 26px)',
+                maxWidth: 'none',
+                position: 'relative',
+                borderBottomWidth: 0,
+                borderLeftWidth: 0,
+                borderRightWidth: 0,
+                borderTopWidth: 0,
+                borderRadius: isMobile ? '12px' : '18px 18px 12px 12px / 18px 18px 8px 8px',
+                marginLeft: isMobile ? 0 : '-2%',
+                marginBottom: isMobile ? 0 : '-2%',
+                boxShadow: 'none'
+              }}>
                 <CardHeader className="pb-0">
                   <div className="flex justify-between items-center">
                     <CardTitle className="flex flex-col w-full">
@@ -1104,10 +1225,12 @@ useEffect(() => {
                           <span className="text-3xl font-bold text-[#FFD600] tracking-tight ml-2" style={{ minWidth: '230px', textAlign: 'right', display: 'inline-block' }}>
                             {currentSymbol}
                           </span>
-                          <span
-  className="text-2xl sm:text-[4rem] font-extrabold text-white drop-shadow-lg ml-2"
-  style={{ minWidth: '230px', textAlign: 'right', display: 'inline-block' }}
->
+                          <span className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold text-white drop-shadow-lg ml-2" style={{ 
+                            minWidth: '230px', 
+                            textAlign: 'right', 
+                            display: 'inline-block',
+                            fontSize: isMobile ? '2rem' : undefined
+                          }}>
   {["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol)
     ? (stockLoading ? 'Cargando...' : (stockPrice !== null ? stockPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'))
     : (currentCandle ? currentCandle.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--')}
@@ -1126,6 +1249,7 @@ useEffect(() => {
                         </div>
                         {/* Estado de apuestas a la derecha */}
                         <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
+
                           {/* Solo en desktop: mantener arriba */}
 <span className={`hidden sm:inline text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
 <button
@@ -1151,7 +1275,8 @@ useEffect(() => {
                       </div>
                       {/* Contador grande centrado debajo */}
                       <div className="w-full flex justify-center">
-                        <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl p-0 m-0">
+                        <span className={`text-[4rem] leading-none font-black text-white drop-shadow-xl p-0 m-0 ${isMobile ? 'text-[2rem]' : ''}`}>
+
   {gamePhase === 'BETTING' ? formatTime(timeLeft) : formatTime(timeUntilNextCandle)}
 </span>
 
@@ -1160,11 +1285,19 @@ useEffect(() => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div style={{ position: 'relative', minHeight: 430 }}>
+                  <div style={{ 
+                    position: 'relative',
+                    minHeight: isMobile ? '80vh' : 430,
+                    height: isMobile ? '80vh' : 'auto'
+                  }}>
   {/* Fondo portada detrás del chart con opacidad y blur */}
   <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
   <CardContent className="relative p-0 bg-black rounded-b-xl overflow-hidden" style={{ minHeight: 430, width: 'calc(100% + 16px)', maxWidth: 'none', position: 'relative', padding: 0, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 }}>
-    <div className="relative" style={{ width: '100%', height: 430, minWidth: 0 }}>
+    <div className="relative" style={{ 
+      width: '100%', 
+      height: isMobile ? '80vh' : 430,
+      minWidth: 0
+    }}>
       <CandlestickChart
           candles={candles}
           currentCandle={currentCandle}
@@ -1227,7 +1360,7 @@ useEffect(() => {
     </button>
   </div>
                           {/* Symbol and Interval selectors */}
-                          <div className="flex w-full justify-center items-center gap-6 py-1">
+                          <div className="flex w-full justify-center items-center gap-4 py-1 flex-wrap">
                             <GameControls
                               onSymbolChange={changeSymbol}
                               onTimeframeChange={changeTimeframe}
@@ -1239,14 +1372,15 @@ useEffect(() => {
                           </div>
                           {/* Bet amount controls */}
                           <div className="flex flex-col items-center w-full gap-2">
-                            <div className="flex justify-between w-full text-[#FFD600] text-xs font-bold">
+
+                            <div className="flex justify-between w-full text-[#FFD600] text-xs font-bold controls-container">
                               <span>Mín: 1</span>
                               <span>Apostar: <span className="text-white text-lg">{betAmount}</span></span>
                               <span>Máx: {Math.floor(userBalance)}</span>
                             </div>
-                            <div className="flex gap-2 w-full justify-center">
+                            <div className="flex gap-2 w-full justify-center controls-container controls-row">
                               {/* Selector de apalancamiento */}
-                              <div className="flex flex-col items-center mx-2">
+                              <div className="flex flex-col items-center mx-2 controls-select">
                                 <label htmlFor="leverage" className="text-[#FFD600] text-xs font-bold mb-1">Apalancamiento</label>
                                 <select
   id="leverage"
@@ -1267,7 +1401,7 @@ useEffect(() => {
                               </div>
 
                               <button
-                                className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
+                                className="controls-button bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
                                 onClick={() => { playPulsar(); setBetAmount((prev) => Math.max(1, Math.floor(prev - 1))); }}
                                 disabled={betAmount <= 1}
                               >
@@ -1291,7 +1425,7 @@ useEffect(() => {
             }
           }
         }}
-        className="w-16 sm:w-20 text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-base sm:text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none py-1 sm:py-1"
+        className="controls-input text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-base sm:text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none py-1 sm:py-1"
         inputMode="numeric"
         pattern="[0-9]*"
       />
@@ -1303,14 +1437,14 @@ useEffect(() => {
                                 +1
                               </button>
                               <button
-  className="bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition text-sm sm:text-base min-w-[40px] sm:min-w-[80px]"
-  style={{ border: '2px solid #FFD600', marginRight: 6 }}
-  onClick={() => setBetAmount(Math.max(1, Math.floor(userBalance / 2)))}
-  disabled={userBalance < 2}
-  type="button"
->
-  50/50
-</button>
+                                className="controls-button bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition text-sm sm:text-base min-w-[40px] sm:min-w-[80px]"
+                                style={{ border: '2px solid #FFD600', marginRight: 6 }}
+                                onClick={() => setBetAmount(Math.max(1, Math.floor(userBalance / 2)))}
+                                disabled={userBalance < 2}
+                                type="button"
+                              >
+                                50/50
+                              </button>
 <button
   className="bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition text-sm sm:text-base min-w-[20px] sm:min-w-[40px] border-1 border-yellow-400"
   style={{ marginRight: 6 }}
@@ -1372,12 +1506,12 @@ useEffect(() => {
                               step={0.01}
                               value={betAmount}
                               onChange={e => setBetAmount(Number(e.target.value))}
-                              className="w-full h-2 bg-[#FFD600]/30 rounded-lg appearance-none cursor-pointer accent-[#FFD600] mt-2"
+                              className="controls-container w-full h-2 bg-[#FFD600]/30 rounded-lg appearance-none cursor-pointer accent-[#FFD600] mt-2"
                               disabled={userBalance < 1 || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1}
                             />
                           </div>
                           {/* Betting buttons */}
-                          <div className="flex flex-col gap-2 justify-center w-full mt-2">
+                          <div className="bet-buttons-container flex flex-col gap-2 justify-center w-full mt-2">
                             {/* Auto betting buttons - Perfectamente centrados con los botones de abajo */}
                             <div className="grid grid-cols-3 gap-3 w-full" style={{ maxWidth: '420px', margin: '0 auto' }}>
   <button
