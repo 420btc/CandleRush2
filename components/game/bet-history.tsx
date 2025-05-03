@@ -124,11 +124,11 @@ export default function BetHistory() {
                         {bet.prediction === "BULLISH" ? "Bull" : "Bear"} {bet.timeframe?.replace("m", "min")}
                       </span>
                       <span className="text-[10px] text-white leading-tight truncate">{localTimes[bet.id] || ''}</span>
-                      <span className="text-[10px] text-yellow-200 mt-0.5 truncate">Entry: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span>
+                      <span className="text-[10px] text-yellow-200 mt-0.5 truncate">O: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span>
                     </div>
                     {/* Monto y PnL */}
                     <div className="flex flex-col items-center justify-center min-w-[60px]">
-                      <span className="font-extrabold text-yellow-300 text-lg md:text-xl text-center leading-tight drop-shadow-sm" style={{letterSpacing: '0.01em'}}>
+                      <span className="font-extrabold text-yellow-300 text-base md:text-lg text-center leading-tight drop-shadow-sm" style={{letterSpacing: '0.01em'}}>
                         ${bet.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                       {/* LIVE PnL en pequeño */}
