@@ -1222,9 +1222,6 @@ useEffect(() => {
                         {/* Precio BTC grande a la izquierda */}
                         <div className="flex items-center gap-4">
                           <BarChart3 className="h-5 w-5" />
-                          <span className="text-3xl font-bold text-[#FFD600] tracking-tight ml-2" style={{ minWidth: '230px', textAlign: 'right', display: 'inline-block' }}>
-                            {currentSymbol}
-                          </span>
                           <span className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold text-white drop-shadow-lg ml-2" style={{ 
                             minWidth: '230px', 
                             textAlign: 'right', 
@@ -1240,7 +1237,7 @@ useEffect(() => {
   <AaplMarketStatus />
 )}
 {/* Dollar difference counter below price */}
-<div className="flex items-center ml-0 sm:ml-[101px] w-full sm:w-auto justify-center sm:justify-start">
+<div className="flex items-center ml-130 sm:ml-[231px] w-full sm:w-auto justify-center sm:justify-start">
   <DollarDiffCounter currentCandle={currentCandle} realtimePrice={currentCandle?.close ?? null} />
 </div>
                           <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
