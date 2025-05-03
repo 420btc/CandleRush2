@@ -15,7 +15,7 @@ export default function SmallLiquidations() {
     <div className="flex flex-col items-center w-full">
       <div className="bg-black/80 p-1 rounded-lg shadow-lg max-w-xs w-full">
         <div className="flex justify-between items-center">
-          <div className="text-xs text-zinc-400 mb-1 font-bold">Small Liquidations <span style={{ color: '#FFD600' }}>Binance</span> Futures BTCUSDT &lt;500</div>
+          <div className="text-xs text-zinc-400 mb-1 font-bold">Small <span style={{ color: '#FFD600' }}>Liquidations</span> Binance Futures BTCUSDT &lt;500</div>
           <span className="text-xs text-zinc-400">
             {isConnected ? 'Connected' : 'Disconnected'}
           </span>
