@@ -1454,46 +1454,11 @@ useEffect(() => {
                             </div>
                             {/* Precio de liquidación estimado */}
                             {leverage && currentCandle && (
-                              <div className="mt-1 text-xs text-yellow-400 text-center w-full">
-  <span
-    style={{
-      fontSize: '1.08rem',
-      fontWeight: 800,
-      letterSpacing: '0.01em',
-      textShadow: '0 0 6px #FFD60066, 0 0 1px #000',
-      verticalAlign: 'middle',
-      display: 'inline-block',
-      marginRight: '0.2em',
-    }}
-  >
-    Precio de liquidación:
-  </span>
-  <span className="font-mono ml-1">
-    {['BULLISH','BEARISH'].map(type => (
-  <span
-    key={type}
-    style={{
-      fontSize: '1rem',
-      fontWeight: 900,
-      letterSpacing: '0.01em',
-      lineHeight: 1.05,
-      textShadow: '0 0 6px #FFD60088, 0 0 1px #000',
-      verticalAlign: 'middle',
-      display: 'inline-block',
-      color: type === 'BULLISH' ? '#22c55e' : '#ef4444', // green for Long, red for Short
-      marginRight: type === 'BULLISH' ? '1.2em' : 0 // spacing between
-    }}
-  >
-    {type === 'BULLISH' ? 'Long' : 'Short'}: $
-    {type === 'BULLISH'
-      ? (currentCandle.close * (1 - (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)
-      : (currentCandle.close * (1 + (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)
-    }
-    {type === 'BULLISH' ? ' ' : ''}
-  </span>
-))}
-  </span>
-</div>
+                              <div className="flex items-center justify-center gap-2 w-full mt-1">
+                                <span className="text-sm text-yellow-400 font-bold">Precio de liquidación:</span>
+                                <span className="text-sm text-green-400 font-bold">Long: ${Number(currentCandle.close * (1 - (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)}</span>
+                                <span className="text-sm text-red-400 font-bold">Short: ${Number(currentCandle.close * (1 + (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)}</span>
+                              </div>
                             )}
 
                             <input
