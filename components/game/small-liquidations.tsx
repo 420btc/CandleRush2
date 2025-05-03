@@ -14,14 +14,18 @@ export default function SmallLiquidations() {
   return (
     <div className="flex flex-col items-center w-full">
       <div className="bg-black/80 p-1 rounded-lg shadow-lg max-w-xs w-full">
-        <div className="flex justify-between items-center">
-          <div className="text-xs text-zinc-400 mb-1 font-bold">Small <span style={{ color: '#FFD600' }}>Liquidations</span> Binance Futures BTCUSDT &lt;500</div>
-          <span className="text-xs text-zinc-400">
+        <div className="flex flex-col items-center">
+          <div className="text-xs text-zinc-400 mb-1 font-bold">Small <span style={{ color: '#FFD600' }}>Liquidations</span> Futures BTCUSDT</div>
+          <span className="text-xs text-zinc-400 mt-1">
             {isConnected ? 'Connected' : 'Disconnected'}
           </span>
         </div>
         <ul className="space-y-0.5" style={{ maxHeight: '60px', minHeight: '60px', overflowY: 'auto' }}>
-          {liquidations.length === 0 && <li className="text-zinc-500 italic">No small liquidations</li>}
+          {liquidations.length === 0 && (
+            <li className="text-zinc-500 italic flex items-center justify-center h-full">
+              No small liquidations
+            </li>
+          )}
           {liquidations.map((liq) => (
             <li key={liq.orderId}
                 className={`flex items-center justify-between px-1 py-0.5 rounded text-[10px] font-bold 
@@ -37,6 +41,7 @@ export default function SmallLiquidations() {
               <span style={{ color: '#FFD600' }}>
                 ${liq.sizeUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 <span className="block text-[9px] text-white/80">Precio: {liq.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                <span className="block text-[8px] text-white/80">{liq.exchange}</span>
               </span>
               <span className="ml-2" style={{ color: '#fff' }}>
                 {new Date(liq.timestamp).toLocaleTimeString()}
