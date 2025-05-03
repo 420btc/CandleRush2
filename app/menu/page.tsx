@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SplineScene } from "@/components/ui/splite";
+import { MenuPreview } from "@/components/ui/menu-preview";
 import { SiBitcoinsv } from "react-icons/si";
 
 
@@ -13,6 +14,7 @@ const menuItems = [
     icon: (
       <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-green-500"><path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
     ),
+    previewImage: "/previews/preview1.png",
   },
   {
     label: "Perfil",
@@ -21,6 +23,7 @@ const menuItems = [
     icon: (
       <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-purple-500"><circle cx="12" cy="7" r="4" /><path d="M5.5 21a8.38 8.38 0 0 1 13 0" /></svg>
     ),
+    previewImage: "/previews/preview2.png",
   },
   {
     label: "Cómo Jugar",
@@ -29,6 +32,7 @@ const menuItems = [
     icon: (
       <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-blue-500"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
     ),
+    previewImage: "/previews/preview3.png",
   },
 ];
 
@@ -163,19 +167,21 @@ export default function MenuPage() {
                 Conoce a AutoMix 🤖
               </Link>
             )}
-            <Link
-              href={item.href}
-              className="group flex items-center gap-4 p-4 rounded-2xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer text-yellow-200 hover:border-yellow-300 text-lg font-extrabold tracking-tight"
-              style={{ boxShadow: '0 0 40px #FFD60055' }}
-            >
-            <span className="transition-transform group-hover:scale-125 drop-shadow-lg" style={{width:32,height:32}}>{item.icon}</span>
-            <span className="flex flex-col">
-              <span className="text-lg font-extrabold group-hover:text-black text-yellow-200">{item.label}</span>
-              <span className="text-yellow-300 text-sm group-hover:text-black font-medium">{item.description}</span>
-            </span>
-          </Link>
-        </div>)
-        )}
+            <MenuPreview previewImage={item.previewImage}>
+              <Link
+                href={item.href}
+                className="group flex items-center gap-4 p-4 rounded-2xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer text-yellow-200 hover:border-yellow-300 text-lg font-extrabold tracking-tight"
+                style={{ boxShadow: '0 0 40px #FFD60055' }}
+              >
+                <span className="transition-transform group-hover:scale-125 drop-shadow-lg" style={{width:32,height:32}}>{item.icon}</span>
+                <span className="flex flex-col">
+                  <span className="text-lg font-extrabold group-hover:text-black text-yellow-200">{item.label}</span>
+                  <span className="text-yellow-300 text-sm group-hover:text-black font-medium">{item.description}</span>
+                </span>
+              </Link>
+            </MenuPreview>
+          </div>
+        ))}
       </div>
       <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">
         v1.0.3 &copy; CandleRush 2025 &middot; <span className="text-yellow-400 font-semibold">By Carlos Freire</span>
