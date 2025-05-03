@@ -170,13 +170,14 @@ export default function MenuPage() {
             <MenuPreview previewImage={item.previewImage}>
               <Link
                 href={item.href}
-                className="group flex items-center gap-4 p-4 rounded-2xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer text-yellow-200 hover:border-yellow-300 text-lg font-extrabold tracking-tight"
+                className="group flex items-center gap-4 p-4 rounded-2xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer"
                 style={{ boxShadow: '0 0 40px #FFD60055' }}
               >
                 <span className="transition-transform group-hover:scale-125 drop-shadow-lg" style={{width:32,height:32}}>{item.icon}</span>
-                <span className="flex flex-col">
-                  <span className="text-lg font-extrabold group-hover:text-black text-yellow-200">{item.label}</span>
-                  <span className="text-yellow-300 text-sm group-hover:text-black font-medium">{item.description}</span>
+                <span className="flex items-center">
+                  <span className="text-yellow-400 text-2xl md:text-3xl font-black drop-shadow-lg select-none tracking-tight italic uppercase group-hover:text-black transition-colors">
+                    {item.label}
+                  </span>
                 </span>
               </Link>
             </MenuPreview>
