@@ -1510,7 +1510,7 @@ useEffect(() => {
     color: '#FFD600',
     textShadow: '0 0 2px #000, 0 0 4px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000',
   }}
->MIX AUTO</span>
+>AUTO MIX 🤖</span>
   </button>
   <button
     className={`px-3 py-1 rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
