@@ -42,7 +42,7 @@ export default function WhaleTradesLive() {
 
   return (
     <div className="flex flex-col items-center w-full">
-      <div className="bg-black/80 p-1 rounded-lg shadow-lg max-w-xs w-full">
+      <div className="bg-black/80 p-1 rounded-lg shadow-lg w-full">
         <div className="flex justify-between items-center">
           <div className="text-xs text-zinc-400 mb-1 font-bold">Whale Alert <span style={{ color: '#FFD600' }}>Binance</span> Spot &amp; Futures BTCUSDT &gt;10K</div>
           <div className="flex items-center gap-2">
