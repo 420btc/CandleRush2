@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { BitcoinSparkles } from "@/components/ui/bitcoin-sparkles";
+import { TextParticle } from "@/components/ui/text-particle";
 import Link from "next/link";
 import { SplineScene } from "@/components/ui/splite";
 import { MenuPreview } from "@/components/ui/menu-preview";
@@ -152,11 +153,18 @@ export default function MenuPage() {
             }} />
             <div className="relative">
               <BitcoinSparkles />
-              <span className="text-yellow-400 text-4xl md:text-6xl font-black select-none tracking-tight absolute inset-0 flex items-center justify-center" style={{
-                textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
-              }}>
-                ${btcPrice}
-              </span>
+              <div className="absolute inset-0 flex items-center justify-center w-full h-full">
+  <TextParticle
+    text={`$${Number(btcPrice.replace(/,/g, '')).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+    fontSize={window.innerWidth > 768 ? 64 : 36}
+    particleSize={2}
+    particleColor="#FFD600"
+    backgroundColor="transparent"
+    className="w-full h-full"
+    fontFamily="Arial Black, Arial, sans-serif"
+    particleDensity={4}
+  />
+</div>
             </div>
           </div>
       </div>
