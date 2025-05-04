@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react"
 import Login from "@/components/login";
 import { formatTime } from "@/utils/formatTime"
+import { MdOutlineCasino } from "react-icons/md"
 import { useGame } from "@/context/game-context"
 
 // Componente para mostrar el estado del mercado de AAPL
@@ -1594,7 +1595,10 @@ useEffect(() => {
     bets={bets}
     timeframe={timeframe}
   />
-  <CardTitle className="whitespace-nowrap text-center" style={{ position: 'relative', top: '-10px' }}>Actividad</CardTitle>
+  <CardTitle className="flex items-center gap-2 whitespace-nowrap text-center text-white" style={{ position: 'relative', top: '-6px' }}>
+    <MdOutlineCasino className="h-6 w-6 text-yellow-400" />
+    Actividad
+  </CardTitle>
   <button
     aria-label="Eliminar historial de apuestas"
     title="Eliminar historial de apuestas"
