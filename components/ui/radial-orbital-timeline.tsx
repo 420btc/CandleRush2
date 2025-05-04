@@ -227,24 +227,24 @@ export function RadialOrbitalTimeline({
                   w-10 h-10 rounded-full flex items-center justify-center
                   ${
                     isExpanded
-                      ? "bg-white text-black"
+                      ? "bg-yellow-400 text-black"
                       : isRelated
-                      ? "bg-white/50 text-black"
-                      : "bg-transparent text-white"
+                      ? "bg-yellow-400/80 text-black"
+                      : "bg-yellow-400/80 text-yellow-400"
                   }
-                  border 
+                  border-2 border-black
                   ${
                     isExpanded
-                      ? "border-white shadow-lg shadow-white/50"
+                      ? "shadow-lg shadow-yellow-400/50"
                       : isRelated
-                      ? "border-white animate-pulse"
-                      : "border-white"
+                      ? "animate-pulse"
+                      : ""
                   }
                   transition-all duration-300 transform
                   ${isExpanded ? "scale-150" : ""}
                 `}
                 >
-                  <Icon size={16} />
+                  <Icon size={16} className="text-black" />
                 </div>
 
                 <div
