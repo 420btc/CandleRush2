@@ -69,7 +69,7 @@ export default function InfoMixPage() {
         <img
           src="/fondomix.png"
           alt="Fondo"
-          className="w-full h-full object-cover filter blur-[1px]"
+          className="w-full h-full object-cover filter blur-[0.5px]"
         />
       </div>
       <div className="min-h-screen bg-black/50 text-white relative">
