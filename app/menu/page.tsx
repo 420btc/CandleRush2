@@ -243,7 +243,10 @@ export default function MenuPage() {
         ))}
       </div>
       <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">
-        v1.0.3 &copy; CandleRush 2025 &middot; <span className="text-yellow-400 font-semibold">By Carlos Freire</span>
+        v1.0.3 &copy; CandleRush 2025 &middot; 
+        <a href="https://x.com/CarlosFreire0" target="_blank" rel="noopener noreferrer" className="text-yellow-400 font-semibold hover:text-yellow-300 transition-colors">
+          By Carlos Freire
+        </a>
       </footer>
       {/* Reloj digital */}
       <Clock />
