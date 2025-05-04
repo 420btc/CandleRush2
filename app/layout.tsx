@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: 'Created by Carlos Freire',
     images: [
       {
-        url: '/portada.png',
+        url: '/intro.png',
         width: 1200,
         height: 630,
         alt: 'Candle Rush',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Candle Rush!',
     description: 'Created by Carlos Freire',
-    images: ['/portada.png'],
+    images: ['/intro.png'],
   },
 }
 
