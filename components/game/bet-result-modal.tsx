@@ -286,12 +286,12 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
             ) : won ? (
               <>
                 <ArrowUpCircle className="inline h-8 w-8 text-green-400 mr-1" />
-                ¡Ganaste!
+                <span className="text-white">¡Ganaste!</span>
               </>
             ) : (
               <>
                 <ArrowDownCircle className="inline h-8 w-8 text-red-400 mr-1" />
-                Perdiste
+                <span className="text-white">Perdiste</span>
               </>
             )}
           </DialogTitle>
