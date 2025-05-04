@@ -11,6 +11,24 @@ import BtcTitleUpdater from "./BtcTitleUpdater";
 export const metadata: Metadata = {
   title: 'Candle Rush!',
   description: 'Created by Carlos Freire',
+  openGraph: {
+    title: 'Candle Rush!',
+    description: 'Created by Carlos Freire',
+    images: [
+      {
+        url: '/portada.png',
+        width: 1200,
+        height: 630,
+        alt: 'Candle Rush',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Candle Rush!',
+    description: 'Created by Carlos Freire',
+    images: ['/portada.png'],
+  },
 }
 
 export default function RootLayout({
