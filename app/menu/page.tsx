@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { BitcoinSparkles } from "@/components/ui/bitcoin-sparkles";
 import Link from "next/link";
 import { SplineScene } from "@/components/ui/splite";
 import { MenuPreview } from "@/components/ui/menu-preview";
@@ -138,16 +139,26 @@ export default function MenuPage() {
          <img src="/portada.png" alt="Portada" className="w-full h-full object-cover" draggable="false" />
        </div>
       <div className="relative z-10 w-full flex flex-col items-center -mt-2.5">
-      <div className="flex flex-col items-center mb-10">
-        <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight italic uppercase mb-2" style={{fontStyle: 'italic'}}>
-          CANDLE RUSH 2
-        </span>
-        <div className="flex items-center gap-4 mb-2">
-          <SiBitcoinsv className="text-yellow-400 text-4xl md:text-6xl" />
-          <span className="text-yellow-400 text-4xl md:text-6xl font-black drop-shadow-lg select-none tracking-tight transition-none">
-            ${btcPrice}
+        <div className="flex flex-col items-center justify-center gap-1">
+          <span className="text-yellow-400 text-5xl md:text-7xl font-black select-none tracking-tight italic uppercase" style={{
+            fontStyle: 'italic',
+            textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+          }}>
+            CANDLE RUSH 2
           </span>
-        </div>
+          <div className="flex items-center gap-4">
+            <SiBitcoinsv className="text-yellow-400 text-4xl md:text-6xl" style={{
+              textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+            }} />
+            <div className="relative">
+              <BitcoinSparkles />
+              <span className="text-yellow-400 text-4xl md:text-6xl font-black select-none tracking-tight absolute inset-0 flex items-center justify-center" style={{
+                textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+              }}>
+                ${btcPrice}
+              </span>
+            </div>
+          </div>
       </div>
       {/* Spline 3D Scene */}
       <div className="w-full h-[400px]">
@@ -171,11 +182,20 @@ export default function MenuPage() {
               <Link
                 href={item.href}
                 className="group flex items-center gap-4 p-4 rounded-2xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer"
-                style={{ boxShadow: '0 0 40px #FFD60055' }}
+                style={{ 
+                  boxShadow: '0 0 40px #FFD60055',
+                  textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+                }}
               >
-                <span className="transition-transform group-hover:scale-125 drop-shadow-lg" style={{width:32,height:32}}>{item.icon}</span>
+                <span className="transition-transform group-hover:scale-125" style={{
+                  width: 32,
+                  height: 32,
+                  textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+                }}>{item.icon}</span>
                 <span className="flex items-center">
-                  <span className="text-yellow-400 text-2xl md:text-3xl font-black drop-shadow-lg select-none tracking-tight italic uppercase group-hover:text-black transition-colors">
+                  <span className="text-yellow-400 text-2xl md:text-3xl font-black select-none tracking-tight italic uppercase group-hover:text-black transition-colors" style={{
+                    textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+                  }}>
                     {item.label}
                   </span>
                 </span>

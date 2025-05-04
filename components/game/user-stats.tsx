@@ -237,7 +237,7 @@ export default function UserStats() {
   };
 
   return (
-    <div className="space-y-3.6 text-white">
+    <div className="space-y-2.5 text-white p-0 m-0">
       <style jsx>{`
         @media (max-width: 768px) {
           .stats-container {
@@ -289,7 +289,7 @@ export default function UserStats() {
         }
       `}</style>
       {/* Toro/Oso y Top racha - Compacto */}
-      <div className="flex items-center justify-between text-xs mb-0.9 stats-item">
+      <div className="flex items-center justify-between text-xs stats-item p-0 m-0">
         <div className="flex items-center gap-0.5">
           <span className="text-lg">{bullVsBearIcon}</span>
           <span className="font-bold text-yellow-300 text-sm">{bullVsBearText}</span>
@@ -301,7 +301,7 @@ export default function UserStats() {
         </div>
       </div>
       {/* Racha actual */}
-      <div className="flex items-center justify-between text-xs stats-item">
+      <div className="flex items-center justify-between text-xs p-0 m-0">
         <div className="flex items-center gap-1">
           {realStreak >= 3 ? (
             <span className="text-orange-400 animate-pulse text-lg">🔥</span>
@@ -326,7 +326,7 @@ export default function UserStats() {
           display: inline-block;
         }
       `}</style>
-      <div className="flex items-center justify-between text-white">
+      <div className="flex items-center justify-between text-white p-0 m-0">
         <div className="flex items-center gap-2 text-white">
           <DollarSign className="h-5 w-5 text-green-400" />
           <span className="text-sm font-bold text-white">Balance</span>
@@ -411,7 +411,7 @@ export default function UserStats() {
         </div>
       )}
 
-      <div className="flex items-center justify-between text-white">
+      <div className="flex items-center justify-between text-white p-0 m-0">
         <div className="flex items-center gap-2 text-white">
           {isProfitable ? (
             <TrendingUp className="h-5 w-5 text-green-400" />
@@ -430,25 +430,25 @@ export default function UserStats() {
         </div>
         <span className="font-black text-lg text-red-400">{bets.filter(b => b.status === "LIQUIDATED").length}</span>
       </div>
-      <div className="flex items-center justify-between text-white">
+      <div className="flex items-center justify-between text-white p-0 m-0">
         <div className="flex items-center gap-2 text-white">
           <Percent className="h-5 w-5 text-blue-400" />
           <span className="text-sm font-bold text-white">Tasa de victorias</span>
         </div>
         <span className="font-black text-lg text-white">{winRate.toFixed(1)}%</span>
       </div>
-      <div className="grid grid-cols-3 gap-1.8 mt-3.6 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif] stats-grid">
-        <div className="bg-zinc-900/80 border border-yellow-300/40 p-2 rounded-lg text-center text-white">
-          <p className="text-xs font-bold text-yellow-200 drop-shadow-sm stats-item">Total</p>
-          <p className="font-black text-white text-shadow-lg stats-number" style={{textShadow:'0 1px 6px #FFD60055'}}>{totalBets}</p>
+      <div className="grid grid-cols-3 gap-2 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif] p-0 m-0">
+        <div className="bg-zinc-900/80 border border-yellow-300/40 p-2 rounded-xl text-center text-white">
+          <p className="text-sm font-bold text-yellow-200 drop-shadow-sm mb-1 stats-item">Total</p>
+          <p className="font-black text-xl text-white text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #FFD60055'}}>{totalBets}</p>
         </div>
-        <div className="bg-green-900/50 border border-green-400/30 p-2 rounded-lg text-center text-white">
-          <p className="text-xs font-bold text-green-300 drop-shadow-sm stats-item">Ganadas</p>
-          <p className="font-black text-green-200 text-shadow-lg stats-number" style={{textShadow:'0 1px 6px #00FF8555'}}>{wonBets}</p>
+        <div className="bg-green-900/50 border border-green-400/30 p-3 rounded-xl text-center text-white">
+          <p className="text-sm font-bold text-green-300 drop-shadow-sm mb-1 stats-item">Ganadas</p>
+          <p className="font-black text-xl text-green-200 text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #00FF8555'}}>{wonBets}</p>
         </div>
-        <div className="bg-red-900/50 border border-red-400/30 p-2 rounded-lg text-center text-white">
-          <p className="text-xs font-bold text-red-300 drop-shadow-sm stats-item">Perdidas</p>
-          <p className="font-black text-red-200 text-shadow-lg stats-number" style={{textShadow:'0 1px 6px #FF222255'}}>{lostBets}</p>
+        <div className="bg-red-900/50 border border-red-400/30 p-3 rounded-xl text-center text-white">
+          <p className="text-sm font-bold text-red-300 drop-shadow-sm mb-1 stats-item">Perdidas</p>
+          <p className="font-black text-xl text-red-200 text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #FF222255'}}>{lostBets}</p>
         </div>
       </div>
     </div>
