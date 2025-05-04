@@ -83,7 +83,10 @@ export default function InfoMixPage() {
           <h1 className="text-5xl md:text-7xl text-yellow-400 font-bold tracking-wider" style={{ textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)' }}>
             Conoce a AutoMix
           </h1>
-          <div className="w-full h-[90vh] relative">
+          <p className="text-xl md:text-2xl text-yellow-400 font-bold tracking-wider mt-2" style={{ textShadow: '0 1px 3px rgba(0, 0, 0, 0.8)' }}>
+            Las reglas y decisiones detrás de AutoMix
+          </p>
+          <div className="w-full h-[80vh] relative mt-[-10vh]">
             <RadialOrbitalTimeline timelineData={timelineData} />
           </div>
         </div>
