@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useWindowWidth } from "@/hooks/use-window-width";
 import { BitcoinSparkles } from "@/components/ui/bitcoin-sparkles";
 import { TextParticle } from "@/components/ui/text-particle";
 import Link from "next/link";
@@ -104,6 +105,7 @@ function WhaleTrades() {
 }
 
 export default function MenuPage() {
+  const width = useWindowWidth();
   const [btcPrice, setBtcPrice] = useState<string>("-");
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
@@ -156,7 +158,7 @@ export default function MenuPage() {
               <div className="absolute inset-0 flex items-center justify-center w-full h-full">
   <TextParticle
     text={`$${Number(btcPrice.replace(/,/g, '')).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
-    fontSize={window.innerWidth > 768 ? 64 : 36}
+    fontSize={width > 768 ? 64 : 36}
     particleSize={2}
     particleColor="#FFD600"
     backgroundColor="transparent"
