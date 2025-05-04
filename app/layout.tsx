@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/btcc.png" />
+        <link rel="icon" href="/intro.png" />
       </head>
       {/* Actualiza el título con el precio BTC en vivo */}
       <BtcTitleUpdater />
