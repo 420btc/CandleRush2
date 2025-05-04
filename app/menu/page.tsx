@@ -105,6 +105,17 @@ function WhaleTrades() {
 }
 
 export default function MenuPage() {
+  const [showSplash, setShowSplash] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const splashCount = parseInt(sessionStorage.getItem("splashShown") || "0", 10);
+      if (splashCount < 6) {
+        setShowSplash(true);
+        sessionStorage.setItem("splashShown", String(splashCount + 1));
+        setTimeout(() => setShowSplash(false), 4000);
+      }
+    }
+  }, []);
   const width = useWindowWidth();
   const [btcPrice, setBtcPrice] = useState<string>("-");
   const [loading, setLoading] = useState(true);
@@ -136,9 +147,26 @@ export default function MenuPage() {
   }, [isClient, btcPrice]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-black relative overflow-hidden" style={{background: 'linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.82) 100%)'}}>
+    <main className={`min-h-screen flex flex-col items-center justify-center bg-black relative overflow-hidden ${showSplash ? 'overflow-hidden' : ''}`} style={{background: 'linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.82) 100%)'}}>
+      {/* Splash Intro Overlay */}
+      {showSplash && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black" style={{backdropFilter: 'blur(8px)'}}>
+          <img
+            src="/intro.png"
+            alt="Intro"
+            style={{
+              width: "90vw",
+              height: "auto",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              objectFit: "contain",
+              display: "block"
+            }}
+          />
+        </div>
+      )}
        {/* Fondo portada solo para el menú */}
-       <div className="absolute inset-0 z-0 opacity-70 pointer-events-none select-none transform scale-131">
+       <div className={`absolute inset-0 z-0 opacity-70 pointer-events-none select-none transform scale-131 ${showSplash ? 'blur-lg' : ''}`}>
          <img src="/portada.png" alt="Portada" className="w-full h-full object-cover" draggable="false" />
        </div>
       <div className="relative z-10 w-full flex flex-col items-center -mt-2.5">

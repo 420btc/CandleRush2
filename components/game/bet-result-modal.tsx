@@ -281,7 +281,10 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
             {wasLiquidated ? (
               <>
                 <ArrowDownCircle className="inline h-8 w-8 text-yellow-400 mr-1" />
-                <span className="text-white">LIQUIDADO</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-white">LIQUIDADO</span>
+                  <span className="text-2xl text-white">💀</span>
+                </span>
               </>
             ) : won ? (
               <>

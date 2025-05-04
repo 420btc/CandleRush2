@@ -176,7 +176,7 @@ export default function BetHistory() {
                     {/* Eye button at the end, always compact */}
                     <div className="flex items-center justify-center min-w-[32px]">
                       <button
-                        className={`w-8 h-8 p-0 bg-yellow-700/20 rounded-lg text-yellow-400 transition flex items-center justify-center ${bet.status === 'PENDING' ? 'opacity-40 cursor-not-allowed' : 'hover:bg-yellow-700/40'}`}
+                        className={`text-yellow-400 transition ${bet.status === 'PENDING' ? 'opacity-40 cursor-not-allowed' : ''}`}
                         disabled={bet.status === 'PENDING'}
                         onClick={() => {
                           if (bet.status !== 'PENDING') {
@@ -194,7 +194,7 @@ export default function BetHistory() {
                           }
                         }}
                       >
-                        <Eye className="h-5 w-5 text-yellow-400" />
+                        <Eye className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
