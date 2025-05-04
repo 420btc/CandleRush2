@@ -161,7 +161,7 @@ export function RadialOrbitalTimeline({
     >
       {/* Banner inferior */}
       <div className="absolute bottom-0 left-0 w-full h-7.5">
-        <div className="text-yellow-400 text-sm">
+        <div className="text-yellow-400 text-sm font-bold" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.7)' }}>
           Sistema de Votación - AutoMix utiliza 12 indicadores para tomar decisiones (RSI, MACD, Valley, Majority, Fibonacci, Tendencia de Volumen, Golden Cross, EMA 55/200, Whale Trades, ADX, Tendencia General) - Los votos se suman en bullishVotes y bearishVotes para decidir la dirección final
         </div>
       </div>
@@ -175,15 +175,15 @@ export function RadialOrbitalTimeline({
           }}
         >
           <div className="absolute w-16 h-16 rounded-full gradient-button gradient-button-lg animate-pulse flex items-center justify-center z-10">
-            <div className="absolute w-20 h-20 rounded-full border border-white/20 animate-ping opacity-70"></div>
+            <div className="absolute w-20 h-20 rounded-full border-4 border-yellow-400 animate-ping opacity-70"></div>
             <div
-              className="absolute w-24 h-24 rounded-full border border-white/10 animate-ping opacity-50"
+              className="absolute w-24 h-24 rounded-full border-4 border-yellow-400 animate-ping opacity-50"
               style={{ animationDelay: "0.5s" }}
             ></div>
-            <div className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-md"></div>
+            <div className="w-8 h-8 rounded-full bg-yellow-400/80 backdrop-blur-md"></div>
           </div>
 
-          <div className="absolute w-96 h-96 rounded-full border border-white bg-transparent"></div>
+          <div className="absolute w-96 h-96 rounded-full border border-yellow-400 bg-transparent"></div>
 
           {timelineData.map((item, index) => {
             const position = calculateNodePosition(index, timelineData.length);
@@ -252,7 +252,7 @@ export function RadialOrbitalTimeline({
                   absolute top-14 left-1/2 -translate-x-1/2 whitespace-nowrap
                   text-sm font-semibold tracking-wider
                   transition-all duration-300
-                  ${isExpanded ? "text-yellow-400 scale-125" : "text-yellow-400/70"}
+                  ${isExpanded ? "text-yellow-400 scale-125" : "text-yellow-400"}
                 `}
                 >
                   {item.title}

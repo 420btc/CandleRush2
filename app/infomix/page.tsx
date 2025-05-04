@@ -80,7 +80,7 @@ export default function InfoMixPage() {
           <ArrowLeft className="w-6 h-6 text-yellow-400" />
         </Link>
         <div className="flex flex-col items-center justify-center gap-4">
-          <h1 className="text-5xl md:text-7xl text-yellow-400 font-bold tracking-wider">
+          <h1 className="text-5xl md:text-7xl text-yellow-400 font-bold tracking-wider" style={{ textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)' }}>
             Conoce a AutoMix
           </h1>
           <div className="w-full h-[90vh] relative">
@@ -88,6 +88,64 @@ export default function InfoMixPage() {
           </div>
         </div>
       </div>
+      <footer className="fixed bottom-0 left-0 right-0 bg-black/70 text-white p-4 border-t border-yellow-400 backdrop-blur-md h-40 overflow-y-auto">
+        <div className="space-y-2">
+          <div className="text-white/80">Desglose de votos:</div>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">Majority Signal (1 voto)</span>
+              <span className="text-white">Tendencia alcista</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">RSI (0.5 votos)</span>
+              <span className="text-white">Sobrecompra</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">Valley (1 voto)</span>
+              <span className="text-white">Soporte detectado</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">MACD (1 voto)</span>
+              <span className="text-white">Cruce alcista</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">Fibonacci (1 voto)</span>
+              <span className="text-white">Nivel 0.618</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">Market Structure (variable)</span>
+              <span className="text-white">Tendencia alcista</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">Trend (1 voto)</span>
+              <span className="text-white">Tendencia alcista</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">Volume Trend (1 voto)</span>
+              <span className="text-white">Volumen alcista</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">Golden Cross (1 voto)</span>
+              <span className="text-white">Cruce alcista</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">EMA 55/200 (0.5 votos)</span>
+              <span className="text-white">Posición alcista</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">Whale Trades (2 votos)</span>
+              <span className="text-white">Movimiento alcista</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-yellow-400">ADX + Memory (1 voto)</span>
+              <span className="text-white">Tendencia fuerte</span>
+            </div>
+          </div>
+          <div className="mt-4 text-center text-white/80">
+            <span className="text-yellow-400">Total Votos:</span> 4.5/12.5
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
