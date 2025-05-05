@@ -1178,7 +1178,7 @@ return (
           style={{ height: 26, minWidth: 80, fontSize: 13, padding: '0 8px', lineHeight: '24px' }}
           title="Simular próximas velas"
         >
-          Candle Prediction
+          Candle Predictor
         </button>
       </div>
 
