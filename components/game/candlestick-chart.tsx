@@ -1114,21 +1114,31 @@ return (
         }
         ctx.stroke();
         ctx.restore();
-        // Order Blocks: últimos HH y LL no rotos
+        // Order Blocks: solo los dos últimos HH y los dos últimos LL
         const orderBlocks: {type:'bull'|'bear', x1:number, x2:number, y:number, height:number, color:string}[] = [];
-        // Busca último HH y LL visibles
-        let lastHH = null, lastLL = null;
-        for (let k=structureLabels.length-1; k>=0; k--) {
-          if (!lastHH && structureLabels[k].label==='HH') lastHH = structureLabels[k];
-          if (!lastLL && structureLabels[k].label==='LL') lastLL = structureLabels[k];
+        // Encuentra los tres últimos HH y LL, pero filtra los que estén demasiado cerca (menos de 20 velas de diferencia)
+        function dedupeByProximity(labels: {x:number, y:number, label:string, color:string, i?:number}[], minDistance: number, count: number) {
+          const filtered: typeof labels = [];
+          for (let k = labels.length - 1; k >= 0 && filtered.length < count; k--) {
+            const curr = labels[k];
+            if (!curr) continue;
+            // No añadir si ya hay uno muy cerca
+            if (filtered.some(l => Math.abs((l.i ?? 0) - (curr.i ?? 0)) < minDistance)) continue;
+            filtered.push(curr);
+          }
+          return filtered.reverse();
         }
-        // Dibuja order block en el último HH (zona de venta)
-        if (lastHH) {
-          orderBlocks.push({type:'bear', x1:lastHH.x-35, x2:lastHH.x+35, y:lastHH.y-18, height:24, color:'rgba(255,0,0,0.18)'});
+        const hhLabels = structureLabels.map((l, idx) => ({...l, i: idx})).filter(l=>l.label==='HH');
+        const llLabels = structureLabels.map((l, idx) => ({...l, i: idx})).filter(l=>l.label==='LL');
+        const lastHHs = dedupeByProximity(hhLabels, 20, 3);
+        const lastLLs = dedupeByProximity(llLabels, 20, 3);
+        // Dibuja order blocks en los tres últimos HH (zona de venta)
+        for (const hh of lastHHs) {
+          orderBlocks.push({type:'bear', x1:hh.x-35, x2:hh.x+35, y:hh.y-18, height:24, color:'rgba(255,0,0,0.18)'});
         }
-        // Dibuja order block en el último LL (zona de compra)
-        if (lastLL) {
-          orderBlocks.push({type:'bull', x1:lastLL.x-35, x2:lastLL.x+35, y:lastLL.y-6, height:24, color:'rgba(0,255,100,0.18)'});
+        // Dibuja order blocks en los tres últimos LL (zona de compra)
+        for (const ll of lastLLs) {
+          orderBlocks.push({type:'bull', x1:ll.x-35, x2:ll.x+35, y:ll.y-6, height:24, color:'rgba(0,255,100,0.18)'});
         }
         for (const ob of orderBlocks) {
           ctx.save();
