@@ -541,7 +541,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       ctx.save();
       ctx.font = '10px monospace';
       ctx.fillStyle = '#FFD600';
-      ctx.fillText(`$${lastClose.toFixed(2)}`, dimensions.width - 40, yPrice + 10);
+      ctx.fillText(`$${lastClose.toFixed(2)}`, dimensions.width - 44, yPrice + 10);
       ctx.restore();
     }
 
