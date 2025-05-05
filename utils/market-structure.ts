@@ -63,9 +63,14 @@ function getLevels(extremes: number[], count: number): number[] {
 }
 
 function determineTrend(candles: Candle[], supportLevels: number[], resistanceLevels: number[], threshold: number): 'UP' | 'DOWN' | 'SIDEWAYS' {
-  const lastPrice = candles[candles.length - 1].close;
-  const lastLow = candles[candles.length - 1].low;
-  const lastHigh = candles[candles.length - 1].high;
+  // Guard: need at least 2 candles to determine trend
+  if (!candles || candles.length < 2) return 'SIDEWAYS';
+  const last = candles[candles.length - 1];
+  const prev = candles[candles.length - 2];
+  if (!last || !prev) return 'SIDEWAYS';
+  const lastPrice = last.close;
+  const lastLow = last.low;
+  const lastHigh = last.high;
   
   // Verificar si el precio está cerca de algún nivel con umbral ajustado
   const nearSupport = supportLevels.some((level: number) => 
@@ -89,7 +94,12 @@ function determineTrend(candles: Candle[], supportLevels: number[], resistanceLe
 }
 
 function generateVote(trend: 'UP' | 'DOWN' | 'SIDEWAYS', candles: Candle[], supportLevels: number[], resistanceLevels: number[], threshold: number): { vote: 'BULLISH' | 'BEARISH' | null; weight: number } {
-  const lastPrice = candles[candles.length - 1].close;
+  // Guard: need at least 2 candles to generate a vote
+  if (!candles || candles.length < 2) return { vote: null, weight: 0 };
+  const lastCandle = candles[candles.length - 1];
+  const prevCandle = candles[candles.length - 2];
+  if (!lastCandle || !prevCandle) return { vote: null, weight: 0 };
+  const lastPrice = lastCandle.close;
   
   // Base weight of 2 votes
   let weight = 2;

@@ -9,6 +9,7 @@ import React from 'react';
 import VolumeProfile from './volume-profile';
 import { BarChart3 } from 'lucide-react';
 import { generateAutoDrawCandles } from '@/utils/autoDraw';
+import { detectMarketStructure } from '@/utils/market-structure';
 
 interface CandlestickChartProps {
   showCrossCircles?: boolean;
@@ -58,6 +59,78 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   // Candles a mostrar (reales + simuladas si activo)
   const displayedCandles = autoDrawActive ? [...candles, ...simCandles] : candles;
 
+  // === SOPORTES Y RESISTENCIAS ===
+  // Obtener timeframe desde contexto de juego
+  const { timeframe } = useGame();
+  // Calcular niveles de soporte y resistencia con la función robusta
+  const { supportLevels, resistanceLevels } = detectMarketStructure(displayedCandles, timeframe);
+
+  // === DETECTAR INTERACCIONES DE SIMULADAS ===
+  // Solo analizamos las simuladas (no las reales)
+  type SRInteraction = {
+    type: 'SUPPORT'|'RESISTANCE',
+    action: 'RESPECT'|'BREAK',
+    candleIdx: number, // índice en displayedCandles
+    level: number,
+    price: number
+  };
+  const srInteractions: SRInteraction[] = [];
+  if (autoDrawActive && simCandles.length > 0) {
+    // Solo para las simuladas
+    for (let i = candles.length; i < displayedCandles.length; i++) {
+      const prev = displayedCandles[i-1];
+      const curr = displayedCandles[i];
+      // Check supports
+      for (const level of supportLevels) {
+        // Respeta soporte: toca y rebota
+        if (
+          prev.low > level && curr.low <= level && curr.close > level
+        ) {
+          srInteractions.push({ type:'SUPPORT', action:'RESPECT', candleIdx:i, level, price:curr.low });
+        }
+        // Rompe soporte: cruza por debajo
+        if (
+          prev.low > level && curr.low < level && curr.close < level
+        ) {
+          srInteractions.push({ type:'SUPPORT', action:'BREAK', candleIdx:i, level, price:curr.low });
+        }
+      }
+      // Check resistances
+      for (const level of resistanceLevels) {
+        // Respeta resistencia: toca y rebota
+        if (
+          prev.high < level && curr.high >= level && curr.close < level
+        ) {
+          srInteractions.push({ type:'RESISTANCE', action:'RESPECT', candleIdx:i, level, price:curr.high });
+        }
+        // Rompe resistencia: cruza por arriba
+        if (
+          prev.high < level && curr.high > level && curr.close > level
+        ) {
+          srInteractions.push({ type:'RESISTANCE', action:'BREAK', candleIdx:i, level, price:curr.high });
+        }
+      }
+    }
+  }
+
+// Desactivar automáticamente Auto Draw al detectar una nueva vela real
+useEffect(() => {
+  if (autoDrawActive && simCandles.length > 0) {
+    // Si hay una nueva vela real (candles ha crecido), salir de Auto Draw
+    // Suponemos que la última simulada ya no está al final de candles
+    const lastSim = simCandles[simCandles.length - 1];
+    if (candles.length > 0 && lastSim && candles[candles.length - 1].timestamp >= lastSim.timestamp) {
+      setAutoDrawActive(false);
+      setSimCandles([]);
+    }
+  }
+  // También si el usuario cambia de mercado o se resetea el chart
+  if (autoDrawActive && simCandles.length > 0 && candles.length === 0) {
+    setAutoDrawActive(false);
+    setSimCandles([]);
+  }
+}, [candles, autoDrawActive, simCandles]);
+
   
   // Estado para mostrar/ocultar SMC+
   const [showSMC, setShowSMC] = useState(false);
@@ -68,6 +141,45 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
 
   // ... (el resto del código sigue igual)
 
+
+  // }
+  // for (const y of resistanceLevels.map(lvl => priceToY(lvl))) {
+  //   ctx.strokeStyle = '#ff0059';
+  //   ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(chartWidth, y); ctx.stroke();
+  // }
+  // ctx.setLineDash([]); ctx.restore();
+  //
+  // --- Dibujar marcadores de interacción ---
+  // for (const {type, action, candleIdx, level, price} of srInteractions) {
+  //   const x = candleIdxToX(candleIdx); // función que mapea índice a X
+  //   const y = priceToY(level);
+  //   ctx.save();
+  //   ctx.beginPath();
+  //   if (type==='SUPPORT') {
+  //     ctx.strokeStyle = action==='BREAK' ? '#ff2222' : '#00ffae';
+  //     ctx.fillStyle = action==='BREAK' ? '#ff2222' : '#00ffae';
+  //     ctx.arc(x, y, 8, 0, 2*Math.PI);
+  //     ctx.globalAlpha = 0.7;
+  //     ctx.fill();
+  //     ctx.globalAlpha = 1.0;
+  //     ctx.lineWidth = 2.5;
+  //     ctx.stroke();
+  //   } else {
+  //     ctx.strokeStyle = action==='BREAK' ? '#ff0059' : '#0099ff';
+  //     ctx.fillStyle = action==='BREAK' ? '#ff0059' : '#0099ff';
+  //     ctx.arc(x, y, 8, 0, 2*Math.PI);
+  //     ctx.globalAlpha = 0.7;
+  //     ctx.fill();
+  //     ctx.globalAlpha = 1.0;
+  //     ctx.lineWidth = 2.5;
+  //     ctx.stroke();
+  //   }
+  //   ctx.font = 'bold 10px monospace';
+  //   ctx.textAlign = 'center';
+  //   ctx.fillStyle = '#fff';
+  //   ctx.fillText(action==='BREAK' ? 'X' : '✓', x, y+4);
+  //   ctx.restore();
+  // }
 
   // Log para depuración del prop showCrossCircles
   React.useEffect(() => {
@@ -669,15 +781,12 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       return emaArray;
     }
 
-    // Calcular EMAs con todos los datos posibles
-    // Solo calcular EMAs si NO está activo Auto Draw
+    // Calcular EMAs SIEMPRE usando las velas mostradas (reales + simuladas si aplica)
     let ema10: (number|null)[] = [], ema55: (number|null)[] = [], ema200: (number|null)[] = [], ema365: (number|null)[] = [];
-    if (!autoDrawActive) {
-      ema10 = calculateEMA(10, allCandles);
-      ema55 = calculateEMA(55, allCandles);
-      ema200 = calculateEMA(200, allCandles);
-      ema365 = calculateEMA(365, allCandles);
-    }
+    ema10 = calculateEMA(10, allCandles);
+    ema55 = calculateEMA(55, allCandles);
+    ema200 = calculateEMA(200, allCandles);
+    ema365 = calculateEMA(365, allCandles);
 
     // Función para dibujar una línea de EMA
     function drawEMA(emaArray: (number | null)[], color: string) {
