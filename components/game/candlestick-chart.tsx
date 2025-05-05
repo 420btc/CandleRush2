@@ -31,6 +31,9 @@ interface ViewState {
 }
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
+  // Estado para mostrar/ocultar SMC+
+  const [showSMC, setShowSMC] = useState(false);
+
   // Log para depuración del prop showCrossCircles
   React.useEffect(() => {
     console.log('[EMA CIRCLES][CandlestickChart] Prop showCrossCircles cambió:', showCrossCircles);
@@ -915,8 +918,16 @@ return (
         />
       </div>
     )}
-    {/* Controles de navegación */}
+    {/* Controles de navegación y SMC+ */}
     <div className="absolute bottom-14 right-1 flex gap-1 z-50" data-component-name="CandlestickChart">
+      <button
+        onClick={() => setShowSMC(v => !v)}
+        className={`bg-[#111] border-2 border-[#FFD600] hover:bg-[#FFD600] hover:text-black text-[#FFD600] font-bold px-3 py-1 rounded-full transition-colors duration-200 ${showSMC ? 'bg-[#FFD600] text-black' : ''}`}
+        style={{ minWidth: 60 }}
+        aria-label="Mostrar/Ocultar SMC+"
+      >
+        {showSMC ? 'SMC+ ON' : 'SMC+ OFF'}
+      </button>
       {/* Estilos adicionales para móvil */}
       <style jsx>{`
         @media (max-width: 768px) {
@@ -992,6 +1003,208 @@ return (
         </svg>
       </button>
     </div>
+    {/* Indicador SMC+ */}
+    {showSMC && (
+  <div className="absolute inset-0 pointer-events-none z-30">
+    <canvas
+      ref={el => {
+        if (!el || !canvasRef.current) return;
+        const ctx = el.getContext('2d');
+        if (!ctx) return;
+        el.width = canvasRef.current.width;
+        el.height = canvasRef.current.height;
+        ctx.clearRect(0, 0, el.width, el.height);
+        // --- SMC LOGIC: Detect pivots (swing highs/lows), label HH/HL/LH/LL, draw lines, detect BOS/CHoCH ---
+        // Usa los mismos valores de escala y offset que el canvas principal
+        // Si el canvas principal guarda los valores en refs (ej: lastRenderMeta), úsalos
+        let meta = null;
+        if (typeof lastRenderMeta !== 'undefined' && lastRenderMeta.current) {
+          meta = lastRenderMeta.current;
+        }
+        const allCandles = [...candles];
+        if (currentCandle) allCandles.push(currentCandle);
+        if (allCandles.length < 5) return;
+        let minTime, xScale, clampedOffsetX;
+        // Usa los valores del gráfico principal si existen
+        if (meta) {
+          minTime = meta.minTime;
+          xScale = meta.xScale;
+          clampedOffsetX = meta.clampedOffsetX;
+        } else {
+          minTime = allCandles[0].timestamp;
+          const maxTime = allCandles[allCandles.length - 1].timestamp;
+          const timeRange = maxTime - minTime || 1;
+          const chartWidth = el.width;
+          xScale = (chartWidth / timeRange) * viewState.scale;
+          clampedOffsetX = Math.max(0, Math.min(viewState.offsetX, Math.max(0, chartWidth - chartWidth / viewState.scale)));
+        }
+        const chartWidth = el.width;
+        const chartHeight = el.height;
+        // Para precios
+        let minPrice = Math.min(...allCandles.map(c=>c.low));
+        let maxPrice = Math.max(...allCandles.map(c=>c.high));
+        const pricePadding = (maxPrice - minPrice) * 0.5;
+        minPrice -= pricePadding;
+        maxPrice += pricePadding;
+        const priceRange = maxPrice - minPrice;
+        const yScale = (chartHeight / priceRange) * viewState.scale * (verticalScale ?? 1);
+        const clampedOffsetY = viewState.offsetY;
+        // Detect pivots (swing highs/lows)
+        const length = 3; // Puedes hacer esto configurable
+        function isSwingHigh(i:number) {
+          for (let j=1;j<=length;j++) {
+            if (i-j<0 || i+j>=allCandles.length) return false;
+            if (allCandles[i].high <= allCandles[i-j].high) return false;
+            if (allCandles[i].high <= allCandles[i+j].high) return false;
+          }
+          return true;
+        }
+        function isSwingLow(i:number) {
+          for (let j=1;j<=length;j++) {
+            if (i-j<0 || i+j>=allCandles.length) return false;
+            if (allCandles[i].low >= allCandles[i-j].low) return false;
+            if (allCandles[i].low >= allCandles[i+j].low) return false;
+          }
+          return true;
+        }
+        // Recopila pivotes
+        const pivots: {i:number, type:'high'|'low', price:number, ts:number}[] = [];
+        for (let i=length; i<allCandles.length-length; i++) {
+          if (isSwingHigh(i)) pivots.push({i, type:'high', price: allCandles[i].high, ts: allCandles[i].timestamp});
+          if (isSwingLow(i)) pivots.push({i, type:'low', price: allCandles[i].low, ts: allCandles[i].timestamp});
+        }
+        // Clasifica estructura: HH/HL/LH/LL
+        let lastType = '';
+        let lastPrice = 0;
+        let lastLabel = '';
+        const structureLabels: {x:number, y:number, label:string, color:string}[] = [];
+        for (let k=0; k<pivots.length; k++) {
+          const prev = pivots[k-1];
+          const curr = pivots[k];
+          if (!curr) continue;
+          let label = '';
+          let color = '';
+          if (curr.type==='high') {
+            if (prev && prev.type==='high') {
+              if (curr.price > prev.price) { label = 'HH'; color='#43e97b'; }
+              else { label = 'LH'; color='#f87171'; }
+            } else label = 'H';
+          } else if (curr.type==='low') {
+            if (prev && prev.type==='low') {
+              if (curr.price < prev.price) { label = 'LL'; color='#f87171'; }
+              else { label = 'HL'; color='#43e97b'; }
+            } else label = 'L';
+          }
+          // Calcula posición
+          const x = (curr.ts - minTime) * xScale - clampedOffsetX;
+          const y = chartHeight - ((curr.price - minPrice) * yScale - clampedOffsetY);
+          if (label) structureLabels.push({x, y, label, color});
+        }
+        // Dibuja líneas entre pivotes
+        ctx.save();
+        ctx.strokeStyle = '#00FFD0';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let k=0; k<pivots.length; k++) {
+          const curr = pivots[k];
+          const x = (curr.ts - minTime) * xScale - clampedOffsetX;
+          const y = chartHeight - ((curr.price - minPrice) * yScale - clampedOffsetY);
+          if (k===0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+        // Order Blocks: últimos HH y LL no rotos
+        const orderBlocks: {type:'bull'|'bear', x1:number, x2:number, y:number, height:number, color:string}[] = [];
+        // Busca último HH y LL visibles
+        let lastHH = null, lastLL = null;
+        for (let k=structureLabels.length-1; k>=0; k--) {
+          if (!lastHH && structureLabels[k].label==='HH') lastHH = structureLabels[k];
+          if (!lastLL && structureLabels[k].label==='LL') lastLL = structureLabels[k];
+        }
+        // Dibuja order block en el último HH (zona de venta)
+        if (lastHH) {
+          orderBlocks.push({type:'bear', x1:lastHH.x-35, x2:lastHH.x+35, y:lastHH.y-18, height:24, color:'rgba(255,0,0,0.18)'});
+        }
+        // Dibuja order block en el último LL (zona de compra)
+        if (lastLL) {
+          orderBlocks.push({type:'bull', x1:lastLL.x-35, x2:lastLL.x+35, y:lastLL.y-6, height:24, color:'rgba(0,255,100,0.18)'});
+        }
+        for (const ob of orderBlocks) {
+          ctx.save();
+          ctx.fillStyle = ob.color;
+          ctx.strokeStyle = ob.type==='bear' ? '#ff5555' : '#43e97b';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.rect(ob.x1, ob.y, ob.x2-ob.x1, ob.height);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+        // Zonas de liquidez: áreas horizontales en los LL y HH
+        for (const lbl of structureLabels) {
+          if (lbl.label==='LL') {
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,255,255,0.10)';
+            ctx.fillRect(0, lbl.y+6, chartWidth, 10);
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#1e90ff';
+            ctx.fillText('Weak Low', chartWidth-50, lbl.y+18);
+            ctx.restore();
+          }
+          if (lbl.label==='HH') {
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,0,0,0.10)';
+            ctx.fillRect(0, lbl.y-20, chartWidth, 10);
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#ff5555';
+            ctx.fillText('Strong High', chartWidth-60, lbl.y-12);
+            ctx.restore();
+          }
+        }
+        // Dibuja etiquetas HH/HL/LH/LL
+        ctx.save();
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        for (const {x, y, label, color} of structureLabels) {
+          ctx.fillStyle = color;
+          ctx.strokeStyle = '#111';
+          ctx.lineWidth = 3;
+          ctx.strokeText(label, x, y-8);
+          ctx.fillText(label, x, y-8);
+        }
+        ctx.restore();
+        // Detect BOS/CHoCH
+        for (let k=2; k<structureLabels.length; k++) {
+          const prev = structureLabels[k-1];
+          const curr = structureLabels[k];
+          if (!prev || !curr) continue;
+          // BOS: Un HH que rompe el último HH, o LL que rompe el último LL
+          if ((prev.label==='HH' && curr.label==='HH' && curr.y < prev.y) || (prev.label==='LL' && curr.label==='LL' && curr.y > prev.y)) {
+            ctx.save();
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#FFD600';
+            ctx.textAlign = 'center';
+            ctx.fillText('BOS', curr.x, curr.y-20);
+            ctx.restore();
+          }
+          // CHoCH: Cambio de tendencia
+          if ((prev.label==='HH' && curr.label==='LL') || (prev.label==='LL' && curr.label==='HH')) {
+            ctx.save();
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#60a5fa';
+            ctx.textAlign = 'center';
+            ctx.fillText('CHoCH', curr.x, curr.y-20);
+            ctx.restore();
+          }
+        }
+      }}
+      className="absolute top-0 left-0 w-full h-full"
+      style={{ pointerEvents: 'none' }}
+    />
+  </div>
+)}
     {/* Loading overlay */}
     {!isInitialized && (
       <div className="absolute inset-0 flex items-center justify-center bg-[#FFD600]/50">
