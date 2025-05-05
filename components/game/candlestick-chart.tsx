@@ -691,7 +691,7 @@ let yLabel = 18;
 emaLabels.forEach(({ name, value, color }) => {
 if (typeof value === 'number' && isFinite(value)) {
 ctx.save();
-ctx.globalAlpha = 0.7;
+ctx.globalAlpha = 1;
 ctx.font = 'bold 13px monospace';
 ctx.fillStyle = color;
 ctx.fillText(`${name}: ${value.toFixed(2)}`, 10, yLabel);
