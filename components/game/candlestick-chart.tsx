@@ -1159,7 +1159,7 @@ return (
             ctx.fillRect(0, lbl.y+6, chartWidth, 10);
             ctx.font = 'bold 10px monospace';
             ctx.fillStyle = '#1e90ff';
-            ctx.fillText('Mínimo Débil', chartWidth-50, lbl.y+18);
+            ctx.fillText('Weak Low', chartWidth-50, lbl.y+18);
             ctx.restore();
           }
           if (lbl.label==='HH') {
@@ -1168,7 +1168,7 @@ return (
             ctx.fillRect(0, lbl.y-20, chartWidth, 10);
             ctx.font = 'bold 10px monospace';
             ctx.fillStyle = '#ff5555';
-            ctx.fillText('Máximo Fuerte', chartWidth-60, lbl.y-12);
+            ctx.fillText('Strong High', chartWidth-60, lbl.y-12);
             ctx.restore();
           }
         }
@@ -1196,7 +1196,7 @@ return (
             ctx.font = 'bold 10px monospace';
             ctx.fillStyle = '#FFD600';
             ctx.textAlign = 'center';
-            ctx.fillText('Ruptura', curr.x, curr.y-20);
+            ctx.fillText('BOS', curr.x, curr.y-20);
             ctx.restore();
           }
           // CHoCH: Cambio de tendencia
@@ -1205,7 +1205,7 @@ return (
             ctx.font = 'bold 10px monospace';
             ctx.fillStyle = '#60a5fa';
             ctx.textAlign = 'center';
-            ctx.fillText('Cambio', curr.x, curr.y-20);
+            ctx.fillText('CHoCH', curr.x, curr.y-20);
             ctx.restore();
           }
         }
