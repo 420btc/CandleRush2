@@ -149,7 +149,7 @@ const histPoints = histSlice;
           let y = chartHeight - 38;
           const dy = 12;
           return (
-            <g opacity={0.55} fontFamily="inherit">
+            <g fontFamily="inherit">
               <text x="2" y={y} fill="#a259ff" fontSize="10" fontWeight="bold">
                 MACD: <tspan fill="#fff" fontWeight="normal">{macdVal}</tspan>
               </text>
