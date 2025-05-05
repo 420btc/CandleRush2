@@ -1,6 +1,40 @@
 // Utils para memoria AutoMix robusta
 // Guarda y consulta el historial de resultados de apuestas automáticas
 
+export type OrderBlockType = 'BULLISH' | 'BEARISH';
+
+export interface OrderBlockMemoryEntry {
+  timestamp: number; // ms
+  price: number;
+  index: number; // índice de la vela
+  type: OrderBlockType;
+}
+
+const ORDER_BLOCK_MEMORY_KEY = 'orderBlockMemory';
+const ORDER_BLOCK_MEMORY_MAX_ENTRIES = 6; // 3 bullish + 3 bearish máx
+
+export function saveOrderBlockMemory(entry: OrderBlockMemoryEntry) {
+  try {
+    const raw = localStorage.getItem(ORDER_BLOCK_MEMORY_KEY);
+    let arr: OrderBlockMemoryEntry[] = raw ? JSON.parse(raw) : [];
+    arr.push(entry);
+    // Mantener solo los 3 más recientes de cada tipo
+    const bullish = arr.filter(e => e.type === 'BULLISH').slice(-3);
+    const bearish = arr.filter(e => e.type === 'BEARISH').slice(-3);
+    arr = [...bullish, ...bearish];
+    localStorage.setItem(ORDER_BLOCK_MEMORY_KEY, JSON.stringify(arr));
+  } catch {}
+}
+
+export function getOrderBlockMemory(): OrderBlockMemoryEntry[] {
+  try {
+    const raw = localStorage.getItem(ORDER_BLOCK_MEMORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 export type AutoMixMemoryEntry = {
   betId: string;
   timestamp: number;
@@ -20,6 +54,38 @@ export type AutoMixMemoryEntry = {
   emaPositionVote?: "BULLISH" | "BEARISH" | null;
   wasRandom?: boolean; // true si la apuesta fue aleatoria
   consecutiveBets: number; // Número de apuestas consecutivas con esta estrategia
+  // --- Extensiones para desglose de votos y contexto ---
+  bullishVotes?: number;
+  bearishVotes?: number;
+  totalVotes?: number;
+  directionAntesDeInvertir?: "BULLISH" | "BEARISH";
+  timeframe?: string;
+  votesSnapshot?: {
+    majoritySignal?: "BULLISH" | "BEARISH" | null;
+    rsiSignal?: "BULLISH" | "BEARISH" | null;
+    macdSignal?: "BULLISH" | "BEARISH" | null;
+    valleyVote?: "BULLISH" | "BEARISH" | null;
+    volumeVote?: "BULLISH" | "BEARISH" | null;
+    whaleVote?: "BULLISH" | "BEARISH" | null;
+    adxMemoryVote?: "BULLISH" | "BEARISH" | null;
+    crossSignal?: "GOLDEN_CROSS" | "DEATH_CROSS" | null;
+    emaPositionVote?: "BULLISH" | "BEARISH" | null;
+    orderBlockVotes?: { bullish: boolean; bearish: boolean };
+    trendVote?: "BULLISH" | "BEARISH" | null;
+    fibonacciVote?: {
+      vote: "BULLISH" | "BEARISH" | null;
+      level: string | null;
+      price: number;
+      levels: Record<string, number>;
+    } | null;
+    avgVol1?: number | null;
+    avgVol2?: number | null;
+    rsiValue?: number;
+    macdValue?: number;
+    macdSignalLineValue?: number;
+    timeframe?: string;
+  };
+
 };
 
 // --- Memoria para tendencia y conteo de velas (máx 666) ---

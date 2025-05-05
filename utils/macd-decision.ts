@@ -1,5 +1,5 @@
 import type { Candle } from "@/types/game";
-import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry, getMarketStructureMemory } from "./autoMixMemory";
+import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry, getMarketStructureMemory, getOrderBlockMemory, OrderBlockMemoryEntry } from "./autoMixMemory";
 import type { WhaleTrade } from "@/hooks/useWhaleTrades";
 import { getWhaleVote } from "./whale-vote";
 import { getAdxMemoryVote } from "./adx-vote";
@@ -440,6 +440,17 @@ try {
   if (adxMemoryVote === "BULLISH") bullishVotes++;
   if (adxMemoryVote === "BEARISH") bearishVotes++;
 
+  // --- 10. Votos SMC+ por últimos 3 order blocks ---
+  try {
+    const orderBlocks: OrderBlockMemoryEntry[] = getOrderBlockMemory();
+    const bullishBlocks = orderBlocks.filter(b => b.type === 'BULLISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
+    const bearishBlocks = orderBlocks.filter(b => b.type === 'BEARISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
+    const currentPrice = candles[candles.length - 1]?.close;
+    // Voto 1: Si el precio está por encima del último bullish block, voto bullish
+    if (bullishBlocks.length > 0 && currentPrice > bullishBlocks[0].price) bullishVotes++;
+    // Voto 2: Si el precio está por debajo del último bearish block, voto bearish
+    if (bearishBlocks.length > 0 && currentPrice < bearishBlocks[0].price) bearishVotes++;
+  } catch {}
 
   // --- Mejorada: Detección de rachas ganadoras/perdedoras ---
   try {
@@ -487,11 +498,11 @@ try {
 
   // --- Desempate con MACD ---
   const totalVotes = bullishVotes + bearishVotes;
-  let direction: "BULLISH" | "BEARISH";
+  let direction: "BULLISH" | "BEARISH" = "BULLISH"; // default
   if (totalVotes === 0) direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
   else if (bullishVotes === bearishVotes) {
     // Asegurar que macdSignal es del tipo correcto antes de usarlo
-    const validMacdSignal = macdSignal === "BULLISH" ? "BULLISH" : macdSignal === "BEARISH" ? "BEARISH" : "BULLISH";
+    const validMacdSignal: "BULLISH" | "BEARISH" = macdSignal === "BULLISH" ? "BULLISH" : macdSignal === "BEARISH" ? "BEARISH" : "BULLISH"; // nunca null, fallback 'BULLISH'
     direction = validMacdSignal;
   } else {
     const bullishProb = bullishVotes / totalVotes;
@@ -500,7 +511,29 @@ try {
 
   // --- LÓGICA DE INVERSIÓN POR HISTORIAL DE FRACASO Y PATRONES ---
   const { shouldInvert, consecutiveBets } = checkShouldInvertDecision(majoritySignal, rsiSignal, macdSignal);
-  
+
+  // --- LÓGICA DE CONSENSO PERSISTENTE ---
+  try {
+    const memory = getAutoMixMemory();
+    // Filtrar por temporalidad (ej: "1m", "5m"), si existe en la memoria
+    // Si no, usar las últimas N entradas
+    const N = timeframe === "1m" ? 4 : timeframe === "5m" ? 3 : 3;
+    const recent = memory.slice(-N);
+    // Consenso: todos los votos y dirección final iguales
+    const allSameDirection = recent.length === N && recent.every(e => e.direction === direction);
+    const allSameVotes = recent.length === N && recent.every(e => (
+      e.majoritySignal === majoritySignal &&
+      e.rsiSignal === rsiSignal &&
+      e.macdSignal === macdSignal
+    ));
+    // Consenso sólo si además no hay racha de pérdidas en esas velas
+    const hasLossStreak = recent.filter(e => e.result === "LOSS" || e.result === "LIQ").length >= 2;
+    if (allSameDirection && allSameVotes && !hasLossStreak) {
+      // Mantener la dirección hasta que el consenso cambie
+      return direction;
+    }
+  } catch {}
+
   // Si hay una racha ganadora, ignorar la inversión
   try {
     const memory = getAutoMixMemory();
@@ -537,10 +570,126 @@ try {
       adxMemoryVote,
       crossSignal: crossSignal ?? null,
       wasRandom: false,
+      // --- Desglose de votos y contexto ---
+      bullishVotes,
+      bearishVotes,
+      totalVotes,
+      directionAntesDeInvertir: direction,
+      timeframe,
+      votesSnapshot: {
+        majoritySignal,
+        rsiSignal,
+        macdSignal,
+        valleyVote,
+        volumeVote,
+        whaleVote,
+        adxMemoryVote,
+        crossSignal,
+        emaPositionVote,
+        orderBlockVotes: {
+          bullish: (() => {
+            try {
+              const orderBlocks: OrderBlockMemoryEntry[] = getOrderBlockMemory();
+              const bullishBlocks = orderBlocks.filter(b => b.type === 'BULLISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
+              const currentPrice = candles[candles.length - 1]?.close;
+              return bullishBlocks.length > 0 && currentPrice > bullishBlocks[0].price;
+            } catch { return false; }
+          })(),
+          bearish: (() => {
+            try {
+              const orderBlocks: OrderBlockMemoryEntry[] = getOrderBlockMemory();
+              const bearishBlocks = orderBlocks.filter(b => b.type === 'BEARISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
+              const currentPrice = candles[candles.length - 1]?.close;
+              return bearishBlocks.length > 0 && currentPrice < bearishBlocks[0].price;
+            } catch { return false; }
+          })(),
+        },
+        // --- Votos y señales adicionales ---
+        trendVote: (() => {
+          try {
+            // Usa la misma lógica que trendVote en la función
+            if (candles.length < 70) return null;
+            const last70 = candles.slice(-70);
+            const bullishCount = last70.filter(c => c.close > c.open).length;
+            const bearishCount = last70.filter(c => c.close < c.open).length;
+            if (bullishCount > bearishCount) return 'BULLISH';
+            if (bearishCount > bullishCount) return 'BEARISH';
+            return null;
+          } catch { return null; }
+        })(),
+        fibonacciVote: (() => {
+          try {
+            // Usa la misma lógica que fibonacciVote en la función
+            const fib = (() => {
+              let windowSize = 50;
+              if (timeframe === "1m" || timeframe === "5m") windowSize = 100;
+              if (timeframe === "15m" || timeframe === "1h") windowSize = 50;
+              if (timeframe === "4h" || timeframe === "1d") windowSize = 30;
+              if (candles.length < windowSize) return null;
+              const window = candles.slice(-windowSize);
+              const high = Math.max(...window.map(c => c.high));
+              const low = Math.min(...window.map(c => c.low));
+              const levels: Record<string, number> = {
+                "0.236": high - (high - low) * 0.236,
+                "0.382": high - (high - low) * 0.382,
+                "0.5": high - (high - low) * 0.5,
+                "0.618": high - (high - low) * 0.618,
+                "0.786": high - (high - low) * 0.786,
+              };
+              return { high, low, levels };
+            })();
+            if (!fib) return null;
+            const price = candles[candles.length-1]?.close;
+            let closestLevel: string|null = null;
+            let minDiff = Infinity;
+            for (const [level, val] of Object.entries(fib.levels)) {
+              const diff = Math.abs(price-val);
+              if (diff < minDiff) {
+                minDiff = diff;
+                closestLevel = level;
+              }
+            }
+            let vote: "BULLISH"|"BEARISH"|null = null;
+            if (closestLevel && minDiff/price < 0.002) {
+              const last = candles[candles.length-1];
+              if (last.close > last.open) vote = "BULLISH";
+              if (last.close < last.open) vote = "BEARISH";
+            }
+            return {
+              vote,
+              level: closestLevel,
+              price,
+              levels: fib.levels,
+            };
+          } catch { return null; }
+        })(),
+        avgVol1: (() => {
+          try {
+            if (candles.length < 30) return null;
+            const last30 = candles.slice(-30);
+            const firstHalf = last30.slice(0, 15);
+            return firstHalf.reduce((a, c) => a + (c.volume || 0), 0) / 15;
+          } catch { return null; }
+        })(),
+        avgVol2: (() => {
+          try {
+            if (candles.length < 30) return null;
+            const last30 = candles.slice(-30);
+            const secondHalf = last30.slice(15);
+            return secondHalf.reduce((a, c) => a + (c.volume || 0), 0) / 15;
+          } catch { return null; }
+        })(),
+        rsiValue: rsi,
+        macdValue: macdLine,
+        macdSignalLineValue: signalLine,
+        timeframe,
+      },
     };
-    // Guardado de memoria eliminado aquí: ahora solo se guarda tras placeBet con el betId real.
+    // Guardar memoria inmediatamente para que el consenso funcione correctamente
+    const { saveAutoMixMemory } = require('./autoMixMemory');
+    saveAutoMixMemory(entry);
   } catch {}
-  return direction;
+  return finalDirection;
 }
 
 // Para uso futuro: exportar la proporción

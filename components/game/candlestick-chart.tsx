@@ -8,6 +8,7 @@ import { useDevice } from "@/context/device-mode-context"
 import React from 'react';
 import VolumeProfile from './volume-profile';
 import { BarChart3 } from 'lucide-react';
+import { generateAutoDrawCandles } from '@/utils/autoDraw';
 
 interface CandlestickChartProps {
   showCrossCircles?: boolean;
@@ -31,8 +32,49 @@ interface ViewState {
 }
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
+  // --- Estado para Auto Draw ---
+  const [autoDrawActive, setAutoDrawActive] = useState(false);
+  const [simCandles, setSimCandles] = useState<Candle[]>([]);
+
+  // Determina cuántas velas simular
+  const autoDrawCount = candles.length >= 33 ? 33 : 11;
+
+  // Handler para el botón
+  // Nuevo handler: cada click añade UNA vela simulada a la secuencia
+  const handleAutoDraw = () => {
+    // Si está inactivo, activar y generar la primera simulada
+    if (!autoDrawActive) {
+      const simulated = generateAutoDrawCandles([...candles], 1);
+      setSimCandles(simulated);
+      setAutoDrawActive(true);
+      return;
+    }
+    // Si ya está activo, generar la siguiente simulada (en base a todas las previas)
+    const base = [...candles, ...simCandles];
+    const nextSim = generateAutoDrawCandles(base, 1);
+    setSimCandles([...simCandles, ...nextSim]);
+  };
+
+  // Candles a mostrar (reales + simuladas si activo)
+  const displayedCandles = autoDrawActive ? [...candles, ...simCandles] : candles;
+
+  // Desactivar autoDraw y limpiar simuladas en cuanto cambia el array de velas reales
+  useEffect(() => {
+    if (autoDrawActive) {
+      setAutoDrawActive(false);
+      setSimCandles([]);
+    }
+  }, [candles]);
+
   // Estado para mostrar/ocultar SMC+
   const [showSMC, setShowSMC] = useState(false);
+
+  // --- Botón Auto Draw ---
+  // Se muestra arriba a la derecha del gráfico
+  // Estilo simple, puedes mejorarlo según tu UI
+
+  // ... (el resto del código sigue igual)
+
 
   // Log para depuración del prop showCrossCircles
   React.useEffect(() => {
@@ -60,6 +102,31 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
 
   // ...
   const [countPlayed, setCountPlayed] = useState(false);
+
+  // --- Renderizado de botones Auto Draw ---
+  // Puedes moverlos a donde prefieras en tu UI
+  // Aquí los ponemos arriba a la derecha del gráfico
+  // Botón toggle: activa/desactiva Auto Draw y limpia simulación
+  const autoDrawButtons = (
+    <div style={{ position: 'absolute', top: 12, right: 16, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+      <button
+        onClick={() => {
+          if (!autoDrawActive) {
+            const simulated = generateAutoDrawCandles([...candles], 1);
+            setSimCandles(simulated);
+            setAutoDrawActive(true);
+          }
+        }}
+        className="px-2 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300 ring-2 ring-green-400"
+        title="Candle Prediction"
+        style={{ height: 26, minWidth: 100, fontSize: 13, padding: '0 10px', lineHeight: '24px' }}
+        data-component-name="CandlestickChart"
+      >
+        Candle Prediction
+      </button>
+    </div>
+  );
+
   const { nextCandleTime } = useGame();
   const countAudioRef = useRef<HTMLAudioElement | null>(null);
   const prevMsLeftRef = useRef<number>(null);
@@ -228,7 +295,7 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
     const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
 
-    const allCandles = [...candles];
+    const allCandles = [...displayedCandles];
 // Solo agregar currentCandle si ya estamos en el periodo de la nueva vela
 if (currentCandle && Date.now() >= currentCandle.timestamp) {
   allCandles.push(currentCandle);
@@ -506,6 +573,31 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         const candleY = isBullish ? close : open
         // Obtener apuestas de la vela
         let candleBets = betsByTimestamp.get(candle.timestamp);
+
+        // === DIFERENCIAR VELAS SIMULADAS ===
+        const isSimulated = (candle as any).isSimulated === true;
+        if (isSimulated) {
+          // Borde azul brillante y opacidad 0.7
+          ctx.save();
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = isBullish ? "#22c55e" : "#ef4444";
+          ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+          ctx.strokeStyle = '#2196f3';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([5, 2]);
+          ctx.strokeRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+          ctx.setLineDash([]);
+          ctx.restore();
+        } else {
+          // Velas reales normales
+          ctx.save();
+          ctx.shadowColor = 'transparent'; // Sin glow para el cuerpo
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1;
+          ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+          ctx.restore();
+        }
+
         // Si la vela tiene apuestas, dibujar un glow (resplandor)
         if (candleBets && candleBets.length > 0) {
           ctx.save();
@@ -521,14 +613,6 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
           ctx.setLineDash([]);
           ctx.restore();
         }
-        // Draw candle body
-        ctx.save();
-        ctx.shadowColor = 'transparent'; // Sin glow para el cuerpo
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-        ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
-
-        ctx.restore();
 
        // Draw wicks
        ctx.beginPath()
@@ -593,10 +677,14 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     }
 
     // Calcular EMAs con todos los datos posibles
-    const ema10 = calculateEMA(10, allCandles);
-    const ema55 = calculateEMA(55, allCandles);
-    const ema200 = calculateEMA(200, allCandles);
-    const ema365 = calculateEMA(365, allCandles);
+    // Solo calcular EMAs si NO está activo Auto Draw
+    let ema10: (number|null)[] = [], ema55: (number|null)[] = [], ema200: (number|null)[] = [], ema365: (number|null)[] = [];
+    if (!autoDrawActive) {
+      ema10 = calculateEMA(10, allCandles);
+      ema55 = calculateEMA(55, allCandles);
+      ema200 = calculateEMA(200, allCandles);
+      ema365 = calculateEMA(365, allCandles);
+    }
 
     // Función para dibujar una línea de EMA
     function drawEMA(emaArray: (number | null)[], color: string) {
@@ -625,11 +713,13 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       ctx.restore();
     }
 
-    // Dibujar EMAs
-    drawEMA(ema10, '#a259f7'); // Morado
-    drawEMA(ema55, '#FFD600'); // Dorado
-    drawEMA(ema200, '#2196f3'); // Azul
-    drawEMA(ema365, '#22c55e'); // Verde
+    // Dibujar EMAs solo si NO está activo Auto Draw
+    if (!autoDrawActive) {
+      drawEMA(ema10, '#a259f7'); // Morado
+      drawEMA(ema55, '#FFD600'); // Dorado
+      drawEMA(ema200, '#2196f3'); // Azul
+      drawEMA(ema365, '#22c55e'); // Verde
+    }
 
     // === DIBUJAR CÍRCULOS EN CRUCES DE EMAS ===
     // Helper para detectar cruces
@@ -672,8 +762,8 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.restore();
       }
     }
-    if (showCrossCircles === true) {
-
+    // Dibujar círculos de cruces solo si NO está activo Auto Draw
+    if (showCrossCircles === true && !autoDrawActive) {
       drawEMACrossCircles(ema10, ema55, '#a259f7', '#FFD600');
       drawEMACrossCircles(ema55, ema200, '#FFD600', '#2196f3');
       drawEMACrossCircles(ema200, ema365, '#2196f3', '#22c55e');
@@ -891,120 +981,132 @@ const handleZoomOut = () => {
   };
 
 return (
-    <div className="relative h-full w-full overflow-hidden select-none" style={{ 
-      minHeight: isMobile ? '80vh' : 520, 
-      height: isMobile ? '80vh' : 'auto'
-    }}>
-
-    <canvas ref={canvasRef} className="h-full w-full cursor-grab active:cursor-grabbing absolute top-0 left-0 z-10" />
-    {/* Overlay: Perfil de Volumen */}
-    {showVolumeProfile && dimensions.height > 0 && (
-      <div className="absolute top-0 right-0 h-full z-20 pointer-events-none">
-        <VolumeProfile
-          candles={candles}
-          chartHeight={dimensions.height}
-          priceMin={(() => {
-            let min = Number.MAX_VALUE;
-            candles.forEach((c: { low: number }) => { min = Math.min(min, c.low); });
-            return min;
-          })()}
-          priceMax={(() => {
-            let max = Number.MIN_VALUE;
-            candles.forEach((c: { high: number }) => { max = Math.max(max, c.high); });
-            return max;
-          })()}
-          barWidth={100}
-          bins={100}
-        />
+    <div className="relative w-full h-full select-none">
+      {/* --- Botón Auto Draw --- */}
+      <div className="absolute top-2 right-2 z-20 flex gap-2">
+        <button
+          onClick={handleAutoDraw}
+          className={`px-3 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-2 ring-green-400' : ''}`}
+          title="Simular próximas velas"
+        >
+          Auto Draw
+        </button>
       </div>
-    )}
-    {/* Controles de navegación y SMC+ */}
-    <div className="absolute bottom-14 right-1 flex gap-1 z-50" data-component-name="CandlestickChart">
-      <button
-        onClick={() => setShowSMC(v => !v)}
-        className={`bg-[#111] border-2 border-[#FFD600] hover:bg-[#FFD600] hover:text-black text-[#FFD600] font-bold px-3 py-1 rounded-full transition-colors duration-200 ${showSMC ? 'bg-[#FFD600] text-black' : ''}`}
-        style={{ minWidth: 60 }}
-        aria-label="Mostrar/Ocultar SMC+"
-      >
-        {showSMC ? 'SMC+ ON' : 'SMC+ OFF'}
-      </button>
-      {/* Estilos adicionales para móvil */}
-      <style jsx>{`
-        @media (max-width: 768px) {
-          div[data-component-name="CandlestickChart"] {
-            bottom: 20px;
-            right: 10px;
+
+      {/* --- Canvas principal --- */}
+      <canvas
+        ref={canvasRef}
+        className="absolute top-0 left-0 w-full h-full"
+        style={{ pointerEvents: 'auto' }}
+      />
+      {/* Overlay: Perfil de Volumen */}
+      {showVolumeProfile && dimensions.height > 0 && !autoDrawActive && (
+        <div className="absolute top-0 right-0 h-full z-20 pointer-events-none">
+          <VolumeProfile
+            candles={candles}
+            chartHeight={dimensions.height}
+            priceMin={(() => {
+              let min = Number.MAX_VALUE;
+              candles.forEach((c: { low: number }) => { min = Math.min(min, c.low); });
+              return min;
+            })()}
+            priceMax={(() => {
+              let max = Number.MIN_VALUE;
+              candles.forEach((c: { high: number }) => { max = Math.max(max, c.high); });
+              return max;
+            })()}
+            barWidth={100}
+            bins={100}
+          />
+        </div>
+      )}
+      {/* Controles de navegación y SMC+ */}
+      <div className="absolute bottom-14 right-1 flex gap-1 z-50" data-component-name="CandlestickChart">
+        <button
+          onClick={() => setShowSMC(v => !v)}
+          className={`bg-[#111] border-2 border-[#FFD600] hover:bg-[#FFD600] hover:text-black text-[#FFD600] font-bold px-3 py-1 rounded-full transition-colors duration-200 ${showSMC ? 'bg-[#FFD600] text-black' : ''}`}
+          style={{ minWidth: 60 }}
+          aria-label="Mostrar/Ocultar SMC+"
+        >
+          {showSMC ? 'SMC+ ON' : 'SMC+ OFF'}
+        </button>
+        {/* Estilos adicionales para móvil */}
+        <style jsx>{`
+          @media (max-width: 768px) {
+            div[data-component-name="CandlestickChart"] {
+              bottom: 20px;
+              right: 10px;
+            }
+            button {
+              padding: 0.5rem;
+            }
           }
-          button {
-            padding: 0.5rem;
-          }
-        }
-      `}</style>
-      {/* [ELIMINADO] <ToggleCrossCirclesButton /> */}
-      <button
-        onClick={handleReset}
-        className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
-        aria-label="Restablecer vista"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="10"
-          height="10"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#111"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        `}</style>
+        {/* [ELIMINADO] <ToggleCrossCirclesButton /> */}
+        <button
+          onClick={handleReset}
+          className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
+          aria-label="Restablecer vista"
         >
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-          <path d="M3 3v5h5"></path>
-        </svg>
-      </button>
-      <button
-        onClick={handleZoomIn}
-        className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
-        aria-label="Acercar"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="10"
-          height="10"
-          viewBox="0 0 22 22"
-          fill="none"
-          stroke="#111"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#111"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+        </button>
+        <button
+          onClick={handleZoomIn}
+          className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
+          aria-label="Acercar"
         >
-          <circle cx="12" cy="12" r="9" />
-          <line x1="12" y1="8" x2="12" y2="16" />
-          <line x1="8" y1="12" x2="16" y2="12" />
-        </svg>
-      </button>
-      <button
-        onClick={handleZoomOut}
-        className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
-        aria-label="Alejar"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="10"
-          height="10"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#111"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="10"
+            height="10"
+            viewBox="0 0 22 22"
+            fill="none"
+            stroke="#111"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+        </button>
+        <button
+          onClick={handleZoomOut}
+          className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
+          aria-label="Alejar"
         >
-          <circle cx="12" cy="12" r="9" />
-          <line x1="8" y1="12" x2="16" y2="12" />
-        </svg>
-      </button>
-    </div>
-    {/* Indicador SMC+ */}
-    {showSMC && (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#111"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+        </button>
+      </div>
+      {/* Indicador SMC+ */}
+      {showSMC && (
   <div className="absolute inset-0 pointer-events-none z-30">
     <canvas
       ref={el => {
