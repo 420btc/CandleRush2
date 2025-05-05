@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import type { Candle } from "@/types/game"
 import { useGame } from "@/context/game-context"
 import { useDevice } from "@/context/device-mode-context"
+import { decideMixDirection } from '@/utils/macd-decision';
+import { getSupportResistance } from '@/utils/market-structure';
 
 import React from 'react';
 import VolumeProfile from './volume-profile';
@@ -32,12 +34,18 @@ interface ViewState {
   isDragging: boolean
 }
 
+interface SupportResistance {
+  supports: number[];
+  resistances: number[];
+}
+
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
   // --- Estado para Auto Draw ---
   const [autoDrawActive, setAutoDrawActive] = useState(false);
   const [simCandles, setSimCandles] = useState<Candle[]>([]);
   const [finalPrice, setFinalPrice] = useState<number | null>(null);
   const [showFinalPrice, setShowFinalPrice] = useState(false);
+  const [showSupportResistance, setShowSupportResistance] = useState(false);
 
   // Efecto para mostrar el precio final cuando cambia
   useEffect(() => {
@@ -520,6 +528,36 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
 
     // Línea horizontal punteada amarilla translúcida (precio actual)
   if (allCandles.length > 0) {
+    // Dibujar líneas de soportes y resistencias si están activas
+    if (showSupportResistance) {
+      const { supports, resistances } = getSupportResistance(allCandles);
+      
+      // Dibujar líneas de soporte (verde)
+      supports.forEach((support: number) => {
+        const y = dimensions.height - ((support - minPrice) * yScale - clampedOffsetY);
+        ctx.save();
+        ctx.strokeStyle = '#00FF00';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(dimensions.width, y);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // Dibujar líneas de resistencia (rojo)
+      resistances.forEach((resistance: number) => {
+        const y = dimensions.height - ((resistance - minPrice) * yScale - clampedOffsetY);
+        ctx.save();
+        ctx.strokeStyle = '#FF0000';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(dimensions.width, y);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
     const last = allCandles[allCandles.length - 1];
     const lastClose = last.close;
     const yPrice = dimensions.height - ((lastClose - minPrice) * yScale - clampedOffsetY);
@@ -1179,6 +1217,14 @@ return (
           title="Simular próximas velas"
         >
           Candle Predictor
+        </button>
+        <button
+          onClick={() => setShowSupportResistance(!showSupportResistance)}
+          className="px-2 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300"
+          title="Mostrar/Ocultar Soportes y Resistencias"
+          style={{ height: 26, minWidth: 80, fontSize: 13, padding: '0 8px', lineHeight: '24px' }}
+        >
+          <span style={{ color: '#00FF00' }}>S</span>/<span style={{ color: '#FF0000' }}>R</span>
         </button>
       </div>
 

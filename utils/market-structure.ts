@@ -1,6 +1,11 @@
 import { Candle } from '../types';
 import { saveMarketStructureMemory, getMarketStructureMemory } from './autoMixMemory';
 
+interface SupportResistance {
+  supports: number[];
+  resistances: number[];
+}
+
 interface MarketStructureResult {
   supportLevels: number[];
   resistanceLevels: number[];
@@ -19,6 +24,26 @@ export type MarketStructureMemoryEntry = {
   currentTrend: 'UP' | 'DOWN' | 'SIDEWAYS';
   voteWeight: number;
 };
+
+export function getSupportResistance(candles: Candle[]): SupportResistance {
+  // Tomar solo las últimas 66 velas
+  const recentCandles = candles.slice(-66);
+  const prices = recentCandles.map(c => c.close);
+  
+  // Encontrar máximos y mínimos locales usando una ventana de 5 velas
+  const lookback = 3;
+  const supportLevels = findLocalExtremes(prices, false, lookback);
+  const resistanceLevels = findLocalExtremes(prices, true, lookback);
+  
+  // Eliminar duplicados y ordenar
+  const uniqueSupports = Array.from(new Set(supportLevels)).sort((a, b) => a - b);
+  const uniqueResistances = Array.from(new Set(resistanceLevels)).sort((a, b) => a - b);
+  
+  return {
+    supports: uniqueSupports,
+    resistances: uniqueResistances
+  };
+}
 
 // Actualizar el tipo de la memoria para incluir voteWeight
 interface MarketStructureResult {
