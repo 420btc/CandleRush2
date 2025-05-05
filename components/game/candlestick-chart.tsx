@@ -58,14 +58,7 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   // Candles a mostrar (reales + simuladas si activo)
   const displayedCandles = autoDrawActive ? [...candles, ...simCandles] : candles;
 
-  // Desactivar autoDraw y limpiar simuladas en cuanto cambia el array de velas reales
-  useEffect(() => {
-    if (autoDrawActive) {
-      setAutoDrawActive(false);
-      setSimCandles([]);
-    }
-  }, [candles]);
-
+  
   // Estado para mostrar/ocultar SMC+
   const [showSMC, setShowSMC] = useState(false);
 
@@ -984,12 +977,22 @@ return (
     <div className="relative w-full h-full select-none">
       {/* --- Botón Auto Draw --- */}
       <div className="absolute top-2 right-2 z-20 flex gap-2">
+        {autoDrawActive && (
+          <button
+            onClick={() => { setAutoDrawActive(false); setSimCandles([]); }}
+            style={{ height: 22, width: 22, minWidth: 22, fontSize: 13, padding: 0, lineHeight: '20px', background: '#dc2626', color: 'white', border: '1.5px solid #991b1b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginRight: 2 }}
+            title="Salir de Candle Prediction"
+          >
+            ×
+          </button>
+        )}
         <button
           onClick={handleAutoDraw}
-          className={`px-3 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-2 ring-green-400' : ''}`}
+          className={`px-2 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-2 ring-green-400' : ''}`}
+          style={{ height: 26, minWidth: 80, fontSize: 13, padding: '0 8px', lineHeight: '24px' }}
           title="Simular próximas velas"
         >
-          Auto Draw
+          Candle Prediction
         </button>
       </div>
 

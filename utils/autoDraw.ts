@@ -77,17 +77,42 @@ export function generateAutoDrawCandles(
     // Soportes y resistencias con lookback adaptado
     const { supports, resistances } = getSupportResistance(candles, lookback);
     let direction = decideMixDirection(candles, timeframe);
+
+    // === NUEVA LÓGICA: analizar últimas 100 velas ===
+    const historyLen = 100;
+    const longHistory = candles.slice(-historyLen);
+    const longBodies = longHistory.map(c => Math.abs(c.close - c.open));
+    const longMechas = longHistory.map(c => Math.abs(c.high - c.low) - Math.abs(c.close - c.open));
+    const meanBody = longBodies.length > 0 ? longBodies.reduce((a, b) => a + b, 0) / longBodies.length : (lastCandle.close * 0.0025);
+    const stdBody = Math.sqrt(longBodies.reduce((a, b) => a + Math.pow(b - meanBody,2), 0) / (longBodies.length || 1));
+    const meanWick = longMechas.length > 0 ? longMechas.reduce((a, b) => a + b, 0) / longMechas.length : meanBody * 0.6;
+    const stdWick = Math.sqrt(longMechas.reduce((a, b) => a + Math.pow(b - meanWick,2), 0) / (longMechas.length || 1));
+    // Tendencia larga
+    const upCount = longHistory.filter(c => c.close > c.open).length;
+    const downCount = longHistory.filter(c => c.close < c.open).length;
+    // Ratio de reversión
+    const last5 = candles.slice(-5);
+    const last5Dir = last5.map(c => c.close > c.open ? 1 : -1).reduce((a,b)=>a+b,0);
+    // === FIN NUEVA LÓGICA ===
+
+    // Probabilidad de reversión si hay racha larga
+    if (Math.abs(last5Dir) >= 4 && Math.random() < 0.65) {
+      direction = last5Dir > 0 ? "BEARISH" : "BULLISH";
+    } else if (upCount > downCount * 1.2 && Math.random() < 0.6) {
+      direction = "BEARISH";
+    } else if (downCount > upCount * 1.2 && Math.random() < 0.6) {
+      direction = "BULLISH";
+    }
+
     // Probabilidad de racha: 70% sigue la anterior, 30% cambia
     if (generated.length > 0 && Math.random() > 0.7) {
       direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
     }
 
-    // Volatilidad reciente: media de los últimos lookback cuerpos
-    const recentBodies = candles.slice(-lookback).map(c => Math.abs(c.close - c.open));
-    const meanBody = recentBodies.length > 0 ? recentBodies.reduce((a, b) => a + b, 0) / recentBodies.length : (lastCandle.close * 0.0025);
-    // Variación realista ajustada por timeframe
-    const randomFactor = 0.8 + Math.random() * 0.4;
-    let candleBody = meanBody * randomFactor * volFactor;
+    // Cuerpo realista según estadística larga
+    const randomBody = meanBody + stdBody * (Math.random() - 0.5);
+    const randomFactor = 0.85 + Math.random() * 0.3;
+    let candleBody = Math.max(0.0001, randomBody * randomFactor * volFactor);
     let open = lastCandle.close;
     let close = direction === "BULLISH" ? open + candleBody : open - candleBody;
 
@@ -95,13 +120,14 @@ export function generateAutoDrawCandles(
     const nearSupport = supports.filter(s => Math.abs(open - s) < meanBody * srMargin).pop();
     const nearResistance = resistances.filter(r => Math.abs(open - r) < meanBody * srMargin)[0];
     if (direction === "BULLISH" && nearResistance) {
-      if (Math.random() < 0.7) {
-        close = open - Math.abs(candleBody * (0.8 + Math.random() * 0.4));
+      // Breakout o rechazo según historial
+      if (Math.random() < 0.7 - (upCount/(historyLen+1))) {
+        close = open - Math.abs(candleBody * (0.8 + Math.random() * 0.4)); // Rechazo
       } else {
-        close = nearResistance + Math.abs(candleBody * (1 + Math.random()));
+        close = nearResistance + Math.abs(candleBody * (1 + Math.random())); // Breakout
       }
     } else if (direction === "BEARISH" && nearSupport) {
-      if (Math.random() < 0.7) {
+      if (Math.random() < 0.7 - (downCount/(historyLen+1))) {
         close = open + Math.abs(candleBody * (0.8 + Math.random() * 0.4));
       } else {
         close = nearSupport - Math.abs(candleBody * (1 + Math.random()));
@@ -109,8 +135,8 @@ export function generateAutoDrawCandles(
     }
 
     candleBody = Math.abs(close - open);
-    // Simula mechas
-    const wick = candleBody * (0.2 + Math.random() * 0.5) * volFactor;
+    // Mechas realistas según estadística larga
+    const wick = Math.max(0.0001, (meanWick + stdWick * (Math.random() - 0.5)) * (0.8 + Math.random() * 0.4) * volFactor);
     let high = Math.max(open, close) + wick * Math.random();
     let low = Math.min(open, close) - wick * Math.random();
 
