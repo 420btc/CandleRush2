@@ -39,17 +39,19 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   const [finalPrice, setFinalPrice] = useState<number | null>(null);
   const [showFinalPrice, setShowFinalPrice] = useState(false);
 
-  // Efecto para mostrar el precio final después de 1 segundo
+  // Efecto para mostrar el precio final cuando cambia
   useEffect(() => {
     if (finalPrice !== null) {
-      const timer = setTimeout(() => {
-        setShowFinalPrice(true);
-        // Ocultar después de 1 segundo
-        setTimeout(() => setShowFinalPrice(false), 1000);
-      }, 1000);
-      return () => clearTimeout(timer);
+      setShowFinalPrice(true);
     }
   }, [finalPrice]);
+
+  // Efecto para ocultar el precio cuando se desactiva Auto Draw
+  useEffect(() => {
+    if (!autoDrawActive) {
+      setShowFinalPrice(false);
+    }
+  }, [autoDrawActive]);
 
   // Determina cuántas velas simular
   const autoDrawCount = candles.length >= 33 ? 33 : 11;
@@ -236,9 +238,11 @@ useEffect(() => {
               const { candles: simulated, finalPrice } = generateAutoDrawCandles([...candles], 1);
               setSimCandles(simulated);
               setAutoDrawActive(true);
+              setShowFinalPrice(true); // Agregar esta línea
             } else {
               setAutoDrawActive(false);
               setSimCandles([]);
+              setShowFinalPrice(false); // Agregar esta línea
             }
           }}
         className="px-2 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300 ring-2 ring-green-400"
@@ -532,18 +536,57 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     ctx.globalAlpha = 1;
     ctx.restore();
 
+    // Solo mostrar el precio en la línea amarilla si NO estamos en modo Auto Draw
+    if (!autoDrawActive) {
+      ctx.save();
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#FFD600';
+      ctx.fillText(`$${lastClose.toFixed(2)}`, dimensions.width - 40, yPrice + 10);
+      ctx.restore();
+    }
+
+    // Línea punteada gris para el precio simulado
+    if (finalPrice !== null && showFinalPrice) {
+      const ySimPrice = dimensions.height - ((finalPrice - minPrice) * yScale - clampedOffsetY);
+      ctx.save();
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = '#808080';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, ySimPrice);
+      ctx.lineTo(dimensions.width, ySimPrice);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // Añadir texto y precio sobre la línea gris
+      ctx.save();
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#FFD600';
+      const rightPosition = dimensions.width * 0.75;
+      ctx.textAlign = 'center';
+      
+      // Mostrar el texto explicativo arriba
+      ctx.fillText('Precio Última Vela Simulada', rightPosition, ySimPrice - 5);
+      
+      // Mostrar el precio
+      ctx.fillText(`$${finalPrice.toFixed(2)}`, rightPosition, ySimPrice + 10);
+      ctx.restore();
+    }
+
     // Si hay precio final y está visible, mostrarlo
     if (finalPrice !== null && showFinalPrice) {
       ctx.save();
       ctx.font = '10px monospace';
-      ctx.fillStyle = '#FFD600';
-      // Calcular posición más hacia la derecha (75% del ancho)
-      const text = `$${finalPrice.toFixed(2)}`;
-      ctx.textAlign = 'center';
-      const textWidth = ctx.measureText(text).width;
-      const rightPosition = dimensions.width * 0.75;
-      ctx.fillText(text, rightPosition, yPrice + 10);
-      ctx.restore();
+      
+      // // Mostrar el texto explicativo arriba
+      // ctx.fillText('Precio Última Vela Simulada', rightPosition, yPrice - 5);
+      
+      // // Mostrar el precio
+      // ctx.fillText(text, rightPosition, yPrice + 10);
+      // ctx.restore();
     }
   }  
 
