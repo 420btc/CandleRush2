@@ -84,6 +84,36 @@ const histPoints = histSlice;
     chartHeight - (v / 100) * (chartHeight - 14) - 7 // margen arriba/abajo
   ]).filter(Boolean) as [number, number][];
 
+  // --- RSI ---
+  // Cálculo RSI sencillo
+  function calculateRSI(prices: number[], period = 14): number[] {
+    const rsis: number[] = [];
+    let gains = 0;
+    let losses = 0;
+    for (let i = 1; i < prices.length; i++) {
+      const diff = prices[i] - prices[i - 1];
+      if (diff >= 0) gains += diff;
+      else losses -= diff;
+      if (i >= period) {
+        const avgGain = gains / period;
+        const avgLoss = losses / period;
+        const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+        rsis.push(100 - 100 / (1 + rs));
+        // Quitar el más antiguo
+        const diffOld = prices[i - period + 1] - prices[i - period];
+        if (diffOld >= 0) gains -= diffOld;
+        else losses += diffOld;
+      }
+    }
+    return rsis;
+  }
+  const rsiValues = calculateRSI(closesSlice);
+  // Mapeo para que la línea esté pegada a la parte baja del SVG
+  const rsiLinePoints = rsiValues.map((rsi, i) => [
+    (i / (barsToShow - 1)) * chartWidth,
+    chartHeight - 5 - ((rsi - 0) / 100) * 70 // 70px de alto para la franja RSI (más zoom)
+  ]);
+
   return (
     <div className="w-full mt-4">
 
@@ -94,6 +124,17 @@ const histPoints = histSlice;
         preserveAspectRatio="none"
         style={{ background: "#000", display: 'block' }}
       >
+        {/* Línea RSI en la parte baja */}
+        {rsiLinePoints.length > 1 && (
+          <polyline
+            fill="none"
+            stroke="#2196f3"
+            strokeWidth={1}
+            points={rsiLinePoints.map(p => p.join(",")).join(" ")}
+            opacity={0.95}
+            style={{ filter: 'drop-shadow(0 0 2px #000)' }}
+          />
+        )}
         {/* Índice de valores en la esquina inferior izquierda */}
         {(() => {
           const lastIdx = barsToShow - 1;
@@ -103,18 +144,27 @@ const histPoints = histSlice;
           for (let i = barsToShow - 1; i >= 0; i--) {
             if (adxArr[i] != null) { adxVal = adxArr[i]!.toFixed(2); break; }
           }
+          // RSI
+          const rsiVal = rsiValues.length > 0 ? rsiValues[rsiValues.length-1].toFixed(2) : '--';
           let y = chartHeight - 38;
           const dy = 12;
           return (
-            <g opacity={0.55}>
-              <text x="2" y={y} fill="#a259ff" fontSize="10" fontWeight="bold">MACD: <tspan fill="#fff" fontWeight="normal">{macdVal}</tspan></text>
-              <text x="2" y={y+=dy} fill="#FFD600" fontSize="10" fontWeight="bold">Signal: <tspan fill="#fff" fontWeight="normal">{signalVal}</tspan></text>
+            <g opacity={0.55} fontFamily="inherit">
+              <text x="2" y={y} fill="#a259ff" fontSize="10" fontWeight="bold">
+                MACD: <tspan fill="#fff" fontWeight="normal">{macdVal}</tspan>
+              </text>
+              <text x="2" y={y+=dy} fill="#FFD600" fontSize="10" fontWeight="bold">
+                Signal: <tspan fill="#fff" fontWeight="normal">{signalVal}</tspan>
+              </text>
               <text x="2" y={y+=dy} fontSize="10" fontWeight="bold">
                 <tspan fill="#22c55e">A</tspan>
                 <tspan fill="#ef4444">D</tspan>
                 <tspan fill="#22c55e">X</tspan>
                 <tspan fill="#fff">: </tspan>
                 <tspan fill="#fff" fontWeight="normal">{adxVal}</tspan>
+              </text>
+              <text x="2" y={y+=dy} fill="#2196f3" fontSize="10" fontWeight="bold">
+                RSI: <tspan fill="#fff" fontWeight="normal">{rsiVal}</tspan>
               </text>
             </g>
           );
