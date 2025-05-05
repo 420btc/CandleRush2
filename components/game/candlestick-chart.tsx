@@ -36,6 +36,20 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   // --- Estado para Auto Draw ---
   const [autoDrawActive, setAutoDrawActive] = useState(false);
   const [simCandles, setSimCandles] = useState<Candle[]>([]);
+  const [finalPrice, setFinalPrice] = useState<number | null>(null);
+  const [showFinalPrice, setShowFinalPrice] = useState(false);
+
+  // Efecto para mostrar el precio final después de 1 segundo
+  useEffect(() => {
+    if (finalPrice !== null) {
+      const timer = setTimeout(() => {
+        setShowFinalPrice(true);
+        // Ocultar después de 1 segundo
+        setTimeout(() => setShowFinalPrice(false), 1000);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [finalPrice]);
 
   // Determina cuántas velas simular
   const autoDrawCount = candles.length >= 33 ? 33 : 11;
@@ -45,15 +59,17 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   const handleAutoDraw = () => {
     // Si está inactivo, activar y generar la primera simulada
     if (!autoDrawActive) {
-      const simulated = generateAutoDrawCandles([...candles], 1);
+      const { candles: simulated, finalPrice: price } = generateAutoDrawCandles([...candles], 1);
       setSimCandles(simulated);
+      setFinalPrice(price);
       setAutoDrawActive(true);
       return;
     }
     // Si ya está activo, generar la siguiente simulada (en base a todas las previas)
     const base = [...candles, ...simCandles];
-    const nextSim = generateAutoDrawCandles(base, 1);
+    const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1);
     setSimCandles([...simCandles, ...nextSim]);
+    setFinalPrice(price);
   };
 
   // Candles a mostrar (reales + simuladas si activo)
@@ -215,18 +231,22 @@ useEffect(() => {
   const autoDrawButtons = (
     <div style={{ position: 'absolute', top: 12, right: 16, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
       <button
-        onClick={() => {
-          if (!autoDrawActive) {
-            const simulated = generateAutoDrawCandles([...candles], 1);
-            setSimCandles(simulated);
-            setAutoDrawActive(true);
-          }
-        }}
+          onClick={() => {
+            if (!autoDrawActive) {
+              const { candles: simulated, finalPrice } = generateAutoDrawCandles([...candles], 1);
+              setSimCandles(simulated);
+              setAutoDrawActive(true);
+            } else {
+              setAutoDrawActive(false);
+              setSimCandles([]);
+            }
+          }}
         className="px-2 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300 ring-2 ring-green-400"
         title="Candle Prediction"
         style={{ height: 26, minWidth: 100, fontSize: 13, padding: '0 10px', lineHeight: '24px' }}
         data-component-name="CandlestickChart"
       >
+        {autoDrawActive ? 'Desactivar Auto Draw' : 'Activar Auto Draw'}
         Candle Prediction
       </button>
     </div>
@@ -495,23 +515,37 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     ctx.fillRect(0, 0, dimensions.width, dimensions.height)
 
     // Línea horizontal punteada amarilla translúcida (precio actual)
-    if (allCandles.length > 0) {
-      const last = allCandles[allCandles.length - 1];
-      const lastClose = last.close;
-      const yPrice = dimensions.height - ((lastClose - minPrice) * yScale - clampedOffsetY);
+  if (allCandles.length > 0) {
+    const last = allCandles[allCandles.length - 1];
+    const lastClose = last.close;
+    const yPrice = dimensions.height - ((lastClose - minPrice) * yScale - clampedOffsetY);
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = '#FFD600';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(0, yPrice);
+    ctx.lineTo(dimensions.width, yPrice);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Si hay precio final y está visible, mostrarlo
+    if (finalPrice !== null && showFinalPrice) {
       ctx.save();
-      ctx.globalAlpha = 0.35;
-      ctx.strokeStyle = '#FFD600';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 6]);
-      ctx.beginPath();
-      ctx.moveTo(0, yPrice);
-      ctx.lineTo(dimensions.width, yPrice);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#FFD600';
+      // Calcular posición más hacia la derecha (75% del ancho)
+      const text = `$${finalPrice.toFixed(2)}`;
+      ctx.textAlign = 'center';
+      const textWidth = ctx.measureText(text).width;
+      const rightPosition = dimensions.width * 0.75;
+      ctx.fillText(text, rightPosition, yPrice + 10);
       ctx.restore();
     }
+  }  
 
     // Línea de precio de liquidación para la apuesta activa
     // Asegurarse de que bets es un array y buscar todas las apuestas pendientes con liquidationPrice

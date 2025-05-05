@@ -63,7 +63,7 @@ export function generateAutoDrawCandles(
   baseCandles: Candle[],
   count: number,
   timeframe: string = "1m"
-): Candle[] {
+): { candles: Candle[], finalPrice: number } {
   // Copia profunda de las velas base para no modificar el original
   const candles: Candle[] = JSON.parse(JSON.stringify(baseCandles));
   const generated: Candle[] = [];
@@ -160,11 +160,12 @@ export function generateAutoDrawCandles(
       low,
       volume,
       timestamp,
+      isFinal: i === count - 1  // Marcar la última vela
     };
     (newCandle as any).isSimulated = true;
     generated.push(newCandle);
     candles.push(newCandle);
     lastCandle = newCandle;
   }
-  return generated;
+  return { candles: generated, finalPrice: lastCandle.close };
 }

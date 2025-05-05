@@ -10,6 +10,7 @@ export interface Candle {
   close: number
   volume: number
   isClosed?: boolean
+  isFinal?: boolean  // Marca la última vela simulada
 }
 
 export interface Bet {
