@@ -549,7 +549,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     if (finalPrice !== null && showFinalPrice) {
       const ySimPrice = dimensions.height - ((finalPrice - minPrice) * yScale - clampedOffsetY);
       ctx.save();
-      ctx.globalAlpha = 0.3;
+      ctx.globalAlpha = 0.8;  // Aumentar la opacidad
       ctx.strokeStyle = '#808080';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
