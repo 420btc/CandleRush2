@@ -1476,31 +1476,7 @@ const handleZoomOut = () => {
       )}
       {/* --- Botón Auto Draw --- */}
       <div className="absolute top-2 right-2 z-20 flex flex-col gap-0.5">
-        {(timeframe === '1m' || timeframe === '3m') && (
-          <button
-            onClick={handleAutoDraw}
-            className={`px-1 py-0.5 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-1 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-1 ring-green-400' : ''}`}
-            style={{
-              height: 16,
-              width: 16,
-              minWidth: 16,
-              fontSize: 10,
-              padding: 0,
-              lineHeight: '14px',
-              background: '#dc2626',
-              color: 'white',
-              border: '1px solid #991b1b',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
-            }}
-            title="Salir de Candle Prediction"
-          >
-            ×
-          </button>
-        )}
+        
         <button
           onClick={handleAutoDraw}
           className={`px-1 py-0.5 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-1 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-1 ring-green-400' : ''}`}
@@ -1545,6 +1521,42 @@ const handleZoomOut = () => {
         </button>
       </div>
 
+      {/* Botón de cerrar predictor, solo si hay simuladas */}
+      {autoDrawActive && simCandles.length > 0 && (
+        <button
+          onClick={() => {
+            setAutoDrawActive(false);
+            setSimCandles([]);
+            setFinalPrice(null);
+          }}
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 16,
+            zIndex: 30,
+            height: 24,
+            width: 24,
+            minWidth: 24,
+            minHeight: 24,
+            fontSize: 18,
+            padding: 0,
+            lineHeight: '20px',
+            background: '#dc2626',
+            color: 'white',
+            border: '1.5px solid #991b1b',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px #0006',
+            transition: 'background 0.2s',
+          }}
+          title="Salir de Candle Prediction"
+        >
+          ×
+        </button>
+      )}
       {/* --- Canvas principal --- */}
       <canvas
         ref={canvasRef}
