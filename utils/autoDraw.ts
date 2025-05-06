@@ -249,8 +249,34 @@ export function generateAutoDrawCandles(
   // --- NUEVO: Breakouts realistas por distancia al precio inicial ---
   const breakouts: { idx: number, type: 'weak'|'medium'|'strong', direction: 'BULLISH'|'BEARISH', distance: number, price: number }[] = [];
 
+  // --- Control de máximos/mínimos crecientes/decrecientes por tendencia ---
+  let lastMax = Math.max(...baseCandles.slice(-30).map(c => c.high));
+  let lastMin = Math.min(...baseCandles.slice(-30).map(c => c.low));
+  let maxStreak = 0;
+  let minStreak = 0;
+  let lastReversalIdx = -10;
+
+  // --- Parámetros para volatilidad extrema y eventos aleatorios ---
+  let calmPhase = false;
+  let calmPhaseLen = 0;
+  let calmPhaseLimit = 7 + Math.floor(Math.random()*7); // 7-14 velas de calma
+  let expansionPhase = false;
+  let expansionLen = 0;
+  let expansionLimit = 3 + Math.floor(Math.random()*3); // 3-5 velas de expansión
+  let lastBreakoutOrFakeout = -20;
+  let lastSuperPullback = -30;
+  let lastFlashEvent = -50;
+  let lastLiquidityGrab = -60;
+  let breakoutOrFakeoutPending = false;
+  let nextMaxMinInterval = 6 + Math.floor(Math.random()*6); // 6-11, luego se recalcula
+  let superPullbackProb = 0.08;
+  let flashCrashProb = 0.008;
+  let liquidityGrabProb = 0.012;
+  let whaleSpikeProb = 0.01;
+
   for (let i = 0; i < count; i++) {
-    let regimeBodyFactor: number;
+    // Inicializa regimeBodyFactor al principio de cada iteración
+    let regimeBodyFactor: number = 1;
     // EMAs actualizadas para cada iteración
     const closesSim = [...baseCandles, ...generated].map(c => c.close);
     const ema10 = calcEMA(10, closesSim);
@@ -360,6 +386,146 @@ export function generateAutoDrawCandles(
       }
       // --- USAR TODAS LAS EMAs COMO SOPORTE/RESISTENCIA EN GENERACIÓN DE VELAS ---
       // (esto se debe aplicar también en la lógica general de soportes/resistencias y pullbacks, fuera de este bloque)
+      // --- FASE DE CALMA Y EXPANSIÓN DE VOLATILIDAD ---
+      if (calmPhase) {
+        regimeBodyFactor *= 0.7;
+        calmPhaseLen++;
+        if (calmPhaseLen > calmPhaseLimit) {
+          calmPhase = false;
+          expansionPhase = true;
+          expansionLen = 0;
+          expansionLimit = 3 + Math.floor(Math.random()*3);
+        }
+      } else if (expansionPhase) {
+        regimeBodyFactor *= 1.9;
+        expansionLen++;
+        if (expansionLen > expansionLimit) {
+          expansionPhase = false;
+          calmPhase = true;
+          calmPhaseLen = 0;
+          calmPhaseLimit = 7 + Math.floor(Math.random()*7);
+        }
+      } else if (Math.random() < 0.10) {
+        calmPhase = true;
+        calmPhaseLen = 0;
+        calmPhaseLimit = 7 + Math.floor(Math.random()*7);
+      }
+
+      // --- FLASH CRASH/PUMP EVENTO EXTREMO ---
+      if (i - lastFlashEvent > 30 && Math.random() < flashCrashProb) {
+        if (direction === 'BULLISH') {
+          high = high + Math.abs(high*0.04 + Math.random()*high*0.04);
+          close = high - Math.abs(high*0.01 + Math.random()*high*0.01);
+        } else {
+          low = low - Math.abs(low*0.04 + Math.random()*low*0.04);
+          close = low + Math.abs(low*0.01 + Math.random()*low*0.01);
+        }
+        lastFlashEvent = i;
+      }
+
+      // --- SUPER PULLBACK BRUSCO ---
+      if (i - lastSuperPullback > 10 && Math.random() < superPullbackProb) {
+        if (direction === 'BULLISH') {
+          low = lastMin - Math.abs(lastMin * (0.03 + Math.random()*0.05));
+          close = Math.max(close, low + Math.abs(low*0.002));
+        } else {
+          high = lastMax + Math.abs(lastMax * (0.03 + Math.random()*0.05));
+          close = Math.min(close, high - Math.abs(high*0.002));
+        }
+        lastSuperPullback = i;
+      }
+
+      // --- FAKEOUT/LIQUIDITY GRAB SOBRE EMAS ---
+      if (i - lastLiquidityGrab > 20 && Math.random() < liquidityGrabProb) {
+        // Elige una EMA aleatoria relevante
+        const emas = [ema10, ema55, ema200, ema365];
+        const sel = emas[Math.floor(Math.random()*emas.length)];
+        const ref = sel[sel.length-1];
+        if (direction === 'BULLISH') {
+          low = ref - Math.abs(ref*0.012 + Math.random()*ref*0.03);
+          close = ref + Math.abs(ref*0.01 + Math.random()*ref*0.02);
+        } else {
+          high = ref + Math.abs(ref*0.012 + Math.random()*ref*0.03);
+          close = ref - Math.abs(ref*0.01 + Math.random()*ref*0.02);
+        }
+        lastLiquidityGrab = i;
+      }
+
+      // --- WHALE SPIKE ---
+      if (whaleTrades && whaleTrades.length > 0 && Math.random() < whaleSpikeProb) {
+        // Simula un spike de volatilidad por ballena
+        if (direction === 'BULLISH') {
+          high = high + Math.abs(high*0.018 + Math.random()*high*0.032);
+        } else {
+          low = low - Math.abs(low*0.018 + Math.random()*low*0.032);
+        }
+      }
+
+      // --- LÓGICA DE MÁXIMOS/MÍNIMOS CRECIENTES/DECRECIENTES SEGÚN TENDENCIA ---
+      // Solo se aplica si no es rango ni reversal inmediato
+      if (regime === 'trend') {
+        // Intervalo aleatorio para máximos/mínimos crecientes
+        if (maxStreak >= nextMaxMinInterval && direction === 'BULLISH') {
+          if (high <= lastMax) {
+            let delta = Math.abs(lastMax * (0.0025 + Math.random() * 0.01));
+            high = lastMax + delta;
+            if (close > high) close = high - Math.abs(high*0.001);
+          }
+          lastMax = high;
+          nextMaxMinInterval = 6 + Math.floor(Math.random()*7); // 6-12
+          maxStreak = 0;
+        }
+        if (minStreak >= nextMaxMinInterval && direction === 'BEARISH') {
+          if (low >= lastMin) {
+            let delta = Math.abs(lastMin * (0.0025 + Math.random() * 0.01));
+            low = lastMin - delta;
+            if (close < low) close = low + Math.abs(low*0.001);
+          }
+          lastMin = low;
+          nextMaxMinInterval = 6 + Math.floor(Math.random()*7);
+          minStreak = 0;
+        }
+        if (direction === 'BULLISH') {
+          maxStreak++;
+          // Pullback fuerte y natural en alcista si la racha es larga
+          if (maxStreak > 6 && Math.random() < 0.28) {
+            low = lastMin - Math.abs(lastMin * (0.008 + Math.random() * 0.018));
+            close = Math.max(close, low + Math.abs(low*0.002));
+          }
+          if (i - lastReversalIdx < 8 && low < lastMin) {
+            low = lastMin + Math.abs(lastMin*0.003);
+          }
+        } else if (direction === 'BEARISH') {
+          minStreak++;
+          // Pullback fuerte y natural en bajista si la racha es larga
+          if (minStreak > 6 && Math.random() < 0.28) {
+            high = lastMax + Math.abs(lastMax * (0.008 + Math.random() * 0.018));
+            close = Math.min(close, high - Math.abs(high*0.002));
+          }
+          if (i - lastReversalIdx < 8 && high > lastMax) {
+            high = lastMax - Math.abs(lastMax*0.003);
+          }
+        }
+      }
+      // Si hay reversal fuerte, reinicia los contadores y marca el reversal
+      if (breakoutType === 'strong') {
+        maxStreak = 0;
+        minStreak = 0;
+        lastReversalIdx = i;
+        // Tras reversal bajista, fuerza nuevo mínimo decreciente
+        if (direction === 'BEARISH') {
+          let delta = Math.abs(lastMin * (0.002 + Math.random() * 0.003));
+          low = lastMin - delta;
+          lastMin = low;
+        }
+        // Tras reversal alcista, fuerza nuevo máximo creciente
+        if (direction === 'BULLISH') {
+          let delta = Math.abs(lastMax * (0.002 + Math.random() * 0.003));
+          high = lastMax + delta;
+          lastMax = high;
+        }
+      }
+      // --- FIN LÓGICA DE MÁXIMOS/MÍNIMOS ---
       generated.push({
         open,
         close,

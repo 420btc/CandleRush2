@@ -32,7 +32,7 @@ export default function GameControls({
   isConnected
 }: GameControlsProps) {
   return (
-    <div className="flex flex-wrap gap-4 md:gap-4 gap-2 w-full" style={{ marginLeft: '24px', marginRight: 0, paddingRight: 0 }}>
+    <div className="flex flex-wrap gap-4 md:gap-4 w-full" style={{ marginLeft: '24px', marginRight: 0, paddingRight: 0 }}>
 
       <div className="space-y-1">
         <Label htmlFor="symbol" className="text-[#FFD600] block w-full text-center text-lg sm:text-2xl font-extrabold uppercase" style={{textShadow:'0 0 8px #FFD60099, 0 0 2px #000'}}>Par</Label>
