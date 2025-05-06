@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="intro.png" alt="Pantalla de inicio de CandleRush2" width="600" />
+  <img src="public/intro.png" alt="Pantalla de inicio de CandleRush2" width="600" />
 </p>
 
 # CandleRush2: Crypto Betting Game
