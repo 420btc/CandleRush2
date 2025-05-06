@@ -41,7 +41,7 @@ interface SupportResistance {
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
   // --- Resolución de apuestas pendientes ---
-  const { bets, betsByPair, currentSymbol, timeframe } = useGame(); // (declaration kept only once at top)
+  const { bets, betsByPair, setBetsByPair, currentSymbol, timeframe } = useGame(); // Añadido setBetsByPair para updates inmediatos
 // Remove all other 'bets', 'timeframe' declarations below this line.
   const getTimeframeInMs = (tf: string): number => {
     const value = Number.parseInt(tf.slice(0, -1))
@@ -80,9 +80,9 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   if (!updatedByPair[currentSymbol]) updatedByPair[currentSymbol] = {};
   updatedByPair[currentSymbol][timeframe] = updatedBets;
   localStorage.setItem("betsByPair", JSON.stringify(updatedByPair));
-  // Si tienes setBetsByPair en contexto, actualízalo también
-  if (typeof window !== 'undefined' && (window as any).setBetsByPair) {
-    (window as any).setBetsByPair(updatedByPair);
+  // USAR setBetsByPair del contexto para forzar update inmediato
+  if (typeof setBetsByPair === 'function') {
+    setBetsByPair(updatedByPair);
   }
   // Mostrar toast/modal solo una vez
   if (typeof window !== 'undefined' && (window as any).showBetResultModal) {

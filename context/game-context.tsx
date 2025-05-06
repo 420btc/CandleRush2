@@ -71,6 +71,7 @@ interface GameContextType {
   timeframe: string
   bets: Bet[]
   betsByPair: Record<string, Record<string, Bet[]>>
+  setBetsByPair: React.Dispatch<React.SetStateAction<Record<string, Record<string, Bet[]>>>>
   userBalance: number
   isConnected: boolean
   placeBet: (prediction: "BULLISH" | "BEARISH", amount: number, leverage?: number, options?: { esAutomatica?: 'Sí' | 'No'; autoType?: 'MIX' | 'AUTO' | 'MANUAL' }) => Bet
@@ -1242,6 +1243,7 @@ const changeSymbol = useCallback(
         timeframe,
         bets,
         betsByPair,
+        setBetsByPair,
         userBalance,
         isConnected,
         placeBet,
