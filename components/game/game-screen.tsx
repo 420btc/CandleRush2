@@ -154,6 +154,8 @@ import ProgressBar from "@/components/game/progress-bar";
 function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null, isMobile: boolean, open: number | null }) {
   // Estado para guardar el último string mostrado
   const [lastStr, setLastStr] = React.useState<string | null>(null);
+  const [flipFlags, setFlipFlags] = React.useState<boolean[]>([]);
+  const flipRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
   const upColor = "#00FF85";
   const downColor = "#FF2222";
 
@@ -163,27 +165,33 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
   if (price !== null) priceStr = price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (open !== null) openStr = open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  React.useEffect(() => {
+  // Detectar cambios y setear flipFlags
+  useEffect(() => {
+    const priceArr = priceStr.split('').map(c => ({ char: c, isDigit: /[0-9]/.test(c) }));
+    const lastArr = lastStr ? lastStr.split("") : [];
+    const newFlags = priceArr.map((p, idx) => {
+      const prevChar = lastArr[idx] ?? ' ';
+      return p.char !== prevChar;
+    });
+    setFlipFlags(newFlags);
+  }, [priceStr, lastStr]);
+
+  // Reiniciar la animación quitando y re-agregando la clase flip
+  useEffect(() => {
+    flipFlags.forEach((flag, idx) => {
+      const el = flipRefs.current[idx];
+      if (el && flag) {
+        el.classList.remove('flip');
+        // Forzar reflow
+        void el.offsetWidth;
+        el.classList.add('flip');
+      }
+    });
+  }, [flipFlags, priceStr]);
+
+  useEffect(() => {
     if (priceStr !== '--') setLastStr(priceStr);
   }, [priceStr]);
-
-  // Si falta alguno, mostrar todo blanco
-  if (priceStr === '--' || openStr === '--') {
-    return (
-      <span
-        className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
-        style={{
-          color: "white",
-          minWidth: '230px',
-          textAlign: 'right',
-          display: 'inline-block',
-          fontSize: isMobile ? '2rem' : undefined
-        }}
-      >
-        {priceStr}
-      </span>
-    );
-  }
 
   // Comparar dígito a dígito de derecha a izquierda, alineando solo dígitos y separadores
   function splitToDigitsAndSeparators(str: string) {
@@ -200,34 +208,6 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
   if (priceNum > openNum + 0.01) color = upColor;
   else if (priceNum < openNum - 0.01) color = downColor;
   else color = 'white';
-  // Obtener el string anterior como array para comparar
-  const lastArr = lastStr ? lastStr.split("") : [];
-
-  // --- NUEVO: Array de flags para flip y refs para forzar reinicio de animación ---
-  const [flipFlags, setFlipFlags] = React.useState<boolean[]>([]);
-  const flipRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
-
-  React.useEffect(() => {
-    // Detectar cambios y setear flipFlags
-    const newFlags = priceArr.map((p, idx) => {
-      const prevChar = lastArr[idx] ?? ' ';
-      return p.char !== prevChar;
-    });
-    setFlipFlags(newFlags);
-  }, [priceStr]);
-
-  React.useEffect(() => {
-    // Reiniciar la animación quitando y re-agregando la clase flip
-    flipFlags.forEach((flag, idx) => {
-      const el = flipRefs.current[idx];
-      if (el && flag) {
-        el.classList.remove('flip');
-        // Forzar reflow
-        void el.offsetWidth;
-        el.classList.add('flip');
-      }
-    });
-  }, [flipFlags, priceStr]);
 
   while (i >= 0 || j >= 0) {
     const p = priceArr[i] || { char: ' ', isDigit: false };
@@ -254,13 +234,30 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
     rendered.unshift(
       <span
         key={idx + '-' + p.char}
-        ref={el => (flipRefs.current[idx] = el)}
+        ref={el => { flipRefs.current[idx] = el; }}
         style={style}
       >
         {p.char}
       </span>
     );
     i--;
+  }
+
+  if (priceStr === '--' || openStr === '--') {
+    return (
+      <span
+        className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
+        style={{
+          color: "white",
+          minWidth: '230px',
+          textAlign: 'right',
+          display: 'inline-block',
+          fontSize: isMobile ? '2rem' : undefined
+        }}
+      >
+        {priceStr}
+      </span>
+    );
   }
 
   return (
@@ -413,14 +410,10 @@ export default function GameScreen() {
       }
     `}</style>
   );
-  // Estado global para mostrar/ocultar círculos de cruce EMA/MACD
   const [showCrossCircles, setShowCrossCircles] = React.useState(true);
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const { currentUser, setCurrentUser, userBalance } = useGame();
   const [showUserModal, setShowUserModal] = useState(false);
-  // Estado para mostrar el modal de cierre diario
-  const [showDailyCloseModal, setShowDailyCloseModal] = useState(false);
-  const velaDiariaAudioRef = useRef<HTMLAudioElement | null>(null);
   // Estado para guardar la fecha del último día en que se mostró el modal
   const [lastDailyCloseModalDate, setLastDailyCloseModalDate] = useState<string | null>(null);
   // Estado para el reloj del sistema y el contador de cierre diario
@@ -449,6 +442,13 @@ export default function GameScreen() {
   const systemTime = nowDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const shanghaiTime = nowDate.toLocaleString('en-US', { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   const chicagoTime = nowDate.toLocaleString('en-US', { timeZone: 'America/Chicago', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+  // Estado para mostrar/ocultar el modal de cierre diario
+  const [showDailyCloseModal, setShowDailyCloseModal] = useState(false);
+  const velaDiariaAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Estado para mostrar/ocultar el volume profile
+  const [showVolumeProfile, setShowVolumeProfile] = useState(false);
+  const [openMinimap, setOpenMinimap] = useState(false);
 
   useEffect(() => {
     // Sonido cuando aparece el modal de aviso de vela diaria
@@ -487,14 +487,8 @@ export default function GameScreen() {
       setLastDailyCloseModalDate(todayStr);
     }
     // Oculta el modal automáticamente al llegar a las 2:00:00
-    if ((hour !== 1 || minute !== 59 || second < 30) && showDailyCloseModal) {
-      setShowDailyCloseModal(false);
-    }
-  }, [nowDate, lastDailyCloseModalDate, showDailyCloseModal]);
+  }, [nowDate]);
 
-  // Estado para mostrar/ocultar el volume profile
-  const [showVolumeProfile, setShowVolumeProfile] = useState(false);
-  const [openMinimap, setOpenMinimap] = useState(false);
   // Context hooks FIRST (fixes userBalance/addCoins before use)
   const {
     gamePhase,
@@ -870,7 +864,6 @@ useEffect(() => {
             prediction: lastResolved.prediction,
             amount: lastResolved.amount,
             timestamp: lastResolved.timestamp,
-            candleTimestamp: lastResolved.candleTimestamp,
             symbol: lastResolved.symbol,
             timeframe: lastResolved.timeframe,
             status: lastResolved.status,
@@ -880,6 +873,7 @@ useEffect(() => {
             liquidationPrice: lastResolved.liquidationPrice,
             wasLiquidated: lastResolved.wasLiquidated,
             winnings: lastResolved.winnings,
+            candleTimestamp: resolvedCandle?.timestamp ?? lastResolved.candleTimestamp ?? lastResolved.timestamp,
           },
           candle: {
             open: resolvedCandle.open,
@@ -1823,6 +1817,3 @@ useEffect(() => {
     </>
   )
 }
-
-// (SoundManager flotante eliminado de la parte inferior)
-

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useGame } from "@/context/game-context"
 import { Clock } from "lucide-react"
 import { formatTime } from "@/utils/formatTime"
+import FlipDigits from "./FlipDigits"
 
 export default function GameTimer() {
   const { gamePhase, nextPhaseTime, nextCandleTime, timeframe } = useGame()
@@ -43,9 +44,7 @@ export default function GameTimer() {
   return (
     <div className="w-full flex flex-col items-center justify-center py-2 select-none" data-component-name="GameTimer">
       <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${labelColor}`}>{label}</span>
-      <span className="text-[4rem] leading-none font-black text-white drop-shadow-xl mb-2">
-        {formatTime(timeLeft)}
-      </span>
+      <FlipDigits value={formatTime(timeLeft)} className="text-[4rem] leading-none font-black text-white drop-shadow-xl mb-2" />
     </div>
   );
 }
