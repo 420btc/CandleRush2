@@ -665,9 +665,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
       let last10 = candleSizes;
       let message = "";
       if (last10.length > 1 && size > last10[last10.length - 2]) message = "¡Vela más grande en 1 minuto!";
-      if (last10.length >= 5 && size > Math.max(...last10.slice(-5))) message = "¡Vela más grande en 5 minutos!";
-      if (last10.length === 10 && size > Math.max(...last10)) message = "¡Vela más grande en 10 minutos!";
-      // --- FIN BONUS Y MENSAJE DE RÉCORDS ---
+if (last10.length >= 5 && size > Math.max(...last10.slice(-5))) message = "¡Vela más grande en 5 minutos!";
+if (last10.length === 10 && size > Math.max(...last10)) message = "¡Vela más grande en 10 minutos!";
+// --- FIN BONUS Y MENSAJE DE RÉCORDS ---
+
+// Toast récord solo 6 veces al día por usuario
+if (message) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `record_toast_count_${today}`;
+    let count = 0;
+    try {
+      count = parseInt(localStorage.getItem(key) || '0', 10) || 0;
+    } catch {}
+    if (count < 6) {
+      toast({
+        title: message,
+        description: '',
+        variant: 'default',
+        duration: 6000,
+        isClosable: true,
+      });
+      try {
+        localStorage.setItem(key, String(count + 1));
+      } catch {}
+    }
+  } catch {}
+}
+
       const isBullish = candle.close > candle.open
       let totalWinnings = 0
       let wonCount = 0

@@ -42,6 +42,9 @@ interface SupportResistance {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
+  // Estado local para ocultar los avisos visuales de 'cerca del mínimo/máximo'
+  const [showNearHigh, setShowNearHigh] = useState(true);
+  const [showNearLow, setShowNearLow] = useState(true);
   // --- Resolución de apuestas pendientes ---
   const { bets, betsByPair, setBetsByPair, currentSymbol, timeframe } = useGame(); // Añadido setBetsByPair para updates inmediatos
 // Remove all other 'bets', 'timeframe' declarations below this line.
@@ -1450,14 +1453,28 @@ const handleZoomOut = () => {
       </Dialog>
 
       {/* Badge visual sobre la última vela si estamos cerca */}
-      {nearHigh && lastClose && (
-        <div className="absolute z-40 left-1/2 top-7 -translate-x-1/2 bg-yellow-400 text-black font-bold px-3 py-1 rounded shadow-lg border-2 border-yellow-700 animate-bounce">
+      {nearHigh && lastClose && showNearHigh && (
+        <div className="absolute z-40 left-1/2 top-7 -translate-x-1/2 bg-yellow-400 text-black font-bold px-3 py-1 rounded shadow-lg border-2 border-yellow-700 animate-bounce flex items-center gap-2">
           ¡Cerca del máximo de 24h!
+          <button
+            className="ml-2 text-black hover:text-red-600 font-bold px-1 rounded transition"
+            style={{ fontSize: 18, lineHeight: 1 }}
+            onClick={() => setShowNearHigh(false)}
+            aria-label="Cerrar aviso máximo"
+            tabIndex={0}
+          >✕</button>
         </div>
       )}
-      {nearLow && lastClose && (
-        <div className="absolute z-40 left-1/2 top-7 -translate-x-1/2 bg-blue-400 text-black font-bold px-3 py-1 rounded shadow-lg border-2 border-blue-700 animate-bounce">
+      {nearLow && lastClose && showNearLow && (
+        <div className="absolute z-40 left-1/2 top-7 -translate-x-1/2 bg-blue-400 text-black font-bold px-3 py-1 rounded shadow-lg border-2 border-blue-700 animate-bounce flex items-center gap-2">
           ¡Cerca del mínimo de 24h!
+          <button
+            className="ml-2 text-black hover:text-red-600 font-bold px-1 rounded transition"
+            style={{ fontSize: 18, lineHeight: 1 }}
+            onClick={() => setShowNearLow(false)}
+            aria-label="Cerrar aviso mínimo"
+            tabIndex={0}
+          >✕</button>
         </div>
       )}
       {eligiblePending && (
