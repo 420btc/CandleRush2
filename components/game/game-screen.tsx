@@ -1273,10 +1273,27 @@ useEffect(() => {
                       </div>
                       {/* Contador grande centrado debajo */}
                       <div className="w-full flex justify-center">
-                        <span className={`text-[4rem] leading-none font-black text-white drop-shadow-xl p-0 m-0 ${isMobile ? 'text-[2rem]' : ''}`}>
+                        {(() => {
+  // Determine color based on ProgressBar logic
+  const phaseDur = gamePhase === 'BETTING' ? bettingPhaseDuration : waitingPhaseDuration;
+  const tLeft = gamePhase === 'BETTING' ? timeLeft : timeUntilNextCandle;
+  const percent = phaseDur > 0 ? Math.max(0, Math.min(1, tLeft / phaseDur)) : 0;
+  let color = '#00FF85'; // Verde por defecto
+  if (percent <= 0.2) {
+    color = '#FF2222'; // Rojo
+  } else if (percent <= 0.5) {
+    color = '#FF9900'; // Naranja
+  }
+  return (
+    <span
+      className={`text-[4rem] leading-none font-black p-0 m-0 ${isMobile ? 'text-[2rem]' : ''}`}
+      style={{ color }}
+    >
+      {gamePhase === 'BETTING' ? formatTime(timeLeft) : formatTime(timeUntilNextCandle)}
+    </span>
+  );
+})()}
 
-  {gamePhase === 'BETTING' ? formatTime(timeLeft) : formatTime(timeUntilNextCandle)}
-</span>
 
                       </div>
                     </CardTitle>
