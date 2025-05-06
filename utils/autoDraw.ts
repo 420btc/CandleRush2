@@ -227,44 +227,6 @@ export function generateAutoDrawCandles(
     const ema200 = calcEMA(200, closesSim);
     const ema365 = calcEMA(365, closesSim);
 
-    // --- VELAS VOLÁTILES ALEATORIAS (5% de probabilidad) ---
-    if (Math.random() < 0.05) {
-      // Más probabilidad de spike bajista si tendencia bajista, y viceversa
-      let volatileDir: 'BULLISH'|'BEARISH';
-      if (trendDir === 'BULLISH') {
-        volatileDir = Math.random() < 0.7 ? 'BEARISH' : 'BULLISH'; // spike bajista más probable en tendencia alcista
-      } else if (trendDir === 'BEARISH') {
-        volatileDir = Math.random() < 0.7 ? 'BULLISH' : 'BEARISH'; // spike alcista más probable en tendencia bajista
-      } else {
-        volatileDir = Math.random() < 0.5 ? 'BULLISH' : 'BEARISH';
-      }
-      const base = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
-      const move = 350 + Math.random() * 350; // 350-700 USD
-      let open = base;
-      let close, high, low;
-      if (volatileDir === 'BULLISH') {
-        close = open + move;
-        low = open - Math.random() * 30;
-        high = close + Math.random() * 30;
-      } else {
-        close = open - move;
-        high = open + Math.random() * 30;
-        low = close - Math.random() * 30;
-      }
-      generated.push({
-        open,
-        close,
-        high,
-        low,
-        volume: 2 + Math.random() * 4,
-        timestamp: Date.now() + i * 60000,
-        isClosed: true,
-        volatile: true,
-        volatileDir,
-      });
-      continue;
-    }
-
     // --- DETECCIÓN DE RUPTURAS (BREAKOUTS) ---
     const lastPrice = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
     const distance = Math.abs(lastPrice - simStartPrice);
