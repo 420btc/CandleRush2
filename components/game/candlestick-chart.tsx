@@ -579,26 +579,13 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         const y = trap.type === 'bulltrap'
           ? dimensions.height - ((candle.high - minPrice) * yScale - clampedOffsetY)
           : dimensions.height - ((candle.low - minPrice) * yScale - clampedOffsetY);
-        // Sombra y círculo grueso
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(x, y, 9.75, 0, 2 * Math.PI);
-        ctx.shadowColor = trap.type === 'bulltrap' ? 'orange' : '#2196f3';
-        ctx.shadowBlur = 12;
-        ctx.globalAlpha = 0.7;
-        ctx.fillStyle = trap.type === 'bulltrap' ? 'orange' : '#2196f3';
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
-        ctx.lineWidth = 4.5;
-        ctx.strokeStyle = '#fff';
-        ctx.stroke();
-        ctx.restore();
-        // Emoji en el centro
+        // Solo emoji en el punto
         ctx.save();
         ctx.font = '13.5px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(trap.type === 'bulltrap' ? '🐂' : '🐻', x, y);
+        // Siempre encima de la vela: 10px arriba del high/low
+        ctx.fillText(trap.type === 'bulltrap' ? '🐂' : '🐻', x, y - 10);
         ctx.restore();
         // Texto arriba del círculo
         ctx.save();
@@ -622,15 +609,11 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       ctx.fillRect(9, 9, 108, 36);
       ctx.globalAlpha = 1.0;
       // Bulltrap
-      ctx.save();
-      ctx.beginPath(); ctx.arc(19.5, 21, 7.5, 0, 2 * Math.PI); ctx.fillStyle = 'orange'; ctx.fill(); ctx.lineWidth = 2.25; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore();
-      ctx.font = '13.5px sans-serif'; ctx.fillText('🐂', 19.5, 21);
-      ctx.font = 'bold 9.75px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('Bulltrap', 36, 17);
+      ctx.font = '13.5px sans-serif'; ctx.fillText('🐂', 16, 17);
+      ctx.font = 'bold 9.75px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('Bulltrap', 30, 17);
       // Beartrap
-      ctx.save();
-      ctx.beginPath(); ctx.arc(19.5, 39, 7.5, 0, 2 * Math.PI); ctx.fillStyle = '#2196f3'; ctx.fill(); ctx.lineWidth = 2.25; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore();
-      ctx.font = '13.5px sans-serif'; ctx.fillText('🐻', 19.5, 39);
-      ctx.font = 'bold 9.75px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('Beartrap', 36, 35);
+      ctx.font = '13.5px sans-serif'; ctx.fillText('🐻', 16, 33);
+      ctx.font = 'bold 9.75px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('Beartrap', 30, 33);
       ctx.restore();
     }
     // Dibujar líneas de soportes y resistencias si están activas
