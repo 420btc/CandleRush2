@@ -1480,7 +1480,6 @@ const handleZoomOut = () => {
           <button
             onClick={handleAutoDraw}
             className={`px-1 py-0.5 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-1 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-1 ring-green-400' : ''}`}
-            onClick={() => { setAutoDrawActive(false); setSimCandles([]); }}
             style={{
               height: 16,
               width: 16,

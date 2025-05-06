@@ -152,7 +152,8 @@ import ProgressBar from "@/components/game/progress-bar";
 
 // Componente auxiliar para mostrar el precio de BTC con color dinámico
 function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null, isMobile: boolean, open: number | null }) {
-  // Colores
+  // Estado para guardar el último string mostrado
+  const [lastStr, setLastStr] = React.useState<string | null>(null);
   const upColor = "#00FF85";
   const downColor = "#FF2222";
 
@@ -161,6 +162,10 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
   let openStr = '--';
   if (price !== null) priceStr = price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (open !== null) openStr = open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  React.useEffect(() => {
+    if (priceStr !== '--') setLastStr(priceStr);
+  }, [priceStr]);
 
   // Si falta alguno, mostrar todo blanco
   if (priceStr === '--' || openStr === '--') {
@@ -182,43 +187,79 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
 
   // Comparar dígito a dígito de derecha a izquierda, alineando solo dígitos y separadores
   function splitToDigitsAndSeparators(str: string) {
-    // Mantener todos los caracteres, pero marcar si es dígito
     return str.split('').map(c => ({ char: c, isDigit: /[0-9]/.test(c) }));
   }
   const priceArr = splitToDigitsAndSeparators(priceStr);
   const openArr = splitToDigitsAndSeparators(openStr);
-  // Alinear de derecha a izquierda
   let i = priceArr.length - 1;
   let j = openArr.length - 1;
-  const rendered: JSX.Element[] = [];
+  const rendered: React.ReactNode[] = [];
   const priceNum = price ?? 0;
   const openNum = open ?? 0;
   let color = 'white';
   if (priceNum > openNum + 0.01) color = upColor;
   else if (priceNum < openNum - 0.01) color = downColor;
   else color = 'white';
+  // Obtener el string anterior como array para comparar
+  const lastArr = lastStr ? lastStr.split("") : [];
+
+  // --- NUEVO: Array de flags para flip y refs para forzar reinicio de animación ---
+  const [flipFlags, setFlipFlags] = React.useState<boolean[]>([]);
+  const flipRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
+
+  React.useEffect(() => {
+    // Detectar cambios y setear flipFlags
+    const newFlags = priceArr.map((p, idx) => {
+      const prevChar = lastArr[idx] ?? ' ';
+      return p.char !== prevChar;
+    });
+    setFlipFlags(newFlags);
+  }, [priceStr]);
+
+  React.useEffect(() => {
+    // Reiniciar la animación quitando y re-agregando la clase flip
+    flipFlags.forEach((flag, idx) => {
+      const el = flipRefs.current[idx];
+      if (el && flag) {
+        el.classList.remove('flip');
+        // Forzar reflow
+        void el.offsetWidth;
+        el.classList.add('flip');
+      }
+    });
+  }, [flipFlags, priceStr]);
+
   while (i >= 0 || j >= 0) {
     const p = priceArr[i] || { char: ' ', isDigit: false };
     const o = openArr[j] || { char: ' ', isDigit: false };
     let changed = false;
     if (p.isDigit) {
-      // Busca el siguiente dígito en open
       while (j >= 0 && !openArr[j].isDigit) j--;
       changed = p.char !== (openArr[j]?.char ?? ' ');
       j--;
     } else {
-      // Si es separador, solo compara con separador
       changed = p.char !== o.char;
       j--;
     }
+    // Detectar si el dígito ha cambiado respecto al render anterior
+    const idx = i;
     const style: React.CSSProperties = {
       color: changed ? color : 'white',
       transition: 'color 0.3s',
+      display: 'inline-block',
     };
     if (changed && color !== 'white') {
       style.textShadow = `0 0 12px ${color}0D`;
     }
-    rendered.unshift(<span key={i} style={style}>{p.char}</span>);
+    rendered.unshift(
+      <span
+        key={idx + '-' + p.char}
+        ref={el => (flipRefs.current[idx] = el)}
+        style={style}
+      >
+        {p.char}
+      </span>
+    );
     i--;
   }
 
@@ -237,8 +278,49 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
     </span>
   );
 }
+// --- Fin de BTCPriceDynamicColor ---
+
+
+  
+
+// Animación flip para los dígitos que cambian
+// Se añade como bloque global de CSS
+// language=css
+const flipAnimation = `
+  .flip {
+    animation: flip-vertical 0.45s cubic-bezier(0.4, 0.2, 0.2, 1);
+    backface-visibility: hidden;
+    display: inline-block;
+  }
+  @keyframes flip-vertical {
+    0% {
+      transform: rotateX(0deg);
+    }
+    40% {
+      transform: rotateX(90deg);
+      opacity: 0.5;
+    }
+    60% {
+      transform: rotateX(270deg);
+      opacity: 0.5;
+    }
+    100% {
+      transform: rotateX(360deg);
+    }
+  }
+`;
 
 export default function GameScreen() {
+  // Inyectar el CSS global para flip sólo una vez
+  React.useEffect(() => {
+    if (!document.getElementById('btc-flip-style')) {
+      const style = document.createElement('style');
+      style.id = 'btc-flip-style';
+      style.innerHTML = flipAnimation;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   // ...otros estados
   const [showBlockInfoModal, setShowBlockInfoModal] = useState(false);
 
@@ -1066,7 +1148,6 @@ useEffect(() => {
               prediction: last.prediction,
               amount: last.amount,
               timestamp: last.timestamp,
-              candleTimestamp: last.candleTimestamp,
               symbol: last.symbol,
               timeframe: last.timeframe,
               status: last.status,
@@ -1076,6 +1157,7 @@ useEffect(() => {
               liquidationPrice: last.liquidationPrice,
               wasLiquidated: last.wasLiquidated,
               winnings: last.winnings,
+              candleTimestamp: last.candleTimestamp ?? last.timestamp ?? 0, // fallback si no existe
         },
         candle: betResult?.candle || {
           open: last.entryPrice || 0,
@@ -1325,7 +1407,6 @@ useEffect(() => {
   <BTCPriceDynamicColor
     price={currentCandle ? currentCandle.close : null}
     open={currentCandle ? currentCandle.open ?? null : null}
-    candleTimestamp={currentCandle ? currentCandle.timestamp : undefined}
     isMobile={isMobile}
   />
 )}
