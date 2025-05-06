@@ -855,6 +855,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         // Coordenadas X de cada vela
         const xMax = maxCandle ? (maxCandle.timestamp - minTime) * xScale - clampedOffsetX : xLastSim;
         const xMin = minCandle ? (minCandle.timestamp - minTime) * xScale - clampedOffsetX : xLastSim;
+        const yMinClose = minCandle ? dimensions.height - ((minCandle.close - minPrice) * yScale - clampedOffsetY) : yMin;
         // Flecha azul: horizontal, fina, a la derecha del high, apuntando hacia la vela
         ctx.save();
         ctx.strokeStyle = '#2196f3';
@@ -886,13 +887,13 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(xMin + 6, yMin); // punta
-        ctx.lineTo(xMin + 16, yMin - 4);
-        ctx.lineTo(xMin + 16, yMin - 2);
-        ctx.lineTo(xMin + 24, yMin - 2);
-        ctx.lineTo(xMin + 24, yMin + 2);
-        ctx.lineTo(xMin + 16, yMin + 2);
-        ctx.lineTo(xMin + 16, yMin + 4);
+        ctx.moveTo(xMin + 6, yMinClose); // punta
+        ctx.lineTo(xMin + 16, yMinClose - 4);
+        ctx.lineTo(xMin + 16, yMinClose - 2);
+        ctx.lineTo(xMin + 24, yMinClose - 2);
+        ctx.lineTo(xMin + 24, yMinClose + 2);
+        ctx.lineTo(xMin + 16, yMinClose + 2);
+        ctx.lineTo(xMin + 16, yMinClose + 4);
         ctx.closePath();
         ctx.fillStyle = '#ef4444';
         ctx.globalAlpha = 0.95;
@@ -904,7 +905,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.shadowColor = '#ef4444AA';
         ctx.shadowBlur = 1;
         ctx.textAlign = 'left';
-        ctx.fillText(`${minSim.toFixed(2)}`, xMin + 28, yMin + 3);
+        ctx.fillText(`${minSim.toFixed(2)}`, xMin + 28, yMinClose + 3);
         ctx.shadowBlur = 0;
         ctx.restore();
       }
