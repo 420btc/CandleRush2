@@ -46,6 +46,45 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   const [finalPrice, setFinalPrice] = useState<number | null>(null);
   const [showFinalPrice, setShowFinalPrice] = useState(false);
   const [showSupportResistance, setShowSupportResistance] = useState(false);
+const [showTraps, setShowTraps] = useState(false);
+
+// Estado para guardar las trampas detectadas
+const [traps, setTraps] = useState<{ index: number, type: 'bulltrap' | 'beartrap' }[]>([]);
+
+// Función placeholder para detectar trampas
+function detectTraps(candles: Candle[]): { index: number, type: 'bulltrap' | 'beartrap' }[] {
+  // Lógica básica: buscar trampas en las últimas 100 velas
+  const traps: { index: number, type: 'bulltrap' | 'beartrap' }[] = [];
+  if (!candles || candles.length < 20) return traps;
+  // Usamos una ventana de 10 velas para máximos/mínimos recientes
+  const lookback = 10;
+  for (let i = lookback; i < candles.length; i++) {
+    // Bulltrap: rompe máximo reciente pero cierra por debajo del máximo anterior
+    const prevHighs = candles.slice(i - lookback, i).map(c => c.high);
+    const prevHigh = Math.max(...prevHighs);
+    if (candles[i].high > prevHigh && candles[i].close < prevHigh) {
+      traps.push({ index: i, type: 'bulltrap' });
+    }
+    // Beartrap: rompe mínimo reciente pero cierra por encima del mínimo anterior
+    const prevLows = candles.slice(i - lookback, i).map(c => c.low);
+    const prevLow = Math.min(...prevLows);
+    if (candles[i].low < prevLow && candles[i].close > prevLow) {
+      traps.push({ index: i, type: 'beartrap' });
+    }
+  }
+  return traps;
+}
+
+// Calcular trampas cada vez que cambien las velas
+useEffect(() => {
+  if (!candles || candles.length < 20) {
+    setTraps([]);
+    return;
+  }
+  const last100 = candles.slice(-100);
+  const result = detectTraps(last100);
+  setTraps(result);
+}, [candles]);
 
   // Efecto para mostrar el precio final cuando cambia
   useEffect(() => {
@@ -528,6 +567,72 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
 
     // Línea horizontal punteada amarilla translúcida (precio actual)
   if (allCandles.length > 0) {
+    // === Dibujar trampas (bulltraps/beartraps) ===
+    if (showTraps && traps.length > 0) {
+      for (const trap of traps) {
+        // Ajustar el índice a displayedCandles
+        const trapIdx = displayedCandles.length - 100 + trap.index;
+        if (trapIdx < 0 || trapIdx >= displayedCandles.length) continue;
+        const candle = displayedCandles[trapIdx];
+        if (!candle) continue;
+        const x = (candle.timestamp - minTime) * xScale - clampedOffsetX;
+        const y = trap.type === 'bulltrap'
+          ? dimensions.height - ((candle.high - minPrice) * yScale - clampedOffsetY)
+          : dimensions.height - ((candle.low - minPrice) * yScale - clampedOffsetY);
+        // Sombra y círculo grueso
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, 9.75, 0, 2 * Math.PI);
+        ctx.shadowColor = trap.type === 'bulltrap' ? 'orange' : '#2196f3';
+        ctx.shadowBlur = 12;
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = trap.type === 'bulltrap' ? 'orange' : '#2196f3';
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+        ctx.restore();
+        // Emoji en el centro
+        ctx.save();
+        ctx.font = '13.5px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(trap.type === 'bulltrap' ? '🐂' : '🐻', x, y);
+        ctx.restore();
+        // Texto arriba del círculo
+        ctx.save();
+        ctx.font = 'bold 9.75px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 5;
+        ctx.strokeText(trap.type === 'bulltrap' ? 'Bulltrap' : 'Beartrap', x, y - 13.5);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(trap.type === 'bulltrap' ? 'Bulltrap' : 'Beartrap', x, y - 13.5);
+        ctx.restore();
+      }
+      // Leyenda de trampas
+      ctx.save();
+      ctx.font = 'bold 13px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.globalAlpha = 0.95;
+      ctx.fillStyle = '#222';
+      ctx.fillRect(9, 9, 108, 36);
+      ctx.globalAlpha = 1.0;
+      // Bulltrap
+      ctx.save();
+      ctx.beginPath(); ctx.arc(19.5, 21, 7.5, 0, 2 * Math.PI); ctx.fillStyle = 'orange'; ctx.fill(); ctx.lineWidth = 2.25; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore();
+      ctx.font = '13.5px sans-serif'; ctx.fillText('🐂', 19.5, 21);
+      ctx.font = 'bold 9.75px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('Bulltrap', 36, 17);
+      // Beartrap
+      ctx.save();
+      ctx.beginPath(); ctx.arc(19.5, 39, 7.5, 0, 2 * Math.PI); ctx.fillStyle = '#2196f3'; ctx.fill(); ctx.lineWidth = 2.25; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore();
+      ctx.font = '13.5px sans-serif'; ctx.fillText('🐻', 19.5, 39);
+      ctx.font = 'bold 9.75px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('Beartrap', 36, 35);
+      ctx.restore();
+    }
     // Dibujar líneas de soportes y resistencias si están activas
     if (showSupportResistance) {
       const { supports, resistances } = getSupportResistance(allCandles);
@@ -871,6 +976,59 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         }
       }
     })
+
+    // === DIBUJAR TRAPS (Bulltraps/Beartraps) ===
+    if (showTraps && traps.length > 0) {
+      traps.forEach(({ index, type }) => {
+        // Los traps se detectan sobre las últimas 100 velas, pero el índice es relativo a last100
+        // Necesitamos mapear el índice a la posición en allCandles
+        const candleIdx = allCandles.length - 100 + index;
+        if (candleIdx < 0 || candleIdx >= allCandles.length) return;
+        const trapCandle = allCandles[candleIdx];
+        const x = (trapCandle.timestamp - minTime) * xScale - clampedOffsetX;
+        let y;
+        if (type === 'bulltrap') {
+          y = dimensions.height - ((trapCandle.high - minPrice) * yScale - clampedOffsetY);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, 2 * Math.PI);
+          ctx.fillStyle = 'orange';
+          ctx.globalAlpha = 0.8;
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#d97706';
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+          ctx.restore();
+        } else if (type === 'beartrap') {
+          y = dimensions.height - ((trapCandle.low - minPrice) * yScale - clampedOffsetY);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, 2 * Math.PI);
+          ctx.fillStyle = '#2563eb';
+          ctx.globalAlpha = 0.8;
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#1e40af';
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+          ctx.restore();
+        }
+      });
+      // Leyenda para traps
+      ctx.save();
+      ctx.font = 'bold 12px monospace';
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = 'orange';
+      ctx.fillRect(20, 18, 12, 12);
+      ctx.fillStyle = '#2563eb';
+      ctx.fillRect(20, 36, 12, 12);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff';
+      ctx.fillText('Bulltrap', 38, 28);
+      ctx.fillText('Beartrap', 38, 46);
+      ctx.restore();
+    }
 
     // === DIBUJAR EMAS ===
     // Función para calcular la EMA
@@ -1252,6 +1410,20 @@ return (
           }}
         >
           <span style={{ color: '#00FF00' }}>S</span>/<span style={{ color: '#FF0000' }}>R</span>
+        </button>
+        <button
+          onClick={() => setShowTraps(v => !v)}
+          className={`px-1 py-0.5 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-1 border-[#FFD600] hover:bg-yellow-300 ${showTraps ? 'ring-1 ring-blue-400' : ''}`}
+          title="Mostrar/Ocultar Trampas (Bulltraps/Beartraps)"
+          style={{
+            height: 16,
+            minWidth: 60,
+            fontSize: 10,
+            padding: '0 5px',
+            lineHeight: '14px'
+          }}
+        >
+          Traps
         </button>
       </div>
 
