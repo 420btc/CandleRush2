@@ -793,8 +793,15 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       // Mostrar el texto explicativo arriba
       ctx.fillText('Precio Última Vela Simulada', rightPosition, ySimPrice - 5);
       
-      // Mostrar el precio
-      ctx.fillText(`$${finalPrice.toFixed(2)}`, rightPosition, ySimPrice + 10);
+      // Obtener la hora de la última vela simulada (si existe)
+      let horaStr = '';
+      if (simCandles.length > 0) {
+        const lastSimCandle = simCandles[simCandles.length - 1];
+        const date = new Date(lastSimCandle.timestamp);
+        horaStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+      // Mostrar el precio seguido de la hora
+      ctx.fillText(`$${finalPrice.toFixed(2)}${horaStr ? ' ' + horaStr : ''}`, rightPosition, ySimPrice + 10);
       ctx.restore();
     }
 
@@ -992,6 +999,8 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
           ctx.strokeRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
           ctx.setLineDash([]);
           ctx.restore();
+
+
         } else {
           // Velas reales normales
           ctx.save();
