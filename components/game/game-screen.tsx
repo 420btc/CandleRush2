@@ -152,24 +152,69 @@ import ProgressBar from "@/components/game/progress-bar";
 
 // Componente auxiliar para mostrar el precio de BTC con color dinámico
 function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null, isMobile: boolean, open: number | null }) {
-  let color = "white";
-  if (price !== null && open !== null) {
-    const diff = price - open;
-    if (diff > 0.01) color = "#00FF85";
-    else if (diff < -0.01) color = "#FF2222";
+  // Colores
+  const upColor = "#00FF85";
+  const downColor = "#FF2222";
+  // Formatear ambos precios a string con separadores
+  let priceStr = '--';
+  let openStr = '--';
+  if (price !== null) priceStr = price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (open !== null) openStr = open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Si falta alguno, mostrar todo blanco
+  if (priceStr === '--' || openStr === '--') {
+    return (
+      <span
+        className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
+        style={{
+          color: "white",
+          minWidth: '230px',
+          textAlign: 'right',
+          display: 'inline-block',
+          fontSize: isMobile ? '2rem' : undefined
+        }}
+      >
+        {priceStr}
+      </span>
+    );
   }
+
+  // Comparar dígito a dígito
+  const chars = priceStr.split('');
+  const openChars = openStr.split('');
+  // Alinear ambos arrays (rellenar con espacios si difieren en longitud)
+  const maxLen = Math.max(chars.length, openChars.length);
+  while (chars.length < maxLen) chars.unshift(' ');
+  while (openChars.length < maxLen) openChars.unshift(' ');
+
+  // Determinar color por dígito
+  const priceNum = price ?? 0;
+  const openNum = open ?? 0;
+  let color = 'white';
+  if (priceNum > openNum + 0.01) color = upColor;
+  else if (priceNum < openNum - 0.01) color = downColor;
+  else color = 'white';
+
+  // Si el dígito cambió respecto a open, colorear, si no, blanco
+  const rendered = chars.map((c, i) => {
+    const changed = c !== openChars[i];
+    return (
+      <span key={i} style={{ color: changed ? color : 'white', transition: 'color 0.3s' }}>{c}</span>
+    );
+  });
+
   return (
     <span
       className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
       style={{
-        color,
+        color: 'white',
         minWidth: '230px',
         textAlign: 'right',
         display: 'inline-block',
         fontSize: isMobile ? '2rem' : undefined
       }}
     >
-      {price !== null ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
+      {rendered}
     </span>
   );
 }
