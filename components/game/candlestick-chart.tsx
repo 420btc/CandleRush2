@@ -1167,13 +1167,11 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       ctx.restore();
     }
 
-    // Dibujar EMAs solo si NO está activo Auto Draw
-    if (!autoDrawActive) {
-      drawEMA(ema10, '#a259f7'); // Morado
-      drawEMA(ema55, '#FFD600'); // Dorado
-      drawEMA(ema200, '#2196f3'); // Azul
-      drawEMA(ema365, '#22c55e'); // Verde
-    }
+    // Dibujar EMAs SIEMPRE, tanto en modo normal como en Candle Predictor
+    drawEMA(ema10, '#a259f7'); // Morado
+    drawEMA(ema55, '#FFD600'); // Dorado
+    drawEMA(ema200, '#2196f3'); // Azul
+    drawEMA(ema365, '#22c55e'); // Verde
 
     // === DIBUJAR CÍRCULOS EN CRUCES DE EMAS ===
     // Helper para detectar cruces
