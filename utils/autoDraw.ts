@@ -301,11 +301,26 @@ export function generateAutoDrawCandles(
     // Limitar volatilidad a rango razonable
     segmentVolatility = Math.max(_volFactor * 0.6, Math.min(segmentVolatility, _volFactor * 2.5));
     if (!segmentVolatility || isNaN(segmentVolatility) || segmentVolatility <= 0) segmentVolatility = _volFactor;
-    // Cuerpo realista según estadística larga y volatilidad dinámica
-    const randomBody = meanBody + stdBody * (Math.random() - 0.5);
-    const randomFactor = 0.85 + Math.random() * 0.3;
-    let candleBody = randomBody * randomFactor * regimeBodyFactor * segmentVolatility;
-    if (!candleBody || isNaN(candleBody) || candleBody <= 0) candleBody = Math.abs(meanBody) * 0.5 * regimeBodyFactor * segmentVolatility;
+
+    // --- Cuerpo de vela basado en las últimas 120 velas reales ---
+    const last120 = baseCandles.slice(-120);
+    const bodies120 = last120.map(c => Math.abs(c.close - c.open));
+    const avgBody120 = bodies120.reduce((a, b) => a + b, 0) / (bodies120.length || 1);
+    const maxBody120 = Math.max(...bodies120);
+    const minBody120 = Math.min(...bodies120);
+    // Variación normal (70%-130% del promedio)
+    let candleBody = avgBody120 * (0.7 + Math.random() * 0.6);
+    // Pico de volatilidad (3% de los casos)
+    if (Math.random() < 0.03) {
+      candleBody = avgBody120 * (1.5 + Math.random() * 1.5);
+      candleBody = Math.min(candleBody, maxBody120 * 1.3);
+    }
+    // Limitar siempre el cuerpo a un rango razonable
+    const minBody = Math.max(minBody120, avgBody120 * 0.4);
+    const maxBody = Math.min(maxBody120 * 1.3, avgBody120 * 2.5);
+    candleBody = Math.max(minBody, Math.min(candleBody, maxBody));
+    // Si por alguna razón es NaN o cero, usar un valor de fallback
+    if (!candleBody || isNaN(candleBody) || candleBody <= 0) candleBody = Math.abs(avgBody120) * 0.7;
     let open = lastCandle.close;
     let close = direction === "BULLISH" ? open + candleBody : open - candleBody;
 
