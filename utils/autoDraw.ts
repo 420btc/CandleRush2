@@ -64,6 +64,49 @@ export function generateAutoDrawCandles(
   count: number,
   timeframe: string = "1m"
 ): { candles: Candle[], finalPrice: number } {
+  // --- FASES REALISTAS DE TENDENCIA Y RANGO ---
+  // Detectar tendencia real de las últimas 99 velas reales
+  const last99 = baseCandles.slice(-99);
+  const bullishCount = last99.filter((c: Candle) => c.close > c.open).length;
+  const bearishCount = last99.filter((c: Candle) => c.close < c.open).length;
+  let realTrend: 'BULLISH' | 'BEARISH' | 'RANGE' = 'RANGE';
+  if (bullishCount > bearishCount + 10) realTrend = 'BULLISH';
+  else if (bearishCount > bullishCount + 10) realTrend = 'BEARISH';
+  // Probabilidad de iniciar en tendencia según tendencia real
+  let phaseType: 'trend' | 'range' = 'range';
+  if (realTrend === 'BULLISH' && Math.random() < 0.8) phaseType = 'trend';
+  else if (realTrend === 'BEARISH' && Math.random() < 0.8) phaseType = 'trend';
+  // Dirección de la tendencia simulada
+  let trendDir: 'BULLISH' | 'BEARISH' = realTrend === 'RANGE' ? (Math.random() > 0.5 ? 'BULLISH' : 'BEARISH') : realTrend;
+  // Duración de la fase actual
+  let phaseCounter = 0;
+  let phaseLimit = 30 + Math.floor(Math.random() * 91); // 30-120 velas por fase
+  // Probabilidad de que la siguiente fase sea tendencia
+  function getNextPhaseType(): 'trend' | 'range' {
+    // Si estamos generando muchas velas, la probabilidad de tendencia aumenta
+    let trendBias = 0.7;
+    if (count > 30) trendBias = 0.74;
+    if (count > 50) trendBias = 0.78;
+    if (count > 90) trendBias = 0.82;
+    if (count > 150) trendBias = 0.86;
+    if (count > 300) trendBias = 0.91;
+    if (count > 600) trendBias = 0.96;
+    if (count >= 999) trendBias = 0.99;
+    if (realTrend === 'RANGE') return Math.random() < 0.5 + (trendBias - 0.7) / 2 ? 'trend' : 'range';
+    // Si la tendencia real es fuerte, más probabilidad de tendencia
+    return Math.random() < trendBias ? 'trend' : 'range';
+  }
+  // Probabilidad de cambiar dirección en tendencia
+  function shouldInvertTrend(): boolean {
+    // Muy baja probabilidad, pero aumenta tras fases largas
+    return Math.random() < 0.08 || phaseCounter > phaseLimit * 0.8 && Math.random() < 0.25;
+  }
+  // Probabilidad de pullback fuerte en tendencia
+  function shouldPullback(): boolean {
+    return Math.random() < 0.11;
+  }
+  // --- FIN BLOQUE DE FASES ---
+
   // Copia profunda de las velas base para no modificar el original
   const candles: Candle[] = JSON.parse(JSON.stringify(baseCandles));
   const generated: Candle[] = [];
@@ -77,44 +120,70 @@ export function generateAutoDrawCandles(
   let regime = 'trend'; // 'trend' o 'range'
   let regimeCounter = 0;
   let regimeLimit = 30 + Math.floor(Math.random() * 99); // 10-25 velas por régimen
-  let trendDir: 'BULLISH' | 'BEARISH' = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH'; // Dirección de la tendencia
+  trendDir = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH'; // Dirección de la tendencia
   let pullbackCounter = 0;
   let pullbackLimit = 12 + Math.floor(Math.random() * 22); // 4-7 velas antes de pullback
 
   for (let i = 0; i < count; i++) {
-    // --- Alternancia automática de régimen ---
-    regimeCounter++;
-    if (regimeCounter > regimeLimit) {
-      regime = regime === 'trend' ? 'range' : 'trend';
-      regimeCounter = 1;
-      regimeLimit = 30 + Math.floor(Math.random() * 99);
-      if (regime === 'trend') trendDir = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH';
-      pullbackCounter = 0;
-      pullbackLimit = 12 + Math.floor(Math.random() * 22);
+    let regimeBodyFactor: number;
+    // --- CONTROL DE FASES REALISTAS ---
+    phaseCounter++;
+    if (phaseCounter > phaseLimit) {
+      // Cambiar de fase (tendencia o rango)
+      phaseType = getNextPhaseType();
+      phaseCounter = 1;
+      phaseLimit = 30 + Math.floor(Math.random() * 91);
+      // Si la nueva fase es tendencia, decidir dirección
+      if (phaseType === 'trend') {
+        // 80% de probabilidad de continuar la dirección anterior, 20% de invertir
+        if (Math.random() < 0.8) {
+          // Mantener dirección
+        } else {
+          trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+        }
+      }
     }
+    // --- DIRECCIÓN DE LA VELA SEGÚN FASE ---
+    let direction: 'BULLISH' | 'BEARISH';
+    if (phaseType === 'trend') {
+      // Pullback fuerte ocasional
+      if (shouldInvertTrend()) {
+        trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+      } else if (shouldPullback()) {
+        direction = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+      }
+      direction = trendDir;
+      regimeBodyFactor = 1.2;
+    } else {
+      // Rango: más alternancia y cuerpos pequeños
+      direction = Math.random() < 0.53 ? 'BULLISH' : 'BEARISH';
+      regimeBodyFactor = 0.6;
+    }
+    pullbackCounter = 0;
+    pullbackLimit = 4 + Math.floor(Math.random() * 4);
 
     // Soportes y resistencias con lookback adaptado
     const { supports, resistances } = getSupportResistance(candles, lookback);
-    let direction: 'BULLISH' | 'BEARISH' = decideMixDirection(candles, timeframe) as 'BULLISH' | 'BEARISH';
+    let directionMix: 'BULLISH' | 'BEARISH' = decideMixDirection(candles, timeframe) as 'BULLISH' | 'BEARISH';
 
-    // --- Lógica de régimen ---
+    // --- LÓGICA DE RÉGIMEN ---
     if (regime === 'trend') {
       // Mayor probabilidad de seguir la tendencia
-      direction = Math.random() < 0.78 ? trendDir : (trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH');
+      directionMix = Math.random() < 0.78 ? trendDir : (trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH');
       // Cuerpos más grandes
-      var regimeBodyFactor = 1.18;
+      regimeBodyFactor = 1.18;
       // Pullback forzado cada X velas
       pullbackCounter++;
       if (pullbackCounter >= pullbackLimit) {
-        direction = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+        directionMix = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
         regimeBodyFactor = 0.7;
         pullbackCounter = 0;
         pullbackLimit = 4 + Math.floor(Math.random() * 4);
       }
     } else {
       // Rango: más alternancia y cuerpos pequeños
-      direction = Math.random() < 0.53 ? 'BULLISH' : 'BEARISH';
-      var regimeBodyFactor = 0.6;
+      directionMix = Math.random() < 0.53 ? 'BULLISH' : 'BEARISH';
+      regimeBodyFactor = 0.6;
     }
 
     // === NUEVA LÓGICA: analizar últimas 100 velas ===

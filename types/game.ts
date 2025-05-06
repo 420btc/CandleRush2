@@ -11,6 +11,7 @@ export interface Candle {
   volume: number
   isClosed?: boolean
   isFinal?: boolean  // Marca la última vela simulada
+  isSimulated?: boolean // Marca si la vela es simulada
 }
 
 export interface Bet {
