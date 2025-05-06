@@ -27,6 +27,43 @@ function getSupportResistance(candles: Candle[], lookback: number = 199) {
   };
 }
 
+// --- FUNCIONES GLOBALES RSI Y ADX ---
+function calcRSI(closes: number[], period = 14): number {
+  if (closes.length < period + 1) return 50;
+  let gains = 0, losses = 0;
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const diff = closes[i] - closes[i-1];
+    if (diff > 0) gains += diff;
+    else losses -= diff;
+  }
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+function calcADX(highs: number[], lows: number[], closes: number[], period = 14): number {
+  if (closes.length < period + 2) return 20;
+  let trSum = 0, plusDM = 0, minusDM = 0;
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const high = highs[i], low = lows[i];
+    const prevHigh = highs[i-1], prevLow = lows[i-1];
+    const upMove = high - prevHigh;
+    const downMove = prevLow - low;
+    plusDM += upMove > downMove && upMove > 0 ? upMove : 0;
+    minusDM += downMove > upMove && downMove > 0 ? downMove : 0;
+    trSum += Math.max(
+      high - low,
+      Math.abs(high - closes[i-1]),
+      Math.abs(low - closes[i-1])
+    );
+  }
+  const plusDI = 100 * (plusDM / trSum);
+  const minusDI = 100 * (minusDM / trSum);
+  const dx = 100 * Math.abs(plusDI - minusDI) / (plusDI + minusDI);
+  return dx;
+}
+
 // Utilidad para obtener ms por vela según timeframe
 function getMsPerCandle(timeframe: string): number {
   // Siempre 58 segundos por vela, sin importar el timeframe
@@ -150,8 +187,40 @@ export function generateAutoDrawCandles(
   let volatilityTrend = Math.random() > 0.5 ? 1 : -1; // 1: sube, -1: baja
   let segmentStart = 0;
 
+  // --- CRUCES DE EMAS SIMULADAS (10, 55, 200, 365) ---
+  // Calcula EMAs sobre las velas reales + simuladas hasta ahora
+  function calcEMA(period: number, arr: number[]) {
+    const k = 2 / (period + 1);
+    let emaArr: number[] = [];
+    let emaPrev: number | null = null;
+    for (let i = 0; i < arr.length; i++) {
+      const price = arr[i];
+      if (i < period - 1) {
+        emaArr.push(NaN);
+      } else if (i === period - 1) {
+        const sma = arr.slice(0, period).reduce((sum, v) => sum + v, 0) / period;
+        emaArr.push(sma);
+        emaPrev = sma;
+      } else if (emaPrev !== null) {
+        const ema: number = price * k + (emaPrev as number) * (1 - k);
+        emaArr.push(ema);
+        emaPrev = ema;
+      }
+    }
+    return emaArr;
+  }
+
+  let trendDirection: 'BULLISH' | 'BEARISH' = 'BULLISH';
+
   for (let i = 0; i < count; i++) {
     let regimeBodyFactor: number;
+    // EMAs actualizadas para cada iteración
+    const closesSim = [...baseCandles, ...generated].map(c => c.close);
+    const ema10 = calcEMA(10, closesSim);
+    const ema55 = calcEMA(55, closesSim);
+    const ema200 = calcEMA(200, closesSim);
+    const ema365 = calcEMA(365, closesSim);
+
     // --- CONTROL DE FASES REALISTAS ---
     phaseCounter++;
     // Detectar inicio de nuevo segmento
@@ -161,12 +230,56 @@ export function generateAutoDrawCandles(
       volatilityTrend = Math.random() > 0.5 ? 1 : -1;
       segmentStart = i;
     }
+    // --- Probabilidad decreciente de tendencia larga ---
+    if (phaseType === 'trend') {
+      let maxTrendNormal = 30, maxTrendHard = 60;
+      if (timeframe === '3m') { maxTrendNormal = 12; maxTrendHard = 24; }
+      if (phaseCounter > maxTrendNormal) {
+        const over = phaseCounter - maxTrendNormal;
+        const probContinue = Math.max(0.01, 0.85 ** over); // baja exponencialmente cada vela
+        if (Math.random() > probContinue || phaseCounter > maxTrendHard) {
+          // Forzar cambio de fase
+          phaseType = 'range';
+          phaseCounter = 1;
+          phaseLimit = 10 + Math.floor(Math.random() * 10);
+        }
+      }
+    }
+    // --- Probabilidad decreciente de rango largo ---
+    if (phaseType === 'range') {
+      let maxRangeNormal = 15, maxRangeHard = 30;
+      if (_volFactor > 1.3 || timeframe !== '1m') { maxRangeNormal = 22; maxRangeHard = 30; }
+      if (phaseCounter > 10) {
+        const over = phaseCounter - 10;
+        const probContinue = Math.max(0.01, 0.7 ** over);
+        if (Math.random() > probContinue || phaseCounter > maxRangeHard) {
+          // Forzar cambio de fase a tendencia
+          phaseType = 'trend';
+          phaseCounter = 1;
+          phaseLimit = 10 + Math.floor(Math.random() * 10);
+          // Decidir dirección según EMAs
+          const lastClose = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
+          let above = 0, below = 0;
+          const emas = [ema10, ema55, ema200, ema365];
+          for (const emaArr of emas) {
+            const v = emaArr[emaArr.length-1];
+            if (!isNaN(v)) {
+              if (lastClose > v) above++;
+              else if (lastClose < v) below++;
+            }
+          }
+          if (above > below && Math.random() < 0.7) trendDirection = 'BULLISH';
+          else if (below > above && Math.random() < 0.7) trendDirection = 'BEARISH';
+          else trendDirection = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH';
+        }
+      }
+    }
     if (phaseCounter > phaseLimit) {
-      // Cambiar de fase (tendencia o rango)
-      phaseType = getNextPhaseType();
-      phaseCounter = 1;
-      phaseLimit = 30 + Math.floor(Math.random() * 91);
-      // Si la nueva fase es tendencia, decidir dirección
+      const closesSim = [...baseCandles, ...generated].map(c => c.close);
+      const highsSim = [...baseCandles, ...generated].map(c => c.high);
+      const lowsSim = [...baseCandles, ...generated].map(c => c.low);
+      const adx = calcADX(highsSim, lowsSim, closesSim);
+
       if (phaseType === 'trend') {
         // 80% de probabilidad de continuar la dirección anterior, 20% de invertir
         if (Math.random() < 0.8) {
@@ -176,9 +289,85 @@ export function generateAutoDrawCandles(
         }
       }
     }
+
+    // Detectar cruces recientes
+    let emaCross: 'BULLISH' | 'BEARISH' | null = null;
+    function crossUp(a: number[], b: number[]) {
+      const n = a.length;
+      if (n < 2) return false;
+      return a[n-2] < b[n-2] && a[n-1] > b[n-1];
+    }
+    function crossDown(a: number[], b: number[]) {
+      const n = a.length;
+      if (n < 2) return false;
+      return a[n-2] > b[n-2] && a[n-1] < b[n-1];
+    }
+    // Prioridad: 10/55 > 55/200 > 200/365
+    if (crossUp(ema10, ema55) || crossUp(ema55, ema200) || crossUp(ema200, ema365)) emaCross = 'BULLISH';
+    if (crossDown(ema10, ema55) || crossDown(ema55, ema200) || crossDown(ema200, ema365)) emaCross = 'BEARISH';
+
     // --- DIRECCIÓN DE LA VELA SEGÚN FASE ---
     let direction: 'BULLISH' | 'BEARISH';
     if (phaseType === 'trend') {
+      // --- SISTEMA DE VOTOS REALISTA (EMA, RSI, ADX, MACD, memoria de mercado) ---
+      // Arrays de precios para indicadores
+      const closesSim = [...baseCandles, ...generated].map(c => c.close);
+      const highsSim = [...baseCandles, ...generated].map(c => c.high);
+      const lowsSim = [...baseCandles, ...generated].map(c => c.low);
+      const rsi = calcRSI(closesSim);
+      const adx = calcADX(highsSim, lowsSim, closesSim);
+      // MACD
+      function calcMACD(closes: number[]): { macd: number, signal: number } {
+        function ema(period: number, arr: number[]): number[] {
+          const k = 2 / (period + 1);
+          let emaArr: number[] = [];
+          let emaPrev: number | null = null;
+          for (let i = 0; i < arr.length; i++) {
+            const price = arr[i];
+            if (i < period - 1) {
+              emaArr.push(NaN);
+            } else if (i === period - 1) {
+              const sma = arr.slice(0, period).reduce((sum, v) => sum + v, 0) / period;
+              emaArr.push(sma);
+              emaPrev = sma;
+            } else if (emaPrev !== null) {
+              const emaVal: number = price * k + (emaPrev as number) * (1 - k);
+              emaArr.push(emaVal);
+              emaPrev = emaVal;
+            }
+          }
+          return emaArr;
+        }
+        const ema12 = ema(12, closes);
+        const ema26 = ema(26, closes);
+        const macdArr = ema12.map((v, i) => v - ema26[i]);
+        const signalArr = ema(9, macdArr.slice(macdArr.length - ema12.length));
+        return {
+          macd: macdArr[macdArr.length - 1],
+          signal: signalArr[signalArr.length - 1]
+        };
+      }
+      const macdVals = calcMACD(closesSim);
+      let bullishVotes = 0, bearishVotes = 0;
+      if (emaCross === 'BULLISH') bullishVotes++;
+      if (emaCross === 'BEARISH') bearishVotes++;
+      if (rsi > 60) bullishVotes++; else if (rsi < 40) bearishVotes++;
+      if (adx > 25) (trendDir === 'BULLISH' ? bullishVotes++ : bearishVotes++);
+      if (macdVals.macd > macdVals.signal) bullishVotes++; else if (macdVals.macd < macdVals.signal) bearishVotes++;
+      // Memoria de mercado: ¿cuántas velas lleva el precio cerca del inicial?
+      const distFromStart = Math.abs(lastCandle.close - simStartPrice) / simStartPrice;
+      if (distFromStart < 0.003 && i > 30) { // <0.3% tras 30 velas
+        if (Math.random() < 0.7) bullishVotes++; else bearishVotes++;
+      }
+      if (distFromStart > 0.08 && i > 30) { // >8% tras 30 velas
+        if (trendDir === 'BULLISH') bearishVotes += 2;
+        else bullishVotes += 2;
+      }
+      // Decisión final de dirección
+      if (bullishVotes > bearishVotes) direction = 'BULLISH';
+      else if (bearishVotes > bullishVotes) direction = 'BEARISH';
+      else direction = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH';
+
       // --- CONTROL DE VARIACIÓN MÁXIMA EN TENDENCIA ---
       const currentPrice = lastCandle.close;
       const pctChange = ((currentPrice - simStartPrice) / simStartPrice) * 100;
