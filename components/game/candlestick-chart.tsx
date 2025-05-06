@@ -1239,6 +1239,8 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       const k = 2 / (period + 1);
       let emaArray: (number | null)[] = [];
       let emaPrev: number | null = null;
+      // Detectar el índice de la primera simulada
+      const firstSimIdx = data.findIndex(c => c.isSimulated);
       for (let i = 0; i < data.length; i++) {
         const price = data[i].close;
         if (i < period - 1) {
@@ -1248,6 +1250,12 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
           const sma = data.slice(0, period).reduce((sum: number, c: Candle) => sum + c.close, 0) / period;
           emaArray.push(sma);
           emaPrev = sma;
+        } else if (firstSimIdx !== -1 && i === firstSimIdx) {
+          // En la transición: continuar la EMA anterior (no reiniciar)
+          // Simplemente sigue usando emaPrev, que ya es la EMA real previa
+          const ema = price * k + emaPrev! * (1 - k);
+          emaArray.push(ema);
+          emaPrev = ema;
         } else if (emaPrev !== null) {
           const ema: number = price * k + emaPrev * (1 - k);
           emaArray.push(ema);
@@ -1317,7 +1325,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
             if (isSim !== lastWasSim) {
               ctx.stroke();
               ctx.beginPath();
-              ctx.moveTo(x, y);
+              ctx.lineTo(x, y); // Unir el segmento anterior con el nuevo sin hueco
             } else {
               ctx.lineTo(x, y);
             }
