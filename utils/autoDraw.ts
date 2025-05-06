@@ -2,7 +2,7 @@ import type { Candle } from "@/types/game";
 import { decideMixDirection } from "./macd-decision";
 
 // Detecta soportes y resistencias locales en las últimas N velas
-function getSupportResistance(candles: Candle[], lookback: number = 99) {
+function getSupportResistance(candles: Candle[], lookback: number = 199) {
   const slice = candles.slice(-lookback);
   const supports: number[] = [];
   const resistances: number[] = [];
@@ -52,11 +52,11 @@ function getMsPerCandle(timeframe: string): number {
 
 // Factor de volatilidad y lookback según timeframe
 function getVolatilityFactor(timeframe: string) {
-  if (timeframe.endsWith('m')) return { factor: 1, lookback: 14, srMargin: 1.5 };
+  if (timeframe.endsWith('m')) return { factor: 1, lookback: 199, srMargin: 1.2 };
   if (timeframe.endsWith('h')) return { factor: 1.6, lookback: 25, srMargin: 2.7 };
   if (timeframe.endsWith('d')) return { factor: 2.2, lookback: 40, srMargin: 3.5 };
   if (timeframe.endsWith('w')) return { factor: 3.5, lookback: 60, srMargin: 4.5 };
-  return { factor: 1, lookback: 14, srMargin: 1.5 };
+  return { factor: 1, lookback: 199, srMargin: 1.2 };
 }
 
 export function generateAutoDrawCandles(
@@ -73,24 +73,88 @@ export function generateAutoDrawCandles(
   const msPerCandle = getMsPerCandle(timeframe);
   const { factor: volFactor, lookback, srMargin } = getVolatilityFactor(timeframe);
 
+  // --- NUEVO: Alternancia de régimen y volatilidad dinámica ---
+  let regime = 'trend'; // 'trend' o 'range'
+  let regimeCounter = 0;
+  let regimeLimit = 30 + Math.floor(Math.random() * 99); // 10-25 velas por régimen
+  let trendDir: 'BULLISH' | 'BEARISH' = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH'; // Dirección de la tendencia
+  let pullbackCounter = 0;
+  let pullbackLimit = 12 + Math.floor(Math.random() * 22); // 4-7 velas antes de pullback
+
   for (let i = 0; i < count; i++) {
+    // --- Alternancia automática de régimen ---
+    regimeCounter++;
+    if (regimeCounter > regimeLimit) {
+      regime = regime === 'trend' ? 'range' : 'trend';
+      regimeCounter = 1;
+      regimeLimit = 30 + Math.floor(Math.random() * 99);
+      if (regime === 'trend') trendDir = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH';
+      pullbackCounter = 0;
+      pullbackLimit = 12 + Math.floor(Math.random() * 22);
+    }
+
     // Soportes y resistencias con lookback adaptado
     const { supports, resistances } = getSupportResistance(candles, lookback);
-    let direction = decideMixDirection(candles, timeframe);
+    let direction: 'BULLISH' | 'BEARISH' = decideMixDirection(candles, timeframe) as 'BULLISH' | 'BEARISH';
+
+    // --- Lógica de régimen ---
+    if (regime === 'trend') {
+      // Mayor probabilidad de seguir la tendencia
+      direction = Math.random() < 0.78 ? trendDir : (trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH');
+      // Cuerpos más grandes
+      var regimeBodyFactor = 1.18;
+      // Pullback forzado cada X velas
+      pullbackCounter++;
+      if (pullbackCounter >= pullbackLimit) {
+        direction = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+        regimeBodyFactor = 0.7;
+        pullbackCounter = 0;
+        pullbackLimit = 4 + Math.floor(Math.random() * 4);
+      }
+    } else {
+      // Rango: más alternancia y cuerpos pequeños
+      direction = Math.random() < 0.53 ? 'BULLISH' : 'BEARISH';
+      var regimeBodyFactor = 0.6;
+    }
 
     // === NUEVA LÓGICA: analizar últimas 100 velas ===
-    const historyLen = 100;
-    const longHistory = candles.slice(-historyLen);
-    const longBodies = longHistory.map(c => Math.abs(c.close - c.open));
-    const longMechas = longHistory.map(c => Math.abs(c.high - c.low) - Math.abs(c.close - c.open));
-    const meanBody = longBodies.length > 0 ? longBodies.reduce((a, b) => a + b, 0) / longBodies.length : (lastCandle.close * 0.0025);
-    const stdBody = Math.sqrt(longBodies.reduce((a, b) => a + Math.pow(b - meanBody,2), 0) / (longBodies.length || 1));
-    const meanWick = longMechas.length > 0 ? longMechas.reduce((a, b) => a + b, 0) / longMechas.length : meanBody * 0.6;
-    const stdWick = Math.sqrt(longMechas.reduce((a, b) => a + Math.pow(b - meanWick,2), 0) / (longMechas.length || 1));
-    // Tendencia larga
-    const upCount = longHistory.filter(c => c.close > c.open).length;
-    const downCount = longHistory.filter(c => c.close < c.open).length;
-    // Ratio de reversión
+    // --- ADAPTACIÓN A LAS ÚLTIMAS 66 VELAS REALES PARA LAS PRIMERAS 6 SIMULADAS ---
+    let meanBody: number, stdBody: number, meanWick: number, stdWick: number;
+    let historyLen: number;
+    let upCount: number, downCount: number;
+    if (generated.length < 6 && baseCandles.length >= 66) {
+      const last66 = baseCandles.slice(-66);
+      historyLen = 66;
+      upCount = last66.filter((c: Candle) => c.close > c.open).length;
+      downCount = last66.filter((c: Candle) => c.close < c.open).length;
+      const bodies66 = last66.map(c => Math.abs(c.close - c.open));
+      const mechas66 = last66.map(c => Math.abs(c.high - c.low) - Math.abs(c.close - c.open));
+      meanBody = bodies66.length > 0 ? bodies66.reduce((a, b) => a + b, 0) / bodies66.length : (lastCandle.close * 0.0025);
+      stdBody = Math.sqrt(bodies66.reduce((a, b) => a + Math.pow(b - meanBody,2), 0) / (bodies66.length || 1));
+      const maxStdBody = lastCandle.close * 0.025;
+      if (stdBody > maxStdBody) stdBody = maxStdBody;
+      meanWick = mechas66.length > 0 ? mechas66.reduce((a, b) => a + b, 0) / mechas66.length : meanBody * 0.6;
+      stdWick = Math.sqrt(mechas66.reduce((a, b) => a + Math.pow(b - meanWick,2), 0) / (mechas66.length || 1));
+      const maxStdWick = lastCandle.close * 0.025;
+      if (stdWick > maxStdWick) stdWick = maxStdWick;
+    } else {
+      historyLen = 100;
+      const longHistory: Candle[] = candles.slice(-historyLen);
+      upCount = longHistory.filter((c: Candle) => c.close > c.open).length;
+      downCount = longHistory.filter((c: Candle) => c.close < c.open).length;
+      const longBodies = longHistory.map((c: Candle) => Math.abs(c.close - c.open));
+      const longMechas = longHistory.map((c: Candle) => Math.abs(c.high - c.low) - Math.abs(c.close - c.open));
+      meanBody = longBodies.length > 0 ? longBodies.reduce((a, b) => a + b, 0) / longBodies.length : (lastCandle.close * 0.0025);
+      // Limitar la desviación estándar máxima del cuerpo a un 2.5% del precio actual
+      stdBody = Math.sqrt(longBodies.reduce((a, b) => a + Math.pow(b - meanBody,2), 0) / (longBodies.length || 1));
+      const maxStdBody = lastCandle.close * 0.025;
+      if (stdBody > maxStdBody) stdBody = maxStdBody;
+      meanWick = longMechas.length > 0 ? longMechas.reduce((a, b) => a + b, 0) / longMechas.length : meanBody * 0.6;
+      // Limitar la desviación estándar máxima de la mecha a un 2.5% del precio actual
+      stdWick = Math.sqrt(longMechas.reduce((a, b) => a + Math.pow(b - meanWick,2), 0) / (longMechas.length || 1));
+      const maxStdWick = lastCandle.close * 0.025;
+      if (stdWick > maxStdWick) stdWick = maxStdWick;
+    }
     const last5 = candles.slice(-5);
     const last5Dir = last5.map(c => c.close > c.open ? 1 : -1).reduce((a,b)=>a+b,0);
     // === FIN NUEVA LÓGICA ===
@@ -109,12 +173,38 @@ export function generateAutoDrawCandles(
       direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
     }
 
+    // --- Volatilidad dinámica (probabilística: 20% de las velas) ---
+    let volCycle = 1;
+    if (Math.random() < 0.2) {
+      volCycle = 0.8 + 0.45 * (1 + Math.sin((candles.length + i) / 11));
+    }
     // Cuerpo realista según estadística larga
     const randomBody = meanBody + stdBody * (Math.random() - 0.5);
     const randomFactor = 0.85 + Math.random() * 0.3;
-    let candleBody = Math.max(0.0001, randomBody * randomFactor * volFactor);
+    let candleBody = Math.max(0.0001, randomBody * randomFactor * volFactor * regimeBodyFactor * volCycle);
     let open = lastCandle.close;
     let close = direction === "BULLISH" ? open + candleBody : open - candleBody;
+
+    // --- Patrones de vela especiales ---
+    // 1 de cada 10 velas: doji, martillo, envolvente
+    if (Math.random() < 0.10) {
+      const pattern = Math.random();
+      if (pattern < 0.33) {
+        // Doji: cuerpo pequeño, mechas largas
+        const dojiBody = Math.max(0.0001, meanBody * 0.12);
+        close = direction === 'BULLISH' ? open + dojiBody : open - dojiBody;
+      } else if (pattern < 0.66) {
+        // Martillo: cuerpo pequeño, mecha inferior larga
+        const martilloBody = Math.max(0.0001, meanBody * 0.16);
+        close = direction === 'BULLISH' ? open + martilloBody : open - martilloBody;
+      } else {
+        // Envolvente: cuerpo más grande de lo normal
+        candleBody = candleBody * 1.7;
+        close = direction === 'BULLISH' ? open + candleBody : open - candleBody;
+      }
+    }
+
+
 
     // Lógica de soportes y resistencias (margen adaptado)
     const nearSupport = supports.filter(s => Math.abs(open - s) < meanBody * srMargin).pop();
