@@ -1210,8 +1210,7 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     drawEMASeparated(ema365, '#22c55e'); // Verde
 
     // === DIBUJAR CÍRCULOS EN CRUCES DE EMAS ===
-    // Helper para detectar cruces
-    // Dibuja un círculo de cruce con dos colores (mitad y mitad)
+    // Los círculos se dibujan tanto en segmentos simulados como reales
     function drawEMACrossCircles(
       emaA: (number|null)[],
       emaB: (number|null)[],
@@ -1229,11 +1228,11 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         const t = Math.abs(prevDiff) / (Math.abs(prevDiff) + Math.abs(currDiff));
         const candlePrev = allCandles[i-1];
         const candleCurr = allCandles[i];
+        // Dibuja el círculo tanto si candlePrev o candleCurr es simulado o real
         const crossTimestamp = candlePrev.timestamp + t * (candleCurr.timestamp - candlePrev.timestamp);
         const crossPrice = emaA[i-1]! + t * (emaA[i]! - emaA[i-1]!);
         const x = (crossTimestamp - minTime) * xScale - clampedOffsetX;
         const y = dimensions.height - ((crossPrice - minPrice) * yScale - clampedOffsetY);
-        // Dibuja el círculo mitad-mitad
         ctx.save();
         ctx.beginPath();
         ctx.arc(x, y, 6, 0, Math.PI, false);
@@ -1250,16 +1249,14 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.restore();
       }
     }
-    // Dibujar círculos de cruces solo si NO está activo Auto Draw
-    if (showCrossCircles === true && !autoDrawActive) {
+    // Dibujar SIEMPRE los círculos de cruces de EMAs (en reales y simuladas)
+    if (showCrossCircles === true) {
       drawEMACrossCircles(ema10, ema55, '#a259f7', '#FFD600');
       drawEMACrossCircles(ema55, ema200, '#FFD600', '#2196f3');
       drawEMACrossCircles(ema200, ema365, '#2196f3', '#22c55e');
       drawEMACrossCircles(ema10, ema200, '#a259f7', '#2196f3');
       drawEMACrossCircles(ema10, ema365, '#a259f7', '#22c55e');
       drawEMACrossCircles(ema55, ema365, '#FFD600', '#22c55e');
-    } else {
-      console.log('[EMA CIRCLES] NO se muestran círculos EMA porque showCrossCircles !== true:', showCrossCircles);
     }
 // Mostrar precios actuales de cada EMA en la esquina superior izquierda
 const emaLabels = [
