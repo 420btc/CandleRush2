@@ -81,9 +81,15 @@ export function generateAutoDrawCandles(
   // Duración de la fase actual
   let phaseCounter = 0;
   let phaseLimit = 30 + Math.floor(Math.random() * 91); // 30-120 velas por fase
-  // Probabilidad de que la siguiente fase sea tendencia
+  // Control de máximo 2 fases consecutivas de rango
+  let consecutiveRangePhases = 0;
+  let totalRangeStreaks = 0;
   function getNextPhaseType(): 'trend' | 'range' {
-    // Si estamos generando muchas velas, la probabilidad de tendencia aumenta
+    if (consecutiveRangePhases >= 2) {
+      consecutiveRangePhases = 0;
+      return 'trend';
+    }
+    // Probabilidad base
     let trendBias = 0.7;
     if (count > 30) trendBias = 0.74;
     if (count > 50) trendBias = 0.78;
@@ -92,9 +98,19 @@ export function generateAutoDrawCandles(
     if (count > 300) trendBias = 0.91;
     if (count > 600) trendBias = 0.96;
     if (count >= 999) trendBias = 0.99;
-    if (realTrend === 'RANGE') return Math.random() < 0.5 + (trendBias - 0.7) / 2 ? 'trend' : 'range';
-    // Si la tendencia real es fuerte, más probabilidad de tendencia
-    return Math.random() < trendBias ? 'trend' : 'range';
+    // Si ya hubo muchas rachas de rango, reduce la probabilidad de rango
+    let rangePenalty = Math.min(totalRangeStreaks * 0.09, 0.25); // penaliza más si hubo muchas rachas
+    let rangeProb = realTrend === 'RANGE'
+      ? 0.5 + (trendBias - 0.7) / 2 - rangePenalty
+      : 1 - trendBias - rangePenalty;
+    if (Math.random() < rangeProb) {
+      consecutiveRangePhases++;
+      totalRangeStreaks++;
+      return 'range';
+    } else {
+      consecutiveRangePhases = 0;
+      return 'trend';
+    }
   }
   // Probabilidad de cambiar dirección en tendencia
   function shouldInvertTrend(): boolean {
