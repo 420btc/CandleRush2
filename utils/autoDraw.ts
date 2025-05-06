@@ -98,12 +98,43 @@ function getVolatilityFactor(timeframe: string) {
 
 import { getWhaleVote } from "./whale-vote";
 
+export function calcEMA(period: number, arr: number[]): number[] {
+  const k = 2 / (period + 1);
+  let emaArr: number[] = [];
+  let emaPrev: number | null = null;
+  for (let i = 0; i < arr.length; i++) {
+    const price = arr[i];
+    if (i < period - 1) {
+      emaArr.push(NaN);
+    } else if (i === period - 1) {
+      const sma = arr.slice(0, period).reduce((sum, v) => sum + v, 0) / period;
+      emaArr.push(sma);
+      emaPrev = sma;
+    } else if (emaPrev !== null) {
+      const ema: number = price * k + (emaPrev as number) * (1 - k);
+      emaArr.push(ema);
+      emaPrev = ema;
+    }
+  }
+  return emaArr;
+}
+
 export function generateAutoDrawCandles(
   baseCandles: Candle[],
   count: number,
   timeframe: string = "1m",
   whaleTrades?: any[] // WhaleTrade[] si tienes el tipo
 ): { candles: Candle[], finalPrice: number } {
+  // --- CONTROL DE TENDENCIAS ULTRA LARGAS Y REVERSALS ---
+  // Configuración: máximos y reversals
+  const MAX_TREND_LEN = 15; // Máximo permitido de velas en una misma tendencia
+  const MAX_TREND_LEN_HARD = 22; // Máximo absoluto (nunca más de esto)
+  const REVERSAL_INTERVAL_MIN = 10; // Cada cuántas velas mínimo puede haber reversal fuerte
+  const REVERSAL_INTERVAL_MAX = 20; // Máximo para reversal aleatorio
+  let trendStreak = 0; // Cuenta velas en la misma dirección
+  let lastTrendDir: 'BULLISH' | 'BEARISH' = 'BULLISH';
+  let nextForcedReversal = REVERSAL_INTERVAL_MIN + Math.floor(Math.random() * (REVERSAL_INTERVAL_MAX - REVERSAL_INTERVAL_MIN));
+
   // --- FASES REALISTAS DE TENDENCIA Y RANGO ---
   // Detectar tendencia real de las últimas 99 velas reales
   const last99 = baseCandles.slice(-99);
@@ -269,6 +300,66 @@ export function generateAutoDrawCandles(
         low = close - Math.random() * 30;
       }
       // Marca la vela como ruptura
+      // --- AJUSTE ROBUSTO DE BREAKOUT Y REVERSAL: posicionar el precio respecto a TODAS las EMAs ---
+      // Recalcular EMAs con el nuevo close
+      let closesSimCandles = [...baseCandles, ...generated];
+      let closesSim = closesSimCandles.map(c => c.close).concat(close);
+      let ema10 = calcEMA(10, closesSim);
+      let ema55 = calcEMA(55, closesSim);
+      let ema200 = calcEMA(200, closesSim);
+      let ema365 = calcEMA(365, closesSim);
+      // Si el breakout es fuerte, forzar el posicionamiento respecto a TODAS las EMAs
+      if (breakoutType === 'strong') {
+        if (direction === 'BEARISH') {
+          // Forzar close por debajo de todas las EMAs
+          const minEMA = Math.min(ema10[ema10.length-1], ema55[ema55.length-1], ema200[ema200.length-1], ema365[ema365.length-1]);
+          if (close > minEMA) {
+            close = minEMA - Math.abs(breakoutMove * 0.15 + Math.random() * breakoutMove * 0.1);
+            low = Math.min(low, close - Math.abs(breakoutMove * 0.05));
+          }
+          // Simular velas bajistas hasta que el precio quede por debajo de todas las EMAs
+          let forceSteps = 0;
+          while ((close > ema10[ema10.length-1] || close > ema55[ema55.length-1] || close > ema200[ema200.length-1] || close > ema365[ema365.length-1]) && forceSteps < 12) {
+            close -= Math.abs(breakoutMove * 0.08);
+            closesSim.push(close);
+            ema10 = calcEMA(10, closesSim);
+            ema55 = calcEMA(55, closesSim);
+            ema200 = calcEMA(200, closesSim);
+            ema365 = calcEMA(365, closesSim);
+            forceSteps++;
+          }
+        } else {
+          // breakout alcista fuerte: forzar por encima de todas las EMAs
+          const maxEMA = Math.max(ema10[ema10.length-1], ema55[ema55.length-1], ema200[ema200.length-1], ema365[ema365.length-1]);
+          if (close < maxEMA) {
+            close = maxEMA + Math.abs(breakoutMove * 0.15 + Math.random() * breakoutMove * 0.1);
+            high = Math.max(high, close + Math.abs(breakoutMove * 0.05));
+          }
+          // Simular velas alcistas hasta que el precio quede por encima de todas las EMAs
+          let forceSteps = 0;
+          while ((close < ema10[ema10.length-1] || close < ema55[ema55.length-1] || close < ema200[ema200.length-1] || close < ema365[ema365.length-1]) && forceSteps < 12) {
+            close += Math.abs(breakoutMove * 0.08);
+            closesSim.push(close);
+            ema10 = calcEMA(10, closesSim);
+            ema55 = calcEMA(55, closesSim);
+            ema200 = calcEMA(200, closesSim);
+            ema365 = calcEMA(365, closesSim);
+            forceSteps++;
+          }
+        }
+      }
+      // --- DURANTE LA TENDENCIA: si el precio se aleja >2% de la EMA365, forzar pullback o reversal ---
+      const distFromEMA365 = Math.abs(close - ema365[ema365.length-1]) / ema365[ema365.length-1];
+      if (distFromEMA365 > 0.02) {
+        // Si está muy alejado, fuerza reversal o pullback fuerte hacia la EMA365
+        if (direction === 'BULLISH' && close > ema365[ema365.length-1]) {
+          close = ema365[ema365.length-1] + Math.abs(breakoutMove * 0.05) * (Math.random() + 0.3);
+        } else if (direction === 'BEARISH' && close < ema365[ema365.length-1]) {
+          close = ema365[ema365.length-1] - Math.abs(breakoutMove * 0.05) * (Math.random() + 0.3);
+        }
+      }
+      // --- USAR TODAS LAS EMAs COMO SOPORTE/RESISTENCIA EN GENERACIÓN DE VELAS ---
+      // (esto se debe aplicar también en la lógica general de soportes/resistencias y pullbacks, fuera de este bloque)
       generated.push({
         open,
         close,
@@ -277,7 +368,8 @@ export function generateAutoDrawCandles(
         volume: 1 + Math.random() * 3,
         timestamp: Date.now() + i * 60000,
         isClosed: true,
-        breakoutType,
+        breakoutType: breakoutType as 'weak' | 'medium' | 'strong',
+        volatileRandom: false,
       });
       // Saltar el resto del bucle para que la ruptura sea inmediata
       continue;
@@ -285,6 +377,39 @@ export function generateAutoDrawCandles(
 
     // --- CONTROL DE FASES REALISTAS ---
     phaseCounter++;
+
+    // --- CONTROL DE TENDENCIA ULTRA LARGA Y REVERSAL ALEATORIO ---
+    if (phaseType === 'trend') {
+      if (trendDir === lastTrendDir) {
+        trendStreak++;
+      } else {
+        trendStreak = 1;
+        lastTrendDir = trendDir;
+      }
+      // 1. Forzar reversal si se supera el máximo absoluto de tendencia
+      if (trendStreak > MAX_TREND_LEN_HARD) {
+        trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+        trendStreak = 1;
+        // Opcional: marcar reversal fuerte
+      }
+      // 2. Probabilidad creciente de reversal al acercarse al máximo
+      else if (trendStreak > MAX_TREND_LEN) {
+        const probReversal = 0.25 + 0.1 * (trendStreak - MAX_TREND_LEN); // 25% base +10% por vela extra
+        if (Math.random() < probReversal) {
+          trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+          trendStreak = 1;
+        }
+      }
+      // 3. Reversal aleatorio fuerte cada X velas
+      if (trendStreak >= nextForcedReversal) {
+        if (Math.random() < 0.7) { // 70% de probabilidad de reversal fuerte
+          trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+          trendStreak = 1;
+        }
+        nextForcedReversal = REVERSAL_INTERVAL_MIN + Math.floor(Math.random() * (REVERSAL_INTERVAL_MAX - REVERSAL_INTERVAL_MIN));
+      }
+    }
+
     // Detectar inicio de nuevo segmento
     if (phaseCounter === 1 || phaseCounter > phaseLimit) {
       // Al iniciar nueva fase/segmento, definir nueva volatilidad base y tendencia de volatilidad

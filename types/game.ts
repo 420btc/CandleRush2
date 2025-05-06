@@ -12,6 +12,14 @@ export interface Candle {
   isClosed?: boolean
   isFinal?: boolean  // Marca la última vela simulada
   isSimulated?: boolean // Marca si la vela es simulada
+  /**
+   * Tipo de ruptura (breakout) si la vela fue generada como ruptura: 'weak' | 'medium' | 'strong'.
+   */
+  breakoutType?: 'weak' | 'medium' | 'strong';
+  /**
+   * Marca si la vela fue generada como evento de volatilidad aleatoria.
+   */
+  volatileRandom?: boolean;
 }
 
 export interface Bet {
