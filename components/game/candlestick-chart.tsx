@@ -856,6 +856,18 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         const xMax = maxCandle ? (maxCandle.timestamp - minTime) * xScale - clampedOffsetX : xLastSim;
         const xMin = minCandle ? (minCandle.timestamp - minTime) * xScale - clampedOffsetX : xLastSim;
         const yMinClose = minCandle ? dimensions.height - ((minCandle.close - minPrice) * yScale - clampedOffsetY) : yMin;
+        // Hora encima del top
+        if (maxCandle && maxCandle.timestamp) {
+          const hora = new Date(maxCandle.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          ctx.save();
+          ctx.font = 'bold 8px monospace';
+          ctx.fillStyle = '#22c55e';
+          ctx.textAlign = 'center';
+          ctx.globalAlpha = 0.8;
+          ctx.fillText(hora, xMax + 12, yMax - 8);
+          ctx.globalAlpha = 1;
+          ctx.restore();
+        }
         // Flecha azul: horizontal, fina, a la derecha del high, apuntando hacia la vela
         ctx.save();
         ctx.strokeStyle = '#2196f3';
@@ -882,6 +894,18 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.fillText(`${maxSim.toFixed(2)}`, xMax + 28, yMax + 3);
         ctx.shadowBlur = 0;
         ctx.restore();
+        // Hora encima del mínimo
+        if (minCandle && minCandle.timestamp) {
+          const horaMin = new Date(minCandle.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          ctx.save();
+          ctx.font = 'bold 8px monospace';
+          ctx.fillStyle = '#ef4444';
+          ctx.textAlign = 'center';
+          ctx.globalAlpha = 0.8;
+          ctx.fillText(horaMin, xMin + 12, yMinClose + 14);
+          ctx.globalAlpha = 1;
+          ctx.restore();
+        }
         // Flecha roja: horizontal, fina, a la derecha del low, apuntando hacia la vela
         ctx.save();
         ctx.strokeStyle = '#ef4444';
