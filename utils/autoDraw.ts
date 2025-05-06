@@ -140,10 +140,27 @@ export function generateAutoDrawCandles(
   let pullbackCounter = 0;
   let pullbackLimit = 12 + Math.floor(Math.random() * 22); // 4-7 velas antes de pullback
 
+  // Guardar el precio inicial de la simulación (último close real)
+  const simStartPrice = lastCandle.close;
+
+  // --- Volatilidad dinámica por segmento ---
+  // Fallback para timeframe inválido
+  let _volFactor = typeof volFactor === 'number' && !isNaN(volFactor) && volFactor > 0 ? volFactor : 1;
+  let segmentVolatility = _volFactor; // base según timeframe
+  let volatilityTrend = Math.random() > 0.5 ? 1 : -1; // 1: sube, -1: baja
+  let segmentStart = 0;
+
   for (let i = 0; i < count; i++) {
     let regimeBodyFactor: number;
     // --- CONTROL DE FASES REALISTAS ---
     phaseCounter++;
+    // Detectar inicio de nuevo segmento
+    if (phaseCounter === 1 || phaseCounter > phaseLimit) {
+      // Al iniciar nueva fase/segmento, definir nueva volatilidad base y tendencia de volatilidad
+      segmentVolatility = _volFactor * (0.9 + Math.random() * 0.3);
+      volatilityTrend = Math.random() > 0.5 ? 1 : -1;
+      segmentStart = i;
+    }
     if (phaseCounter > phaseLimit) {
       // Cambiar de fase (tendencia o rango)
       phaseType = getNextPhaseType();
@@ -162,6 +179,22 @@ export function generateAutoDrawCandles(
     // --- DIRECCIÓN DE LA VELA SEGÚN FASE ---
     let direction: 'BULLISH' | 'BEARISH';
     if (phaseType === 'trend') {
+      // --- CONTROL DE VARIACIÓN MÁXIMA EN TENDENCIA ---
+      const currentPrice = lastCandle.close;
+      const pctChange = ((currentPrice - simStartPrice) / simStartPrice) * 100;
+      if (pctChange >= 5) {
+        trendDir = 'BEARISH';
+      } else if (pctChange <= -5) {
+        trendDir = 'BULLISH';
+      } else if (Math.abs(pctChange) >= 4.5) {
+        // Si está cerca del 5%, probabilidad muy baja de continuar
+        if (trendDir === 'BULLISH' && pctChange > 0 && Math.random() > 0.01) {
+          trendDir = 'BEARISH';
+        } else if (trendDir === 'BEARISH' && pctChange < 0 && Math.random() > 0.01) {
+          trendDir = 'BULLISH';
+        }
+      }
+
       // Pullback fuerte ocasional
       if (shouldInvertTrend()) {
         trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
@@ -258,17 +291,35 @@ export function generateAutoDrawCandles(
       direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
     }
 
-    // --- Volatilidad dinámica (probabilística: 20% de las velas) ---
-    let volCycle = 1;
-    if (Math.random() < 0.2) {
-      volCycle = 0.8 + 0.45 * (1 + Math.sin((candles.length + i) / 11));
+    // --- Volatilidad dinámica por segmento (realista) ---
+    // Dentro del segmento, la volatilidad sube o baja suavemente
+    // Si el segmento es largo, aumenta la probabilidad de agotamiento (volatilidad decreciente)
+    if ((i - segmentStart) > 12 && Math.random() < 0.15) {
+      volatilityTrend = -1; // tendencia a bajar volatilidad
     }
-    // Cuerpo realista según estadística larga
+    segmentVolatility *= 1 + (Math.random() * 0.018 * volatilityTrend);
+    // Limitar volatilidad a rango razonable
+    segmentVolatility = Math.max(_volFactor * 0.6, Math.min(segmentVolatility, _volFactor * 2.5));
+    if (!segmentVolatility || isNaN(segmentVolatility) || segmentVolatility <= 0) segmentVolatility = _volFactor;
+    // Cuerpo realista según estadística larga y volatilidad dinámica
     const randomBody = meanBody + stdBody * (Math.random() - 0.5);
     const randomFactor = 0.85 + Math.random() * 0.3;
-    let candleBody = Math.max(0.0001, randomBody * randomFactor * volFactor * regimeBodyFactor * volCycle);
+    let candleBody = randomBody * randomFactor * regimeBodyFactor * segmentVolatility;
+    if (!candleBody || isNaN(candleBody) || candleBody <= 0) candleBody = Math.abs(meanBody) * 0.5 * regimeBodyFactor * segmentVolatility;
     let open = lastCandle.close;
     let close = direction === "BULLISH" ? open + candleBody : open - candleBody;
+
+    // Determinar si hay ruptura de soporte o resistencia (breakout)
+    let breakoutVolBoost = 1;
+    // Buscar soporte/resistencia relevante cerca
+    let nearSupportBreak = supports.find(s => Math.abs(open - s) / open < srMargin / 100);
+    let nearResistanceBreak = resistances.find(r => Math.abs(open - r) / open < srMargin / 100);
+    if ((direction === 'BULLISH' && nearResistanceBreak && close > nearResistanceBreak) || (direction === 'BEARISH' && nearSupportBreak && close < nearSupportBreak)) {
+      breakoutVolBoost = 1.15 + Math.random() * 0.12;
+      // Recalcular el cuerpo de la vela con el boost aplicado
+      candleBody *= breakoutVolBoost;
+      close = direction === "BULLISH" ? open + candleBody : open - candleBody;
+    }
 
     // --- Patrones de vela especiales ---
     // 1 de cada 10 velas: doji, martillo, envolvente
