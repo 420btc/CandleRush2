@@ -13,11 +13,11 @@ const DollarDiffCounter: React.FC<DollarDiffCounterProps> = ({ currentCandle, re
   const diff = open !== null && price !== null ? price - open : null;
   const diffAbs = diff !== null ? Math.abs(diff) : null;
 
-  // Color: green if up, red if down, white if no change
-  let color = "text-white";
+  // Color: igual que el precio grande de BTC
+  let color = "white";
   if (diff !== null) {
-    if (diff > 0) color = "text-green-400";
-    else if (diff < 0) color = "text-red-400";
+    if (diff > 0.01) color = "#00FF85";
+    else if (diff < -0.01) color = "#FF2222";
   }
 
   return (
@@ -29,8 +29,15 @@ const DollarDiffCounter: React.FC<DollarDiffCounterProps> = ({ currentCandle, re
         Cambio actual
       </span>
       <span
-        className={`font-mono text-3xl sm:text-5xl font-extrabold drop-shadow-xl ${color}`}
-        style={{ letterSpacing: '0.01em', lineHeight: 1.1, wordBreak: 'break-all', width: '100%', textAlign: 'center' }}
+        className="font-mono text-3xl sm:text-5xl font-extrabold drop-shadow-xl"
+        style={{
+          color,
+          letterSpacing: '0.01em',
+          lineHeight: 1.1,
+          wordBreak: 'break-all',
+          width: '100%',
+          textAlign: 'center'
+        }}
       >
         {diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(2)}` : "-"}
       </span>
