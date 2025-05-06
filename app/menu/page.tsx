@@ -181,21 +181,21 @@ export default function MenuPage() {
             <SiBitcoinsv className="text-yellow-400 text-4xl md:text-6xl" style={{
               textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
             }} />
-            <div className="relative">
-              <BitcoinSparkles />
-              <div className="absolute inset-0 flex items-center justify-center w-full h-full">
-  <TextParticle
-    text={`$${Number(btcPrice.replace(/,/g, '')).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
-    fontSize={width > 768 ? 64 : 36}
-    particleSize={2}
-    particleColor="#FFD600"
-    backgroundColor="transparent"
-    className="w-full h-full"
-    fontFamily="Arial Black, Arial, sans-serif"
-    particleDensity={4}
-  />
+            <div className="relative max-w-xs w-full overflow-hidden">
+  <BitcoinSparkles />
+  <div className="absolute inset-0 flex items-center justify-center w-full h-full">
+    <TextParticle
+      text={`$${Number(btcPrice.replace(/,/g, '')).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+      fontSize={width > 1024 ? 64 : width > 768 ? 48 : 28}
+      particleSize={2}
+      particleColor="#FFD600"
+      backgroundColor="transparent"
+      className="w-full truncate text-4xl md:text-5xl lg:text-6xl font-black max-w-xs"
+      fontFamily="Arial Black, Arial, sans-serif"
+      particleDensity={4}
+    />
+  </div>
 </div>
-            </div>
           </div>
       </div>
       {/* Spline 3D Scene */}

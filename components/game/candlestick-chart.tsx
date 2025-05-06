@@ -39,6 +39,8 @@ interface SupportResistance {
   resistances: number[];
 }
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
   // --- Resolución de apuestas pendientes ---
   const { bets, betsByPair, setBetsByPair, currentSymbol, timeframe } = useGame(); // Añadido setBetsByPair para updates inmediatos
@@ -159,20 +161,21 @@ useEffect(() => {
   // Handler para el botón
   // Nuevo handler: cada click añade UNA vela simulada a la secuencia
   const handleAutoDraw = () => {
-    // Si está inactivo, activar y generar la primera simulada
-    if (!autoDrawActive) {
-      const { candles: simulated, finalPrice: price } = generateAutoDrawCandles([...candles], 1);
-      setSimCandles(simulated);
-      setFinalPrice(price);
-      setAutoDrawActive(true);
-      return;
-    }
-    // Si ya está activo, generar la siguiente simulada (en base a todas las previas)
-    const base = [...candles, ...simCandles];
-    const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1);
-    setSimCandles([...simCandles, ...nextSim]);
+  if (timeframe !== '1m' && timeframe !== '3m') return; // Solo permitir en 1m o 3m
+  // Si está inactivo, activar y generar la primera simulada
+  if (!autoDrawActive) {
+    const { candles: simulated, finalPrice: price } = generateAutoDrawCandles([...candles], 1);
+    setSimCandles(simulated);
     setFinalPrice(price);
-  };
+    setAutoDrawActive(true);
+    return;
+  }
+  // Si ya está activo, generar la siguiente simulada (en base a todas las previas)
+  const base = [...candles, ...simCandles];
+  const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1);
+  setSimCandles([...simCandles, ...nextSim]);
+  setFinalPrice(price);
+};
 
   // Candles a mostrar (reales + simuladas si activo)
   const displayedCandles = autoDrawActive ? [...candles, ...simCandles] : candles;
@@ -332,7 +335,8 @@ useEffect(() => {
   // Botón toggle: activa/desactiva Auto Draw y limpia simulación
   const autoDrawButtons = (
     <div style={{ position: 'absolute', top: 12, right: 16, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-      <button
+      {(timeframe === '1m' || timeframe === '3m') && (
+        <button
           onClick={() => {
             if (!autoDrawActive) {
               const { candles: simulated, finalPrice } = generateAutoDrawCandles([...candles], 1);
@@ -345,14 +349,15 @@ useEffect(() => {
               setShowFinalPrice(false); // Agregar esta línea
             }
           }}
-        className="px-2 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300 ring-2 ring-green-400"
-        title="Candle Prediction"
-        style={{ height: 26, minWidth: 100, fontSize: 13, padding: '0 10px', lineHeight: '24px' }}
-        data-component-name="CandlestickChart"
-      >
-        {autoDrawActive ? 'Desactivar Auto Draw' : 'Activar Auto Draw'}
-        Candle Prediction
-      </button>
+          className="px-2 py-1 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-2 border-[#FFD600] hover:bg-yellow-300 ring-2 ring-green-400"
+          title="Candle Prediction"
+          style={{ height: 26, minWidth: 100, fontSize: 13, padding: '0 10px', lineHeight: '24px' }}
+          data-component-name="CandlestickChart"
+        >
+          {autoDrawActive ? 'Desactivar Auto Draw' : 'Activar Auto Draw'}
+          Candle Prediction
+        </button>
+      )}
     </div>
   );
 
@@ -400,6 +405,38 @@ useEffect(() => {
   const [isInitialized, setIsInitialized] = useState(false)
   const [hasAnimated, setHasAnimated] = useState(false)
   // Removed duplicate 'bets' declaration. Use the one at the top of CandlestickChart.
+
+  // --- 24h High/Low Alert Logic ---
+  const [showExtremeModal, setShowExtremeModal] = useState<null | {type: 'high' | 'low', price: number}>(null);
+  const [lastExtreme, setLastExtreme] = useState<null | {type: 'high' | 'low', price: number}>(null);
+
+  // Calcular velas de las últimas 24h (por timestamp)
+  const now = Date.now();
+  const ms24h = 24 * 60 * 60 * 1000;
+  const candles24h = candles.filter(c => now - c.timestamp <= ms24h);
+  const high24h = candles24h.length ? Math.max(...candles24h.map(c => c.high)) : null;
+  const low24h = candles24h.length ? Math.min(...candles24h.map(c => c.low)) : null;
+  const lastClose = candles.length ? candles[candles.length-1].close : null;
+
+  // Detectar si el precio está cerca de un extremo
+  const threshold = 0.002; // 0.2%
+  const nearHigh = high24h && lastClose && (high24h - lastClose) / high24h <= threshold && lastClose < high24h;
+  const nearLow = low24h && lastClose && (lastClose - low24h) / low24h <= threshold && lastClose > low24h;
+  const newHigh = high24h && lastClose && lastClose > high24h;
+  const newLow = low24h && lastClose && lastClose < low24h;
+
+  // Mostrar modal SOLO una vez por cada nuevo extremo
+  useEffect(() => {
+    if (newHigh && (!lastExtreme || lastExtreme.type !== 'high' || lastExtreme.price !== lastClose)) {
+      setShowExtremeModal({type: 'high', price: lastClose});
+      setLastExtreme({type: 'high', price: lastClose});
+    } else if (newLow && (!lastExtreme || lastExtreme.type !== 'low' || lastExtreme.price !== lastClose)) {
+      setShowExtremeModal({type: 'low', price: lastClose});
+      setLastExtreme({type: 'low', price: lastClose});
+    }
+  }, [newHigh, newLow, lastClose, lastExtreme]);
+
+  // --- FIN lógica 24h ---
 
   // Restaurar efecto para inicializar dimensiones del canvas correctamente
   useEffect(() => {
@@ -629,44 +666,47 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         const candle = displayedCandles[trapIdx];
         if (!candle) continue;
         const x = (candle.timestamp - minTime) * xScale - clampedOffsetX;
-        const y = trap.type === 'bulltrap'
-          ? dimensions.height - ((candle.high - minPrice) * yScale - clampedOffsetY)
-          : dimensions.height - ((candle.low - minPrice) * yScale - clampedOffsetY);
-        // Solo emoji en el punto
-        ctx.save();
-        ctx.font = '13.5px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        // Siempre encima de la vela: 10px arriba del high/low
-        ctx.fillText(trap.type === 'bulltrap' ? '🐂' : '🐻', x, y - 10);
-        ctx.restore();
-        // Texto arriba del círculo
-        ctx.save();
-        ctx.font = 'bold 9.75px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.strokeStyle = '#222';
-        ctx.lineWidth = 5;
-        ctx.strokeText(trap.type === 'bulltrap' ? 'Bulltrap' : 'Beartrap', x, y - 13.5);
-        ctx.fillStyle = '#fff';
-        ctx.fillText(trap.type === 'bulltrap' ? 'Bulltrap' : 'Beartrap', x, y - 13.5);
-        ctx.restore();
+        let y;
+        if (trap.type === 'bulltrap') {
+          y = dimensions.height - ((candle.high - minPrice) * yScale - clampedOffsetY);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, 2 * Math.PI);
+          ctx.fillStyle = 'orange';
+          ctx.globalAlpha = 0.8;
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#d97706';
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+          ctx.restore();
+        } else if (trap.type === 'beartrap') {
+          y = dimensions.height - ((candle.low - minPrice) * yScale - clampedOffsetY);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, 2 * Math.PI);
+          ctx.fillStyle = '#2563eb';
+          ctx.globalAlpha = 0.8;
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#1e40af';
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+          ctx.restore();
+        }
       }
       // Leyenda de trampas
       ctx.save();
-      ctx.font = 'bold 13px monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.globalAlpha = 0.95;
-      ctx.fillStyle = '#222';
-      ctx.fillRect(9, 9, 108, 36);
-      ctx.globalAlpha = 1.0;
-      // Bulltrap
-      ctx.font = '13.5px sans-serif'; ctx.fillText('🐂', 16, 17);
-      ctx.font = 'bold 9.75px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('Bulltrap', 30, 17);
-      // Beartrap
-      ctx.font = '13.5px sans-serif'; ctx.fillText('🐻', 16, 33);
-      ctx.font = 'bold 9.75px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('Beartrap', 30, 33);
+      ctx.font = 'bold 12px monospace';
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = 'orange';
+      ctx.fillRect(20, 18, 12, 12);
+      ctx.fillStyle = '#2563eb';
+      ctx.fillRect(20, 36, 12, 12);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff';
+      ctx.fillText('Bulltrap', 38, 28);
+      ctx.fillText('Beartrap', 38, 46);
       ctx.restore();
     }
     // Dibujar líneas de soportes y resistencias si están activas
@@ -1395,6 +1435,31 @@ const handleZoomOut = () => {
 
   return (
     <div className="relative w-full h-full select-none" data-component-name="CandlestickChart">
+      {/* Modal de nuevo máximo/mínimo 24h */}
+      <Dialog open={!!showExtremeModal} onOpenChange={open => !open && setShowExtremeModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {showExtremeModal?.type === 'high' ? '¡Nuevo máximo de 24h!' : '¡Nuevo mínimo de 24h!'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center text-xl font-bold mt-2">
+            Precio: <span className="text-yellow-400">{showExtremeModal?.price?.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Badge visual sobre la última vela si estamos cerca */}
+      {nearHigh && lastClose && (
+        <div className="absolute z-40 left-1/2 top-7 -translate-x-1/2 bg-yellow-400 text-black font-bold px-3 py-1 rounded shadow-lg border-2 border-yellow-700 animate-bounce">
+          ¡Cerca del máximo de 24h!
+        </div>
+      )}
+      {nearLow && lastClose && (
+        <div className="absolute z-40 left-1/2 top-7 -translate-x-1/2 bg-blue-400 text-black font-bold px-3 py-1 rounded shadow-lg border-2 border-blue-700 animate-bounce">
+          ¡Cerca del mínimo de 24h!
+        </div>
+      )}
       {eligiblePending && (
         <button
           className="absolute top-3 left-3 z-30 px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold shadow-lg border-2 border-yellow-700"
@@ -1405,8 +1470,10 @@ const handleZoomOut = () => {
       )}
       {/* --- Botón Auto Draw --- */}
       <div className="absolute top-2 right-2 z-20 flex flex-col gap-0.5">
-        {autoDrawActive && (
+        {(timeframe === '1m' || timeframe === '3m') && (
           <button
+            onClick={handleAutoDraw}
+            className={`px-1 py-0.5 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-1 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-1 ring-green-400' : ''}`}
             onClick={() => { setAutoDrawActive(false); setSimCandles([]); }}
             style={{
               height: 16,
