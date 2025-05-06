@@ -150,6 +150,30 @@ import DollarDiffCounter from "@/components/game/dollar-diff-counter";
 import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
 
+// Componente auxiliar para mostrar el precio de BTC con color dinámico
+function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null, isMobile: boolean, open: number | null }) {
+  let color = "white";
+  if (price !== null && open !== null) {
+    const diff = price - open;
+    if (diff > 0.01) color = "#00FF85";
+    else if (diff < -0.01) color = "#FF2222";
+  }
+  return (
+    <span
+      className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
+      style={{
+        color,
+        minWidth: '230px',
+        textAlign: 'right',
+        display: 'inline-block',
+        fontSize: isMobile ? '2rem' : undefined
+      }}
+    >
+      {price !== null ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
+    </span>
+  );
+}
+
 export default function GameScreen() {
   // ...otros estados
   const [showBlockInfoModal, setShowBlockInfoModal] = useState(false);
@@ -1223,16 +1247,23 @@ useEffect(() => {
                         {/* Precio BTC grande a la izquierda */}
                         <div className="flex items-center gap-4">
                           <BarChart3 className="h-5 w-5" />
-                          <span className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold text-white drop-shadow-lg ml-2" style={{ 
-                            minWidth: '230px', 
-                            textAlign: 'right', 
-                            display: 'inline-block',
-                            fontSize: isMobile ? '2rem' : undefined
-                          }}>
-  {["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol)
-    ? (stockLoading ? 'Cargando...' : (stockPrice !== null ? stockPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'))
-    : (currentCandle ? currentCandle.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--')}
-</span>
+                          {/* Precio BTC grande con color dinámico según cambio cada 5s */}
+{["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol) ? (
+  <span className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold text-white ml-2" style={{
+    minWidth: '230px',
+    textAlign: 'right',
+    display: 'inline-block',
+    fontSize: isMobile ? '2rem' : undefined
+  }}>
+    {stockLoading ? 'Cargando...' : (stockPrice !== null ? stockPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--')}
+  </span>
+) : (
+  <BTCPriceDynamicColor
+    price={currentCandle ? currentCandle.close : null}
+    open={currentCandle ? currentCandle.open ?? null : null}
+    isMobile={isMobile}
+  />
+)}
 {/* Mostrar estado de mercado para stocks y commodities */}
 {["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol) && (
   <AaplMarketStatus />
