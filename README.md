@@ -20,6 +20,7 @@
 - [🧩 Componentes Principales](#componentes-principales)
 - [🔌 Integración Binance API](#integración-binance-api)
 - [🧠 Memorias y Transparencia](#memorias-y-transparencia)
+- [🕯️ Candle Predictor (Simulador de Velas)](#candle-predictor-simulador-de-velas)
 - [⚙️ Personalización y FAQ](#personalización-y-faq)
 - [👥 Créditos y Licencia](#créditos-y-licencia)
 
@@ -200,6 +201,75 @@ El sistema puede conectarse a la API de Binance para:
 ---
 
 
+
+# 🕯️ Candle Predictor (Simulador de Velas)
+
+## Descripción General
+
+El Candle Predictor es el motor de simulación algorítmica de velas japonesas de CandleRush2. Permite generar, en tiempo real y de forma realista, secuencias de velas simuladas que emulan el comportamiento de mercados cripto, integrando lógica de tendencias, rangos, rupturas (breakouts), eventos de whale trades y volatilidad dinámica.
+
+### Objetivo
+- Ofrecer un entorno de predicción y backtesting donde los usuarios pueden apostar sobre velas futuras, incluso en ausencia de datos reales.
+- Proveer una experiencia inmersiva y educativa, mostrando cómo se forman tendencias, rangos, rupturas y eventos de volatilidad en mercados reales.
+
+## Arquitectura y Construcción
+
+- **Ubicación principal:** `utils/autoDraw.ts` (núcleo de simulación)
+- **Integración:** Se conecta con el gráfico principal (`candlestick-chart.tsx`), el contexto de juego y la API de whale trades.
+- **Tipos:** Extiende el tipo `Candle` para soportar propiedades como `breakoutType`, `volatileRandom`, `isSimulated`, etc.
+- **Activación:** El modo Auto Draw se activa automáticamente al entrar en fase de predicción, y se desactiva y limpia al llegar una nueva vela real.
+
+## Algoritmos y Lógica
+
+### 1. Fases de Mercado
+- Alterna entre fases de tendencia y rango, con duración aleatoria y límites máximos para evitar estancamiento.
+- La tendencia puede invertirse por probabilidad, eventos extremos o influencia de whale trades.
+
+### 2. Breakouts y Volatilidad
+- Detecta rupturas de precio respecto al punto inicial de simulación, clasificando la ruptura como `weak`, `medium` o `strong` según la distancia recorrida.
+- Aplica un boost de volatilidad y fuerza la tendencia en la dirección de la ruptura.
+- Introduce velas volátiles aleatorias (~1% de probabilidad), con sesgo direccional según la tendencia actual.
+
+### 3. Whale Trades
+- Integra señales de whale trades en tiempo real, forzando la dirección de la tendencia cuando hay desequilibrio significativo de grandes operaciones.
+- Utiliza la función `getWhaleVote` para ponderar el efecto de las ballenas en la simulación.
+
+### 4. Indicadores Técnicos Internos
+- Calcula EMAs (10, 55, 200, 365), RSI, ADX, MACD y memoria de mercado sobre las velas simuladas y reales.
+- Utiliza estos indicadores para modular la dirección, volatilidad y probabilidad de reversión o pullback.
+
+### 5. Soportes y Resistencias
+- Detecta soportes y resistencias locales en la ventana reciente para simular rebotes, rupturas y rechazos realistas.
+
+## Parámetros y Personalización
+- **Duración máxima de rango:** 30 velas (configurable)
+- **Duración de tendencias:** Aleatoria pero limitada para evitar super-tendencias
+- **Probabilidad de volatilidad extrema, pullbacks y reversión:** Configurable en el código fuente
+- **Integración de whale trades:** Activable/desactivable vía parámetros
+
+## Eventos y Flujo de Uso
+1. El usuario entra en modo predicción (Auto Draw).
+2. Se toma una snapshot de las velas reales actuales como base de simulación.
+3. El simulador genera velas futuras usando solo esa snapshot, ignorando nuevas velas reales hasta finalizar la simulación.
+4. Si llega una nueva vela real, el simulador se detiene y limpia automáticamente las velas simuladas.
+
+## Casos de Uso
+- **Backtesting:** Permite probar estrategias y lógica de apuestas en entornos controlados y reproducibles.
+- **Educativo:** Visualiza cómo se forman tendencias, rangos y rupturas en mercados reales.
+- **Desarrollo:** Facilita testeo de la UI y lógica de apuestas sin depender de datos en vivo.
+
+## Recomendaciones Técnicas
+- Siempre pasar la snapshot de velas reales al iniciar la simulación para evitar recalculo sobre nuevas velas.
+- No modificar el array base durante la simulación: toda la lógica debe operar sobre la copia snapshot.
+- Integrar whale trades solo si se desea máxima realismo y respuesta a eventos de mercado.
+- Ajustar los parámetros de duración y volatilidad según el timeframe y el perfil de usuario.
+
+## Extensión y Futuro
+- Visualización de eventos especiales (breakouts, whale trades) sobre el gráfico.
+- Personalización avanzada de parámetros vía UI.
+- Integración con otros exchanges y fuentes de datos.
+
+---
 
 # Introducción General
 CandleRush2 es una plataforma gamificada de predicción de mercados, donde los usuarios apuestan sobre el comportamiento de velas japonesas (candlesticks) en criptomonedas. El objetivo es ofrecer una experiencia educativa, transparente y científicamente fundamentada, combinando análisis técnico, probabilidad y gamificación.
