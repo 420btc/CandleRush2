@@ -1167,11 +1167,47 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
       ctx.restore();
     }
 
-    // Dibujar EMAs SIEMPRE, tanto en modo normal como en Candle Predictor
-    drawEMA(ema10, '#a259f7'); // Morado
-    drawEMA(ema55, '#FFD600'); // Dorado
-    drawEMA(ema200, '#2196f3'); // Azul
-    drawEMA(ema365, '#22c55e'); // Verde
+    // Dibujar EMAs SIEMPRE, pero separar el trazo entre reales y simuladas para evitar "saltos"
+    function drawEMASeparated(emaArray: (number | null)[], color: string) {
+      if (!ctx) return;
+      ctx.save();
+      let started = false;
+      let lastWasSim = false;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      for (let i = 0; i < emaArray.length; i++) {
+        if (emaArray[i] !== null) {
+          const candle = allCandles[i];
+          const isSim = candle.isSimulated === true;
+          const x = (candle.timestamp - minTime) * xScale - clampedOffsetX;
+          const y = dimensions.height - ((emaArray[i]! - minPrice) * yScale - clampedOffsetY);
+          if (!started) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            started = true;
+            lastWasSim = isSim;
+          } else {
+            // Si cambia de real a simulado o viceversa, terminar el trazo anterior y empezar uno nuevo con el mismo color
+            if (isSim !== lastWasSim) {
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+            lastWasSim = isSim;
+          }
+        }
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+    drawEMASeparated(ema10, '#a259f7'); // Morado
+    drawEMASeparated(ema55, '#FFD600'); // Dorado
+    drawEMASeparated(ema200, '#2196f3'); // Azul
+    drawEMASeparated(ema365, '#22c55e'); // Verde
 
     // === DIBUJAR CÍRCULOS EN CRUCES DE EMAS ===
     // Helper para detectar cruces
