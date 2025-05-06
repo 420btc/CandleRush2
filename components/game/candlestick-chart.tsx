@@ -40,6 +40,59 @@ interface SupportResistance {
 }
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
+  // --- Resolución de apuestas pendientes ---
+  const { bets, betsByPair, currentSymbol, timeframe } = useGame(); // (declaration kept only once at top)
+// Remove all other 'bets', 'timeframe' declarations below this line.
+  const getTimeframeInMs = (tf: string): number => {
+    const value = Number.parseInt(tf.slice(0, -1))
+    const unit = tf.slice(-1)
+    switch (unit) {
+      case "m": return value * 60 * 1000
+      case "h": return value * 60 * 60 * 1000
+      case "d": return value * 24 * 60 * 60 * 1000
+      default: return 60 * 1000
+    }
+  };
+
+    // --- Resolución de apuestas pendientes: declaración única ---
+  const eligiblePending = !!currentCandle && (betsByPair?.[currentSymbol]?.[timeframe] || []).some((bet: any) => bet.status === "PENDING" && bet.candleTimestamp + getTimeframeInMs(timeframe) <= currentCandle.timestamp);
+
+  function resolveEligiblePendingBets() {
+  if (!currentSymbol || !timeframe || !currentCandle) return;
+  const tfMs = getTimeframeInMs(timeframe);
+  const now = currentCandle.timestamp;
+  const pairBets = betsByPair?.[currentSymbol]?.[timeframe] || [];
+  const updatedBets = pairBets.map((bet: any) => {
+    if (bet.status !== "PENDING" || bet.candleTimestamp + tfMs > now) return bet;
+    // Determinar resultado real de la vela
+    // Si el close > open: bullish (WON si prediction === 'BULLISH')
+    // Si el close < open: bearish (WON si prediction === 'BEARISH')
+    const resultCandle = candles.find(c => c.timestamp === bet.candleTimestamp);
+    let status = "LOST";
+    if (resultCandle) {
+      if (resultCandle.close > resultCandle.open && bet.prediction === "BULLISH") status = "WON";
+      if (resultCandle.close < resultCandle.open && bet.prediction === "BEARISH") status = "WON";
+    }
+    return { ...bet, status, resolvedAt: Date.now() };
+  });
+  // Actualizar betsByPair y localStorage
+  const updatedByPair = { ...betsByPair };
+  if (!updatedByPair[currentSymbol]) updatedByPair[currentSymbol] = {};
+  updatedByPair[currentSymbol][timeframe] = updatedBets;
+  localStorage.setItem("betsByPair", JSON.stringify(updatedByPair));
+  // Si tienes setBetsByPair en contexto, actualízalo también
+  if (typeof window !== 'undefined' && (window as any).setBetsByPair) {
+    (window as any).setBetsByPair(updatedByPair);
+  }
+  // Mostrar toast/modal solo una vez
+  if (typeof window !== 'undefined' && (window as any).showBetResultModal) {
+    (window as any).showBetResultModal(updatedBets.filter((b: any) => b.status === 'WON' || b.status === 'LOST'));
+  }
+}
+
+  // --- Botón para resolver apuestas pendientes ---
+  // (Solo una función y una variable, sin duplicados)
+
   // --- Estado para Auto Draw ---
   const [autoDrawActive, setAutoDrawActive] = useState(false);
   const [simCandles, setSimCandles] = useState<Candle[]>([]);
@@ -126,7 +179,7 @@ useEffect(() => {
 
   // === SOPORTES Y RESISTENCIAS ===
   // Obtener timeframe desde contexto de juego
-  const { timeframe } = useGame();
+  // Removed duplicate 'const { timeframe } = useGame();' declaration. Use the one at the top of CandlestickChart.
   // Calcular niveles de soporte y resistencia con la función robusta
   const { supportLevels, resistanceLevels } = detectMarketStructure(displayedCandles, timeframe);
 
@@ -346,7 +399,7 @@ useEffect(() => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const [isInitialized, setIsInitialized] = useState(false)
   const [hasAnimated, setHasAnimated] = useState(false)
-  const { bets } = useGame()
+  // Removed duplicate 'bets' declaration. Use the one at the top of CandlestickChart.
 
   // Restaurar efecto para inicializar dimensiones del canvas correctamente
   useEffect(() => {
@@ -1338,8 +1391,18 @@ const handleZoomOut = () => {
     }));
   };
 
-return (
-    <div className="relative w-full h-full select-none">
+  // Removed duplicate resolveEligiblePendingBets and eligiblePending. Use the top-level versions only.
+
+  return (
+    <div className="relative w-full h-full select-none" data-component-name="CandlestickChart">
+      {eligiblePending && (
+        <button
+          className="absolute top-3 left-3 z-30 px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold shadow-lg border-2 border-yellow-700"
+          onClick={resolveEligiblePendingBets}
+        >
+          Resolver apuestas pendientes
+        </button>
+      )}
       {/* --- Botón Auto Draw --- */}
       <div className="absolute top-2 right-2 z-20 flex flex-col gap-0.5">
         {autoDrawActive && (
