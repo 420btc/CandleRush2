@@ -128,6 +128,7 @@ import MacdChart from "@/components/game/macd-chart";
 import VolumeChartOverlay from "@/components/game/volume-chart-overlay";
 import GameControls from "@/components/game/game-controls"
 import GameTimer from "@/components/game/game-timer"
+import CountdownFlipTimer from "@/components/game/CountdownFlipTimer"
 import BetHistory from "@/components/game/bet-history"
 import WhaleTradesLive from "@/components/game/whale-trades-live";
 import UserStats from "@/components/game/user-stats"
@@ -1461,12 +1462,11 @@ useEffect(() => {
     color = '#FF9900'; // Naranja
   }
   return (
-    <span
-      className={`text-[4rem] leading-none font-black p-0 m-0 ${isMobile ? 'text-[2rem]' : ''}`}
-      style={{ color }}
-    >
-      {gamePhase === 'BETTING' ? formatTime(timeLeft) : formatTime(timeUntilNextCandle)}
-    </span>
+    <CountdownFlipTimer
+  ms={gamePhase === 'BETTING' ? timeLeft : timeUntilNextCandle}
+  color={color}
+  className={isMobile ? 'text-[2rem]' : ''}
+/>
   );
 })()}
 
