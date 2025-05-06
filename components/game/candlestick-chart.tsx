@@ -800,8 +800,16 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         const date = new Date(lastSimCandle.timestamp);
         horaStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       }
-      // Mostrar el precio seguido de la hora
-      ctx.fillText(`$${finalPrice.toFixed(2)}${horaStr ? ' ' + horaStr : ''}`, rightPosition, ySimPrice + 10);
+      // Mostrar el precio en amarillo y la hora en blanco, alineados
+      const priceStr = `$${finalPrice.toFixed(2)}`;
+      ctx.fillStyle = '#FFD600';
+      ctx.fillText(priceStr, rightPosition - 5, ySimPrice + 10);
+      if (horaStr) {
+        // Medir el ancho del precio para posicionar la hora justo después, con margen extra
+        const priceWidth = ctx.measureText(priceStr).width;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(horaStr, rightPosition - 5 + priceWidth / 2 + 32, ySimPrice + 10);
+      }
       ctx.restore();
     }
 
