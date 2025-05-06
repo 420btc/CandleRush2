@@ -1461,12 +1461,18 @@ const handleZoomOut = () => {
         </div>
       )}
       {eligiblePending && (
-        <button
-          className="absolute top-3 left-3 z-30 px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold shadow-lg border-2 border-yellow-700"
-          onClick={resolveEligiblePendingBets}
-        >
-          Resolver apuestas pendientes
-        </button>
+        <>
+          <button
+            className="absolute top-3 left-3 z-30 px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold shadow-lg border-2 border-yellow-700"
+            onClick={resolveEligiblePendingBets}
+          >
+            Resolver apuestas pendientes
+          </button>
+          <span
+            className="absolute top-3 left-[170px] z-30 text-2xl select-none"
+            style={{ pointerEvents: 'none' }}
+          >🛑</span>
+        </>
       )}
       {/* --- Botón Auto Draw --- */}
       <div className="absolute top-2 right-2 z-20 flex flex-col gap-0.5">
