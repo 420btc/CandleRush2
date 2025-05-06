@@ -122,19 +122,19 @@ export function generateAutoDrawCandles(
     let meanBody: number, stdBody: number, meanWick: number, stdWick: number;
     let historyLen: number;
     let upCount: number, downCount: number;
-    if (generated.length < 6 && baseCandles.length >= 66) {
-      const last66 = baseCandles.slice(-66);
-      historyLen = 66;
-      upCount = last66.filter((c: Candle) => c.close > c.open).length;
-      downCount = last66.filter((c: Candle) => c.close < c.open).length;
-      const bodies66 = last66.map(c => Math.abs(c.close - c.open));
-      const mechas66 = last66.map(c => Math.abs(c.high - c.low) - Math.abs(c.close - c.open));
-      meanBody = bodies66.length > 0 ? bodies66.reduce((a, b) => a + b, 0) / bodies66.length : (lastCandle.close * 0.0025);
-      stdBody = Math.sqrt(bodies66.reduce((a, b) => a + Math.pow(b - meanBody,2), 0) / (bodies66.length || 1));
+    if (generated.length < 9 && baseCandles.length >= 99) {
+      const last99 = baseCandles.slice(-99);
+      historyLen = 99;
+      upCount = last99.filter((c: Candle) => c.close > c.open).length;
+      downCount = last99.filter((c: Candle) => c.close < c.open).length;
+      const bodies99 = last99.map((c: Candle) => Math.abs(c.close - c.open));
+      const mechas99 = last99.map((c: Candle) => Math.abs(c.high - c.low) - Math.abs(c.close - c.open));
+      meanBody = bodies99.length > 0 ? bodies99.reduce((a, b) => a + b, 0) / bodies99.length : (lastCandle.close * 0.0025);
+      stdBody = Math.sqrt(bodies99.reduce((a, b) => a + Math.pow(b - meanBody,2), 0) / (bodies99.length || 1));
       const maxStdBody = lastCandle.close * 0.025;
       if (stdBody > maxStdBody) stdBody = maxStdBody;
-      meanWick = mechas66.length > 0 ? mechas66.reduce((a, b) => a + b, 0) / mechas66.length : meanBody * 0.6;
-      stdWick = Math.sqrt(mechas66.reduce((a, b) => a + Math.pow(b - meanWick,2), 0) / (mechas66.length || 1));
+      meanWick = mechas99.length > 0 ? mechas99.reduce((a, b) => a + b, 0) / mechas99.length : meanBody * 0.6;
+      stdWick = Math.sqrt(mechas99.reduce((a, b) => a + Math.pow(b - meanWick,2), 0) / (mechas99.length || 1));
       const maxStdWick = lastCandle.close * 0.025;
       if (stdWick > maxStdWick) stdWick = maxStdWick;
     } else {
