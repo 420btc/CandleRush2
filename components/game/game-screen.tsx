@@ -155,6 +155,7 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
   // Colores
   const upColor = "#00FF85";
   const downColor = "#FF2222";
+
   // Formatear ambos precios a string con separadores
   let priceStr = '--';
   let openStr = '--';
@@ -179,29 +180,47 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
     );
   }
 
-  // Comparar dígito a dígito
-  const chars = priceStr.split('');
-  const openChars = openStr.split('');
-  // Alinear ambos arrays (rellenar con espacios si difieren en longitud)
-  const maxLen = Math.max(chars.length, openChars.length);
-  while (chars.length < maxLen) chars.unshift(' ');
-  while (openChars.length < maxLen) openChars.unshift(' ');
-
-  // Determinar color por dígito
+  // Comparar dígito a dígito de derecha a izquierda, alineando solo dígitos y separadores
+  function splitToDigitsAndSeparators(str: string) {
+    // Mantener todos los caracteres, pero marcar si es dígito
+    return str.split('').map(c => ({ char: c, isDigit: /[0-9]/.test(c) }));
+  }
+  const priceArr = splitToDigitsAndSeparators(priceStr);
+  const openArr = splitToDigitsAndSeparators(openStr);
+  // Alinear de derecha a izquierda
+  let i = priceArr.length - 1;
+  let j = openArr.length - 1;
+  const rendered: JSX.Element[] = [];
   const priceNum = price ?? 0;
   const openNum = open ?? 0;
   let color = 'white';
   if (priceNum > openNum + 0.01) color = upColor;
   else if (priceNum < openNum - 0.01) color = downColor;
   else color = 'white';
-
-  // Si el dígito cambió respecto a open, colorear, si no, blanco
-  const rendered = chars.map((c, i) => {
-    const changed = c !== openChars[i];
-    return (
-      <span key={i} style={{ color: changed ? color : 'white', transition: 'color 0.3s' }}>{c}</span>
-    );
-  });
+  while (i >= 0 || j >= 0) {
+    const p = priceArr[i] || { char: ' ', isDigit: false };
+    const o = openArr[j] || { char: ' ', isDigit: false };
+    let changed = false;
+    if (p.isDigit) {
+      // Busca el siguiente dígito en open
+      while (j >= 0 && !openArr[j].isDigit) j--;
+      changed = p.char !== (openArr[j]?.char ?? ' ');
+      j--;
+    } else {
+      // Si es separador, solo compara con separador
+      changed = p.char !== o.char;
+      j--;
+    }
+    const style: React.CSSProperties = {
+      color: changed ? color : 'white',
+      transition: 'color 0.3s',
+    };
+    if (changed && color !== 'white') {
+      style.textShadow = `0 0 12px ${color}0D`;
+    }
+    rendered.unshift(<span key={i} style={style}>{p.char}</span>);
+    i--;
+  }
 
   return (
     <span
@@ -1306,6 +1325,7 @@ useEffect(() => {
   <BTCPriceDynamicColor
     price={currentCandle ? currentCandle.close : null}
     open={currentCandle ? currentCandle.open ?? null : null}
+    candleTimestamp={currentCandle ? currentCandle.timestamp : undefined}
     isMobile={isMobile}
   />
 )}
