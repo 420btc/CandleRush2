@@ -849,40 +849,62 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         // Coordenada X del último candle simulado
         const lastSimCandle = simBlock[simBlock.length - 1];
         const xLastSim = (lastSimCandle.timestamp - minTime) * xScale - clampedOffsetX;
-        // Línea y etiqueta en el máximo
+        // Encontrar la vela simulada con el máximo y el mínimo
+        const maxCandle = simBlock.find(c => c.high === maxSim);
+        const minCandle = simBlock.find(c => c.low === minSim);
+        // Coordenadas X de cada vela
+        const xMax = maxCandle ? (maxCandle.timestamp - minTime) * xScale - clampedOffsetX : xLastSim;
+        const xMin = minCandle ? (minCandle.timestamp - minTime) * xScale - clampedOffsetX : xLastSim;
+        // Flecha azul: horizontal, fina, a la derecha del high, apuntando hacia la vela
         ctx.save();
         ctx.strokeStyle = '#2196f3';
         ctx.lineWidth = 2;
-        ctx.setLineDash([8, 6]);
         ctx.beginPath();
-        ctx.moveTo(xLastSim - 30, yMax);
-        ctx.lineTo(xLastSim + 30, yMax);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.font = 'bold 11px monospace';
-        ctx.fillStyle = '#2196f3';
-        ctx.shadowColor = '#2196f3AA';
-        ctx.shadowBlur = 2;
-        ctx.textAlign = 'center';
-        ctx.fillText(`${maxSim.toFixed(2)}`, xLastSim, yMax - 8);
+        ctx.moveTo(xMax + 6, yMax); // punta
+        ctx.lineTo(xMax + 16, yMax - 4);
+        ctx.lineTo(xMax + 16, yMax - 2);
+        ctx.lineTo(xMax + 24, yMax - 2);
+        ctx.lineTo(xMax + 24, yMax + 2);
+        ctx.lineTo(xMax + 16, yMax + 2);
+        ctx.lineTo(xMax + 16, yMax + 4);
+        ctx.closePath();
+        ctx.fillStyle = '#22c55e';
+        ctx.globalAlpha = 0.95;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        // Precio pequeño a la derecha de la flecha
+        ctx.font = 'bold 10px monospace';
+        ctx.fillStyle = '#22c55e';
+        ctx.shadowColor = '#22c55eAA';
+        ctx.shadowBlur = 1;
+        ctx.textAlign = 'left';
+        ctx.fillText(`${maxSim.toFixed(2)}`, xMax + 28, yMax + 3);
         ctx.shadowBlur = 0;
         ctx.restore();
-        // Línea y etiqueta en el mínimo
+        // Flecha roja: horizontal, fina, a la derecha del low, apuntando hacia la vela
         ctx.save();
         ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 2;
-        ctx.setLineDash([8, 6]);
         ctx.beginPath();
-        ctx.moveTo(xLastSim - 30, yMin);
-        ctx.lineTo(xLastSim + 30, yMin);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.font = 'bold 11px monospace';
+        ctx.moveTo(xMin + 6, yMin); // punta
+        ctx.lineTo(xMin + 16, yMin - 4);
+        ctx.lineTo(xMin + 16, yMin - 2);
+        ctx.lineTo(xMin + 24, yMin - 2);
+        ctx.lineTo(xMin + 24, yMin + 2);
+        ctx.lineTo(xMin + 16, yMin + 2);
+        ctx.lineTo(xMin + 16, yMin + 4);
+        ctx.closePath();
+        ctx.fillStyle = '#ef4444';
+        ctx.globalAlpha = 0.95;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        // Precio pequeño a la derecha de la flecha
+        ctx.font = 'bold 10px monospace';
         ctx.fillStyle = '#ef4444';
         ctx.shadowColor = '#ef4444AA';
-        ctx.shadowBlur = 2;
-        ctx.textAlign = 'center';
-        ctx.fillText(`${minSim.toFixed(2)}`, xLastSim, yMin + 16);
+        ctx.shadowBlur = 1;
+        ctx.textAlign = 'left';
+        ctx.fillText(`${minSim.toFixed(2)}`, xMin + 28, yMin + 3);
         ctx.shadowBlur = 0;
         ctx.restore();
       }
