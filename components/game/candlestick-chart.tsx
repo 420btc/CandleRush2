@@ -827,6 +827,66 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     }
   }  
 
+    // === DIBUJAR MÁXIMO Y MÍNIMO DE ÚLTIMO TRAMO SIMULADO ===
+    // Busca el bloque final de velas simuladas consecutivas
+    let lastSimStart = -1, lastSimEnd = -1;
+    for (let i = allCandles.length - 1; i >= 0; i--) {
+      if (allCandles[i].isSimulated) {
+        lastSimEnd = lastSimEnd === -1 ? i : lastSimEnd;
+        lastSimStart = i;
+      } else if (lastSimEnd !== -1) {
+        break;
+      }
+    }
+    if (lastSimEnd !== -1 && lastSimStart !== -1 && lastSimEnd >= lastSimStart) {
+      const simBlock = allCandles.slice(lastSimStart, lastSimEnd + 1);
+      if (simBlock.length > 0) {
+        const maxSim = Math.max(...simBlock.map(c => c.high));
+        const minSim = Math.min(...simBlock.map(c => c.low));
+        // Posición Y en el canvas
+        const yMax = dimensions.height - ((maxSim - minPrice) * yScale - clampedOffsetY);
+        const yMin = dimensions.height - ((minSim - minPrice) * yScale - clampedOffsetY);
+        // Coordenada X del último candle simulado
+        const lastSimCandle = simBlock[simBlock.length - 1];
+        const xLastSim = (lastSimCandle.timestamp - minTime) * xScale - clampedOffsetX;
+        // Línea y etiqueta en el máximo
+        ctx.save();
+        ctx.strokeStyle = '#2196f3';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(xLastSim - 30, yMax);
+        ctx.lineTo(xLastSim + 30, yMax);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#2196f3';
+        ctx.shadowColor = '#2196f3AA';
+        ctx.shadowBlur = 2;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${maxSim.toFixed(2)}`, xLastSim, yMax - 8);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        // Línea y etiqueta en el mínimo
+        ctx.save();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(xLastSim - 30, yMin);
+        ctx.lineTo(xLastSim + 30, yMin);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#ef4444';
+        ctx.shadowColor = '#ef4444AA';
+        ctx.shadowBlur = 2;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${minSim.toFixed(2)}`, xLastSim, yMin + 16);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+    }
     // Línea de precio de liquidación para la apuesta activa
     // Asegurarse de que bets es un array y buscar todas las apuestas pendientes con liquidationPrice
     let pendingBets: any[] = [];
