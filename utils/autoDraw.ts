@@ -96,10 +96,13 @@ function getVolatilityFactor(timeframe: string) {
   return { factor: 1, lookback: 199, srMargin: 1.2 };
 }
 
+import { getWhaleVote } from "./whale-vote";
+
 export function generateAutoDrawCandles(
   baseCandles: Candle[],
   count: number,
-  timeframe: string = "1m"
+  timeframe: string = "1m",
+  whaleTrades?: any[] // WhaleTrade[] si tienes el tipo
 ): { candles: Candle[], finalPrice: number } {
   // --- FASES REALISTAS DE TENDENCIA Y RANGO ---
   // Detectar tendencia real de las últimas 99 velas reales
@@ -212,6 +215,9 @@ export function generateAutoDrawCandles(
 
   let trendDirection: 'BULLISH' | 'BEARISH' = 'BULLISH';
 
+  // --- NUEVO: Breakouts realistas por distancia al precio inicial ---
+  const breakouts: { idx: number, type: 'weak'|'medium'|'strong', direction: 'BULLISH'|'BEARISH', distance: number, price: number }[] = [];
+
   for (let i = 0; i < count; i++) {
     let regimeBodyFactor: number;
     // EMAs actualizadas para cada iteración
@@ -220,6 +226,100 @@ export function generateAutoDrawCandles(
     const ema55 = calcEMA(55, closesSim);
     const ema200 = calcEMA(200, closesSim);
     const ema365 = calcEMA(365, closesSim);
+
+    // --- VELAS VOLÁTILES ALEATORIAS (5% de probabilidad) ---
+    if (Math.random() < 0.05) {
+      // Más probabilidad de spike bajista si tendencia bajista, y viceversa
+      let volatileDir: 'BULLISH'|'BEARISH';
+      if (trendDir === 'BULLISH') {
+        volatileDir = Math.random() < 0.7 ? 'BEARISH' : 'BULLISH'; // spike bajista más probable en tendencia alcista
+      } else if (trendDir === 'BEARISH') {
+        volatileDir = Math.random() < 0.7 ? 'BULLISH' : 'BEARISH'; // spike alcista más probable en tendencia bajista
+      } else {
+        volatileDir = Math.random() < 0.5 ? 'BULLISH' : 'BEARISH';
+      }
+      const base = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
+      const move = 350 + Math.random() * 350; // 350-700 USD
+      let open = base;
+      let close, high, low;
+      if (volatileDir === 'BULLISH') {
+        close = open + move;
+        low = open - Math.random() * 30;
+        high = close + Math.random() * 30;
+      } else {
+        close = open - move;
+        high = open + Math.random() * 30;
+        low = close - Math.random() * 30;
+      }
+      generated.push({
+        open,
+        close,
+        high,
+        low,
+        volume: 2 + Math.random() * 4,
+        timestamp: Date.now() + i * 60000,
+        isClosed: true,
+        volatile: true,
+        volatileDir,
+      });
+      continue;
+    }
+
+    // --- DETECCIÓN DE RUPTURAS (BREAKOUTS) ---
+    const lastPrice = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
+    const distance = Math.abs(lastPrice - simStartPrice);
+    let breakoutType: 'weak'|'medium'|'strong'|null = null;
+    if (distance >= 1000) breakoutType = 'strong';
+    else if (distance >= 500) breakoutType = 'medium';
+    else if (distance >= 250) breakoutType = 'weak';
+    if (breakoutType) {
+      // Registrar ruptura y forzar cambio de fase/tendencia
+      const direction = lastPrice > simStartPrice ? 'BULLISH' : 'BEARISH';
+      breakouts.push({ idx: i, type: breakoutType, direction, distance, price: lastPrice });
+      // Forzar fase tendencia fuerte y dirección
+      phaseType = 'trend';
+      phaseCounter = 1;
+      phaseLimit = 10 + Math.floor(Math.random() * 10);
+      trendDir = direction;
+      trendDirection = direction;
+      // HACER EL BREAKOUT MUCHO MÁS FUERTE
+      let open = lastPrice;
+      let close;
+      let high, low;
+      let breakoutMove = 0;
+      if (breakoutType === 'strong') {
+        breakoutMove = 800 + Math.random() * 600; // 800-1400 USD
+        segmentVolatility *= 2.5;
+      } else if (breakoutType === 'medium') {
+        breakoutMove = 400 + Math.random() * 300; // 400-700 USD
+        segmentVolatility *= 1.7;
+      } else {
+        breakoutMove = 180 + Math.random() * 120; // 180-300 USD
+        segmentVolatility *= 1.25;
+      }
+      if (direction === 'BULLISH') {
+        close = open + breakoutMove;
+        low = open - Math.random() * 30;
+        high = close + Math.random() * 30;
+      } else {
+        close = open - breakoutMove;
+        high = open + Math.random() * 30;
+        low = close - Math.random() * 30;
+      }
+      // Marca la vela como ruptura
+      generated.push({
+        open,
+        close,
+        high,
+        low,
+        volume: 1 + Math.random() * 3,
+        timestamp: Date.now() + i * 60000,
+        isClosed: true,
+        breakoutType,
+      });
+      // Saltar el resto del bucle para que la ruptura sea inmediata
+      continue;
+    }
 
     // --- CONTROL DE FASES REALISTAS ---
     phaseCounter++;
@@ -306,9 +406,16 @@ export function generateAutoDrawCandles(
     if (crossUp(ema10, ema55) || crossUp(ema55, ema200) || crossUp(ema200, ema365)) emaCross = 'BULLISH';
     if (crossDown(ema10, ema55) || crossDown(ema55, ema200) || crossDown(ema200, ema365)) emaCross = 'BEARISH';
 
-    // --- DIRECCIÓN DE LA VELA SEGÚN FASE ---
+    // --- LÓGICA DOMINANTE DE WHALE TRADES ---
     let direction: 'BULLISH' | 'BEARISH';
-    if (phaseType === 'trend') {
+    let whaleVote: "BULLISH" | "BEARISH" | null = null;
+    if (whaleTrades && whaleTrades.length > 0) {
+      whaleVote = getWhaleVote(whaleTrades, Date.now());
+    }
+    if (whaleVote) {
+      direction = whaleVote;
+      trendDir = whaleVote;
+    } else if (phaseType === 'trend') {
       // --- SISTEMA DE VOTOS REALISTA (EMA, RSI, ADX, MACD, memoria de mercado) ---
       // Arrays de precios para indicadores
       const closesSim = [...baseCandles, ...generated].map(c => c.close);

@@ -11,6 +11,7 @@ import React from 'react';
 import VolumeProfile from './volume-profile';
 import { BarChart3 } from 'lucide-react';
 import { generateAutoDrawCandles } from '@/utils/autoDraw';
+import useBinanceWhaleTrades from './whale-trades-live';
 import { detectMarketStructure } from '@/utils/market-structure';
 
 interface CandlestickChartProps {
@@ -162,12 +163,13 @@ useEffect(() => {
   const autoDrawCount = candles.length >= 33 ? 33 : 11;
 
   // Handler para el botón
-  // Nuevo handler: cada click añade UNA vela simulada a la secuencia
-  const handleAutoDraw = () => {
+// Nuevo handler: cada click añade UNA vela simulada a la secuencia
+const whaleTrades = useBinanceWhaleTrades({ minUsd: 10000, limit: 99 });
+const handleAutoDraw = () => {
   if (timeframe !== '1m' && timeframe !== '3m') return; // Solo permitir en 1m o 3m
   // Si está inactivo, activar y generar la primera simulada
   if (!autoDrawActive) {
-    const { candles: simulated, finalPrice: price } = generateAutoDrawCandles([...candles], 1);
+    const { candles: simulated, finalPrice: price } = generateAutoDrawCandles([...candles], 1, timeframe, whaleTrades);
     setSimCandles(simulated);
     setFinalPrice(price);
     setAutoDrawActive(true);
@@ -175,7 +177,7 @@ useEffect(() => {
   }
   // Si ya está activo, generar la siguiente simulada (en base a todas las previas)
   const base = [...candles, ...simCandles];
-  const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1);
+  const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1, timeframe, whaleTrades);
   setSimCandles([...simCandles, ...nextSim]);
   setFinalPrice(price);
 };

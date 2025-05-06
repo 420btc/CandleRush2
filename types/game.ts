@@ -3,6 +3,9 @@
 export type GamePhase = "LOADING" | "BETTING" | "RESOLVING" | "WAITING"
 
 export interface Candle {
+  volatile?: boolean;
+  volatileDir?: 'BULLISH' | 'BEARISH';
+  breakoutType?: 'weak' | 'medium' | 'strong';
   timestamp: number
   open: number
   high: number
