@@ -164,6 +164,9 @@ importers:
       react-resizable-panels:
         specifier: ^2.1.7
         version: 2.1.9(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react-scratchcard-v2:
+        specifier: ^1.1.1
+        version: 1.1.1(react@19.1.0)
       recharts:
         specifier: 2.15.0
         version: 2.15.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -1873,6 +1876,12 @@ packages:
     peerDependencies:
       react: ^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       react-dom: ^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+
+  react-scratchcard-v2@1.1.1:
+    resolution: {integrity: sha512-2yzLLOqJBthSIxeN7JViDqzRX/OBR8tLVPxe408AL3aWi/V1nVvUvOwU7aY+1/oAR/uuVTK3DC46unv4LzTKeg==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: ^16.0.0
 
   react-smooth@4.0.4:
     resolution: {integrity: sha512-gnGKTpYwqL0Iii09gHobNolvX4Kiq4PKx6eWBCYYix+8cdw+cGo3do906l1NBPKkSWx1DghC1dlWG9L2uGd61Q==}
@@ -3754,6 +3763,10 @@ snapshots:
     dependencies:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
+
+  react-scratchcard-v2@1.1.1(react@19.1.0):
+    dependencies:
+      react: 19.1.0
 
   react-smooth@4.0.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
