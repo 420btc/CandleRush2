@@ -21,10 +21,27 @@ export function InteractiveRobotSpline({ scene, className }: InteractiveRobotSpl
       }
     >
       
-      <Spline
-        scene={scene}
-        className={className} 
-      />
+      <div className="relative w-full h-full">
+        <Spline
+          scene={scene}
+          className={className}
+        />
+        {/* Overlay para tapar el watermark de Spline */}
+        <div
+          className="pointer-events-none"
+          style={{
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            width: 160,
+            height: 70,
+            background: 'black',
+            zIndex: 20,
+            borderTopLeftRadius: 12,
+            opacity: 0.97
+          }}
+        />
+      </div>
     </Suspense>
   );
 }
