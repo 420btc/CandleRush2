@@ -1039,12 +1039,59 @@ export function generateAutoDrawCandles(
     let open = lastCandle.close;
     let close = direction === "BULLISH" ? open + candleBody : open - candleBody;
 
+    // === APLICAR EFECTO DE WHALE ALERT ===
+    if (whaleTrades && Array.isArray(whaleTrades)) {
+      whaleTrades.forEach((trade: any) => {
+        // Si el trade ocurre en el rango de tiempo de la vela simulada
+        if (trade.timestamp >= open && trade.timestamp < open + msPerCandle) {
+          const whaleEffect = Math.abs(open) * 0.005; // 0.5%
+          if (trade.side === 'buy') close += whaleEffect;
+          if (trade.side === 'sell') close -= whaleEffect;
+        }
+      });
+    }
+
+    // === NIVELES DE FIBONACCI ===
+    // Calcula niveles sobre el rango de las últimas 50 velas (reales+simuladas)
+    const fibCandles = [...baseCandles, ...generated].slice(-50);
+    if (fibCandles.length >= 2) {
+      const fibHigh = Math.max(...fibCandles.map(c => c.high));
+      const fibLow = Math.min(...fibCandles.map(c => c.low));
+      const fibRange = fibHigh - fibLow;
+      const fibLevels = [
+        fibHigh - fibRange * 0.382,
+        fibHigh - fibRange * 0.5,
+        fibHigh - fibRange * 0.618
+      ];
+      // Si el cierre está cerca de un nivel de fibo, aumenta probabilidad de reversal o pullback
+      fibLevels.forEach(fib => {
+        if (Math.abs(close - fib) / fib < 0.006) {
+          // 0.6% de margen
+          if (direction === 'BULLISH') close -= Math.abs(candleBody) * 0.5 * Math.random();
+          if (direction === 'BEARISH') close += Math.abs(candleBody) * 0.5 * Math.random();
+        }
+      });
+    }
+
+    // === INFLUENCIA DEL RSI ===
+    // Calcula RSI de las últimas 14 velas (reales+simuladas)
+    const rsiCandles = [...baseCandles, ...generated].slice(-15);
+    const rsiCloses = rsiCandles.map(c => c.close);
+    const rsi = calcRSI(rsiCloses, 14);
+    if (rsi > 70 && direction === 'BULLISH') {
+      // Sobrecompra: aumenta probabilidad de reversal bajista
+      if (Math.random() < 0.45) close -= Math.abs(candleBody) * (0.4 + Math.random()*0.5);
+    } else if (rsi < 30 && direction === 'BEARISH') {
+      // Sobreventa: aumenta probabilidad de reversal alcista
+      if (Math.random() < 0.45) close += Math.abs(candleBody) * (0.4 + Math.random()*0.5);
+    }
+
     // Determinar si hay ruptura de soporte o resistencia (breakout)
     let breakoutVolBoost = 1;
     // Buscar soporte/resistencia relevante cerca
-    let nearSupportBreak = supports.find(s => Math.abs(open - s) / open < srMargin / 100);
-    let nearResistanceBreak = resistances.find(r => Math.abs(open - r) / open < srMargin / 100);
-    if ((direction === 'BULLISH' && nearResistanceBreak && close > nearResistanceBreak) || (direction === 'BEARISH' && nearSupportBreak && close < nearSupportBreak)) {
+    const nearSupport = supports.filter(s => Math.abs(open - s) < meanBody * srMargin).pop();
+    const nearResistance = resistances.filter(r => Math.abs(open - r) < meanBody * srMargin)[0];
+    if ((direction === 'BULLISH' && nearResistance && close > nearResistance) || (direction === 'BEARISH' && nearSupport && close < nearSupport)) {
       breakoutVolBoost = 1.15 + Math.random() * 0.12;
       // Recalcular el cuerpo de la vela con el boost aplicado
       candleBody *= breakoutVolBoost;
@@ -1073,8 +1120,7 @@ export function generateAutoDrawCandles(
 
 
     // Lógica de soportes y resistencias (margen adaptado)
-    const nearSupport = supports.filter(s => Math.abs(open - s) < meanBody * srMargin).pop();
-    const nearResistance = resistances.filter(r => Math.abs(open - r) < meanBody * srMargin)[0];
+    // Las variables nearSupport y nearResistance ya están declaradas arriba en la iteración
     if (direction === "BULLISH" && nearResistance) {
       // Breakout o rechazo según historial
       if (Math.random() < 0.7 - (upCount/(historyLen+1))) {
