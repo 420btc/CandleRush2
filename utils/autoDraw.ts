@@ -127,8 +127,8 @@ export function generateAutoDrawCandles(
 ): { candles: Candle[], finalPrice: number } {
   // --- CONTROL DE TENDENCIAS ULTRA LARGAS Y REVERSALS ---
   // Configuración: máximos y reversals
-  const MAX_TREND_LEN = 15; // Máximo permitido de velas en una misma tendencia
-  const MAX_TREND_LEN_HARD = 22; // Máximo absoluto (nunca más de esto)
+  const MAX_TREND_LEN = 48; // Máximo permitido de velas en una misma tendencia (mucho más prolongado)
+  const MAX_TREND_LEN_HARD = 60; // Máximo absoluto (nunca más de esto, pero sigue siendo realista)
   const REVERSAL_INTERVAL_MIN = 10; // Cada cuántas velas mínimo puede haber reversal fuerte
   const REVERSAL_INTERVAL_MAX = 20; // Máximo para reversal aleatorio
   let trendStreak = 0; // Cuenta velas en la misma dirección
@@ -950,6 +950,33 @@ export function generateAutoDrawCandles(
       regimeBodyFactor = 0.6;
     }
 
+    // === CONTROL DE TENDENCIA INTERMINABLE ===
+    // Lleva la cuenta de la racha actual de tendencia
+    if (typeof trendStreak !== 'number') trendStreak = 1;
+    if (generated.length > 0) {
+      const prevCandle = generated[generated.length - 1];
+      const prevDir = prevCandle.close > prevCandle.open ? 'BULLISH' : 'BEARISH';
+      const currDir = direction;
+      if (currDir === prevDir) {
+        trendStreak++;
+      } else {
+        trendStreak = 1;
+      }
+    }
+    // Si la racha supera el máximo permitido, forzar reversal
+    if (trendStreak > MAX_TREND_LEN) {
+      trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+      direction = trendDir;
+      trendStreak = 1;
+    }
+    // Si por cualquier motivo supera el hard limit, reversal obligatorio
+    if (trendStreak > MAX_TREND_LEN_HARD) {
+      trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+      direction = trendDir;
+      trendStreak = 1;
+    }
+    // === FIN CONTROL DE TENDENCIA INTERMINABLE ===
+
     // === NUEVA LÓGICA: analizar últimas 100 velas ===
     // --- ADAPTACIÓN A LAS ÚLTIMAS 66 VELAS REALES PARA LAS PRIMERAS 6 SIMULADAS ---
     let meanBody: number, stdBody: number, meanWick: number, stdWick: number;
@@ -1115,6 +1142,29 @@ export function generateAutoDrawCandles(
         candleBody = candleBody * 1.7;
         close = direction === 'BULLISH' ? open + candleBody : open - candleBody;
       }
+    }
+
+    // === SPIKES ALEATORIOS CADA 66 VELAS ===
+    // Con probabilidad baja, cada vez que el contador de velas simuladas sea múltiplo de 66
+    if ((generated.length > 0 && generated.length % 66 === 0) && Math.random() < 0.7) {
+      // Elegir aleatoriamente si es spike alcista o bajista
+      const spikeType = Math.random() < 0.5 ? 'UP' : 'DOWN';
+      const spikePercent = 0.002; // 0.2%
+      if (spikeType === 'UP') {
+        const spikeValue = close * (1 + spikePercent);
+        // El close sube un 0.2%
+        close = spikeValue;
+        // El high también debe reflejar el spike si es mayor
+        if (close > high) high = close;
+      } else {
+        const spikeValue = close * (1 - spikePercent);
+        // El close baja un 0.2%
+        close = spikeValue;
+        // El low también debe reflejar el spike si es menor
+        if (close < low) low = close;
+      }
+      // Opcional: marcar la vela como spike para debug
+      (newCandle as any).isSpike = true;
     }
 
 
