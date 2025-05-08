@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import ScratchCard from 'react-scratchcard-v2';
 import { InteractiveRobotSpline } from "@/components/interactive-3d-robot";
 import { BetFlyToRobotAnimation } from "@/components/ui/BetFlyToRobotAnimation";
 
@@ -142,20 +143,76 @@ export default function MinijuegoPage() {
             <span className="text-white">Minijuego</span> <span className="text-white">Candle</span> <span className="text-yellow-400">FOMO</span>
           </h1>
         </div>
-        <div className="relative w-full h-[38vh] md:h-[45vh] lg:h-[50vh] mt-8 mb-0 z-0">
-          <InteractiveRobotSpline
-            scene={ROBOT_SCENE_URL}
-            className="absolute inset-0 w-full h-full z-0 transform scale-x-[0.8]"
-          />
-          {/* Overlay negro para tapar el 'Built with Spline' */}
-          <div className="absolute bottom-2 right-32 w-56 h-16 bg-black z-10 rounded-tl-xl" />
+        <div className="w-full h-[38vh] md:h-[45vh] lg:h-[50vh] mt-8 mb-0 z-0 flex flex-row items-center justify-center relative">
+          {/* Texto informativo izquierdo */}
+          <div className="hidden md:flex flex-col items-end w-1/4 pr-8 select-none">
+            <span className="text-lg font-semibold text-white leading-snug">
+              <span className="text-yellow-400">1.</span> Elige el marco temporal<br/>
+              <span className="text-yellow-400">2.</span> Haz tu predicción<br/>
+              <span className="text-yellow-400">3.</span> ¡Apuesta y espera el cierre!
+            </span>
+          </div>
+          {/* Rasca y gana debajo del texto de cómo ganas */}
+          
+          {/* Centro: robot y overlay */}
+          <div className="flex-1 flex items-center justify-center h-full relative">
+            <InteractiveRobotSpline
+              scene={ROBOT_SCENE_URL}
+              className="w-full h-full z-0 transform scale-x-[0.8]"
+            />
+            {/* Overlay negro para tapar el 'Built with Spline' */}
+            <div className="absolute bottom-2 w-56 h-16 bg-black z-10 rounded-tl-xl" style={{ right: 10 }}>
+              <div className="absolute left-0 flex items-center justify-center w-12 h-12 bg-yellow-400 rounded-full shadow-md" style={{ top: 'calc(50% + 2px)', left: 3, transform: 'translateY(-50%)' }}>
+                {/* Bitcoin Logo SVG */}
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="btc-c" x1="50%" x2="50%" y1="0%" y2="100%"><stop offset="0%" stopColor="#FFF" stopOpacity=".5"/><stop offset="100%" stopOpacity=".5"/></linearGradient><circle id="btc-b" cx="16" cy="15" r="15"/><filter id="btc-a" width="111.7%" height="111.7%" x="-5.8%" y="-4.2%" filterUnits="objectBoundingBox"><feOffset dy=".5" in="SourceAlpha" result="shadowOffsetOuter1"/><feGaussianBlur in="shadowOffsetOuter1" result="shadowBlurOuter1" stdDeviation=".5"/><feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"/><feColorMatrix in="shadowBlurOuter1" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.199473505 0"/></filter><path id="btc-e" d="M23.1889526,13.0201846 C23.5025526,10.9239385 21.9064911,9.79704615 19.7240911,9.04529231 L20.4320295,6.20566154 L18.7035372,5.77489231 L18.0143065,8.53969231 C17.5599065,8.42646154 17.0931988,8.31963077 16.6294449,8.21378462 L17.3235988,5.43076923 L15.5960911,5 L14.8876603,7.83864615 C14.5115372,7.75298462 14.1423065,7.66830769 13.7839065,7.5792 L13.7858757,7.57033846 L11.4021218,6.97513846 L10.9423065,8.82129231 C10.9423065,8.82129231 12.224768,9.1152 12.1976911,9.13341538 C12.8977526,9.30818462 13.0242757,9.77144615 13.0031065,10.1387077 L12.1967065,13.3736615 C12.2449526,13.3859692 12.3074757,13.4036923 12.3763988,13.4312615 C12.3187988,13.4169846 12.2572603,13.4012308 12.1937526,13.3859692 L11.0634142,17.9176615 C10.9777526,18.1303385 10.7606449,18.4493538 10.2712911,18.3282462 C10.2885218,18.3533538 9.01492185,18.0146462 9.01492185,18.0146462 L8.15682954,19.9932308 L10.4061834,20.5539692 C10.8246449,20.6588308 11.2347372,20.7686154 11.6384295,20.872 L10.9231065,23.7441231 L12.6496295,24.1748923 L13.3580603,21.3332923 C13.8296911,21.4612923 14.2875372,21.5794462 14.7355372,21.6907077 L14.029568,24.5190154 L15.7580603,24.9497846 L16.4733834,22.0830769 C19.4208295,22.6408615 21.6371988,22.4158769 22.5701218,19.7500308 C23.3218757,17.6035692 22.5327065,16.3654154 20.9819372,15.5580308 C22.1112911,15.2976 22.9619988,14.5547077 23.1889526,13.0201846 L23.1889526,13.0201846 Z M19.2396603,18.5581538 C18.7055065,20.7046154 15.0914757,19.5442462 13.9197834,19.2532923 L14.8689526,15.4482462 C16.0406449,15.7406769 19.7979372,16.3196308 19.2396603,18.5581538 Z M19.7743065,12.9891692 C19.2869218,14.9416615 16.2789218,13.9496615 15.303168,13.7064615 L16.1637218,10.2553846 C17.1394757,10.4985846 20.2818757,10.9524923 19.7743065,12.9891692 Z"/><filter id="btc-d" width="123.2%" height="117.5%" x="-11.6%" y="-6.3%" filterUnits="objectBoundingBox"><feOffset dy=".5" in="SourceAlpha" result="shadowOffsetOuter1"/><feGaussianBlur in="shadowOffsetOuter1" result="shadowBlurOuter1" stdDeviation=".5"/><feColorMatrix in="shadowBlurOuter1" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.204257246 0"/></filter></defs><g fill="none" fillRule="evenodd"><use fill="#000" filter="url(#btc-a)" xlinkHref="#btc-b"/><use fill="#F7931A" xlinkHref="#btc-b"/><use fill="url(#btc-c)" style={{mixBlendMode: 'soft-light'}} xlinkHref="#btc-b"/><circle cx="16" cy="15" r="14.5" stroke="#000" strokeOpacity=".097"/><g fillRule="nonzero"><use fill="#000" filter="url(#btc-d)" xlinkHref="#btc-e"/><use fill="#FFF" fillRule="evenodd" xlinkHref="#btc-e"/></g></g></svg>
+              </div>
+            </div>
+          </div>
+          {/* Texto informativo derecho */}
+          <div className="hidden md:flex flex-col items-start w-1/4 pl-8 select-none">
+  <span className="text-lg font-semibold text-white leading-snug">
+    <span className="text-yellow-400">¿Cómo ganas?</span><br/>
+    Si tu predicción<br/>
+    <span className="text-yellow-400">coincide</span> con el precio<br/>
+    ¡<span className="text-yellow-400">ganas el premio!</span>
+  </span>
+  <div className="w-full flex flex-col items-center mt-2" style={{ marginLeft: '-105px' }}>
+    <div className="bg-zinc-900/70 rounded-xl p-3 shadow-md border border-yellow-400 w-[240px] flex flex-col items-center">
+      <ScratchCard
+        width={220}
+        height={100}
+        image={'/rasca.png'}
+        finishPercent={70}
+        onComplete={() => alert('¡Premio desbloqueado!') }
+      >
+        <div style={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 'bold',
+          fontSize: 18,
+          color: '#facc15',
+          background: 'rgba(0,0,0,0.7)',
+          borderRadius: 12
+        }}>
+          ¡Premio desbloqueado!
         </div>
+      </ScratchCard>
+    </div>
+  </div>
+</div>
+          {/* Rasca y gana debajo del texto de cómo ganas */}
+          
+        </div>
+
       </main>
       {/* Bloque del minijuego al fondo */}
-      <div className="fixed bottom-0 left-0 w-full flex justify-center z-30 pointer-events-none">
-        <div className="w-full max-w-2xl bg-black/80 rounded-xl shadow-xl p-4 flex flex-col gap-3 backdrop-blur-md border border-yellow-400 pointer-events-auto">
+      <div className="fixed bottom-[57px] left-0 w-full flex justify-center z-30 pointer-events-none">
+        <div className="w-full max-w-2xl bg-black/80 rounded-xl shadow-xl p-4 flex flex-col gap-1 backdrop-blur-md border-2 border-purple-500 pointer-events-auto">
           {/* Selector de temporalidad */}
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-2">
             {TIMEFRAMES.map((tf) => (
               <button
                 key={tf}
@@ -168,7 +225,7 @@ export default function MinijuegoPage() {
             ))}
           </div>
           {/* Precio BTC en directo */}
-          <div className="w-full flex flex-col items-center mb-6 mt-4 select-none">
+          <div className="w-full flex flex-col items-center mb-2 mt-1 select-none">
           </div>
           <div className="flex flex-col items-center">
             <span className="text-yellow-400 text-4xl md:text-5xl font-extrabold tracking-tight drop-shadow-xl select-none">
@@ -176,6 +233,8 @@ export default function MinijuegoPage() {
             </span>
             <span className="uppercase text-xs text-zinc-400 mt-1">Precio actual de Bitcoin</span>
           </div>
+          {/* Rasca y gana debajo del texto de cómo ganas */}
+          
           {/* Input de predicción */}
           <form
             className="flex flex-col md:flex-row gap-2 items-stretch justify-center w-full max-w-md mx-auto"
@@ -286,7 +345,7 @@ export default function MinijuegoPage() {
             />
           )}
           {/* Historial de apuestas */}
-          <div className="bg-black/70 rounded-xl p-4 mt-2 max-h-48 overflow-y-auto border border-yellow-400 relative">
+          <div className="bg-black/70 rounded-xl p-4 mt-2 h-16 overflow-y-auto border-2 border-purple-500 relative">
             {/* X flotante para borrar todas */}
             <button
               className="absolute top-2 right-2 z-10 p-1 rounded-full bg-black/60 hover:bg-yellow-400/80 transition-colors"
