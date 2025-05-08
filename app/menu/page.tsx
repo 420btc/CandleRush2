@@ -29,6 +29,15 @@ const menuItems = [
     previewImage: "/previews/preview2.png",
   },
   {
+    label: "MINIJUEGO",
+    description: "Juega a un juego rápido",
+    href: "/minijuego",
+    icon: (
+      <SiBitcoinsv className="w-10 h-10 text-yellow-500" />
+    ),
+    previewImage: "/previews/preview4.png",
+  },
+  {
     label: "Cómo Jugar",
     description: "Aprende las reglas y mecánicas",
     href: "/how-to-play",
@@ -205,13 +214,13 @@ export default function MenuPage() {
           className="w-full h-full"
         />
       </div>
-      <div className="flex flex-col w-full max-w-lg space-y-4 relative">
+      <div className="flex flex-col w-full max-w-lg space-y-2 relative">
         {menuItems.map((item) => (
           <div key={item.label} className="relative">
             {item.label === "Jugar" && (
               <Link
                 href="/infomix"
-                className="absolute -top-2 right-0 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-medium hover:bg-yellow-300 transition-colors"
+                className="absolute -top-1 right-0 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-medium hover:bg-yellow-300 transition-colors"
               >
                 Conoce a AutoMix 🤖
               </Link>
@@ -219,20 +228,20 @@ export default function MenuPage() {
             <MenuPreview previewImage={item.previewImage}>
               <Link
                 href={item.href}
-                className="group flex items-center gap-4 p-4 rounded-2xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-2xl cursor-pointer"
+                className="group flex items-center gap-3 p-3 rounded-xl bg-black border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors shadow-lg cursor-pointer"
                 style={{ 
-                  boxShadow: '0 0 40px #FFD60055',
-                  textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+                  boxShadow: '0 0 20px #FFD60055',
+                  textShadow: '2px 2px 4px rgba(0, 0, 0, 0.85)'
                 }}
               >
-                <span className="transition-transform group-hover:scale-125" style={{
+                <span className="transition-transform group-hover:scale-110" style={{
                   width: 32,
                   height: 32,
-                  textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+                  textShadow: '2px 2px 4px rgba(0, 0, 0, 0.85)'
                 }}>{item.icon}</span>
                 <span className="flex items-center">
-                  <span className="text-yellow-400 text-2xl md:text-3xl font-black select-none tracking-tight italic uppercase group-hover:text-black transition-colors" style={{
-                    textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
+                  <span className="text-yellow-400 text-xl md:text-2xl font-black select-none tracking-tight italic uppercase group-hover:text-black transition-colors" style={{
+                    textShadow: '2px 2px 4px rgba(0, 0, 0, 0.85)'
                   }}>
                     {item.label}
                   </span>
