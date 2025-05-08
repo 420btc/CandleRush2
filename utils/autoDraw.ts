@@ -247,7 +247,7 @@ export function generateAutoDrawCandles(
   let trendDirection: 'BULLISH' | 'BEARISH' = 'BULLISH';
 
   // --- NUEVO: Breakouts realistas por distancia al precio inicial ---
-  const breakouts: { idx: number, type: 'weak'|'medium'|'strong', direction: 'BULLISH'|'BEARISH', distance: number, price: number }[] = [];
+  const breakouts: { idx: number, type: 'weak'|'mild'|'medium'|'strong'|'extreme', direction: 'BULLISH'|'BEARISH', distance: number, price: number }[] = [];
 
   // --- Control de máximos/mínimos crecientes/decrecientes por tendencia ---
   let lastMax = Math.max(...baseCandles.slice(-30).map(c => c.high));
@@ -287,9 +287,11 @@ export function generateAutoDrawCandles(
     // --- DETECCIÓN DE RUPTURAS (BREAKOUTS) ---
     const lastPrice = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
     const distance = Math.abs(lastPrice - simStartPrice);
-    let breakoutType: 'weak'|'medium'|'strong'|null = null;
-    if (distance >= 1000) breakoutType = 'strong';
-    else if (distance >= 500) breakoutType = 'medium';
+    let breakoutType: 'weak'|'mild'|'medium'|'strong'|'extreme'|null = null;
+    if (distance >= 3000) breakoutType = 'extreme';
+    else if (distance >= 2000) breakoutType = 'strong';
+    else if (distance >= 1000) breakoutType = 'medium';
+    else if (distance >= 500) breakoutType = 'mild';
     else if (distance >= 250) breakoutType = 'weak';
     if (breakoutType) {
       // Registrar ruptura y forzar cambio de fase/tendencia
@@ -306,13 +308,19 @@ export function generateAutoDrawCandles(
       let close;
       let high, low;
       let breakoutMove = 0;
-      if (breakoutType === 'strong') {
-        breakoutMove = 800 + Math.random() * 600; // 800-1400 USD
-        segmentVolatility *= 2.5;
+      if (breakoutType === 'extreme') {
+        breakoutMove = 1600 + Math.random() * 1000; // 1600-2600 USD
+        segmentVolatility *= 4.5;
+      } else if (breakoutType === 'strong') {
+        breakoutMove = 1000 + Math.random() * 700; // 1000-1700 USD
+        segmentVolatility *= 3.2;
       } else if (breakoutType === 'medium') {
         breakoutMove = 400 + Math.random() * 300; // 400-700 USD
         segmentVolatility *= 1.7;
-      } else {
+      } else if (breakoutType === 'mild') {
+        breakoutMove = 250 + Math.random() * 150; // 250-400 USD
+        segmentVolatility *= 1.35;
+      } else if (breakoutType === 'weak') {
         breakoutMove = 180 + Math.random() * 120; // 180-300 USD
         segmentVolatility *= 1.25;
       }
@@ -335,7 +343,7 @@ export function generateAutoDrawCandles(
       let ema200 = calcEMA(200, closesSim);
       let ema365 = calcEMA(365, closesSim);
       // Si el breakout es fuerte, forzar el posicionamiento respecto a TODAS las EMAs
-      if (breakoutType === 'strong') {
+      if (breakoutType === 'extreme' || breakoutType === 'strong') {
         if (direction === 'BEARISH') {
           // Forzar close por debajo de todas las EMAs
           const minEMA = Math.min(ema10[ema10.length-1], ema55[ema55.length-1], ema200[ema200.length-1], ema365[ema365.length-1]);
