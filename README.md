@@ -1,3 +1,4 @@
+<!-- Trigger redeploy: 2025-05-08 -->
 <p align="center">
   <img src="public/intro.png" alt="Pantalla de inicio de CandleRush2" width="600" />
 </p>
