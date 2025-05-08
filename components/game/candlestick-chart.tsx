@@ -43,6 +43,45 @@ interface SupportResistance {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
+  // --- Estado de velas simuladas ---
+  const [simCandles, setSimCandles] = useState<any[]>([]);
+  // --- Estado para Auto Draw ---
+  const [autoDrawActive, setAutoDrawActive] = useState(false);
+  // --- Auto Draw Loop ---
+  const [autoDrawLoopActive, setAutoDrawLoopActive] = useState(false);
+  const autoDrawLoopRef = useRef<any>(null);
+  // --- Ref para simCandles actualizado ---
+  const simCandlesRef = useRef<any[]>([]);
+  useEffect(() => {
+    simCandlesRef.current = simCandles;
+  }, [simCandles]);
+
+  // Limpia el intervalo si el usuario navega o desmonta
+  useEffect(() => {
+    return () => {
+      if (autoDrawLoopRef.current) clearInterval(autoDrawLoopRef.current);
+      // Al desmontar, limpiar simuladas y precio final
+      setSimCandles([]);
+      setFinalPrice(null);
+    };
+  }, []);
+
+  // Si desactivas el loop, limpia el intervalo
+  useEffect(() => {
+    if (!autoDrawLoopActive && autoDrawLoopRef.current) {
+      clearInterval(autoDrawLoopRef.current);
+      autoDrawLoopRef.current = null;
+    }
+  }, [autoDrawLoopActive]);
+
+  // Limpiar simuladas y precio de la última simulada al desactivar Auto Draw
+  useEffect(() => {
+    if (!autoDrawActive) {
+      setSimCandles([]);
+      setFinalPrice(null);
+    }
+  }, [autoDrawActive]);
+
   // Estado local para ocultar los avisos visuales de 'cerca del mínimo/máximo'
   const [showNearHigh, setShowNearHigh] = useState(true);
   const [showNearLow, setShowNearLow] = useState(true);
@@ -100,12 +139,12 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   // (Solo una función y una variable, sin duplicados)
 
   // --- Estado para Auto Draw ---
-  const [autoDrawActive, setAutoDrawActive] = useState(false);
-  const [simCandles, setSimCandles] = useState<Candle[]>([]);
+  
+
   const [finalPrice, setFinalPrice] = useState<number | null>(null);
   const [showFinalPrice, setShowFinalPrice] = useState(false);
   const [showSupportResistance, setShowSupportResistance] = useState(false);
-const [showTraps, setShowTraps] = useState(false);
+  const [showTraps, setShowTraps] = useState(false);
 
 // Estado para guardar las trampas detectadas
 const [traps, setTraps] = useState<{ index: number, type: 'bulltrap' | 'beartrap' }[]>([]);
@@ -1658,21 +1697,55 @@ const handleZoomOut = () => {
       )}
       {/* --- Botón Auto Draw --- */}
       <div className="absolute top-2 right-2 z-20 flex flex-col gap-0.5">
-        
-        <button
-          onClick={handleAutoDraw}
-          className={`px-1 py-0.5 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-1 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-1 ring-green-400' : ''}`}
-          style={{
-            height: 16,
-            minWidth: 60,
-            fontSize: 10,
-            padding: '0 5px',
-            lineHeight: '14px'
-          }}
-          title="Simular próximas velas"
-        >
-          Candle Predictor
-        </button>
+        <div className="flex gap-1">
+          <button
+            onClick={handleAutoDraw}
+            className={`px-1 py-0.5 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-1 border-[#FFD600] hover:bg-yellow-300 ${autoDrawActive ? 'ring-1 ring-green-400' : ''}`}
+            style={{
+              height: 16,
+              minWidth: 60,
+              fontSize: 10,
+              padding: '0 5px',
+              lineHeight: '14px'
+            }}
+            title="Simular próximas velas"
+          >
+            Candle Predictor
+          </button>
+          <button
+            onClick={() => {
+              if (autoDrawLoopActive) {
+                clearInterval(autoDrawLoopRef.current);
+                setAutoDrawLoopActive(false);
+              } else {
+                autoDrawLoopRef.current = setInterval(() => {
+                  // Simular siempre sobre el estado más reciente
+                  if (timeframe !== '1m' && timeframe !== '3m') return;
+                  const base = [...candles, ...simCandlesRef.current];
+                  const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1, timeframe, whaleTrades);
+                  setSimCandles(prev => {
+                    const updated = [...prev, ...nextSim];
+                    simCandlesRef.current = updated;
+                    return updated;
+                  });
+                  setFinalPrice(price);
+                }, 100);
+                setAutoDrawLoopActive(true);
+              }
+            }}
+            className={`px-1 py-0.5 rounded-lg font-bold shadow transition ${autoDrawLoopActive ? 'bg-green-400 text-black ring-2 ring-green-600' : 'bg-gray-200 text-gray-700'} border-1 border-[#FFD600] hover:bg-yellow-300`}
+            style={{
+              height: 16,
+              minWidth: 60,
+              fontSize: 10,
+              padding: '0 5px',
+              lineHeight: '14px'
+            }}
+            title="Auto Draw: crear velas simuladas cada 100ms"
+          >
+            Auto Draw
+          </button>
+        </div>
         <button
           onClick={() => setShowSupportResistance(!showSupportResistance)}
           className="px-1 py-0.5 rounded-lg font-bold shadow transition bg-[#FFD600] text-black border-1 border-[#FFD600] hover:bg-yellow-300"
