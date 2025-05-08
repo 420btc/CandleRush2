@@ -274,6 +274,12 @@ export function generateAutoDrawCandles(
   let liquidityGrabProb = 0.012;
   let whaleSpikeProb = 0.01;
 
+  // --- Estado de manipulación prolongada ---
+  let manipulationActive: false | 'mild' | 'medium' | 'strong' = false;
+  let manipulationCounter = 0;
+  let manipulationLimit = 0;
+  let manipulationTriggered = { mild: false, medium: false, strong: false };
+
   for (let i = 0; i < count; i++) {
     // Inicializa regimeBodyFactor al principio de cada iteración
     let regimeBodyFactor: number = 1;
@@ -288,6 +294,33 @@ export function generateAutoDrawCandles(
     const lastPrice = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
     const distance = Math.abs(lastPrice - simStartPrice);
     let breakoutType: 'weak'|'mild'|'medium'|'strong'|'extreme'|null = null;
+    // --- Activar manipulación prolongada según umbral ---
+    if (distance >= 4000) {
+      // Tendencia bajista extrema
+      manipulationActive = 'strong';
+      manipulationCounter = 0;
+      manipulationLimit = 600 + Math.floor(Math.random() * 101); // 600-700 velas
+      manipulationTriggered.strong = true;
+      trendDir = 'BEARISH';
+      // Buscar mínimos: fuerza el precio a caer progresivamente
+    } else if (!manipulationTriggered.strong && distance >= 3000) {
+      manipulationActive = 'strong';
+      manipulationCounter = 0;
+      manipulationLimit = 500 + Math.floor(Math.random() * 101); // 500-600
+      manipulationTriggered.strong = true;
+      trendDir = 'BEARISH'; // También fuerza bajista en 3000
+    } else if (!manipulationTriggered.medium && distance >= 2000) {
+      manipulationActive = 'medium';
+      manipulationCounter = 0;
+      manipulationLimit = 300 + Math.floor(Math.random() * 101); // 300-400
+      manipulationTriggered.medium = true;
+    } else if (!manipulationTriggered.mild && distance >= 1000) {
+      manipulationActive = 'mild';
+      manipulationCounter = 0;
+      manipulationLimit = 100 + Math.floor(Math.random() * 101); // 100-200
+      manipulationTriggered.mild = true;
+    }
+    // --- Determinar breakoutType solo para la lógica de ruptura puntual (no prolongada) ---
     if (distance >= 3000) breakoutType = 'extreme';
     else if (distance >= 2000) breakoutType = 'strong';
     else if (distance >= 1000) breakoutType = 'medium';
@@ -547,6 +580,55 @@ export function generateAutoDrawCandles(
       });
       // Saltar el resto del bucle para que la ruptura sea inmediata
       continue;
+    }
+
+    // --- MANIPULACIÓN PROLONGADA: aplicar si está activa ---
+    if (manipulationActive) {
+      // Eleva la volatilidad y fuerza tendencia según nivel
+      if (manipulationActive === 'mild') {
+        segmentVolatility *= 1.25;
+        // Mantén la tendencia actual
+      } else if (manipulationActive === 'medium') {
+        segmentVolatility *= 1.7;
+        // Mantén la tendencia actual
+      } else if (manipulationActive === 'strong') {
+        segmentVolatility *= 3.2;
+        // Fuerza tendencia bajista si está en manipulación fuerte
+        trendDir = 'BEARISH';
+        // Tendencia bajista fuerte: favorece caídas progresivas hacia nuevos mínimos
+        const allLows = [...baseCandles, ...generated].map(c => c.low);
+        const minSoFar = Math.min(...allLows);
+        // Probabilidad alta de seguir bajando, pero permite rebotes
+        const probNewLow = 0.7; // 70% de probabilidad de hacer un low más bajo
+        let low: number, close: number, high: number, open: number;
+        let newLow: number, newClose: number, newHigh: number, newOpen: number;
+        if (Math.random() < probNewLow) {
+          // Hacer un nuevo mínimo histórico, pero con caída moderada
+          newLow = minSoFar - Math.abs(minSoFar * (0.001 + Math.random() * 0.002));
+          newClose = newLow + Math.abs(newLow * (0.001 + Math.random() * 0.002));
+        } else {
+          // Rebote: low cerca del mínimo pero no menor
+          newLow = minSoFar + Math.abs(minSoFar * (0.0005 + Math.random() * 0.002));
+          newClose = newLow + Math.abs(newLow * (0.003 + Math.random() * 0.005));
+        }
+        // El high puede ser apenas por encima del open para simular mecha superior
+        // Calcula el high solo con lastPrice y newClose
+        newHigh = Math.max(lastPrice, newClose) + Math.abs(newLow * (0.0005 + Math.random() * 0.001));
+        // El open puede ser entre el close previo y el nuevo close
+        newOpen = lastPrice > newClose ? lastPrice : newClose + Math.abs(newClose * 0.001);
+        // Asigna los valores generados a las variables de la vela después de calcular todo
+        low = newLow;
+        close = newClose;
+        high = newHigh;
+        open = newOpen;
+        // Así, la serie baja progresivamente hacia nuevos mínimos, pero no en cada vela.
+      }
+      manipulationCounter++;
+      if (manipulationCounter >= manipulationLimit) {
+        manipulationActive = false;
+        manipulationCounter = 0;
+        manipulationLimit = 0;
+      }
     }
 
     // --- CONTROL DE FASES REALISTAS ---

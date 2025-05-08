@@ -1141,31 +1141,13 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         // Obtener apuestas de la vela
         let candleBets = betsByTimestamp.get(candle.timestamp);
 
-        // === DIFERENCIAR VELAS SIMULADAS ===
-        const isSimulated = (candle as any).isSimulated === true;
-        if (isSimulated) {
-          // Borde azul brillante y opacidad 0.7
-          ctx.save();
-          ctx.globalAlpha = 0.9;
-          ctx.fillStyle = isBullish ? "#22c55e" : "#ef4444";
-          ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
-          ctx.strokeStyle = '#2196f3';
-          ctx.lineWidth = 1;
-          ctx.setLineDash([5, 2]);
-          ctx.strokeRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
-          ctx.setLineDash([]);
-          ctx.restore();
-
-
-        } else {
-          // Velas reales normales
-          ctx.save();
-          ctx.shadowColor = 'transparent'; // Sin glow para el cuerpo
-          ctx.shadowBlur = 0;
-          ctx.globalAlpha = 1;
-          ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
-          ctx.restore();
-        }
+        // Render both real and simulated candles identically (no blue overlay or border)
+        ctx.save();
+        ctx.shadowColor = 'transparent'; // Sin glow para el cuerpo
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(x - candleWidth / 2, candleY, candleWidth, candleHeight);
+        ctx.restore();
 
         // Si la vela tiene apuestas, dibujar un glow (resplandor)
         if (candleBets && candleBets.length > 0) {
