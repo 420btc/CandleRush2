@@ -280,6 +280,7 @@ export function generateAutoDrawCandles(
   let manipulationLimit = 0;
   let manipulationTriggered = { mild: false, medium: false, strong: false };
 
+  let lastPrice = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
   for (let i = 0; i < count; i++) {
     // Inicializa regimeBodyFactor al principio de cada iteración
     let regimeBodyFactor: number = 1;
@@ -290,8 +291,83 @@ export function generateAutoDrawCandles(
     const ema200 = calcEMA(200, closesSim);
     const ema365 = calcEMA(365, closesSim);
 
+
+    // === LÓGICA 2: Si el precio está muy por encima/debajo de la EMA 55, 200 o 365, forzar reversal ===
+    const lastEma55 = ema55[ema55.length-1];
+    const lastEma200 = ema200[ema200.length-1];
+    const lastEma365 = ema365[ema365.length-1];
+    // --- Usar estas variables para toda la lógica de la iteración ---
+    if (lastPrice > Math.max(lastEma55, lastEma200, lastEma365) * 1.025) {
+      // Muy por encima de las EMAs: forzar reversal bajista
+      trendDir = 'BEARISH';
+      phaseType = 'trend';
+      phaseCounter = 0;
+      phaseLimit = 10 + Math.floor(Math.random() * 10);
+    } else if (lastPrice < Math.min(lastEma55, lastEma200, lastEma365) * 0.975) {
+      // Muy por debajo de las EMAs: forzar reversal alcista
+      trendDir = 'BULLISH';
+      phaseType = 'trend';
+      phaseCounter = 0;
+      phaseLimit = 10 + Math.floor(Math.random() * 10);
+    }
+
+    // === PROBABILIDAD DE ROMPER NUEVOS MÍNIMOS EN TENDENCIA BAJISTA ===
+    // Si la tendencia es bajista y el precio está cerca del mínimo histórico reciente, aumenta la probabilidad de romperlo
+    if (trendDir === 'BEARISH') {
+      const allCandles = [...baseCandles, ...generated];
+      const minHistory = Math.min(...allCandles.slice(-200).map(c => c.low));
+      const distToMin = (lastPrice - minHistory) / minHistory;
+      // Si está a menos de 1% del mínimo, 70% de probabilidad de romper un nuevo mínimo
+      if (distToMin < 0.01 && Math.random() < 0.7) {
+        // Fuerza que la siguiente vela sea bajista y rompa el mínimo
+        trendDir = 'BEARISH';
+        phaseType = 'trend';
+        phaseCounter = 0;
+        phaseLimit = 5 + Math.floor(Math.random() * 5);
+        // Opcional: puedes ajustar aquí el cuerpo de la vela para que sea más grande
+      }
+    }
+
+    // === DETECCIÓN Y AUTOCORRECCIÓN DE FASES ABSURDAS ===
+    // 1. Detectar movimientos verticales extremos en pocas velas
+    const checkCandles = [...baseCandles, ...generated];
+    if (checkCandles.length > 12) {
+      const last10 = checkCandles.slice(-10);
+      const price10Ago = last10[0].close;
+      const pctMove10 = Math.abs((lastPrice - price10Ago) / price10Ago);
+      if (pctMove10 > 0.08) {
+        // Si subió o bajó más de 8% en 10 velas, forzar rango/corrección
+        trendDir = lastPrice > price10Ago ? 'BEARISH' : 'BULLISH';
+        phaseType = 'trend';
+        phaseCounter = 0;
+        phaseLimit = 7 + Math.floor(Math.random() * 6);
+      }
+    }
+
+    // 2. Detectar tendencias largas sin corrección
+    if (trendStreak > 30) {
+      // Si lleva más de 30 velas en la misma dirección, fuerza rango/corrección
+      trendDir = trendDir === 'BULLISH' ? 'BEARISH' : 'BULLISH';
+      phaseType = 'trend';
+      phaseCounter = 0;
+      phaseLimit = 10 + Math.floor(Math.random() * 10);
+    }
+
+    // 3. Detectar si el precio se mantiene fuera de las EMAs demasiado tiempo
+    // Las EMAs ya están declaradas arriba en la iteración
+    const aboveAllEMAs = lastPrice > lastEma55 && lastPrice > lastEma200 && lastPrice > lastEma365;
+    const belowAllEMAs = lastPrice < lastEma55 && lastPrice < lastEma200 && lastPrice < lastEma365;
+    if ((aboveAllEMAs || belowAllEMAs) && trendStreak > 18) {
+      // Si lleva más de 18 velas por fuera de todas las EMAs, fuerza pullback/rango
+      trendDir = aboveAllEMAs ? 'BEARISH' : 'BULLISH';
+      phaseType = 'trend';
+      phaseCounter = 0;
+      phaseLimit = 8 + Math.floor(Math.random() * 8);
+    }
+
+
+
     // --- DETECCIÓN DE RUPTURAS (BREAKOUTS) ---
-    const lastPrice = generated.length > 0 ? generated[generated.length-1].close : baseCandles[baseCandles.length-1].close;
     const distance = Math.abs(lastPrice - simStartPrice);
     let breakoutType: 'weak'|'mild'|'medium'|'strong'|'extreme'|null = null;
     // --- Activar manipulación prolongada según umbral ---
