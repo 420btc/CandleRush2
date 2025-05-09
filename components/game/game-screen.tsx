@@ -262,19 +262,37 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
   }
 
   return (
-    <span
-      className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
-      style={{
-        color: 'white',
-        minWidth: '230px',
-        textAlign: 'right',
-        display: 'inline-block',
-        fontSize: isMobile ? '2rem' : undefined,
-        whiteSpace: 'nowrap',
-        lineHeight: 1.12
-      }}
-    >
-      {rendered}
+    <span style={{ position: 'relative', display: 'inline-block', minWidth: '230px', textAlign: 'right', fontSize: isMobile ? '2rem' : undefined, whiteSpace: 'nowrap', lineHeight: 1.12 }}>
+      {/* Glow background */}
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '90%',
+          height: '75%',
+          borderRadius: '30%',
+          filter: 'blur(22px)',
+          opacity: color === 'white' ? 0.12 : 0.38,
+          background: color === upColor ? '#00FF85' : color === downColor ? '#FF2222' : '#888',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Price text */}
+      <span
+        className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
+        style={{
+          color: 'white',
+          position: 'relative',
+          zIndex: 1,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {rendered}
+      </span>
     </span>
   );
 }
