@@ -236,7 +236,7 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
       <span
         key={idx + '-' + p.char}
         ref={el => { flipRefs.current[idx] = el; }}
-        style={style}
+        style={{ ...style, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
       >
         {p.char}
       </span>
@@ -269,7 +269,9 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
         minWidth: '230px',
         textAlign: 'right',
         display: 'inline-block',
-        fontSize: isMobile ? '2rem' : undefined
+        fontSize: isMobile ? '2rem' : undefined,
+        whiteSpace: 'nowrap',
+        lineHeight: 1.12
       }}
     >
       {rendered}
@@ -1425,7 +1427,7 @@ useEffect(() => {
   className="hidden sm:inline text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1"
   style={{ color: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222' }}
 >
-  {gamePhase === 'BETTING' ? 'Apuestas Abiertas ✅' : '🛑 Apuestas Cerradas 🛑'}
+  {gamePhase === 'BETTING' ? 'Apuestas Abiertas ✅' : 'Apuestas Cerradas'}
 </span>
 <button
   className="hidden sm:inline mt-0 mb-1 self-end rounded-full p-[0.2rem] bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black"

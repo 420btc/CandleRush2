@@ -22,25 +22,36 @@ const DollarDiffCounter: React.FC<DollarDiffCounterProps> = ({ currentCandle, re
 
   return (
     <div
-      className="flex flex-col items-center justify-center select-none min-w-[90px] sm:min-w-[120px] px-1"
-      style={{ width: '100%' }}
+      className="flex flex-col items-center justify-center select-none px-1"
+      style={{ minWidth: 180, width: 180, maxWidth: 180, position: 'relative' }}
     >
-      <span className="text-[10px] sm:text-xs text-zinc-400 mb-0.5 sm:mb-1 uppercase tracking-wide text-center whitespace-nowrap">
-        Cambio actual
-      </span>
-      <span
-        className="font-mono text-3xl sm:text-5xl font-extrabold drop-shadow-xl"
-        style={{
-          color,
-          letterSpacing: '0.01em',
-          lineHeight: 1.1,
-          wordBreak: 'break-all',
-          width: '100%',
-          textAlign: 'center'
-        }}
-      >
-        {diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(2)}` : "-"}
-      </span>
+      <div style={{ position: 'relative', left: '-40px', width: '100%' }}>
+        <span className="text-[10px] sm:text-xs text-zinc-400 uppercase tracking-wide text-center whitespace-nowrap mb-0.5 block" style={{ position: 'relative', left: 0 }}>
+          Cambio actual
+        </span>
+        <span
+          className="font-extrabold"
+          style={{
+            color,
+            fontFamily: 'inherit',
+            fontVariantNumeric: 'tabular-nums',
+            fontSize: 'calc(3rem + 6px)', // double the previous size
+            letterSpacing: '0.01em',
+            lineHeight: 1.1,
+            whiteSpace: 'nowrap',
+            position: 'relative',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+          }}
+        >
+          <span style={{ display: 'inline-block', width: '1.1em', textAlign: 'center' }}>
+            {diff !== null ? (diff > 0 ? '+' : diff < 0 ? '-' : '😔') : '-'}
+          </span>
+          <span style={{ display: 'inline-block' }}>{diff !== null ? Math.abs(diff).toFixed(2) : ''}</span>
+        </span>
+      </div>
     </div>
   );
 };
