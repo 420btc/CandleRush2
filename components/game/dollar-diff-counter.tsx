@@ -42,8 +42,8 @@ const DollarDiffCounter: React.FC<DollarDiffCounterProps> = ({ currentCandle, re
               height: '75%',
               borderRadius: '30%',
               filter: 'blur(22px)',
-              opacity: color === 'white' ? 0.12 : 0.38,
-              background: color === '#00FF85' ? '#00FF85' : color === '#FF2222' ? '#FF2222' : '#888',
+              opacity: color === 'white' ? 0.33 : 0.38,
+              background: color === 'white' ? '#fff' : color === '#00FF85' ? '#00FF85' : color === '#FF2222' ? '#FF2222' : '#888',
               zIndex: 0,
               pointerEvents: 'none',
             }}
