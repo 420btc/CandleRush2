@@ -1141,6 +1141,24 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         // Obtener apuestas de la vela
         let candleBets = betsByTimestamp.get(candle.timestamp);
 
+        // === GLOW BLANCO NOTABLE Y RECTANGULAR PARA VELAS SIMULADAS ===
+        if (candle.isSimulated) {
+          ctx.save();
+          ctx.globalAlpha = 1;
+          ctx.shadowColor = '#fff';
+          ctx.shadowBlur = Math.max(32, candleWidth * 3.2); // Mucho más blur
+          ctx.fillStyle = 'rgba(255,255,255,0.55)';
+          // Rectángulo más ancho y alto que la vela
+          const glowPadX = 2;
+          const glowPadY = 2;
+          ctx.fillRect(
+            x - candleWidth / 2 - glowPadX / 2,
+            candleY - glowPadY / 2,
+            candleWidth + glowPadX,
+            candleHeight + glowPadY
+          );
+          ctx.restore();
+        }
         // Render both real and simulated candles identically (no blue overlay or border)
         ctx.save();
         ctx.shadowColor = 'transparent'; // Sin glow para el cuerpo
