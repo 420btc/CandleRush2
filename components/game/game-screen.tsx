@@ -1441,11 +1441,32 @@ useEffect(() => {
                         <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
 
                           {/* Solo en desktop: mantener arriba */}
-<span
-  className="hidden sm:inline text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1"
-  style={{ color: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222' }}
->
-  {gamePhase === 'BETTING' ? 'Apuestas Abiertas ✅' : 'Apuestas Cerradas'}
+<span style={{ position: 'relative', display: 'inline-block' }}>
+  {/* Glow background */}
+  <span
+    aria-hidden="true"
+    style={{
+      position: 'absolute',
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '110%',
+      height: '70%',
+      borderRadius: '30%',
+      filter: 'blur(22px)',
+      opacity: gamePhase === 'BETTING' ? 0.36 : 0.33,
+      background: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222',
+      zIndex: 0,
+      pointerEvents: 'none',
+    }}
+  />
+  {/* Text label */}
+  <span
+    className="hidden sm:inline text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1"
+    style={{ color: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222', position: 'relative', zIndex: 1 }}
+  >
+    {gamePhase === 'BETTING' ? 'Apuestas Abiertas ✅' : 'Apuestas Cerradas'}
+  </span>
 </span>
 <button
   className="hidden sm:inline mt-0 mb-1 self-end rounded-full p-[0.2rem] bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black"

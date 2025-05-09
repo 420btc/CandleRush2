@@ -43,7 +43,31 @@ export default function GameTimer() {
 
   return (
     <div className="w-full flex flex-col items-center justify-center py-2 select-none" data-component-name="GameTimer">
-      <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${labelColor}`}>{label}</span>
+      <span style={{ position: 'relative', display: 'inline-block' }}>
+        {/* Glow background */}
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '110%',
+            height: '70%',
+            borderRadius: '30%',
+            filter: 'blur(22px)',
+            opacity: label === 'Apuestas Abiertas' ? 0.36 : 0.33,
+            background: label === 'Apuestas Abiertas' ? '#00FF85' : '#FF2222',
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Text label */}
+        <span className={`text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1 ${labelColor}`}
+              style={{ position: 'relative', zIndex: 1 }}>
+          {label}
+        </span>
+      </span>
       <FlipDigits value={formatTime(timeLeft)} className="text-[4rem] leading-none font-black text-white drop-shadow-xl mb-2" />
     </div>
   );

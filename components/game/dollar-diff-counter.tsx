@@ -29,27 +29,49 @@ const DollarDiffCounter: React.FC<DollarDiffCounterProps> = ({ currentCandle, re
         <span className="text-[10px] sm:text-xs text-zinc-400 uppercase tracking-wide text-center whitespace-nowrap mb-0.5 block" style={{ position: 'relative', left: 0 }}>
           Cambio actual
         </span>
-        <span
-          className="font-extrabold"
-          style={{
-            color,
-            fontFamily: 'inherit',
-            fontVariantNumeric: 'tabular-nums',
-            fontSize: 'calc(3rem + 6px)', // double the previous size
-            letterSpacing: '0.01em',
-            lineHeight: 1.1,
-            whiteSpace: 'nowrap',
-            position: 'relative',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-          }}
-        >
-          <span style={{ display: 'inline-block', width: '1.1em', textAlign: 'center' }}>
-            {diff !== null ? (diff > 0 ? '+' : diff < 0 ? '-' : '😔') : '-'}
+        <span style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+          {/* Glow background */}
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              height: '75%',
+              borderRadius: '30%',
+              filter: 'blur(22px)',
+              opacity: color === 'white' ? 0.12 : 0.38,
+              background: color === '#00FF85' ? '#00FF85' : color === '#FF2222' ? '#FF2222' : '#888',
+              zIndex: 0,
+              pointerEvents: 'none',
+            }}
+          />
+          {/* Value text */}
+          <span
+            className="font-extrabold"
+            style={{
+              color,
+              fontFamily: 'inherit',
+              fontVariantNumeric: 'tabular-nums',
+              fontSize: 'calc(3rem + 6px)',
+              letterSpacing: '0.01em',
+              lineHeight: 1.1,
+              whiteSpace: 'nowrap',
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              zIndex: 1,
+            }}
+          >
+            <span style={{ display: 'inline-block', width: '1.1em', textAlign: 'center' }}>
+              {diff !== null ? (diff > 0 ? '+' : diff < 0 ? '-' : '😔') : '-'}
+            </span>
+            <span style={{ display: 'inline-block' }}>{diff !== null ? Math.abs(diff).toFixed(2) : ''}</span>
           </span>
-          <span style={{ display: 'inline-block' }}>{diff !== null ? Math.abs(diff).toFixed(2) : ''}</span>
         </span>
       </div>
     </div>
