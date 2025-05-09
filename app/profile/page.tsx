@@ -21,74 +21,14 @@ import BetHistory from "@/components/game/bet-history";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Login from "@/components/login";
-import { DisplayCardsDemo } from "@/components/ui/display-cards-demo";
+import DisplayCards from "@/components/ui/display-cards";
 
 import { useGame } from "@/context/game-context";
 import { useMemo } from "react";
 
 // Hook para obtener y computar métricas de apuestas del usuario logueado
 function useBetChartsData() {
-  let { bets } = useGame();
-
-  // --- MOCK DATA PARA DEMO DE USUARIO ACTIVO ---
-  bets = [
-    // Ganadas (bullish)
-    ...Array.from({length: 30}, (_, i) => ({
-      id: `won-bull-${i}`,
-      prediction: "BULLISH" as const,
-      amount: 100 + i * 10,
-      timeframe: ['1m','3m','5m','15m'][i%4],
-      status: "WON" as const,
-      entryPrice: 1000 + i * 2,
-      resolvedAt: Date.now() - (i+1)*60000,
-      timestamp: Date.now() - (i+1)*60000,
-      candleTimestamp: Date.now() - (i+1)*60000,
-      leverage: 1 + (i%5),
-      symbol: 'BTCUSDT',
-    })),
-    // Perdidas (bearish)
-    ...Array.from({length: 20}, (_, i) => ({
-      id: `lost-bear-${i}`,
-      prediction: "BEARISH" as const,
-      amount: 80 + i * 5,
-      timeframe: ['1m','3m','5m','15m'][i%4],
-      status: "LOST" as const,
-      entryPrice: 1200 - i * 3,
-      resolvedAt: Date.now() - (i+31)*60000,
-      timestamp: Date.now() - (i+31)*60000,
-      candleTimestamp: Date.now() - (i+31)*60000,
-      leverage: 1 + (i%3),
-      symbol: 'ETHUSDT',
-    })),
-    // Liquidadas (bullish y bearish)
-    ...Array.from({length: 10}, (_, i) => ({
-      id: `liq-${i}`,
-      prediction: i%2===0 ? "BULLISH" as const : "BEARISH" as const,
-      amount: 50 + i * 7,
-      timeframe: ['1m','3m','5m','15m'][i%4],
-      status: "LIQUIDATED" as const,
-      entryPrice: 900 + i * 4,
-      resolvedAt: Date.now() - (i+51)*60000,
-      timestamp: Date.now() - (i+51)*60000,
-      candleTimestamp: Date.now() - (i+51)*60000,
-      leverage: 2 + (i%4),
-      symbol: i%2===0?'BNBUSDT':'ADAUSDT',
-    })),
-    // Pendientes
-    ...Array.from({length: 5}, (_, i) => ({
-      id: `pending-${i}`,
-      prediction: i%2===0 ? "BULLISH" as const : "BEARISH" as const,
-      amount: 120 + i * 15,
-      timeframe: ['1m','3m','5m','15m'][i%4],
-      status: "PENDING" as const,
-      entryPrice: 1050 + i * 3,
-      resolvedAt: undefined,
-      timestamp: Date.now() - (i+61)*60000,
-      candleTimestamp: Date.now() - (i+61)*60000,
-      leverage: 1 + (i%3),
-      symbol: i%2===0?'SOLUSDT':'DOGEUSDT',
-    })),
-  ];
+  const { bets } = useGame();
 
   // Radar: estados de apuesta
   const radarData = useMemo(() => (
@@ -101,18 +41,17 @@ function useBetChartsData() {
   ), [bets]);
 
   // RadialBar: bullish vs bearish
-  const bullish = bets.filter(b => b.prediction === 'BULLISH').length;
-  const bearish = bets.filter(b => b.prediction === 'BEARISH').length;
-  const totalType = bullish + bearish || 1;
+  const bullish = bets.filter((b: any) => b.prediction === 'BULLISH').length;
+  const bearish = bets.filter((b: any) => b.prediction === 'BEARISH').length;
   const radialData = [
     { name: 'Bullish', value: bullish, fill: '#22c55e' },
     { name: 'Bearish', value: bearish, fill: '#ef4444' },
   ];
 
   // Pie: ganadas vs perdidas vs liquidadas
-  const won = bets.filter(b => b.status === 'WON').length;
-  const lost = bets.filter(b => b.status === 'LOST').length;
-  const liquidated = bets.filter(b => b.status === 'LIQUIDATED').length;
+  const won = bets.filter((b: any) => b.status === 'WON').length;
+  const lost = bets.filter((b: any) => b.status === 'LOST').length;
+  const liquidated = bets.filter((b: any) => b.status === 'LIQUIDATED').length;
   const pieData = [
     { name: 'Ganadas', value: won, fill: '#22c55e' },
     { name: 'Perdidas', value: lost, fill: '#ef4444' },
@@ -540,19 +479,39 @@ export default function ProfilePage() {
             </CardFooter>
           </Card>
         </div>
-        {/* DisplayCardsDemo debajo de los charts principales */}
-        <div className="mb-8">
-          <DisplayCardsDemo />
+        {/* Tarjetas destacadas debajo de los charts principales */}
+        <div className="flex justify-center w-full mt-20 mb-20">
+          <div className="w-full max-w-4xl">
+            <DisplayCards
+              cards={[
+                {
+                  className: "[grid-area:stack] hover:-translate-y-10 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-background/50 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0",
+                },
+                {
+                  title: "Noticias",
+                  description: "Las noticias hoy de bitcoin",
+                  className: "[grid-area:stack] translate-x-16 translate-y-10 hover:-translate-y-1 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-background/50 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0",
+                },
+                {
+                  title: "Hashrate",
+                  description: "El hashrate hoy ha subido un 1%",
+                  className: "[grid-area:stack] translate-x-32 translate-y-20 hover:translate-y-10",
+                },
+              ]}
+            />
+          </div>
         </div>
         {/* Botón volver y login abajo del todo */}
-        <div className="flex flex-row gap-4 items-center mt-10 justify-center">
-          <button
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded shadow-lg transition-colors"
-            onClick={() => router.push('/menu')}
-          >
-            ← Volver al Menú
-          </button>
-          <LoginLogoutButton />
+        <div className="flex justify-center mt-16">
+          <div className="flex flex-row gap-4 items-center">
+            <button
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-6 rounded-full shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 relative top-2"
+              onClick={() => router.push('/menu')}
+            >
+              ← Volver al Menú
+            </button>
+            <LoginLogoutButton />
+          </div>
         </div>
       </div>
       {/* Footer visible y fijo al final */}
