@@ -310,12 +310,12 @@ function LoginLogoutButton() {
     <>
       {user ? (
         <button
-          className="w-full max-w-xs bg-yellow-400 hover:bg-yellow-500 text-black font-extrabold rounded-lg py-4 text-lg shadow-lg border-2 border-yellow-600 mt-4"
+          className="w-full max-w-xs bg-yellow-400 hover:bg-yellow-500 text-black font-extrabold rounded-lg py-4 px-8 text-lg shadow-lg border-2 border-yellow-600 mt-4"
           onClick={handleLogout}
         >Cerrar sesión</button>
       ) : (
         <button
-          className="w-full max-w-xs bg-yellow-400 hover:bg-yellow-500 text-black font-extrabold rounded-lg py-4 text-lg shadow-lg border-2 border-yellow-600 mt-4"
+          className="w-full max-w-xs bg-yellow-400 hover:bg-yellow-500 text-black font-extrabold rounded-lg py-4 px-8 text-lg shadow-lg border-2 border-yellow-600 mt-4"
           onClick={() => setShowLogin(true)}
         >Iniciar sesión / Registrarse</button>
       )}
@@ -345,6 +345,17 @@ export default function ProfilePage() {
 
   return (
     <main className="w-full bg-black min-h-screen">
+      {/* Botón flecha volver al menú arriba izquierda */}
+      <button
+        className="fixed top-6 left-6 z-50 bg-yellow-400 hover:bg-yellow-500 text-black rounded-full p-3 shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        title="Volver al menú"
+        onClick={() => router.push('/menu')}
+      >
+        {/* Flecha izquierda de lucide-react o SVG */}
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+      </button>
       {/* Perfil y logo arriba */}
       <div className="container mx-auto w-full flex flex-col pt-8 items-center">
         <div className="flex flex-col items-center gap-4 mb-8">
@@ -719,16 +730,10 @@ export default function ProfilePage() {
           </div>
         </div>
         {/* Botón volver y login abajo del todo */}
-        <div className="flex justify-center mt-16">
-          <div className="flex flex-row gap-4 items-center">
-            <button
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-6 rounded-full shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 relative top-2"
-              onClick={() => router.push('/menu')}
-            >
-              ← Volver al Menú
-            </button>
-            <LoginLogoutButton />
-          </div>
+        <div className="flex justify-center mt-20">
+          <div className="flex flex-row gap-9 items-center">
+  <LoginLogoutButton />
+</div>
         </div>
       </div>
       {/* Footer visible y fijo al final */}
