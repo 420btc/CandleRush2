@@ -684,7 +684,6 @@ if (message) {
         description: '',
         variant: 'default',
         duration: 6000,
-        isClosable: true,
       });
       try {
         localStorage.setItem(key, String(count + 1));

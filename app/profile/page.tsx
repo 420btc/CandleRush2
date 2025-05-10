@@ -651,13 +651,27 @@ export default function ProfilePage() {
             <CardContent className="flex-1 flex items-center justify-center">
               {/* LineChart de evolución de apuestas bullish/bearish */}
               <div className="w-full max-w-[260px] h-[225px] bg-black rounded-lg flex items-center justify-center p-0">
-                <LineChart width={250} height={225} data={[
-                  { ronda: 1, bullish: 2, bearish: 2 },
-                  { ronda: 2, bullish: 3, bearish: 5 },
-                  { ronda: 3, bullish: 6, bearish: 1 },
-                  { ronda: 4, bullish: 2, bearish: 4 },
-                  { ronda: 5, bullish: 8, bearish: 1 },
-                ]}>
+                <LineChart
+                  width={250}
+                  height={225}
+                  data={(() => {
+                    // Evolución acumulada de apuestas bullish y bearish
+                    const { bets } = useGame();
+                    let bullish = 0;
+                    let bearish = 0;
+                    return bets
+                      .sort((a, b) => a.timestamp - b.timestamp)
+                      .map((bet, i) => {
+                        if (bet.prediction === "BULLISH") bullish++;
+                        if (bet.prediction === "BEARISH") bearish++;
+                        return {
+                          ronda: i + 1,
+                          bullish,
+                          bearish,
+                        };
+                      });
+                  })()}
+                >
                   {/* Línea Bullish: verde */}
                   <Line type="monotone" dataKey="bullish" stroke="#22c55e" strokeWidth={2} dot={false} />
                   {/* Línea Bearish: roja */}
@@ -682,14 +696,49 @@ export default function ProfilePage() {
                 }}
                 className="mx-auto w-full max-w-[230px] aspect-square rounded-xl bg-black flex items-center justify-center -mt-5"
               >
-                <BarChart width={220} height={220} data={[
-                  { date: "2024-07-15", longs: 450, shorts: 300 },
-                  { date: "2024-07-16", longs: 380, shorts: 420 },
-                  { date: "2024-07-17", longs: 520, shorts: 120 },
-                  { date: "2024-07-18", longs: 140, shorts: 550 },
-                  { date: "2024-07-19", longs: 600, shorts: 350 },
-                  { date: "2024-07-20", longs: 480, shorts: 400 },
-                ]}>
+                <BarChart
+                  width={220}
+                  height={220}
+                  data={(() => {
+                    // Agrupa apuestas por fecha (día) y suma volumen de longs y shorts
+                    const { bets } = useGame();
+                    // Leer y guardar datos en localStorage
+                    const LS_KEY = 'bet_volume_chart_days';
+                    let grouped = bets.reduce((acc: Record<string, { longs: number; shorts: number }>, bet) => {
+                      if (!bet.timestamp) return acc;
+                      const date = new Date(bet.timestamp).toISOString().slice(0, 10);
+                      if (!acc[date]) acc[date] = { longs: 0, shorts: 0 };
+                      if (bet.prediction === "BULLISH") acc[date].longs += bet.amount;
+                      if (bet.prediction === "BEARISH") acc[date].shorts += bet.amount;
+                      return acc;
+                    }, {});
+                    // Generar los próximos 4 días a partir de hoy
+                    const today = new Date();
+                    const days = [];
+                    for (let i = 0; i < 5; i++) {
+                      const d = new Date(today.getTime());
+                      d.setDate(today.getDate() + i);
+                      const dateStr = d.toISOString().slice(0, 10);
+                      days.push(dateStr);
+                    }
+                    // Completa con ceros si no hay apuestas para esos días
+                    const chartData = days.map(date => ({
+                      date,
+                      longs: grouped[date]?.longs || 0,
+                      shorts: grouped[date]?.shorts || 0,
+                    }));
+                    // Persistir en localStorage
+                    if (typeof window !== 'undefined') {
+                      window.localStorage.setItem(LS_KEY, JSON.stringify(chartData));
+                    }
+                    // Leer de localStorage si no hay apuestas
+                    if (bets.length === 0 && typeof window !== 'undefined') {
+                      const stored = window.localStorage.getItem(LS_KEY);
+                      if (stored) return JSON.parse(stored);
+                    }
+                    return chartData;
+                  })()}
+                >
                   <XAxis
                     dataKey="date"
                     tickLine={false}
