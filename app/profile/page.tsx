@@ -1,7 +1,8 @@
 "use client";
 import Image from "next/image";
-import { TrendingUp } from "lucide-react";
-import { PolarAngleAxis, PolarGrid, Radar, RadarChart, RadialBarChart, RadialBar, Tooltip, Legend } from "recharts";
+import { TrendingUp } from "lucide-react"
+import { PolarRadiusAxis } from "recharts";
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart, RadialBarChart, RadialBar, Tooltip, Legend, LineChart, Line, XAxis, YAxis, BarChart, Bar } from "recharts";
 import {
   Card,
   CardContent,
@@ -28,7 +29,22 @@ import { useMemo } from "react";
 
 // Hook para obtener y computar métricas de apuestas del usuario logueado
 function useBetChartsData() {
-  const { bets } = useGame();
+  // DATOS MOCK: 3 ganadas, 5 liquidadas, 2 perdidas, 1 pendiente
+  // 33 toros (BULLISH), 20 osos (BEARISH), más los status para los otros gráficos
+  const bets = [
+    // 33 toros
+    ...Array(33).fill({ prediction: 'BULLISH', status: 'WON' }),
+    // 20 osos
+    ...Array(20).fill({ prediction: 'BEARISH', status: 'LOST' }),
+    // 3 ganadas (extra para otros gráficos)
+    { status: 'WON' }, { status: 'WON' }, { status: 'WON' },
+    // 5 liquidadas
+    { status: 'LIQUIDATED' }, { status: 'LIQUIDATED' }, { status: 'LIQUIDATED' }, { status: 'LIQUIDATED' }, { status: 'LIQUIDATED' },
+    // 2 perdidas
+    { status: 'LOST' }, { status: 'LOST' },
+    // 1 pendiente
+    { status: 'PENDING' },
+  ];
 
   // Radar: estados de apuesta
   const radarData = useMemo(() => (
@@ -321,16 +337,21 @@ function LoginLogoutButton() {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCurrentUser(typeof window !== "undefined" ? localStorage.getItem("currentUser") : null);
+  }, []);
+
   return (
     <main className="w-full bg-black min-h-screen">
-
       {/* Perfil y logo arriba */}
       <div className="container mx-auto w-full flex flex-col pt-8 items-center">
         <div className="flex flex-col items-center gap-4 mb-8">
           <div className="relative w-56 h-56 rounded-full border-4 border-yellow-400 overflow-hidden shadow-2xl bg-black/70">
             <Image src="/perfil1.png" alt="Foto de perfil" fill className="object-cover" />
           </div>
-          <span className="text-3xl font-black text-yellow-400 mt-2 drop-shadow">{typeof window !== "undefined" && localStorage.getItem("currentUser") ? localStorage.getItem("currentUser") : "Usuario Pro"}</span>
+          <span className="text-3xl font-black text-yellow-400 mt-2 drop-shadow">{currentUser || "Usuario Pro"}</span>
         </div>
         {/* Gráficos de rendimiento/apuestas en 3 columnas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-4">
@@ -479,6 +500,202 @@ export default function ProfilePage() {
             </CardFooter>
           </Card>
         </div>
+        {/* Tarjetas adicionales para nuevas métricas personalizadas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-8">
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
+            <CardHeader className="items-center pb-2">
+              <CardTitle>Whales Toro vs Oso</CardTitle>
+              <CardDescription>Actividad de grandes jugadores detectada</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center pb-0">
+              {/* RadialBarChart de whales toros/osos */}
+              {/* Puedes reemplazar los datos por los reales cuando los tengas */}
+              <ChartContainer
+                config={{
+                  toro: { label: "Toro", color: "#22c55e" },
+                  oso: { label: "Oso", color: "#ef4444" },
+                }}
+                className="mx-auto aspect-square w-full max-w-[250px] mt-10"
+              >
+                <RadialBarChart
+                  data={[{ whalesToro: 1260, whalesOso: 570 }]}
+                  endAngle={180}
+                  innerRadius={80}
+                  outerRadius={130}
+                >
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                    <Label
+                      content={({ viewBox }) => {
+                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                          const totalWhales = 1260 + 570;
+                          return (
+                            <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                              <tspan
+                                x={viewBox.cx}
+                                y={(viewBox.cy || 0) - 16}
+                                className="fill-foreground text-2xl font-bold"
+                              >
+                                {totalWhales.toLocaleString()}
+                              </tspan>
+                              <tspan
+                                x={viewBox.cx}
+                                y={(viewBox.cy || 0) + 4}
+                                className="fill-muted-foreground"
+                              >
+                                Whales totales
+                              </tspan>
+                            </text>
+                          );
+                        }
+                      }}
+                    />
+                  </PolarRadiusAxis>
+                  <RadialBar
+                    dataKey="whalesToro"
+                    stackId="a"
+                    cornerRadius={5}
+                    fill="#22c55e"
+                    className="stroke-transparent stroke-2"
+                  />
+                  <RadialBar
+                    dataKey="whalesOso"
+                    fill="#ef4444"
+                    stackId="a"
+                    cornerRadius={5}
+                    className="stroke-transparent stroke-2"
+                  />
+                </RadialBarChart>
+              </ChartContainer>
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="flex items-center gap-2 font-medium leading-none">
+                Tendencia mensual: +5.2% <TrendingUp className="h-4 w-4" />
+              </div>
+              <div className="leading-none text-muted-foreground">
+                Whales detectados por tipo en las últimas 6 velas
+              </div>
+            </CardFooter>
+          </Card>
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
+            <CardHeader className="items-center pb-2">
+              <CardTitle>Evolución de apuestas</CardTitle>
+              <CardDescription>Bullish vs Bearish por ronda</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center">
+              {/* LineChart de evolución de apuestas bullish/bearish */}
+              <div className="w-full max-w-[220px] h-[200px] bg-black rounded-lg flex items-center justify-center p-2">
+                <LineChart width={200} height={180} data={[
+                  { ronda: 1, bullish: 4, bearish: 2 },
+                  { ronda: 2, bullish: 3, bearish: 5 },
+                  { ronda: 3, bullish: 6, bearish: 1 },
+                  { ronda: 4, bullish: 2, bearish: 4 },
+                  { ronda: 5, bullish: 5, bearish: 3 },
+                ]}>
+                  {/* Línea Bullish: verde */}
+                  <Line type="monotone" dataKey="bullish" stroke="#22c55e" strokeWidth={2} dot={false} />
+                  {/* Línea Bearish: roja */}
+                  <Line type="monotone" dataKey="bearish" stroke="#ef4444" strokeWidth={2} dot={false} />
+                  <XAxis dataKey="ronda" tick={{ fill: '#fff', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#fff', fontSize: 10 }} axisLine={false} tickLine={false} width={20} />
+                  <Tooltip contentStyle={{ background: '#222', border: 'none', color: '#fff' }} />
+                </LineChart>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
+            <CardHeader className="items-center pb-2">
+              <CardTitle>Volumen Long vs Short</CardTitle>
+              <CardDescription>Comparativa diaria de posiciones</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center pb-0">
+              <ChartContainer
+                config={{
+                  longs: { label: "Longs", color: "#22c55e" },
+                  shorts: { label: "Shorts", color: "#ef4444" },
+                }}
+                className="mx-auto w-full max-w-[250px] aspect-square rounded-xl bg-black flex items-center justify-center"
+              >
+                <BarChart width={210} height={210} data={[
+                  { date: "2024-07-15", longs: 450, shorts: 300 },
+                  { date: "2024-07-16", longs: 380, shorts: 420 },
+                  { date: "2024-07-17", longs: 520, shorts: 120 },
+                  { date: "2024-07-18", longs: 140, shorts: 550 },
+                  { date: "2024-07-19", longs: 600, shorts: 350 },
+                  { date: "2024-07-20", longs: 480, shorts: 400 },
+                ]}>
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    tickFormatter={(value) => {
+                      return new Date(value).toLocaleDateString("es-ES", {
+                        weekday: "short",
+                        day: "2-digit",
+                        month: "short"
+                      })
+                    }}
+                    tick={{ fill: '#fff', fontSize: 10 }}
+                  />
+                  <Bar
+                    dataKey="longs"
+                    stackId="a"
+                    fill="#22c55e"
+                    radius={[0, 0, 4, 4]}
+                  />
+                  <Bar
+                    dataKey="shorts"
+                    stackId="a"
+                    fill="#ef4444"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        hideLabel
+                        className="w-[180px]"
+                        formatter={(value, name, item, index) => (
+                          <>
+                            <div
+                              className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-[--color-bg]"
+                              style={{
+                                "--color-bg": name === "longs" ? "#22c55e" : "#ef4444"
+                              } as React.CSSProperties}
+                            />
+                            {name === "longs" ? "Longs" : "Shorts"}
+                            <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
+                              {value}
+                              <span className="font-normal text-muted-foreground">
+                                contratos
+                              </span>
+                            </div>
+                            {/* Add this after the last item */}
+                            {index === 1 && (
+                              <div className="mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium text-foreground">
+                                Total
+                                <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
+                                  {item.payload.longs + item.payload.shorts}
+                                  <span className="font-normal text-muted-foreground">
+                                    contratos
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      />
+                    }
+                    cursor={false}
+                  />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
         {/* Tarjetas destacadas debajo de los charts principales */}
         <div className="flex justify-center w-full mt-20 mb-20">
           <div className="w-full max-w-4xl">
@@ -489,12 +706,12 @@ export default function ProfilePage() {
                 },
                 {
                   title: "Noticias",
-                  description: "Las noticias hoy de bitcoin",
+                  description: "Coinbase compra Deribit por 2.900 millones",
                   className: "[grid-area:stack] translate-x-16 translate-y-10 hover:-translate-y-1 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-background/50 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0",
                 },
                 {
-                  title: "Hashrate",
-                  description: "El hashrate hoy ha subido un 1%",
+                  title: "Halving Countdown",
+                  description: "Faltan 1069 días para el halving de BTC",
                   className: "[grid-area:stack] translate-x-32 translate-y-20 hover:translate-y-10",
                 },
               ]}

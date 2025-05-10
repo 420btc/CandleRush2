@@ -16,8 +16,8 @@ interface DisplayCardProps {
 function DisplayCard({
   className,
   icon = <Sparkles className="size-4 text-blue-300" />,
-  title = "Apuestas",
-  description = "Tus apuestas este mes",
+  title = "WhaleAlert",
+  description = "2 Ballenas detectadas en Short BTCUSDT",
   date = "Just now",
   iconClassName = "text-blue-500",
   titleClassName = "text-blue-500",
