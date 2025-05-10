@@ -329,6 +329,7 @@ const flipAnimation = `
 `;
 
 import { useSession, signIn, signOut } from "next-auth/react";
+import { ImGoogle2 } from "react-icons/im";
 
 export default function GameScreen() {
   // --- Lógica de usuario Google/email/local robusta ---
@@ -1916,7 +1917,10 @@ useEffect(() => {
       setTimeout(() => window.location.reload(), 250);
     }}
   >
-    Cerrar sesión Google
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+  Cerrar sesión Google
+  <ImGoogle2 style={{ color: '#111' }} size={16} />
+</span>
   </button>
 ) : (
   displayName === "Invitado" ? (
@@ -1927,7 +1931,10 @@ useEffect(() => {
         signIn("google");
       }}
     >
-      Login con Google
+      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+  Login con Google
+  <ImGoogle2 style={{ color: '#111' }} size={16} />
+</span>
     </button>
   ) : (
     <button
