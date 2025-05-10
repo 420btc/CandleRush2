@@ -358,13 +358,13 @@ export default function ProfilePage() {
 
           {/* Tarjeta 1: Resumen de apuestas (Radar) */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl">
-            <CardHeader className="items-center pb-4">
+            <CardHeader className="items-center pb-1">
               <CardTitle>Resumen de tus apuestas</CardTitle>
               <CardDescription>
                 Distribución por estado: ganadas, perdidas, liquidadas y pendientes.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pb-0">
+            <CardContent className="pb-2">
               <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
                 {/* Obtener datos de apuestas */}
                 {(() => {
@@ -404,7 +404,7 @@ export default function ProfilePage() {
               <CardTitle>Porcentaje de victorias y derrotas</CardTitle>
               <CardDescription>Winrate vs Lossrate en tus apuestas.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 pb-0">
+            <CardContent className="flex-1 pb-2">
               <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
                 {(() => {
                   const { won, lost, total } = useBetChartsData();
@@ -426,7 +426,7 @@ export default function ProfilePage() {
               </div>
             </CardContent>
             <CardFooter className="flex-col gap-2 text-sm">
-              <div className="flex items-center gap-2 font-medium leading-none">
+              <div className="flex items-center gap-0 font-medium leading-none">
                 Winrate: {useBetChartsData().total ? Math.round((useBetChartsData().won / useBetChartsData().total) * 100) : 0}%
               </div>
             </CardFooter>
@@ -435,7 +435,7 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl">
             <CardHeader className="items-center pb-0">
               <CardTitle>Tipo de apuesta: Toro vs Oso</CardTitle>
-              <CardDescription>Proporción de apuestas bullish (toro) y bearish (oso).</CardDescription>
+              <CardDescription>Proporción de apuestas bullish o bearish.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
               <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
@@ -515,7 +515,7 @@ export default function ProfilePage() {
                   toro: { label: "Toro", color: "#22c55e" },
                   oso: { label: "Oso", color: "#ef4444" },
                 }}
-                className="mx-auto aspect-square w-full max-w-[250px] mt-10"
+                className="mx-auto aspect-square w-full max-w-[210px] mt-10"
               >
                 <RadialBarChart
                   data={[{ whalesToro: 1260, whalesOso: 570 }]}
@@ -576,7 +576,7 @@ export default function ProfilePage() {
                 Tendencia mensual: +5.2% <TrendingUp className="h-4 w-4" />
               </div>
               <div className="leading-none text-muted-foreground">
-                Whales detectados por tipo en las últimas 6 velas
+                
               </div>
             </CardFooter>
           </Card>
@@ -587,13 +587,13 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center">
               {/* LineChart de evolución de apuestas bullish/bearish */}
-              <div className="w-full max-w-[220px] h-[200px] bg-black rounded-lg flex items-center justify-center p-2">
-                <LineChart width={200} height={180} data={[
-                  { ronda: 1, bullish: 4, bearish: 2 },
+              <div className="w-full max-w-[260px] h-[225px] bg-black rounded-lg flex items-center justify-center p-0">
+                <LineChart width={250} height={225} data={[
+                  { ronda: 1, bullish: 2, bearish: 2 },
                   { ronda: 2, bullish: 3, bearish: 5 },
                   { ronda: 3, bullish: 6, bearish: 1 },
                   { ronda: 4, bullish: 2, bearish: 4 },
-                  { ronda: 5, bullish: 5, bearish: 3 },
+                  { ronda: 5, bullish: 8, bearish: 1 },
                 ]}>
                   {/* Línea Bullish: verde */}
                   <Line type="monotone" dataKey="bullish" stroke="#22c55e" strokeWidth={2} dot={false} />
@@ -617,9 +617,9 @@ export default function ProfilePage() {
                   longs: { label: "Longs", color: "#22c55e" },
                   shorts: { label: "Shorts", color: "#ef4444" },
                 }}
-                className="mx-auto w-full max-w-[250px] aspect-square rounded-xl bg-black flex items-center justify-center"
+                className="mx-auto w-full max-w-[230px] aspect-square rounded-xl bg-black flex items-center justify-center -mt-5"
               >
-                <BarChart width={210} height={210} data={[
+                <BarChart width={220} height={220} data={[
                   { date: "2024-07-15", longs: 450, shorts: 300 },
                   { date: "2024-07-16", longs: 380, shorts: 420 },
                   { date: "2024-07-17", longs: 520, shorts: 120 },
@@ -657,11 +657,11 @@ export default function ProfilePage() {
                     content={
                       <ChartTooltipContent
                         hideLabel
-                        className="w-[180px]"
+                        className="w-[190px]"
                         formatter={(value, name, item, index) => (
                           <>
                             <div
-                              className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-[--color-bg]"
+                              className="h-2.5 w-2.5 shrink-0 rounded-[1px] bg-[--color-bg]"
                               style={{
                                 "--color-bg": name === "longs" ? "#22c55e" : "#ef4444"
                               } as React.CSSProperties}
