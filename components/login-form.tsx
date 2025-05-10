@@ -12,12 +12,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
 
 export function LoginForm({
   className,
   onClose,
   ...props
 }: React.ComponentPropsWithoutRef<"div"> & { onClose?: () => void }) {
+  const { data: session } = useSession();
   const [mode, setMode] = useState<'login'|'signup'>('login');
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -126,18 +128,35 @@ export function LoginForm({
                 {mode === 'login' ? 'Login' : 'Crear cuenta'}
               </Button>
               {mode === 'login' && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  type="button"
-                  onClick={() => {
-                    // @ts-ignore
-                    import('next-auth/react').then(({ signIn }) => signIn('google'));
-                  }}
-                >
-                  Login with Google
-                </Button>
-              )}
+  <>
+    {session?.user ? (
+      <Button
+        variant="outline"
+        className="w-full"
+        type="button"
+        onClick={() => {
+          signOut();
+          localStorage.removeItem('googleLoginReloaded');
+          setTimeout(() => window.location.reload(), 250);
+        }}
+      >
+        Logout Google
+      </Button>
+    ) : (
+      <Button
+        variant="outline"
+        className="w-full"
+        type="button"
+        onClick={() => {
+          // @ts-ignore
+          import('next-auth/react').then(({ signIn }) => signIn('google'));
+        }}
+      >
+        Login with Google
+      </Button>
+    )}
+  </>
+)}
             </div>
             <div className="mt-4 text-center text-sm">
               {mode === 'login' ? (

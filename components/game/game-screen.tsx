@@ -335,24 +335,40 @@ export default function GameScreen() {
   const { data: session } = useSession();
   const [localUser, setLocalUser] = useState<string | null>(null);
 
+  // --- Recarga tras login Google si es necesario ---
+  React.useEffect(() => {
+    if (session?.user && typeof window !== 'undefined') {
+      const flag = localStorage.getItem('googleLoginReloaded');
+      if (flag === 'pending') {
+        localStorage.setItem('googleLoginReloaded', 'done');
+        setTimeout(() => window.location.reload(), 600);
+      }
+    }
+  }, [session?.user]);
+
   // Sincronizar Google/email con sistema local y evitar deslogueo automático
   useEffect(() => {
     if (session?.user?.email) {
       const email = session.user.email;
       type UsersMap = { [email: string]: { password: string; google?: boolean } };
-let users: UsersMap = {};
-try {
-  users = JSON.parse(localStorage.getItem("users") || "{}") as UsersMap;
-} catch {}
-if (!users[email]) {
-  users[email] = { password: "", google: true };
-  localStorage.setItem("users", JSON.stringify(users));
-}
-      localStorage.setItem("currentUser", email);
+      let users: UsersMap = {};
+      try {
+        users = JSON.parse(localStorage.getItem("users") || "{}") as UsersMap;
+      } catch {}
+      if (!users[email]) {
+        users[email] = { password: '', google: true };
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+      localStorage.setItem('currentUser', email);
       setLocalUser(email);
+      // Recargar la página tras login Google para sincronizar UI/localStorage SOLO una vez (usando localStorage como bandera persistente)
+      if (!localStorage.getItem('googleLoginReloaded')) {
+        localStorage.setItem('googleLoginReloaded', '1');
+        setTimeout(() => window.location.reload(), 250);
+      }
     } else {
-      // Si no hay sesión Google, usar usuario local
-      const user = localStorage.getItem("currentUser");
+      // Si no hay sesión Google, simplemente sincroniza localUser, pero NO recargues la página
+      const user = localStorage.getItem('currentUser');
       setLocalUser(user);
     }
   }, [session]);
@@ -1351,16 +1367,7 @@ useEffect(() => {
   </>
 ) : (
   <>
-    <button
-      className="text-sm font-bold text-[#FFD600] hover:underline hover:text-yellow-300 transition px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
-      style={{ background: 'rgba(255, 214, 0, 0.08)' }}
-      title="Iniciar sesión"
-      data-component-name="GameScreen"
-      onClick={() => setShowUserModal(true)}
-    >
-      Invitado
-    </button>
-    <span className="font-bold text-[#FFD600]">$0.00</span>
+
   </>
 )}
 {/* MODAL LOGIN/LOGOUT */}
@@ -1385,12 +1392,19 @@ useEffect(() => {
             onClick={() => {
               setCurrentUser(null);
               localStorage.removeItem('currentUser');
+              localStorage.removeItem('googleLoginReloaded'); // Limpia la bandera al hacer logout
               setShowUserModal(false);
+              window.location.reload();
             }}
           >Cerrar sesión</button>
         </div>
       ) : (
-        <Login />
+        <Login onLoginSuccess={() => {
+          const reloadAfterLogin = true;
+          if (reloadAfterLogin) {
+            window.location.reload();
+          }
+        }} />
       )}
     </div>
   </div>
@@ -1891,25 +1905,40 @@ useEffect(() => {
         <div className="fixed top-[27px] right-2 z-50 flex items-center gap-2 bg-black/80 px-3 py-1 rounded-xl border border-yellow-400 shadow-lg">
           <span className="text-white font-semibold" style={{ letterSpacing: 0.5 }}>Usuario:</span>
           <span className="text-yellow-300 font-bold" style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
-          {displayName === "Invitado" ? (
-            <button
-              className="ml-2 px-2 py-0 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-[10px] h-[16px] min-h-0"
-              onClick={() => signIn("google")}
-            >
-              Login con Google
-            </button>
-          ) : (
-            <button
-              className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
-              onClick={() => {
-                signOut({ redirect: false });
-                localStorage.removeItem("currentUser");
-                setLocalUser(null);
-              }}
-            >
-              Cerrar sesión
-            </button>
-          )}
+          {session?.user ? (
+  <button
+    className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
+    onClick={() => {
+      signOut();
+      localStorage.removeItem('googleLoginReloaded');
+      setTimeout(() => window.location.reload(), 250);
+    }}
+  >
+    Cerrar sesión Google
+  </button>
+) : (
+  displayName === "Invitado" ? (
+    <button
+      className="ml-2 px-2 py-0 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-[10px] h-[16px] min-h-0"
+      onClick={() => {
+        localStorage.setItem('googleLoginReloaded', 'pending');
+        signIn("google");
+      }}
+    >
+      Login con Google
+    </button>
+  ) : (
+    <button
+      className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
+      onClick={() => {
+        localStorage.removeItem("currentUser");
+        setLocalUser(null);
+      }}
+    >
+      Cerrar sesión
+    </button>
+  )
+) }
         </div>
       </div>
     </>
