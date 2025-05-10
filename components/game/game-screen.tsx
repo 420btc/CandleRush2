@@ -1330,24 +1330,48 @@ useEffect(() => {
     </div>
   </div>
   {/* Nav a la derecha */}
-  <div className="flex items-center gap-2 ml-auto">
+  <div className="flex items-center gap-2 ml-auto" style={{ marginTop: '-2px' }}>
     <button
-      className="text-white font-bold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-4 py-2 md:px-2 md:py-1"
+      className="font-semibold px-1.5 py-0.5 rounded-md transition border border-blue-400 bg-blue-900/70 text-blue-200 shadow-blue-400 shadow-sm hover:bg-blue-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+      style={{
+        textShadow: '0 0 4px #60A5FA',
+        boxShadow: '0 0 6px #60A5FA44, 0 0 2px #60A5FA22',
+        borderColor: '#60A5FA',
+        borderWidth: '1px',
+        padding: '2px 10px',
+        fontSize: '0.98em',
+      }}
       onClick={() => window.location.href = '/menu'}
     >
       Menú
     </button>
     <button
-      className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
-      onClick={() => window.location.href = '/how-to-play'}
-    >
-      Cómo jugar
-    </button>
-    <button
-      className="text-white font-semibold hover:text-[#FFD600] transition border-[#FFD600] rounded-lg px-2 py-1"
+      className="font-semibold px-1.5 py-0.5 rounded-md transition border border-[#FFD600] bg-yellow-400 text-black shadow-yellow-400 shadow-sm hover:bg-yellow-300 hover:text-black focus:outline-none focus:ring-2 focus:ring-yellow-300 text-sm"
+      style={{
+        textShadow: '0 0 8px #FFD600, 0 0 2px #FFD600',
+        boxShadow: '0 0 6px #FFD600, 0 0 1px #FFD600',
+        borderColor: '#FFD600',
+        borderWidth: '0.5px',
+        padding: '2px 8px',
+        fontSize: '0.95em',
+      }}
       onClick={() => window.location.href = '/profile'}
     >
       Perfil
+    </button>
+    <button
+      className="font-semibold px-1.5 py-0.5 rounded-md transition border border-green-400 bg-green-900/70 text-green-200 shadow-green-400 shadow-sm hover:bg-green-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
+      style={{
+        textShadow: '0 0 4px #4ADE80',
+        boxShadow: '0 0 6px #4ADE8044, 0 0 2px #4ADE8022',
+        borderColor: '#4ADE80',
+        borderWidth: '1px',
+        padding: '2px 10px',
+        fontSize: '0.98em',
+      }}
+      onClick={() => window.location.href = '/how-to-play'}
+    >
+      Cómo jugar
     </button>
   </div>
 </div>
@@ -1374,22 +1398,22 @@ useEffect(() => {
 {/* MODAL LOGIN/LOGOUT */}
 {showUserModal && (
   <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div className="bg-zinc-900 p-6 rounded-lg shadow-lg relative">
+    <div className="bg-zinc-900 p-0.5 rounded border border-zinc-700 shadow-sm flex flex-col items-center w-auto" style={{borderWidth:'0.5px', lineHeight:1.05, borderColor:'#3f3f46'}} >
       <button
         className="absolute top-2 right-2 text-white text-xl font-bold"
         onClick={() => setShowUserModal(false)}
       >×</button>
       {currentUser ? (
-        <div className="flex flex-col items-center gap-4 min-w-[260px]">
-          <span className="text-2xl font-bold text-yellow-300">{currentUser}</span>
+        <div className="flex flex-col items-center gap-[1px] w-auto">
+          <span className="text-base font-bold text-yellow-300 leading-tight">{currentUser}</span>
           {currentUser.startsWith('invitado-') || currentUser.startsWith('guest-') ? (
-            <div className="bg-yellow-100 text-yellow-800 rounded px-3 py-2 text-sm font-semibold text-center mb-2 border border-yellow-300 shadow">
+            <div className="bg-yellow-100 text-yellow-800 rounded px-0.5 py-0 text-[10px] font-semibold text-center mb-0 border border-yellow-300 shadow-sm leading-tight" style={{borderWidth:'0.5px', lineHeight:1.05}} >
               Tus datos (apuestas, saldo, logros) se guardarán solo durante <b>48 horas</b>.<br/>
               Después de ese tiempo, se borrarán automáticamente.
             </div>
           ) : null}
           <button
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-1 px-4 rounded shadow text-sm"
+            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-0 px-1 rounded shadow-sm text-[10px] leading-tight min-h-0 h-auto"
             onClick={() => {
               setCurrentUser(null);
               localStorage.removeItem('currentUser');
@@ -1901,14 +1925,13 @@ useEffect(() => {
         </div>
 
         {/* AchievementNotification eliminado para evitar doble modal de logro al ganar. */}
-
-        {/* --- Usuario y login/logout --- */}
-        <div className="fixed top-[27px] right-2 z-50 flex items-center gap-2 bg-black/80 px-3 py-1 rounded-xl border border-yellow-400 shadow-lg">
-          <span className="text-white font-semibold" style={{ letterSpacing: 0.5 }}>Usuario:</span>
-          <span className="text-yellow-300 font-bold" style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+        <div className="fixed top-[36px] right-2 z-50 flex items-center gap-1 px-2 py-0.5 rounded-lg border-none shadow-none backdrop-blur-md min-h-0" style={{background: 'rgba(24,24,24,0.18)', border: 'none', boxShadow: 'none', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)', minHeight: 0}}>
+          <span className="text-white font-semibold drop-shadow-lg text-xs" style={{ letterSpacing: 0.3 }}>Usuario:</span>
+          <span className="text-yellow-100 font-bold text-xs" style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
           {session?.user ? (
   <button
     className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
+    style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
     onClick={async () => {
       await signOut({ redirect: false });
       localStorage.removeItem('googleLoginReloaded');
@@ -1925,20 +1948,22 @@ useEffect(() => {
 ) : (
   displayName === "Invitado" ? (
     <button
-      className="ml-2 px-2 py-0 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-[10px] h-[16px] min-h-0"
+      className="ml-2 px-3 py-0.5 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-[12px] h-[20px] min-h-0 border-none outline-none shadow-none"
+      style={{border:'none', outline:'none', boxShadow:'none', marginTop: '-4px'}} 
       onClick={() => {
         localStorage.setItem('googleLoginReloaded', 'pending');
         signIn("google");
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', top: '-2px' }}>
   Login con Google
-  <ImGoogle2 style={{ color: '#111' }} size={16} />
+  <ImGoogle2 style={{ color: '#111' }} size={20} />
 </span>
     </button>
   ) : (
     <button
-      className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
+      className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0 border-none outline-none shadow-none"
+      style={{border:'none', outline:'none', boxShadow:'none'}} 
       onClick={() => {
         localStorage.removeItem("currentUser");
         setLocalUser(null);
