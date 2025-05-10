@@ -375,15 +375,15 @@ export default function ProfilePage() {
     <div className="relative h-36 w-36 mx-auto mt-4">
       <Image src={selectedImage} alt="Foto de perfil" fill className="object-cover rounded-xl" />
     </div>
-    <span className="block w-full text-center text-3xl font-black text-yellow-400 py-2 drop-shadow">{currentUser || "Usuario Pro"}</span>
+    <span className="block w-full text-center text-3xl font-black text-yellow-400 py-2 drop-shadow">{currentUser ? currentUser.slice(0, 12) : "Usuario Pro"}</span>
   </div>
-  <div className="flex gap-2">
+  <div className="flex gap-4">
     <Button
       variant="outline"
       onClick={() => setIsGalleryOpen(true)}
-      className="bg-yellow-400 hover:bg-yellow-500 text-black"
+      className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-2 rounded-lg shadow-lg transition-all duration-300 hover:scale-105"
     >
-      Cambiar foto
+      <span className="text-lg font-medium tracking-widest uppercase text-shadow-sm px-4 py-1">Cambiar foto</span>
     </Button>
     <Button
       variant="outline"
@@ -391,9 +391,9 @@ export default function ProfilePage() {
         const randomImage = cryptoImages[Math.floor(Math.random() * cryptoImages.length)];
         setSelectedImage(randomImage.src);
       }}
-      className="bg-yellow-400 hover:bg-yellow-500 text-black"
+      className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-2 rounded-lg shadow-lg transition-all duration-300 hover:scale-105"
     >
-      Aleatorio
+      <span className="text-lg font-medium tracking-widest uppercase text-shadow-sm px-4 py-1">Aleatorio</span>
     </Button>
   </div>
 </div>
