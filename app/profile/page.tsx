@@ -197,7 +197,7 @@ function PieChartCard() {
       <CardHeader className="flex-row items-start space-y-0 pb-0">
         <div className="grid gap-1">
           <CardTitle>Pie Chart - Interactive</CardTitle>
-          <CardDescription>January - June 2024</CardDescription>
+          <CardDescription className="text-black">January - June 2024</CardDescription>
         </div>
         <Select value={activeMonth} onValueChange={setActiveMonth}>
           <SelectTrigger
@@ -371,12 +371,12 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl">
             <CardHeader className="items-center pb-1">
               <CardTitle>Resumen de tus apuestas</CardTitle>
-              <CardDescription>
-                Distribución por estado: ganadas, perdidas, liquidadas y pendientes.
+              <CardDescription className="text-black">
+                Distribución por estado.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-2">
-              <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
+              <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center -mt-1">
                 {/* Obtener datos de apuestas */}
                 {(() => {
                   const { radarData } = useBetChartsData();
@@ -387,7 +387,60 @@ export default function ProfilePage() {
                     >
                       <RadarChart data={radarData} outerRadius={80} width={210} height={210}>
                         <PolarGrid stroke="#444" />
-                        <PolarAngleAxis dataKey="status" stroke="#fff" />
+                        <PolarAngleAxis
+  dataKey="status"
+  stroke="#fff"
+  tick={(
+  { payload, x, y, textAnchor, ...rest }: { payload: any; x: any; y: any; textAnchor: any }) => {
+    // Ajusta el centrado y rotación de los labels
+    if (payload.value === 'Pendientes') {
+      // Rota -90° para que mire hacia dentro y centra sobre el pico
+      return (
+        <text
+          x={x}
+          y={y}
+          textAnchor="middle"
+          transform={`rotate(-90 ${x} ${y})`}
+          fill="#fff"
+          fontSize={12}
+          {...rest}
+        >
+          {payload.value}
+        </text>
+      );
+    }
+    if (payload.value === 'Perdidas') {
+      // Rota 90° y centra mejor sobre el pico
+      return (
+        <text
+          x={x}
+          y={y}
+          textAnchor="middle"
+          transform={`rotate(90 ${x} ${y})`}
+          fill="#fff"
+          fontSize={12}
+          {...rest}
+        >
+          {payload.value}
+        </text>
+      );
+    }
+    // Otros labels normales
+    return (
+      <text
+        x={x}
+        y={y}
+        textAnchor={textAnchor}
+        fill="#fff"
+        fontSize={12}
+        {...rest}
+      >
+        {payload.value}
+      </text>
+    );
+  }
+}
+/>
                         <Radar
                           name="Apuestas"
                           dataKey="value"
@@ -412,8 +465,8 @@ export default function ProfilePage() {
           {/* Tarjeta 2: Porcentaje de victorias y derrotas (RadialBar) */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl">
             <CardHeader className="items-center pb-0">
-              <CardTitle>Porcentaje de victorias y derrotas</CardTitle>
-              <CardDescription>Winrate vs Lossrate en tus apuestas.</CardDescription>
+              <CardTitle> Tus victorias y derrotas</CardTitle>
+              <CardDescription className="text-black">Winrate vs Lossrate en tus apuestas.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-2">
               <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
@@ -445,8 +498,8 @@ export default function ProfilePage() {
           {/* Tarjeta 3: Tipo de apuesta (Toro vs Oso) (Pie) */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl">
             <CardHeader className="items-center pb-0">
-              <CardTitle>Tipo de apuesta: Toro vs Oso</CardTitle>
-              <CardDescription>Proporción de apuestas bullish o bearish.</CardDescription>
+              <CardTitle>Toro vs Oso </CardTitle>
+              <CardDescription className="text-black">Proporción de apuestas bullish o bearish.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
               <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
@@ -516,7 +569,7 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
             <CardHeader className="items-center pb-2">
               <CardTitle>Whales Toro vs Oso</CardTitle>
-              <CardDescription>Actividad de grandes jugadores detectada</CardDescription>
+              <CardDescription className="text-black">Actividad de grandes jugadores detectada</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center pb-0">
               {/* RadialBarChart de whales toros/osos */}
@@ -594,7 +647,7 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
             <CardHeader className="items-center pb-2">
               <CardTitle>Evolución de apuestas</CardTitle>
-              <CardDescription>Bullish vs Bearish por ronda</CardDescription>
+              <CardDescription className="text-black">Bullish vs Bearish por ronda</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center">
               {/* LineChart de evolución de apuestas bullish/bearish */}
@@ -620,7 +673,7 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
             <CardHeader className="items-center pb-2">
               <CardTitle>Volumen Long vs Short</CardTitle>
-              <CardDescription>Comparativa diaria de posiciones</CardDescription>
+              <CardDescription className="text-black">Comparativa diaria de posiciones</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center pb-0">
               <ChartContainer
