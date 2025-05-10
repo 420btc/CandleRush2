@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { TrendingUp } from "lucide-react"
 import { PolarRadiusAxis } from "recharts";
-import { PolarAngleAxis, PolarGrid, Radar, RadarChart, RadialBarChart, RadialBar, Tooltip, Legend, LineChart, Line, XAxis, YAxis, BarChart, Bar } from "recharts";
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart, RadialBarChart, RadialBar, Tooltip, Legend, LineChart, Line, XAxis, YAxis, BarChart, Bar, AreaChart, Area, CartesianGrid } from "recharts";
 import {
   Card,
   CardContent,
@@ -646,7 +646,7 @@ export default function ProfilePage() {
                     <Label
                       content={({ viewBox }) => {
                         if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                          const totalWhales = 1260 + 570;
+                          const totalWhales = 6 + 1;
                           return (
                             <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
                               <tspan
@@ -698,11 +698,12 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
             <CardHeader className="items-center pb-0">
               <CardTitle>Evolución de apuestas</CardTitle>
-              <CardDescription className="text-black">Bullish vs Bearish por ronda</CardDescription>
+              <CardDescription className="text-black scroll-pb-60">Bullish vs Bearish por ronda.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center">
+          
               {/* LineChart de evolución de apuestas bullish/bearish */}
-              <div className="w-full max-w-[260px] h-[256px] bg-black rounded-lg flex items-center justify-center p-2">
+              <div className="w-full max-w-[260px] h-[250px] bg-black rounded-lg flex items-center justify-center">
                 <LineChart
                   width={250}
                   height={225}
@@ -790,6 +791,113 @@ export default function ProfilePage() {
             </CardFooter>
           </Card>
         </div>
+        
+        {/* Sección para gráfico horizontal completo */}
+        <div className="w-full max-w-5xl mx-auto mt-12">
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl">
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Historial de Apuestas</CardTitle>
+              <CardDescription className="text-black">Evolución de tus apuestas ganadas, perdidas y liquidadas</CardDescription>
+            </CardHeader>
+            <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+              <ChartContainer
+                config={{
+                  won: { label: "Ganadas", color: "#22c55e" },
+                  lost: { label: "Perdidas", color: "#ef4444" },
+                  liquidated: { label: "Liquidadas", color: "#eab308" },
+                }}
+                className="aspect-auto h-[300px] w-full"
+              >
+                <AreaChart
+                  data={(() => {
+                    // Evolución acumulada de apuestas por estado
+                    const { bets } = useGame();
+                    let won = 0;
+                    let lost = 0;
+                    let liquidated = 0;
+                    return bets
+                      .sort((a, b) => a.timestamp - b.timestamp)
+                      .map((bet, i) => {
+                        if (bet.status === "WON") won++;
+                        if (bet.status === "LOST") lost++;
+                        if (bet.status === "LIQUIDATED") liquidated++;
+                        return {
+                          ronda: i + 1,
+                          won,
+                          lost,
+                          liquidated,
+                        };
+                      });
+                  })()}
+                >
+                  <defs>
+                    <linearGradient id="fillWon" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="fillLost" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="fillLiquidated" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#eab308" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    minTickGap={32}
+                    tickFormatter={(value) => {
+                      return value;
+                    }}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) => {
+                          const date = new Date(value);
+                          return date.toLocaleDateString("es-ES", {
+                            month: "short",
+                            day: "numeric",
+                          });
+                        }}
+                        indicator="dot"
+                      />
+                    }
+                  />
+                  <Area
+                    dataKey="won"
+                    type="monotone"
+                    fill="url(#fillWon)"
+                    stroke="#22c55e"
+                    stackId="a"
+                  />
+                  <Area
+                    dataKey="lost"
+                    type="monotone"
+                    fill="url(#fillLost)"
+                    stroke="#ef4444"
+                    stackId="a"
+                  />
+                  <Area
+                    dataKey="liquidated"
+                    type="monotone"
+                    fill="url(#fillLiquidated)"
+                    stroke="#eab308"
+                    stackId="a"
+                  />
+                  <Legend />
+                </AreaChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Tarjetas destacadas debajo de los charts principales */}
         <div className="flex justify-center w-full mt-20 mb-20">
           <div className="w-full max-w-4xl">
