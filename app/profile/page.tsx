@@ -326,7 +326,7 @@ function LoginLogoutButton() {
               className="absolute top-2 right-2 text-white text-xl font-bold"
               onClick={() => setShowLogin(false)}
             >×</button>
-            <Login onLogin={(username) => { setUser(username); setShowLogin(false); }} />
+            <Login />
           </div>
         </div>
       )}
