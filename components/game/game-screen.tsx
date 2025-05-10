@@ -1908,9 +1908,11 @@ useEffect(() => {
           {session?.user ? (
   <button
     className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
-    onClick={() => {
-      signOut();
+    onClick={async () => {
+      await signOut({ redirect: false });
       localStorage.removeItem('googleLoginReloaded');
+      localStorage.removeItem('currentUser');
+      setLocalUser(null);
       setTimeout(() => window.location.reload(), 250);
     }}
   >
