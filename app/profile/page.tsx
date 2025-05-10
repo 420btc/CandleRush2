@@ -369,11 +369,13 @@ export default function ProfilePage() {
       {/* Perfil y logo arriba */}
       <div className="container mx-auto w-full flex flex-col pt-8 items-center">
         <div className="flex flex-col items-center gap-4 mb-8">
-          <div className="relative w-56 h-56 rounded-full border-4 border-yellow-400 overflow-hidden shadow-2xl bg-black/70">
-            <Image src="/perfil1.png" alt="Foto de perfil" fill className="object-cover" />
-          </div>
-          <span className="text-3xl font-black text-yellow-400 mt-2 drop-shadow">{currentUser || "Usuario Pro"}</span>
-        </div>
+  <div className="w-56 flex flex-col items-center bg-black/70 rounded-xl border-4 border-yellow-400 overflow-hidden shadow-2xl" style={{boxShadow: '0 0 48px 12px #fde047cc'}}>
+    <div className="relative h-36 w-36 mx-auto mt-4">
+      <Image src="/perfil1.png" alt="Foto de perfil" fill className="object-cover rounded-xl" />
+    </div>
+    <span className="block w-full text-center text-3xl font-black text-yellow-400 py-2 drop-shadow">{currentUser || "Usuario Pro"}</span>
+  </div>
+</div>
         {/* Gráficos de rendimiento/apuestas en 3 columnas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-4">
 
