@@ -127,7 +127,15 @@ export function LoginForm({
                 {mode === 'login' ? 'Login' : 'Crear cuenta'}
               </Button>
               {mode === 'login' && (
-                <Button variant="outline" className="w-full">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  type="button"
+                  onClick={() => {
+                    // @ts-ignore
+                    import('next-auth/react').then(({ signIn }) => signIn('google'));
+                  }}
+                >
                   Login with Google
                 </Button>
               )}
