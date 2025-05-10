@@ -1,10 +1,6 @@
 import type { Metadata } from 'next'
-
 import './globals.css'
-import { DeviceModeProvider } from '../context/device-mode-context'
-import { AuthProvider } from '../context/auth-context'
-import { AchievementProvider } from '../context/achievement-context'
-import { GameProvider } from '../context/game-context'
+import ClientProviders from '@/components/ClientProviders'
 import { Analytics } from '@vercel/analytics/react';
 import BtcTitleUpdater from "./BtcTitleUpdater";
 
@@ -46,15 +42,9 @@ export default function RootLayout({
       {/* Actualiza el título con el precio BTC en vivo */}
       <BtcTitleUpdater />
       <body className="bg-black min-h-screen">
-        <DeviceModeProvider>
-          <AuthProvider>
-            <AchievementProvider>
-              <GameProvider>
-                {children}
-              </GameProvider>
-            </AchievementProvider>
-          </AuthProvider>
-        </DeviceModeProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
         <Analytics />
       </body>
     </html>

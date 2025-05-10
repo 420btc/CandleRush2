@@ -328,7 +328,43 @@ const flipAnimation = `
   }
 `;
 
+import { useSession, signIn, signOut } from "next-auth/react";
+
 export default function GameScreen() {
+  // --- Lógica de usuario Google/email/local robusta ---
+  const { data: session } = useSession();
+  const [localUser, setLocalUser] = useState<string | null>(null);
+
+  // Sincronizar Google/email con sistema local y evitar deslogueo automático
+  useEffect(() => {
+    if (session?.user?.email) {
+      const email = session.user.email;
+      type UsersMap = { [email: string]: { password: string; google?: boolean } };
+let users: UsersMap = {};
+try {
+  users = JSON.parse(localStorage.getItem("users") || "{}") as UsersMap;
+} catch {}
+if (!users[email]) {
+  users[email] = { password: "", google: true };
+  localStorage.setItem("users", JSON.stringify(users));
+}
+      localStorage.setItem("currentUser", email);
+      setLocalUser(email);
+    } else {
+      // Si no hay sesión Google, usar usuario local
+      const user = localStorage.getItem("currentUser");
+      setLocalUser(user);
+    }
+  }, [session]);
+
+  // Mostrar nombre/email o Invitado
+  let displayName = "Invitado";
+  if (session?.user?.email) {
+    displayName = session.user.name || session.user.email;
+  } else if (localUser) {
+    displayName = localUser;
+  }
+
   // Inyectar el CSS global para flip sólo una vez
   React.useEffect(() => {
     if (!document.getElementById('btc-flip-style')) {
@@ -627,7 +663,7 @@ export default function GameScreen() {
   const [waitTime, setWaitTime] = useState(600); // 10 min in seconds
   const [waiting, setWaiting] = useState(false);
   const [showAd, setShowAd] = useState(false);
-  const waitTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const waitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Detect userBalance 0
   useEffect(() => {
@@ -717,7 +753,7 @@ useEffect(() => {
 // --- Lógica de apuesta automática MIX ---
 useEffect(() => {
   // Siempre una apuesta por vela, dirección 100% aleatoria
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   if (
     autoMix &&
     gamePhase === 'BETTING' &&
@@ -757,7 +793,7 @@ useEffect(() => {
 
 // --- Lógica de apuesta automática AUTO (bullish/bearish) ---
 useEffect(() => {
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   if (
     (autoBullish || autoBearish) &&
     gamePhase === 'BETTING' &&
@@ -1354,10 +1390,7 @@ useEffect(() => {
           >Cerrar sesión</button>
         </div>
       ) : (
-        <Login onLogin={(username: string) => {
-          setCurrentUser(username);
-          setShowUserModal(false);
-        }} />
+        <Login />
       )}
     </div>
   </div>
@@ -1854,6 +1887,30 @@ useEffect(() => {
 
         {/* AchievementNotification eliminado para evitar doble modal de logro al ganar. */}
 
+        {/* --- Usuario y login/logout --- */}
+        <div className="fixed top-2 right-2 z-50 flex items-center gap-2 bg-black/80 px-3 py-1 rounded-xl border border-yellow-400 shadow-lg">
+          <span className="text-white font-semibold" style={{ letterSpacing: 0.5 }}>Usuario:</span>
+          <span className="text-yellow-300 font-bold" style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+          {displayName === "Invitado" ? (
+            <button
+              className="ml-2 px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
+              onClick={() => signIn("google")}
+            >
+              Login con Google
+            </button>
+          ) : (
+            <button
+              className="ml-2 px-3 py-1 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold"
+              onClick={() => {
+                signOut({ redirect: false });
+                localStorage.removeItem("currentUser");
+                setLocalUser(null);
+              }}
+            >
+              Cerrar sesión
+            </button>
+          )}
+        </div>
       </div>
     </>
   )

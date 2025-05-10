@@ -1,3 +1,5 @@
+"use client"
+
 import { Suspense } from "react"
 import GameScreen from "@/components/game/game-screen"
 import Loading from "@/components/ui/loading"
