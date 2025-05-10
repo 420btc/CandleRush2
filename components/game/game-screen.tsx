@@ -1381,7 +1381,7 @@ useEffect(() => {
             </div>
           ) : null}
           <button
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded shadow"
+            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-1 px-4 rounded shadow text-sm"
             onClick={() => {
               setCurrentUser(null);
               localStorage.removeItem('currentUser');
@@ -1888,19 +1888,19 @@ useEffect(() => {
         {/* AchievementNotification eliminado para evitar doble modal de logro al ganar. */}
 
         {/* --- Usuario y login/logout --- */}
-        <div className="fixed top-2 right-2 z-50 flex items-center gap-2 bg-black/80 px-3 py-1 rounded-xl border border-yellow-400 shadow-lg">
+        <div className="fixed top-[27px] right-2 z-50 flex items-center gap-2 bg-black/80 px-3 py-1 rounded-xl border border-yellow-400 shadow-lg">
           <span className="text-white font-semibold" style={{ letterSpacing: 0.5 }}>Usuario:</span>
           <span className="text-yellow-300 font-bold" style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
           {displayName === "Invitado" ? (
             <button
-              className="ml-2 px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
+              className="ml-2 px-2 py-0 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-[10px] h-[16px] min-h-0"
               onClick={() => signIn("google")}
             >
               Login con Google
             </button>
           ) : (
             <button
-              className="ml-2 px-3 py-1 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold"
+              className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
               onClick={() => {
                 signOut({ redirect: false });
                 localStorage.removeItem("currentUser");
