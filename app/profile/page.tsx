@@ -335,8 +335,18 @@ function LoginLogoutButton() {
 }
 
 
+// Fecha objetivo del próximo halving de BTC (ajusta si tienes una fecha más precisa)
+const FECHA_HALVING = new Date('2028-03-30T00:00:00Z');
+
 export default function ProfilePage() {
   const router = useRouter();
+
+  // Calcula los días restantes para el halving
+  const diasParaHalving = useMemo(() => {
+    const ahora = new Date();
+    const diffMs = FECHA_HALVING.getTime() - ahora.getTime();
+    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  }, []);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
@@ -775,7 +785,7 @@ export default function ProfilePage() {
                 },
                 {
                   title: "Halving Countdown",
-                  description: "Faltan 1069 días para el halving de BTC",
+                  description: `Faltan ${diasParaHalving} días para el halving de BTC`,
                   className: "[grid-area:stack] translate-x-32 translate-y-20 hover:translate-y-10",
                 },
               ]}
