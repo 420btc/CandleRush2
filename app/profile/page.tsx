@@ -494,73 +494,125 @@ export default function ProfilePage() {
               </div>
             </CardFooter>
           </Card>
-          {/* Tarjeta 3: Tipo de apuesta (Toro vs Oso) (Pie) */}
-          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl">
-            <CardHeader className="items-center pb-0">
-              <CardTitle>Toro vs Oso </CardTitle>
-              <CardDescription className="text-black">Proporción de apuestas bullish o bearish.</CardDescription>
+          {/* Tarjeta 3: Volumen Long vs Short (Bar) */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
+            <CardHeader className="items-center pb-2">
+              <CardTitle>Volumen Long vs Short</CardTitle>
+              <CardDescription className="text-black">Comparativa diaria de posiciones</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 pb-0">
-              <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
-                {(() => {
-                  const { bullish, bearish, total } = betCharts;
-                  const bullPct = total ? Math.round((bullish / total) * 100) : 0;
-                  const bearPct = total ? Math.round((bearish / total) * 100) : 0;
-                  const pieData = [
-                    { name: 'Toro (Bullish)', value: bullPct, fill: '#22c55e' },
-                    { name: 'Oso (Bearish)', value: bearPct, fill: '#ef4444' },
-                  ];
-                  return (
-                    <ChartContainer config={pieConfig} className="w-full h-full">
-                      <PieChart width={210} height={210}>
-                        <Pie
-                          data={pieData}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius={45}
-                          strokeWidth={5}
-                        >
-                          <Label
-                            content={({ viewBox }) => {
-                              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                                return (
-                                  <text
-                                    x={viewBox.cx}
-                                    y={viewBox.cy}
-                                    textAnchor="middle"
-                                    dominantBaseline="middle"
-                                  >
-                                    <tspan
-                                      x={viewBox.cx}
-                                      y={viewBox.cy}
-                                      className="fill-foreground text-3xl font-bold"
-                                    >
-                                      {bullPct}%
-                                    </tspan>
-                                    <tspan
-                                      x={viewBox.cx}
-                                      y={(viewBox.cy || 0) + 24}
-                                      className="fill-muted-foreground"
-                                    >
-                                      Toro
-                                    </tspan>
-                                  </text>
-                                );
-                              }
-                            }}
-                          />
-                        </Pie>
-                      </PieChart>
-                    </ChartContainer>
-                  );
-                })()}
-              </div>
+            <CardContent className="flex-1 flex items-center justify-center pb-0">
+              <ChartContainer
+                config={{
+                  longs: { label: "Longs", color: "#22c55e" },
+                  shorts: { label: "Shorts", color: "#ef4444" },
+                }}
+                className="mx-auto w-full max-w-[250px] aspect-square rounded-xl bg-black flex items-center justify-center -mt-14"
+              >
+                <BarChart
+                  width={210}
+                  height={210}
+                  data={(() => {
+                    // Agrupa apuestas por fecha (día) y suma volumen de longs y shorts
+                    const { bets } = useGame();
+                    // Leer y guardar datos en localStorage
+                    const LS_KEY = 'bet_volume_chart_days';
+                    let grouped = bets.reduce((acc: Record<string, { longs: number; shorts: number }>, bet) => {
+                      if (!bet.timestamp) return acc;
+                      const date = new Date(bet.timestamp).toISOString().slice(0, 10);
+                      if (!acc[date]) acc[date] = { longs: 0, shorts: 0 };
+                      if (bet.prediction === "BULLISH") acc[date].longs += bet.amount;
+                      if (bet.prediction === "BEARISH") acc[date].shorts += bet.amount;
+                      return acc;
+                    }, {});
+                    // Generar los próximos 4 días a partir de hoy
+                    const today = new Date();
+                    const days = [] as string[];
+                    for (let i = 0; i < 5; i++) {
+                      const d = new Date(today.getTime());
+                      d.setDate(today.getDate() + i);
+                      const dateStr = d.toISOString().slice(0, 10);
+                      days.push(dateStr);
+                    }
+                    // Completa con ceros si no hay apuestas para esos días
+                    const chartData = days.map(date => ({
+                      date,
+                      longs: grouped[date]?.longs || 0,
+                      shorts: grouped[date]?.shorts || 0,
+                    }));
+                    // Persistir en localStorage
+                    if (typeof window !== 'undefined') {
+                      window.localStorage.setItem(LS_KEY, JSON.stringify(chartData));
+                    }
+                    // Leer de localStorage si no hay apuestas
+                    if (bets.length === 0 && typeof window !== 'undefined') {
+                      const stored = window.localStorage.getItem(LS_KEY);
+                      if (stored) return JSON.parse(stored);
+                    }
+                    return chartData;
+                  })()}
+                >
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    tickFormatter={(value) => {
+                      return new Date(value).toLocaleDateString("es-ES", {
+                        weekday: "short",
+                        day: "2-digit",
+                        month: "short"
+                      });
+                    }}
+                    tick={{ fill: '#fff', fontSize: 10 }}
+                  />
+                  <Bar
+                    dataKey="longs"
+                    stackId="a"
+                    fill="#22c55e"
+                    radius={[0, 0, 4, 4]}
+                  />
+                  <Bar
+                    dataKey="shorts"
+                    stackId="a"
+                    fill="#ef4444"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        hideLabel
+                        className="w-[180px]"
+                        formatter={(value, name, item, index) => (
+                          <>
+                            <div
+                              className="h-2.5 w-2.5 shrink-0 rounded-[1px] bg-[--color-bg]"
+                              style={{
+                                "--color-bg": name === "longs" ? "#22c55e" : "#ef4444",
+                              } as React.CSSProperties}
+                            />
+                            {name === "longs" ? "Longs" : "Shorts"}
+                            <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
+                              {value}
+                              <span className="font-normal text-muted-foreground">contratos</span>
+                            </div>
+                            {index === 1 && (
+                              <div className="mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium text-foreground">
+                                Total
+                                <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
+                                  {item.payload.longs + item.payload.shorts}
+                                  <span className="font-normal text-muted-foreground">contratos</span>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      />
+                    }
+                    cursor={false}
+                  />
+                </BarChart>
+              </ChartContainer>
             </CardContent>
-            <CardFooter className="flex-col gap-2 text-sm">
-              <div className="flex items-center gap-2 font-medium leading-none">
-                Toro: {betCharts.bullish} &nbsp;|&nbsp; Oso: {betCharts.bearish}
-              </div>
-            </CardFooter>
           </Card>
         </div>
         {/* Tarjetas adicionales para nuevas métricas personalizadas */}
@@ -578,10 +630,10 @@ export default function ProfilePage() {
                   toro: { label: "Toro", color: "#22c55e" },
                   oso: { label: "Oso", color: "#ef4444" },
                 }}
-                className="mx-auto aspect-square w-full max-w-[210px] mt-10"
+                className="mx-auto aspect-square w-full max-w-[220px] mt-10"
               >
                 <RadialBarChart
-                  data={[{ whalesToro: 1260, whalesOso: 570 }]}
+                  data={[{ whalesToro: 5, whalesOso: 2 }]}
                   endAngle={180}
                   innerRadius={80}
                   outerRadius={130}
@@ -644,13 +696,13 @@ export default function ProfilePage() {
             </CardFooter>
           </Card>
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
-            <CardHeader className="items-center pb-2">
+            <CardHeader className="items-center pb-0">
               <CardTitle>Evolución de apuestas</CardTitle>
               <CardDescription className="text-black">Bullish vs Bearish por ronda</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center">
               {/* LineChart de evolución de apuestas bullish/bearish */}
-              <div className="w-full max-w-[260px] h-[225px] bg-black rounded-lg flex items-center justify-center p-0">
+              <div className="w-full max-w-[260px] h-[256px] bg-black rounded-lg flex items-center justify-center p-2">
                 <LineChart
                   width={250}
                   height={225}
@@ -684,128 +736,58 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
-            <CardHeader className="items-center pb-2">
-              <CardTitle>Volumen Long vs Short</CardTitle>
-              <CardDescription className="text-black">Comparativa diaria de posiciones</CardDescription>
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Tipo de apuesta (Toro vs Oso)</CardTitle>
+              <CardDescription className="text-black">Proporción de apuestas bullish o bearish.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center pb-0">
-              <ChartContainer
-                config={{
-                  longs: { label: "Longs", color: "#22c55e" },
-                  shorts: { label: "Shorts", color: "#ef4444" },
-                }}
-                className="mx-auto w-full max-w-[230px] aspect-square rounded-xl bg-black flex items-center justify-center -mt-5"
-              >
-                <BarChart
-                  width={220}
-                  height={220}
-                  data={(() => {
-                    // Agrupa apuestas por fecha (día) y suma volumen de longs y shorts
-                    const { bets } = useGame();
-                    // Leer y guardar datos en localStorage
-                    const LS_KEY = 'bet_volume_chart_days';
-                    let grouped = bets.reduce((acc: Record<string, { longs: number; shorts: number }>, bet) => {
-                      if (!bet.timestamp) return acc;
-                      const date = new Date(bet.timestamp).toISOString().slice(0, 10);
-                      if (!acc[date]) acc[date] = { longs: 0, shorts: 0 };
-                      if (bet.prediction === "BULLISH") acc[date].longs += bet.amount;
-                      if (bet.prediction === "BEARISH") acc[date].shorts += bet.amount;
-                      return acc;
-                    }, {});
-                    // Generar los próximos 4 días a partir de hoy
-                    const today = new Date();
-                    const days = [];
-                    for (let i = 0; i < 5; i++) {
-                      const d = new Date(today.getTime());
-                      d.setDate(today.getDate() + i);
-                      const dateStr = d.toISOString().slice(0, 10);
-                      days.push(dateStr);
-                    }
-                    // Completa con ceros si no hay apuestas para esos días
-                    const chartData = days.map(date => ({
-                      date,
-                      longs: grouped[date]?.longs || 0,
-                      shorts: grouped[date]?.shorts || 0,
-                    }));
-                    // Persistir en localStorage
-                    if (typeof window !== 'undefined') {
-                      window.localStorage.setItem(LS_KEY, JSON.stringify(chartData));
-                    }
-                    // Leer de localStorage si no hay apuestas
-                    if (bets.length === 0 && typeof window !== 'undefined') {
-                      const stored = window.localStorage.getItem(LS_KEY);
-                      if (stored) return JSON.parse(stored);
-                    }
-                    return chartData;
-                  })()}
-                >
-                  <XAxis
-                    dataKey="date"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickFormatter={(value) => {
-                      return new Date(value).toLocaleDateString("es-ES", {
-                        weekday: "short",
-                        day: "2-digit",
-                        month: "short"
-                      })
-                    }}
-                    tick={{ fill: '#fff', fontSize: 10 }}
-                  />
-                  <Bar
-                    dataKey="longs"
-                    stackId="a"
-                    fill="#22c55e"
-                    radius={[0, 0, 4, 4]}
-                  />
-                  <Bar
-                    dataKey="shorts"
-                    stackId="a"
-                    fill="#ef4444"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        hideLabel
-                        className="w-[190px]"
-                        formatter={(value, name, item, index) => (
-                          <>
-                            <div
-                              className="h-2.5 w-2.5 shrink-0 rounded-[1px] bg-[--color-bg]"
-                              style={{
-                                "--color-bg": name === "longs" ? "#22c55e" : "#ef4444"
-                              } as React.CSSProperties}
-                            />
-                            {name === "longs" ? "Longs" : "Shorts"}
-                            <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
-                              {value}
-                              <span className="font-normal text-muted-foreground">
-                                contratos
-                              </span>
-                            </div>
-                            {/* Add this after the last item */}
-                            {index === 1 && (
-                              <div className="mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium text-foreground">
-                                Total
-                                <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
-                                  {item.payload.longs + item.payload.shorts}
-                                  <span className="font-normal text-muted-foreground">
-                                    contratos
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      />
-                    }
-                    cursor={false}
-                  />
-                </BarChart>
-              </ChartContainer>
+              <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center -mt-4">
+                {(() => {
+                  const { bullish, bearish, total } = betCharts;
+                  const bullPct = total ? Math.round((bullish / total) * 100) : 0;
+                  const bearPct = total ? Math.round((bearish / total) * 100) : 0;
+                  const pieData = [
+                    { name: 'Toro (Bullish)', value: bullPct, fill: '#22c55e' },
+                    { name: 'Oso (Bearish)', value: bearPct, fill: '#ef4444' },
+                  ];
+                  return (
+                    <ChartContainer config={pieConfig} className="w-full h-full">
+                      <PieChart width={210} height={210}>
+                        <Pie
+                          data={pieData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={45}
+                          strokeWidth={5}
+                        >
+                          <Label
+                            content={({ viewBox }) => {
+                              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                return (
+                                  <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                    <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">
+                                      {bullPct}%
+                                    </tspan>
+                                    <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 24} className="fill-muted-foreground">
+                                      Toro
+                                    </tspan>
+                                  </text>
+                                );
+                              }
+                            }}
+                          />
+                        </Pie>
+                      </PieChart>
+                    </ChartContainer>
+                  );
+                })()}
+              </div>
             </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="flex items-center gap-2 font-medium leading-none">
+                Toro: {betCharts.bullish} &nbsp;|&nbsp; Oso: {betCharts.bearish}
+              </div>
+            </CardFooter>
           </Card>
         </div>
         {/* Tarjetas destacadas debajo de los charts principales */}
@@ -839,7 +821,7 @@ export default function ProfilePage() {
       </div>
       {/* Footer visible y fijo al final */}
       <footer className="w-full bg-zinc-900 text-center py-8 mt-10 border-t border-zinc-800">
-        <span className="text-zinc-400 font-medium">© 2025 CandleRush — Todos los derechos reservados</span>
+        <span className="text-zinc-400 font-medium"> 2025 CandleRush — Todos los derechos reservados</span>
       </footer>
     </main>
   );
