@@ -20,31 +20,17 @@ import {
 import UserStats from "@/components/game/user-stats";
 import BetHistory from "@/components/game/bet-history";
 import { useRouter } from "next/navigation";
+import { useGame } from "@/context/game-context";
+import { useMemo } from "react";
 import { useState, useEffect } from "react";
 import Login from "@/components/login";
 import DisplayCards from "@/components/ui/display-cards";
 
-import { useGame } from "@/context/game-context";
-import { useMemo } from "react";
-
 // Hook para obtener y computar métricas de apuestas del usuario logueado
+
 function useBetChartsData() {
-  // DATOS MOCK: 3 ganadas, 5 liquidadas, 2 perdidas, 1 pendiente
-  // 33 toros (BULLISH), 20 osos (BEARISH), más los status para los otros gráficos
-  const bets = [
-    // 33 toros
-    ...Array(33).fill({ prediction: 'BULLISH', status: 'WON' }),
-    // 20 osos
-    ...Array(20).fill({ prediction: 'BEARISH', status: 'LOST' }),
-    // 3 ganadas (extra para otros gráficos)
-    { status: 'WON' }, { status: 'WON' }, { status: 'WON' },
-    // 5 liquidadas
-    { status: 'LIQUIDATED' }, { status: 'LIQUIDATED' }, { status: 'LIQUIDATED' }, { status: 'LIQUIDATED' }, { status: 'LIQUIDATED' },
-    // 2 perdidas
-    { status: 'LOST' }, { status: 'LOST' },
-    // 1 pendiente
-    { status: 'PENDING' },
-  ];
+  // Obtener las apuestas reales desde el contexto global
+  const { bets } = useGame();
 
   // Radar: estados de apuesta
   const radarData = useMemo(() => (
@@ -340,6 +326,7 @@ const FECHA_HALVING = new Date('2028-03-30T00:00:00Z');
 
 export default function ProfilePage() {
   const router = useRouter();
+  const betCharts = useBetChartsData();
 
   // Calcula los días restantes para el halving
   const diasParaHalving = useMemo(() => {
@@ -391,7 +378,7 @@ export default function ProfilePage() {
               <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center -mt-1">
                 {/* Obtener datos de apuestas */}
                 {(() => {
-                  const { radarData } = useBetChartsData();
+                  const { radarData } = betCharts;
                   return (
                     <ChartContainer
                       config={radarConfig}
@@ -470,7 +457,7 @@ export default function ProfilePage() {
             </CardContent>
             <CardFooter className="flex-col gap-2 text-sm">
               <div className="flex items-center gap-2 font-medium leading-none">
-                Total apuestas: {useBetChartsData().total}
+                Total apuestas: {betCharts.total}
               </div>
             </CardFooter>
           </Card>
@@ -483,7 +470,7 @@ export default function ProfilePage() {
             <CardContent className="flex-1 pb-2">
               <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
                 {(() => {
-                  const { won, lost, total } = useBetChartsData();
+                  const { won, lost, total } = betCharts;
                   const winrate = total ? Math.round((won / total) * 100) : 0;
                   const lossrate = total ? Math.round((lost / total) * 100) : 0;
                   const radialData = [
@@ -503,7 +490,7 @@ export default function ProfilePage() {
             </CardContent>
             <CardFooter className="flex-col gap-2 text-sm">
               <div className="flex items-center gap-0 font-medium leading-none">
-                Winrate: {useBetChartsData().total ? Math.round((useBetChartsData().won / useBetChartsData().total) * 100) : 0}%
+                Winrate: {betCharts.total ? Math.round((betCharts.won / betCharts.total) * 100) : 0}%
               </div>
             </CardFooter>
           </Card>
@@ -516,7 +503,7 @@ export default function ProfilePage() {
             <CardContent className="flex-1 pb-0">
               <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
                 {(() => {
-                  const { bullish, bearish, total } = useBetChartsData();
+                  const { bullish, bearish, total } = betCharts;
                   const bullPct = total ? Math.round((bullish / total) * 100) : 0;
                   const bearPct = total ? Math.round((bearish / total) * 100) : 0;
                   const pieData = [
@@ -571,7 +558,7 @@ export default function ProfilePage() {
             </CardContent>
             <CardFooter className="flex-col gap-2 text-sm">
               <div className="flex items-center gap-2 font-medium leading-none">
-                Toro: {useBetChartsData().bullish} &nbsp;|&nbsp; Oso: {useBetChartsData().bearish}
+                Toro: {betCharts.bullish} &nbsp;|&nbsp; Oso: {betCharts.bearish}
               </div>
             </CardFooter>
           </Card>
