@@ -25,6 +25,8 @@ import { useMemo } from "react";
 import { useState, useEffect } from "react";
 import Login from "@/components/login";
 import DisplayCards from "@/components/ui/display-cards";
+import { Modal } from "../components/modal";
+import { Button } from "../components/button";
 
 // Hook para obtener y computar métricas de apuestas del usuario logueado
 
@@ -328,6 +330,19 @@ export default function ProfilePage() {
   const router = useRouter();
   const betCharts = useBetChartsData();
 
+  // Lista de imágenes de perfiles para la galería
+  const cryptoImages = [
+    { id: 1, src: "/perfil1.png", name: "Default" },
+    { id: 2, src: "/jugador1.jpeg", name: "Bitcoin" },
+    { id: 3, src: "/jugador2.jpeg", name: "Ethereum" },
+    { id: 4, src: "/jugador3.jpeg", name: "Cardano" },
+    { id: 5, src: "/jugador4.jpeg", name: "BNB" },
+    { id: 6, src: "/jugador5.jpg", name: "Solana" },
+  ];
+
+  const [selectedImage, setSelectedImage] = useState(cryptoImages[0].src);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
   // Calcula los días restantes para el halving
   const diasParaHalving = useMemo(() => {
     const ahora = new Date();
@@ -358,9 +373,28 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center gap-4 mb-8">
   <div className="w-56 flex flex-col items-center bg-black/70 rounded-xl border-4 border-yellow-400 overflow-hidden shadow-2xl" style={{boxShadow: '0 0 48px 12px #fde047cc'}}>
     <div className="relative h-36 w-36 mx-auto mt-4">
-      <Image src="/perfil1.png" alt="Foto de perfil" fill className="object-cover rounded-xl" />
+      <Image src={selectedImage} alt="Foto de perfil" fill className="object-cover rounded-xl" />
     </div>
     <span className="block w-full text-center text-3xl font-black text-yellow-400 py-2 drop-shadow">{currentUser || "Usuario Pro"}</span>
+  </div>
+  <div className="flex gap-2">
+    <Button
+      variant="outline"
+      onClick={() => setIsGalleryOpen(true)}
+      className="bg-yellow-400 hover:bg-yellow-500 text-black"
+    >
+      Cambiar foto
+    </Button>
+    <Button
+      variant="outline"
+      onClick={() => {
+        const randomImage = cryptoImages[Math.floor(Math.random() * cryptoImages.length)];
+        setSelectedImage(randomImage.src);
+      }}
+      className="bg-yellow-400 hover:bg-yellow-500 text-black"
+    >
+      Aleatorio
+    </Button>
   </div>
 </div>
         {/* Gráficos de rendimiento/apuestas en 3 columnas */}
@@ -927,6 +961,34 @@ export default function ProfilePage() {
 </div>
         </div>
       </div>
+      {/* Modal de galería de perfiles */}
+      <Modal isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)}>
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-white mb-4">Selecciona tu foto de perfil</h2>
+          <div className="grid grid-cols-3 gap-4">
+            {cryptoImages.map((image) => (
+              <div
+                key={image.id}
+                className="relative cursor-pointer"
+                onClick={() => {
+                  setSelectedImage(image.src);
+                  setIsGalleryOpen(false);
+                }}
+              >
+                <div className="relative h-24 w-24">
+                  <Image
+                    src={image.src}
+                    alt={image.name}
+                    fill
+                    className="object-cover rounded-lg"
+                  />
+                </div>
+                <p className="text-sm text-white mt-2 text-center">{image.name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Modal>
       {/* Footer visible y fijo al final */}
       <footer className="w-full bg-zinc-900 text-center py-8 mt-10 border-t border-zinc-800">
         <span className="text-zinc-400 font-medium"> 2025 CandleRush — Todos los derechos reservados</span>
