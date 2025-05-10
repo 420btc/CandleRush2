@@ -180,7 +180,7 @@ export default function MenuPage() {
        </div>
       <div className="relative z-10 w-full flex flex-col items-center -mt-2.5">
         <div className="flex flex-col items-center justify-center gap-1">
-          <span className="text-yellow-400 text-5xl md:text-7xl font-black select-none tracking-tight italic uppercase" style={{
+          <span className="text-yellow-400 text-5xl md:text-7xl font-black select-none tracking-tight italic uppercase mt-4" style={{
             fontStyle: 'italic',
             textShadow: '3px 3px 6px rgba(0, 0, 0, 0.85)'
           }}>
@@ -254,8 +254,7 @@ export default function MenuPage() {
       <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">
         v1.0.3 &copy; CandleRush 2025 &middot; <a href="https://x.com/CarlosFreire0" target="_blank" rel="noopener noreferrer" className="text-yellow-400 font-semibold hover:text-yellow-300 transition-colors">By Carlos Freire</a>
       </footer>
-      {/* Reloj digital */}
-      <Clock />
+      <div className="h-12" />
       </div>
     </main>
   );
