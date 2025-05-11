@@ -411,6 +411,25 @@ function WhaleTradesCard() {
     return () => clearInterval(interval);
   }, []);
   
+  // Verificar si autoMix está activo para mostrar un indicador
+  const [isAutoMixActive, setIsAutoMixActive] = React.useState(false);
+  
+  // Verificar periódicamente si autoMix está activo
+  React.useEffect(() => {
+    const checkAutoMix = () => {
+      if (typeof window !== 'undefined') {
+        const autoMixStatus = localStorage.getItem('autoMixActive') === 'true';
+        setIsAutoMixActive(autoMixStatus);
+      }
+    };
+    
+    // Verificar inmediatamente y luego cada segundo
+    checkAutoMix();
+    const interval = setInterval(checkAutoMix, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   // Obtener trades de ballenas en tiempo real
   const whaleTrades = useWhaleTrades({
     minUsd: 10000, // Mostrar trades mayores a $10,000
@@ -471,7 +490,14 @@ function WhaleTradesCard() {
   return (
     <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
       <CardHeader className="items-center pb-2">
-        <CardTitle>Whales Toro vs Oso</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Whales Toro vs Oso
+          {isAutoMixActive && (
+            <span className="inline-flex items-center bg-black text-yellow-400 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+              AUTO MIX ACTIVO 🤖
+            </span>
+          )}
+        </CardTitle>
         <CardDescription className="text-black">
           Actividad reciente de ballenas (últimos 5 min)
         </CardDescription>
@@ -595,6 +621,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setCurrentUser(typeof window !== "undefined" ? localStorage.getItem("currentUser") : null);
+    
+    // Registrar la ubicación actual
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lastLocation', '/profile');
+    }
   }, []);
 
   return (

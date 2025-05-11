@@ -210,7 +210,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING")
   const [autoBullish, setAutoBullish] = useState<boolean>(false);
   const [autoBearish, setAutoBearish] = useState<boolean>(false);
-  const [autoMix, setAutoMix] = useState<boolean>(false);
+  const [autoMix, setAutoMix] = useState<boolean>(() => {
+    // Recuperar estado de autoMix de localStorage al iniciar
+    if (typeof window !== 'undefined') {
+      const savedAutoMix = localStorage.getItem('autoMixActive');
+      return savedAutoMix === 'true';
+    }
+    return false;
+  });
+
+  // Actualizar localStorage cuando cambia autoMix
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('autoMixActive', autoMix.toString());
+    }
+  }, [autoMix]);
+
   const toggleAutoMix = () => {
     setAutoMix((prev) => {
       const newVal = !prev;
@@ -221,6 +236,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return newVal;
     });
   };
+
   const [nextPhaseTime, setNextPhaseTime] = useState<number | null>(null)
   const [nextCandleTime, setNextCandleTime] = useState<number | null>(null)
   const [candles, setCandles] = useState<Candle[]>([])

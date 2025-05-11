@@ -769,6 +769,27 @@ useEffect(() => {
   // Estado para apalancamiento
 // --- Lógica de apuesta automática MIX ---
 useEffect(() => {
+  // Comprobar si viene de vuelta del perfil con autoMix activado
+  if (autoMix) {
+    // Verificar si es la navegación de regreso desde otra página
+    const lastLocation = typeof window !== 'undefined' ? localStorage.getItem('lastLocation') : null;
+    if (lastLocation && lastLocation !== '/game') {
+      console.log('[AUTO MIX] AutoMix sigue activo después de navegar desde:', lastLocation);
+      
+      // Mostrar toast o notificación solo si viene de otra página
+      toast({
+        title: "AutoMix sigue activo",
+        description: "El modo automático continúa funcionando incluso después de navegar entre páginas",
+        variant: "default",
+      });
+    }
+    
+    // Actualizar la ubicación actual
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lastLocation', '/game');
+    }
+  }
+  
   // Siempre una apuesta por vela, dirección 100% aleatoria
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   if (
@@ -1424,12 +1445,7 @@ useEffect(() => {
           >Cerrar sesión</button>
         </div>
       ) : (
-        <Login onLoginSuccess={() => {
-          const reloadAfterLogin = true;
-          if (reloadAfterLogin) {
-            window.location.reload();
-          }
-        }} />
+        <Login />
       )}
     </div>
   </div>
