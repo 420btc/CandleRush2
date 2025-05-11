@@ -1815,8 +1815,12 @@ const handleZoomOut = () => {
       {/* --- Canvas principal --- */}
       <canvas
         ref={canvasRef}
-        className="absolute top-0 left-0 w-full h-full"
-        style={{ pointerEvents: 'auto' }}
+        className="absolute top-0 left-0 w-full h-full touch-none"
+        style={{ 
+          pointerEvents: 'auto',
+          touchAction: 'pan-x pan-y',
+          WebkitOverflowScrolling: 'touch'
+        }}
       />
       {/* Overlay: Perfil de Volumen */}
       {showVolumeProfile && dimensions.height > 0 && !autoDrawActive && (
@@ -1840,7 +1844,17 @@ const handleZoomOut = () => {
         </div>
       )}
       {/* Controles de navegación y SMC+ */}
-      <div className="absolute bottom-14 right-1 flex gap-1 z-50" data-component-name="CandlestickChart">
+      <div className="absolute bottom-4 sm:bottom-14 right-1 flex gap-1 z-50" data-component-name="CandlestickChart">
+        {/* Botón de volumen profile para móvil */}
+        <div className="sm:hidden">
+          <button
+            onClick={() => setShowVolumeProfile && setShowVolumeProfile(v => !v)}
+            className="bg-[#111] border-2 border-[#FFD600] hover:bg-[#FFD600] hover:text-black text-[#FFD600] font-bold px-3 py-1 rounded-full transition-colors duration-200"
+            aria-label="Mostrar/Ocultar Volumen"
+          >
+            {showVolumeProfile ? 'Ocultar Vol' : 'Ver Vol'}
+          </button>
+        </div>
         <button
           onClick={() => setShowSMC(v => !v)}
           className={`bg-[#111] border-2 border-[#FFD600] hover:bg-[#FFD600] hover:text-black text-[#FFD600] font-bold px-3 py-1 rounded-full transition-colors duration-200 ${showSMC ? 'bg-[#FFD600] text-black' : ''}`}
@@ -1853,11 +1867,41 @@ const handleZoomOut = () => {
         <style jsx>{`
           @media (max-width: 768px) {
             div[data-component-name="CandlestickChart"] {
-              bottom: 20px;
-              right: 10px;
+              bottom: 10px;
+              right: 5px;
+              gap: 4px;
             }
             button {
-              padding: 0.5rem;
+              padding: 0.35rem !important;
+              min-width: 40px !important;
+              height: 40px !important;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.8rem;
+            }
+            /* Mejorar la legibilidad en móviles */
+            .candle-tooltip {
+              font-size: 12px !important;
+              padding: 6px 8px !important;
+              max-width: 200px !important;
+            }
+            /* Ajustar el tamaño de los textos en móviles */
+            .price-label, .time-label {
+              font-size: 10px !important;
+            }
+          }
+          /* Mejorar la interacción táctil */
+          @media (hover: none) and (pointer: coarse) {
+            button {
+              min-width: 44px !important;
+              min-height: 44px !important;
+            }
+          }
+          /* Ajustar el canvas para pantallas pequeñas */
+          @media (max-width: 640px) {
+            canvas {
+              touch-action: pan-x pan-y;
             }
           }
         `}</style>
