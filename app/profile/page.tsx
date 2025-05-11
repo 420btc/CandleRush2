@@ -400,24 +400,72 @@ interface WhaleTrade {
 }
 
 function WhaleTradesCard() {
+  const [currentTime, setCurrentTime] = React.useState(Date.now());
+  
+  // Actualizar el tiempo cada segundo para forzar el re-renderizado
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   // Obtener trades de ballenas en tiempo real
   const whaleTrades = useWhaleTrades({
     minUsd: 100000, // Solo trades grandes (ajustar según necesidad)
-    symbols: ["BTCUSDT", "ETHUSDT"] // Pares a monitorear
+    symbols: ["btcusdt@trade", "ethusdt@trade"], // Pares a monitorear en minúsculas con @trade
+    refreshInterval: 1000 // Actualizar cada segundo
   }) as WhaleTrade[];
 
   // Contar trades de compra y venta en los últimos 5 minutos
-  const now = Date.now();
-  const fiveMinutesAgo = now - (5 * 60 * 1000);
+  const fiveMinutesAgo = currentTime - (5 * 60 * 1000);
   
-  const recentTrades = whaleTrades.filter(trade => trade.timestamp > fiveMinutesAgo);
-  const buyTrades = recentTrades.filter(trade => trade.side === 'buy').length;
-  const sellTrades = recentTrades.filter(trade => trade.side === 'sell').length;
+  const recentTrades = React.useMemo(() => {
+    console.log('Todos los trades:', whaleTrades); // Debug
+    return whaleTrades.filter(trade => trade.timestamp > fiveMinutesAgo);
+  }, [whaleTrades, fiveMinutesAgo]);
+  
+  const { buyTrades, sellTrades } = React.useMemo(() => {
+    const buys = recentTrades.filter(trade => trade.side === 'buy').length;
+    const sells = recentTrades.filter(trade => trade.side === 'sell').length;
+    console.log('Buy trades:', buys, 'Sell trades:', sells); // Debug
+    return { buyTrades: buys, sellTrades: sells };
+  }, [recentTrades]);
+  
   const totalTrades = buyTrades + sellTrades;
   
   // Calcular porcentajes para el gráfico
-  const buyPercentage = totalTrades > 0 ? Math.round((buyTrades / totalTrades) * 100) : 50;
-  const sellPercentage = totalTrades > 0 ? 100 - buyPercentage : 50;
+  const buyPercentage = totalTrades > 0 ? Math.round((buyTrades / totalTrades) * 100) : 0;
+  const sellPercentage = totalTrades > 0 ? 100 - buyPercentage : 0;
+  
+  // Datos formateados para el gráfico
+  const chartData = React.useMemo(() => [
+    { name: 'Bullish', value: buyPercentage, fill: '#22c55e' },
+    { name: 'Bearish', value: sellPercentage, fill: '#ef4444' }
+  ], [buyPercentage, sellPercentage]);
+  
+  // Agregar animación al valor actual
+  const [animatedValue, setAnimatedValue] = React.useState(0);
+  
+  React.useEffect(() => {
+    setAnimatedValue(0);
+    const duration = 500; // Duración de la animación en ms
+    const start = Date.now();
+    
+    const animate = () => {
+      const now = Date.now();
+      const progress = Math.min(1, (now - start) / duration);
+      setAnimatedValue(progress * totalTrades);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    const animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [totalTrades]);
 
   return (
     <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
@@ -427,23 +475,36 @@ function WhaleTradesCard() {
           Actividad reciente de ballenas (últimos 5 min)
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 flex items-center justify-center pb-0">
-        <ChartContainer
-          config={{
-            toro: { label: "Toro", color: "#22c55e" },
-            oso: { label: "Oso", color: "#ef4444" },
-          }}
-          className="mx-auto aspect-square w-full max-w-[220px] mt-10"
-        >
-          <RadialBarChart
-            data={[{ whalesToro: buyPercentage, whalesOso: sellPercentage }]}
-            endAngle={180}
-            innerRadius={80}
-            outerRadius={130}
+      <CardContent className="flex-1 flex items-center justify-center p-0">
+        <div className="w-full h-full flex items-center justify-center" style={{ marginTop: '-20px' }}>
+          <ChartContainer
+            config={{
+              toro: { label: "Toro", color: "#22c55e" },
+              oso: { label: "Oso", color: "#ef4444" },
+            }}
+            className="w-[180px] h-[180px] mx-auto"
           >
+            <RadialBarChart
+              data={chartData}
+              endAngle={180}
+              innerRadius={60}
+              outerRadius={85}
+              barSize={14}
+            >
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  return (
+                    <div className="bg-background p-2 border rounded shadow-lg">
+                      <p className="font-medium">{data.name}</p>
+                      <p className="text-sm">{data.value}%</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
@@ -451,12 +512,12 @@ function WhaleTradesCard() {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                     return (
                       <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                          <tspan
-                            x={viewBox?.cx || 0}
-                            y={(viewBox?.cy || 0) - 16}
-                            className="fill-foreground text-2xl font-bold"
-                          >
-                          {totalTrades}
+                        <tspan
+                          x={viewBox?.cx || 0}
+                          y={(viewBox?.cy || 0) - 16}
+                          className="fill-foreground text-2xl font-bold transition-all duration-300"
+                        >
+                          {Math.round(animatedValue)}
                         </tspan>
                         <tspan
                           x={viewBox?.cx || 0}
@@ -472,29 +533,34 @@ function WhaleTradesCard() {
               />
             </PolarRadiusAxis>
             <RadialBar
-              dataKey="whalesToro"
-              stackId="a"
-              cornerRadius={5}
-              fill="#22c55e"
-              className="stroke-transparent stroke-2"
-            />
-            <RadialBar
-              dataKey="whalesOso"
-              fill="#ef4444"
-              stackId="a"
+              dataKey="value"
               cornerRadius={5}
               className="stroke-transparent stroke-2"
             />
-          </RadialBarChart>
-        </ChartContainer>
+            </RadialBarChart>
+          </ChartContainer>
+        </div>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 font-medium leading-none">
-          <span className="text-green-600">Toro: {buyTrades}</span> | 
-          <span className="text-red-600">Oso: {sellTrades}</span>
-        </div>
-        <div className="leading-none text-muted-foreground text-xs">
-          Actualizado: {new Date().toLocaleTimeString()}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+              <span>Bullish: {buyTrades}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+              <span>Bearish: {sellTrades}</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-muted-foreground">
+              Último trade: {recentTrades[0] ? new Date(recentTrades[0].timestamp).toLocaleTimeString() : 'Ninguno'}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Total: {totalTrades} trades (5 min)
+            </div>
+          </div>
         </div>
       </CardFooter>
     </Card>

@@ -1,4 +1,4 @@
-// Hook React para escuchar whale trades en tiempo real desde aggr.trade
+// Hook React para escuchar whale trades en tiempo real desde Binance
 import { useEffect, useRef, useState } from "react";
 
 export interface WhaleTrade {
@@ -7,53 +7,106 @@ export interface WhaleTrade {
   symbol: string;
   price: number;
   amount: number;
+  usd: number;
   side: "buy" | "sell";
   timestamp: number;
   raw?: any;
 }
 
 export function useWhaleTrades({
-  minUsd = 100000,
-  exchanges = ["binance", "bybit", "okx", "bitmex", "bitfinex", "kraken"],
-  symbols = ["BTCUSDT", "ETHUSDT"]
+  minUsd = 10000,
+  symbols = ["btcusdt@trade"],
+  refreshInterval = 1000
 }: {
   minUsd?: number;
-  exchanges?: string[];
   symbols?: string[];
+  refreshInterval?: number;
 } = {}) {
   const [trades, setTrades] = useState<WhaleTrade[]>([]);
-  const wsRef = useRef<WebSocket|null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
+
+  const connectWebSocket = () => {
+    if (wsRef.current) return;
+
+    const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbols.join('/')}`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('WebSocket connected to Binance');
+      reconnectAttempts.current = 0; // Reset reconnection attempts on successful connection
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Verificar si es un mensaje de trade de Binance
+        if (data.e === 'trade') {
+          const price = parseFloat(data.p);
+          const amount = parseFloat(data.q);
+          const usdValue = price * amount;
+          
+          // Filtrar por valor mínimo en USD
+          if (usdValue >= minUsd) {
+            const trade: WhaleTrade = {
+              id: data.t.toString(),
+              exchange: 'binance',
+              symbol: data.s,
+              price,
+              amount,
+              usd: usdValue,
+              side: data.m ? 'sell' : 'buy', // m es true para órdenes de venta
+              timestamp: data.T,
+              raw: data
+            };
+            
+            setTrades(prevTrades => {
+              const newTrades = [trade, ...prevTrades];
+              return newTrades.slice(0, 100); // Mantener los 100 trades más recientes
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error processing trade:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket closed');
+      wsRef.current = null;
+      
+      // Intentar reconectar si no hemos alcanzado el máximo de intentos
+      if (reconnectAttempts.current < maxReconnectAttempts) {
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+        reconnectAttempts.current++;
+        console.log(`Reconnecting in ${delay}ms... (attempt ${reconnectAttempts.current}/${maxReconnectAttempts})`);
+        
+        setTimeout(() => {
+          connectWebSocket();
+        }, delay);
+      } else {
+        console.error('Max reconnection attempts reached');
+      }
+    };
+  };
 
   useEffect(() => {
-    // Puedes cambiar por tu propio backend si tienes aggr-server corriendo
-    const ws = new WebSocket("wss://api.aggr.trade/ws");
-    wsRef.current = ws;
-    ws.onmessage = (ev) => {
-      try {
-        const data = JSON.parse(ev.data);
-        // Ejemplo de formato esperado: { type: 'trade', data: { ... } }
-        if (data.type === "trade") {
-          const t = data.data;
-          if (!exchanges.includes(t.exchange)) return;
-          if (!symbols.includes(t.symbol)) return;
-          const usd = t.price * t.amount;
-          if (usd < minUsd) return;
-          setTrades(trades => [{
-            id: t.id || `${t.exchange}-${t.symbol}-${t.timestamp}`,
-            exchange: t.exchange,
-            symbol: t.symbol,
-            price: t.price,
-            amount: t.amount,
-            side: t.side,
-            timestamp: t.timestamp,
-            raw: t
-          }, ...trades].slice(0, 50)); // máximo 50
-        }
-      } catch {}
+    connectWebSocket();
+
+    // Limpiar al desmontar
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
-    ws.onclose = () => { wsRef.current = null; };
-    return () => { ws.close(); };
-  }, [minUsd, JSON.stringify(exchanges), JSON.stringify(symbols)]);
+  }, [minUsd, symbols.join(',')]); // Reconectar si cambian los parámetros
 
   return trades;
 }
