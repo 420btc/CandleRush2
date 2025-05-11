@@ -77,7 +77,7 @@ export default async function NewsPage() {
         {newsItems.map((item, index) => (
           <Card key={item.link || index} className="flex flex-col bg-yellow-400 text-black">
             <CardHeader>
-              <CardTitle className="text-lg font-bold">
+              <CardTitle className="text-xl font-bold">
                 {item.title || 'Título no disponible'}
               </CardTitle>
               {item.pubDate && (
