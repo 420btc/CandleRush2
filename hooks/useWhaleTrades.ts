@@ -16,11 +16,13 @@ export interface WhaleTrade {
 export function useWhaleTrades({
   minUsd = 10000,
   symbols = ["btcusdt@trade"],
-  refreshInterval = 1000
+  refreshInterval = 1000,
+  limit = 1000
 }: {
   minUsd?: number;
   symbols?: string[];
   refreshInterval?: number;
+  limit?: number;
 } = {}) {
   const [trades, setTrades] = useState<WhaleTrade[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
@@ -64,7 +66,7 @@ export function useWhaleTrades({
             
             setTrades(prevTrades => {
               const newTrades = [trade, ...prevTrades];
-              return newTrades.slice(0, 100); // Mantener los 100 trades más recientes
+              return newTrades.slice(0, limit); // Usar el límite configurable
             });
           }
         }

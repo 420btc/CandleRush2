@@ -415,7 +415,8 @@ function WhaleTradesCard() {
   const whaleTrades = useWhaleTrades({
     minUsd: 10000, // Mostrar trades mayores a $10,000
     symbols: ["btcusdt@trade", "ethusdt@trade"], // Pares a monitorear en minúsculas con @trade
-    refreshInterval: 1000 // Actualizar cada segundo
+    refreshInterval: 1000, // Actualizar cada segundo
+    limit: 1000 // Aumentar el límite a 1000 transacciones
   }) as WhaleTrade[];
 
   // Contar trades de compra y venta en los últimos 5 minutos
