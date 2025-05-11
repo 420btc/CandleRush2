@@ -2,7 +2,7 @@ import Parser from 'rss-parser';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TranslateButton } from '../components/translate-button';
+
 import { ArrowLeft } from 'lucide-react';
 
 // Define la estructura esperada de un item del feed
@@ -41,17 +41,25 @@ export default async function NewsPage() {
         <div className="flex items-center gap-4">
           <Link href="/menu" className="flex items-center gap-2 p-2 rounded-md bg-yellow-400 text-black hover:bg-yellow-300 transition-colors">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-black">
-              <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M19 12h-14M12 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span>Volver al Menú</span>
           </Link>
-          <TranslateButton text="Traducir" />
+
         </div>
         <Link href="/profile" className="flex items-center gap-2 p-2 rounded-md bg-yellow-400 text-black hover:bg-yellow-300 transition-colors">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-black">
             <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span>Volver al Perfil</span>
+        </Link>
+        <Link href="/game" className="flex items-center gap-2 p-2 rounded-md bg-yellow-400 text-black hover:bg-yellow-300 transition-colors">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-black">
+            <path d="M12 14l9-5-9-5-9 5 9 5z" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M12 10l4 5l4-5M12 10l-4 5l-4-5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span>Jugar a CandleRush</span>
         </Link>
       </div>
       <div className="mb-8">
