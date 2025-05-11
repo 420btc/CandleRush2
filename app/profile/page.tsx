@@ -838,7 +838,7 @@ export default function ProfilePage() {
                 config={{
                   won: { label: "Ganadas", color: "#22c55e" },
                   lost: { label: "Perdidas", color: "#ef4444" },
-                  liquidated: { label: "Liquidadas", color: "#000000" },
+                  liquidated: { label: "Liquidadas", color: "#eab308" },
                 }}
                 className="aspect-auto h-[300px] w-full"
               >
@@ -846,20 +846,33 @@ export default function ProfilePage() {
                   data={(() => {
                     // Evolución acumulada de apuestas por estado
                     const { bets } = useGame();
+                    const data = [];
                     let won = 0;
                     let lost = 0;
                     let liquidated = 0;
+                    
+                    // Primero contamos los totales
+                    const totalWon = bets.filter(b => b.status === "WON").length;
+                    const totalLost = bets.filter(b => b.status === "LOST").length;
+                    const totalLiquidated = bets.filter(b => b.status === "LIQUIDATED").length;
+                    const maxTotal = Math.max(totalWon, totalLost, totalLiquidated, 1);
+                    
+                    // Normalizamos los datos para que todas las áreas tengan la misma escala
                     return bets
                       .sort((a, b) => a.timestamp - b.timestamp)
                       .map((bet, i) => {
                         if (bet.status === "WON") won++;
                         if (bet.status === "LOST") lost++;
                         if (bet.status === "LIQUIDATED") liquidated++;
+                        
+                        // Normalizamos los valores para que vayan de 0 a 100
+                        const total = won + lost + liquidated || 1;
+                        
                         return {
                           ronda: i + 1,
-                          won,
-                          lost,
-                          liquidated,
+                          won: (won / maxTotal) * 100,
+                          lost: (lost / maxTotal) * 100,
+                          liquidated: (liquidated / maxTotal) * 100,
                         };
                       });
                   })()}
@@ -874,11 +887,18 @@ export default function ProfilePage() {
                       <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
                     </linearGradient>
                     <linearGradient id="fillLiquidated" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#000000" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#000000" stopOpacity={0.1} />
+                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#eab308" stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <YAxis 
+                    domain={[0, 100]}
+                    tickFormatter={(value) => `${value}%`}
+                    width={40}
+                    axisLine={false}
+                    tickLine={false}
+                  />
                   <XAxis
                     dataKey="date"
                     tickLine={false}
@@ -909,21 +929,25 @@ export default function ProfilePage() {
                     type="monotone"
                     fill="url(#fillWon)"
                     stroke="#22c55e"
-                    stackId="a"
+                    stackId="1"
+                    fillOpacity={0.8}
                   />
                   <Area
                     dataKey="lost"
                     type="monotone"
                     fill="url(#fillLost)"
                     stroke="#ef4444"
-                    stackId="a"
+                    stackId="2"
+                    fillOpacity={0.6}
                   />
                   <Area
                     dataKey="liquidated"
                     type="monotone"
                     fill="url(#fillLiquidated)"
-                    stroke="#eab308"
-                    stackId="a"
+                    stroke="#000000"
+                    strokeWidth={1.5}
+                    stackId="3"
+                    fillOpacity={0.7}
                   />
                   <Legend />
                 </AreaChart>
