@@ -17,7 +17,7 @@ export function useWhaleTrades({
   minUsd = 10000,
   symbols = ["btcusdt@trade"],
   refreshInterval = 1000,
-  limit = 1000
+  limit = 10000
 }: {
   minUsd?: number;
   symbols?: string[];
