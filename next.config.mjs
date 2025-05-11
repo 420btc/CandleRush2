@@ -14,6 +14,13 @@ const nextConfig = {
       ...config.resolve.alias,
       '@': process.cwd(),
     };
+    
+    // Agregar soporte para CSS modules
+    config.module.rules.push({
+      test: /\.(css|scss)$/,
+      use: ['style-loader', 'css-loader', 'postcss-loader'],
+    });
+
     return config;
   },
 }
