@@ -76,6 +76,7 @@ export default function HowToPlayPage() {
             <strong className="text-yellow-400">Consejo:</strong> ¡Elige bien tu apalancamiento!  Un mayor apalancamiento puede aumentar tus ganancias, pero también el riesgo de liquidación.
           </div>
           <Link href="/menu" className="mt-4 inline-block px-8 py-4 rounded-full bg-black text-yellow-400 border-2 border-yellow-400 font-bold text-lg shadow-lg hover:bg-yellow-400 hover:text-black transition-all duration-300 ease-in-out transform hover:scale-105 hover:-translate-y-1 uppercase tracking-wider">Volver al menú</Link>
+          <Link href="/game" className="mt-4 inline-block px-8 py-4 rounded-full bg-yellow-400 text-black border-2 border-yellow-400 font-bold text-lg shadow-lg hover:bg-black hover:text-yellow-400 transition-all duration-300 ease-in-out transform hover:scale-105 hover:-translate-y-1 uppercase tracking-wider text-center">Volver a Jugar</Link>
         </div>
         <div className="flex justify-center items-center w-full">
           <TiltedScroll 
