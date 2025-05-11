@@ -413,7 +413,7 @@ function WhaleTradesCard() {
   
   // Obtener trades de ballenas en tiempo real
   const whaleTrades = useWhaleTrades({
-    minUsd: 100000, // Solo trades grandes (ajustar según necesidad)
+    minUsd: 10000, // Mostrar trades mayores a $10,000
     symbols: ["btcusdt@trade", "ethusdt@trade"], // Pares a monitorear en minúsculas con @trade
     refreshInterval: 1000 // Actualizar cada segundo
   }) as WhaleTrade[];
