@@ -11,9 +11,10 @@ export function Footer() {
       const windowHeight = window.innerHeight
       const documentHeight = document.documentElement.scrollHeight
       const scrolled = window.scrollY
+      const footerHeight = 80 // Altura aproximada del footer en px
       
-      // Mostrar footer cuando se llegue al 80% de la página
-      if (scrolled + windowHeight >= documentHeight * 0.8) {
+      // Mostrar footer solo cuando se esté en la parte inferior de la página
+      if (scrolled + windowHeight >= documentHeight - footerHeight) {
         setShowFooter(true)
       } else {
         setShowFooter(false)
@@ -27,7 +28,7 @@ export function Footer() {
   if (!showFooter) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-black p-4 flex justify-center gap-4">
+    <div className="fixed bottom-40 left-0 right-0 bg-black p-4 flex justify-center gap-4 z-0">
       <Link href="/menu" className="flex items-center gap-2 p-2 rounded-md bg-yellow-400 text-black hover:bg-yellow-300 transition-colors">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-black">
           <path d="M19 12h-14M12 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />

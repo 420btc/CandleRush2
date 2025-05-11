@@ -2,9 +2,11 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { useWindowWidth } from "@/hooks/use-window-width";
+import { Button } from '@/components/ui/button';
 import { BitcoinSparkles } from "@/components/ui/bitcoin-sparkles";
 import { TextParticle } from "@/components/ui/text-particle";
 import { SplineScene } from "@/components/ui/splite";
+import { Footer } from '@/components/ui/footer';
 import { MenuPreview } from "@/components/ui/menu-preview";
 import { SiBitcoinsv } from "react-icons/si";
 import Link from "next/link";
@@ -20,6 +22,7 @@ interface MenuItem {
 
 export default function MenuPage() {
   const [showSplash, setShowSplash] = useState(false);
+  const [showFooter, setShowFooter] = useState(false);
 
   const menuItems: MenuItem[] = [
     {
@@ -115,6 +118,24 @@ export default function MenuPage() {
     const interval = setInterval(fetchBTC, 1000); // Actualizar cada segundo
     return () => clearInterval(interval);
   }, [isClient, btcPrice]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolled = window.scrollY;
+      
+      // Mostrar footer solo cuando se esté en la parte inferior de la página
+      if (scrolled + windowHeight >= documentHeight) {
+        setShowFooter(true);
+      } else {
+        setShowFooter(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="relative">
@@ -238,7 +259,7 @@ export default function MenuPage() {
             ))}
           </div>
         </div>
-        <footer className="w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400">
+        <footer className={`w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400 ${showFooter ? '' : 'hidden'}`}>
           v1.0.3 &copy; CandleRush 2025 &middot; <a href="https://x.com/CarlosFreire0" target="_blank" rel="noopener noreferrer" className="text-yellow-400 font-semibold hover:text-yellow-300 transition-colors">By Carlos Freire</a>
         </footer>
         <div className="h-12" />
