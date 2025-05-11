@@ -1036,6 +1036,240 @@ export default function ProfilePage() {
           </Card>
         </div>
         
+        {/* Nuevas tarjetas para futuros gráficos */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-8">
+          {/* Nueva tarjeta 1 */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
+            <CardHeader className="items-center pb-2">
+              <CardTitle>Memoria AutoMix</CardTitle>
+              <CardDescription className="text-black">Señales de trading en tiempo real</CardDescription>
+            </CardHeader>
+            <CardContent className="pb-0">
+              {(() => {
+                // Hook para forzar re-renderizado
+                const [key, setKey] = React.useState(0);
+                
+                // Variables para mostrar info de la última apuesta
+                const [lastBetDirection, setLastBetDirection] = React.useState("DESCONOCIDO");
+                const [lastBetResult, setLastBetResult] = React.useState<string | null>(null);
+                const [lastBetTime, setLastBetTime] = React.useState("Sin datos");
+                
+                // Actualizar cada minuto en lugar de cada 5 segundos
+                React.useEffect(() => {
+                  const interval = setInterval(() => {
+                    setKey(prev => prev + 1);
+                    
+                    // Actualizar los datos dentro del intervalo
+                    if (typeof window !== "undefined") {
+                      try {
+                        const rawMemory = localStorage.getItem("autoMixMemory");
+                        if (rawMemory) {
+                          const memory = JSON.parse(rawMemory);
+                          // Obtener la última entrada de la memoria
+                          const lastEntry = memory[memory.length - 1] || {};
+                          
+                          // Actualizar información de la última apuesta
+                          setLastBetDirection(lastEntry.direction || "DESCONOCIDO");
+                          setLastBetResult(lastEntry.result);
+                          setLastBetTime(lastEntry.timestamp ? new Date(lastEntry.timestamp).toLocaleTimeString() : "Sin datos");
+                        }
+                      } catch (error) {
+                        console.error("Error leyendo autoMixMemory:", error);
+                      }
+                    }
+                  }, 60000); // 60000ms = 1 minuto
+                  
+                  // También actualizar al montar el componente
+                  if (typeof window !== "undefined") {
+                    try {
+                      const rawMemory = localStorage.getItem("autoMixMemory");
+                      if (rawMemory) {
+                        const memory = JSON.parse(rawMemory);
+                        const lastEntry = memory[memory.length - 1] || {};
+                        
+                        setLastBetDirection(lastEntry.direction || "DESCONOCIDO");
+                        setLastBetResult(lastEntry.result);
+                        setLastBetTime(lastEntry.timestamp ? new Date(lastEntry.timestamp).toLocaleTimeString() : "Sin datos");
+                      }
+                    } catch (error) {
+                      console.error("Error leyendo autoMixMemory:", error);
+                    }
+                  }
+                  
+                  return () => clearInterval(interval);
+                }, []);
+                
+                // Datos fijos de ejemplo (si no hay memoria)
+                let chartData = [
+                  { indicator: "RSI", bullish: 70, bearish: 30 },
+                  { indicator: "MACD", bullish: 80, bearish: 20 },
+                  { indicator: "Mayoría", bullish: 60, bearish: 40 },
+                  { indicator: "Valle", bullish: 50, bearish: 50 },
+                  { indicator: "Volumen", bullish: 30, bearish: 70 },
+                  { indicator: "Ballenas", bullish: 80, bearish: 20 },
+                ];
+                
+                // Obtener datos reales si es posible
+                if (typeof window !== "undefined") {
+                  try {
+                    const rawMemory = localStorage.getItem("autoMixMemory");
+                    if (rawMemory) {
+                      const memory = JSON.parse(rawMemory);
+                      // Obtener la última entrada de la memoria
+                      const lastEntry = memory[memory.length - 1] || {};
+                      
+                      // Actualizar chartData con valores reales
+                      chartData = [
+                        { 
+                          indicator: "RSI", 
+                          bullish: lastEntry.rsiSignal === "BULLISH" ? 80 : 20, 
+                          bearish: lastEntry.rsiSignal === "BEARISH" ? 80 : 20 
+                        },
+                        { 
+                          indicator: "MACD", 
+                          bullish: lastEntry.macdSignal === "BULLISH" ? 80 : 20, 
+                          bearish: lastEntry.macdSignal === "BEARISH" ? 80 : 20 
+                        },
+                        { 
+                          indicator: "Mayoría", 
+                          bullish: lastEntry.majoritySignal === "BULLISH" ? 80 : 20, 
+                          bearish: lastEntry.majoritySignal === "BEARISH" ? 80 : 20 
+                        },
+                        { 
+                          indicator: "Valle", 
+                          bullish: lastEntry.valleyVote === "BULLISH" ? 80 : 20, 
+                          bearish: lastEntry.valleyVote === "BEARISH" ? 80 : 20 
+                        },
+                        { 
+                          indicator: "Volumen", 
+                          bullish: lastEntry.volumeVote === "BULLISH" ? 80 : 20, 
+                          bearish: lastEntry.volumeVote === "BEARISH" ? 80 : 20 
+                        },
+                        { 
+                          indicator: "Ballenas", 
+                          bullish: lastEntry.whaleVote === "BULLISH" ? 80 : 20, 
+                          bearish: lastEntry.whaleVote === "BEARISH" ? 80 : 20 
+                        },
+                      ];
+                    }
+                  } catch (error) {
+                    console.error("Error leyendo autoMixMemory:", error);
+                  }
+                }
+                
+                // Configuración de colores
+                const chartConfig = {
+                  bullish: {
+                    label: "Alcista",
+                    color: "#22c55e", // verde
+                  },
+                  bearish: {
+                    label: "Bajista",
+                    color: "#ef4444", // rojo
+                  },
+                };
+                
+                return (
+                  <>
+                    <ChartContainer
+                      config={chartConfig}
+                      className="mx-auto aspect-square max-h-[250px]"
+                    >
+                      <RadarChart data={chartData}>
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent indicator="line" />}
+                        />
+                        <PolarAngleAxis 
+                          dataKey="indicator" 
+                          tick={{ fill: '#fff', fontSize: 10 }}
+                        />
+                        <PolarGrid radialLines={false} stroke="#444" />
+                        <Radar
+                          dataKey="bullish"
+                          fill="var(--color-bullish)"
+                          fillOpacity={0}
+                          stroke="var(--color-bullish)"
+                          strokeWidth={2}
+                        />
+                        <Radar
+                          dataKey="bearish"
+                          fill="var(--color-bearish)"
+                          fillOpacity={0}
+                          stroke="var(--color-bearish)"
+                          strokeWidth={2}
+                        />
+                      </RadarChart>
+                    </ChartContainer>
+                    
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 font-medium leading-none">
+                        <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span> Señales alcistas vs 
+                        <span className="inline-block w-3 h-3 bg-red-500 rounded-full"></span> Señales bajistas
+                      </div>
+                      <div className="flex items-center gap-2 leading-none text-black font-medium mt-2">
+                        Última decisión: 
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                          lastBetDirection === "BULLISH" ? "bg-green-500 text-white" : 
+                          lastBetDirection === "BEARISH" ? "bg-red-500 text-white" : 
+                          "bg-gray-500 text-white"
+                        }`}>
+                          {lastBetDirection === "BULLISH" ? "ALCISTA" : 
+                          lastBetDirection === "BEARISH" ? "BAJISTA" : 
+                          "DESCONOCIDO"}
+                        </span>
+                        {lastBetResult && (
+                          <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                            lastBetResult === "WIN" ? "bg-green-500 text-white" : 
+                            lastBetResult === "LOSS" || lastBetResult === "LIQ" ? "bg-red-500 text-white" : 
+                            "bg-gray-500 text-white"
+                          }`}>
+                            {lastBetResult === "WIN" ? "GANADA" : 
+                            lastBetResult === "LOSS" ? "PERDIDA" : 
+                            lastBetResult === "LIQ" ? "LIQUIDADA" : "..."}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 leading-none text-muted-foreground mt-1">
+                        Última actualización: {lastBetTime} (actualiza cada 1 min)
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              {/* La información de la apuesta ahora se muestra dentro del componente */}
+            </CardFooter>
+          </Card>
+          
+          {/* Nueva tarjeta 2 */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
+            <CardHeader className="items-center pb-2">
+              <CardTitle>Gráfico Personalizado 2</CardTitle>
+              <CardDescription className="text-black">Espacio para gráfico personalizado</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center">
+              <div className="w-full max-w-[250px] h-[250px] bg-black rounded-lg flex items-center justify-center">
+                {/* Contenido del gráfico será agregado aquí */}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Nueva tarjeta 3 */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
+            <CardHeader className="items-center pb-2">
+              <CardTitle>Gráfico Personalizado 3</CardTitle>
+              <CardDescription className="text-black">Espacio para gráfico personalizado</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center">
+              <div className="w-full max-w-[250px] h-[250px] bg-black rounded-lg flex items-center justify-center">
+                {/* Contenido del gráfico será agregado aquí */}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
         {/* Sección para gráfico horizontal completo */}
         <div className="w-full max-w-5xl mx-auto mt-12">
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl">
@@ -1177,7 +1411,7 @@ export default function ProfilePage() {
                 {
                   title: "Noticias",
                   description: "Coinbase compra Deribit por 2.900 millones",
-                  className: "[grid-area:stack] translate-x-16 translate-y-10 hover:-translate-y-1 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-background/50 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0",
+                  className: "[grid-area:stack] translate-x-16 translate-y-10 hover:-translate-y-10 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-background/50 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0",
                 },
                 {
                   title: "Halving Countdown",
