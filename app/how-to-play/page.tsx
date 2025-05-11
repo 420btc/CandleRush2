@@ -51,7 +51,9 @@ export default function HowToPlayPage() {
     <main className="min-h-screen bg-black p-8">
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8">
         <div className="md:w-1/2">
-          <h1 className="text-4xl font-bold text-yellow-400 mb-8 text-center md:text-left">Cómo Jugar CandleRush 2</h1>
+          <h1 className="text-4xl font-bold mb-8 text-center md:text-left">
+            Cómo Jugar Candle<span className="text-red-600">Rush</span> <span className="text-green-600">2</span>
+          </h1>
           <ol className="space-y-4 text-yellow-400">
             <li>
               Elige el tamaño de tu apuesta y el apalancamiento deseado.
