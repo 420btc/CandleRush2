@@ -62,8 +62,11 @@ export default async function NewsPage() {
           <span>Jugar a CandleRush</span>
         </Link>
       </div>
-      <div className="mb-8">
-        <h1 className="text-7xl font-extrabold text-yellow-400 italic text-center mb-4">NOTICIAS</h1>
+      <div className="mb-8 text-center">
+        <h1 className="text-7xl font-extrabold text-yellow-400 italic mb-2">NOTICIAS</h1>
+        <p className="text-2xl font-semibold text-white">
+          Últimas 15 noticias de <a href="https://www.coindesk.com" target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:text-yellow-300">Coindesk</a>
+        </p>
       </div>
 
       {newsItems.length === 0 && (
