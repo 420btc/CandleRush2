@@ -1,8 +1,42 @@
 "use client";
 import Image from "next/image";
 import { TrendingUp } from "lucide-react"
-import { PolarRadiusAxis } from "recharts";
-import { PolarAngleAxis, PolarGrid, Radar, RadarChart, RadialBarChart, RadialBar, Tooltip, Legend, LineChart, Line, XAxis, YAxis, BarChart, Bar, AreaChart, Area, CartesianGrid } from "recharts";
+import { 
+  PolarRadiusAxis, 
+  PolarAngleAxis, 
+  PolarGrid, 
+  Radar, 
+  RadarChart, 
+  RadialBarChart, 
+  RadialBar, 
+  Tooltip, 
+  Legend, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  BarChart, 
+  Bar, 
+  AreaChart, 
+  Area, 
+  CartesianGrid,
+  Label,
+  PieChart,
+  Pie,
+  Sector
+} from "recharts";
+
+type LabelViewBox = {
+  cx?: number;
+  cy?: number;
+  width?: number;
+  height?: number;
+  startAngle?: number;
+  endAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+};
+import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
 import {
   Card,
   CardContent,
@@ -12,7 +46,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -20,33 +53,40 @@ import {
 import UserStats from "@/components/game/user-stats";
 import BetHistory from "@/components/game/bet-history";
 import { useRouter } from "next/navigation";
+import { useWhaleTrades } from "@/hooks/useWhaleTrades";
+import { useState, useEffect, useMemo } from "react";
 import { useGame } from "@/context/game-context";
-import { useMemo } from "react";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/context/auth-context";
 import Login from "@/components/login";
 import DisplayCards from "@/components/ui/display-cards";
 import { Modal } from "../components/modal";
 import { Button } from "../components/button";
+import type { Bet } from "@/types/game";
 
 // Hook para obtener y computar métricas de apuestas del usuario logueado
 
 function useBetChartsData() {
   // Obtener las apuestas reales desde el contexto global
   const { bets } = useGame();
+  
+  // Definir el tipo para las apuestas
+  type BetWithStatus = Bet & { status: string; prediction: string; timestamp: number };
 
   // Radar: estados de apuesta
-  const radarData = useMemo(() => (
-    [
-      { status: 'Ganadas', value: bets.filter(b => b.status === 'WON').length },
-      { status: 'Perdidas', value: bets.filter(b => b.status === 'LOST').length },
-      { status: 'Liquidadas', value: bets.filter(b => b.status === 'LIQUIDATED').length },
-      { status: 'Pendientes', value: bets.filter(b => b.status === 'PENDING').length },
-    ]
-  ), [bets]);
+  const radarData = useMemo(() => {
+    const typedBets = bets as BetWithStatus[];
+    return [
+      { status: 'Ganadas', value: typedBets.filter(b => b.status === 'WON').length },
+      { status: 'Perdidas', value: typedBets.filter(b => b.status === 'LOST').length },
+      { status: 'Liquidadas', value: typedBets.filter(b => b.status === 'LIQUIDATED').length },
+      { status: 'Pendientes', value: typedBets.filter(b => b.status === 'PENDING').length },
+    ];
+  }, [bets]);
 
   // RadialBar: bullish vs bearish
-  const bullish = bets.filter((b: any) => b.prediction === 'BULLISH').length;
-  const bearish = bets.filter((b: any) => b.prediction === 'BEARISH').length;
+  const typedBets = bets as BetWithStatus[];
+  const bullish = typedBets.filter(b => b.prediction === 'BULLISH').length;
+  const bearish = typedBets.filter(b => b.prediction === 'BEARISH').length;
   const radialData = [
     { name: 'Bullish', value: bullish, fill: '#22c55e' },
     { name: 'Bearish', value: bearish, fill: '#ef4444' },
@@ -66,23 +106,42 @@ function useBetChartsData() {
 }
 
 // Configs para los charts
-const radarConfig = {
+interface ChartConfig {
+  [key: string]: {
+    label: string;
+    color: string;
+  };
+}
+
+// Interface para el payload del tooltip
+interface TooltipPayload<T = any> {
+  value: number;
+  name: string;
+  payload: T & { longs?: number; shorts?: number };
+  dataKey: string | number | symbol;
+  color?: string;
+  [key: string]: any;
+}
+
+const radarConfig: ChartConfig = {
   Ganadas: { label: 'Ganadas', color: '#22c55e' },
   Perdidas: { label: 'Perdidas', color: '#ef4444' },
   Liquidadas: { label: 'Liquidadas', color: '#eab308' },
   Pendientes: { label: 'Pendientes', color: '#fbbf24' },
-} satisfies ChartConfig;
+  // Agregando una entrada por defecto para evitar errores
+  default: { label: 'Default', color: '#888888' }
+};
 
-const radialConfig = {
+const radialConfig: ChartConfig = {
   Bullish: { label: 'Bullish', color: '#22c55e' },
   Bearish: { label: 'Bearish', color: '#ef4444' },
-} satisfies ChartConfig;
+};
 
-const pieConfig = {
+const pieConfig: ChartConfig = {
   Ganadas: { label: 'Ganadas', color: '#22c55e' },
   Perdidas: { label: 'Perdidas', color: '#ef4444' },
   Liquidadas: { label: 'Liquidadas', color: '#000000' },
-} satisfies ChartConfig;
+};
 
 // Datos y configuración para la gráfica radial
 const radialChartData = [
@@ -93,36 +152,40 @@ const radialChartData = [
   { browser: "other", visitors: 90, fill: "#e5e7eb" }, // gris muy claro
 ];
 
-const radialChartConfig = {
+const radialChartConfig: ChartConfig = {
   visitors: {
     label: "Visitantes",
+    color: "#000000"
   },
   chrome: {
     label: "Chrome",
-    color: "#ef4444",
+    color: "#ef4444"
   },
   safari: {
     label: "Safari",
-    color: "#22c55e",
+    color: "#22c55e"
   },
   firefox: {
     label: "Firefox",
-    color: "#888888",
+    color: "#888888"
   },
   edge: {
     label: "Edge",
-    color: "#bbbbbb",
+    color: "#bbbbbb"
   },
   other: {
     label: "Other",
-    color: "#e5e7eb",
+    color: "#e5e7eb"
   },
-} satisfies ChartConfig;
-
+  // Asegurando que todas las claves requeridas tengan color
+  default: {
+    label: "Default",
+    color: "#888888"
+  }
+};
 
 // PieChartCard: Pie chart interactivo para la tercera tarjeta
 import * as React from "react";
-import { PieChart, Pie, Sector, Label } from "recharts";
 import { PieSectorDataItem } from "recharts/types/polar/Pie";
 import { ChartStyle } from "@/components/ui/chart";
 import {
@@ -141,34 +204,36 @@ const pieChartData = [
   { month: "may", desktop: 209, fill: "#e5e7eb" },
 ];
 
-const pieChartConfig = {
+const pieChartConfig: ChartConfig = {
   visitors: {
     label: "Visitors",
+    color: "#000000"
   },
   desktop: {
     label: "Desktop",
+    color: "#888888"
   },
   january: {
     label: "January",
-    color: "#ef4444",
+    color: "#3b82f6"
   },
   february: {
     label: "February",
-    color: "#22c55e",
+    color: "#8b5cf6"
   },
   march: {
     label: "March",
-    color: "#888888",
+    color: "#ec4899"
   },
   april: {
     label: "April",
-    color: "#bbbbbb",
+    color: "#f43f5e"
   },
   may: {
     label: "May",
-    color: "#e5e7eb",
-  },
-} satisfies ChartConfig;
+    color: "#e5e7eb"
+  }
+};
 
 function PieChartCard() {
   const id = "pie-interactive";
@@ -325,6 +390,116 @@ function LoginLogoutButton() {
 
 // Fecha objetivo del próximo halving de BTC (ajusta si tienes una fecha más precisa)
 const FECHA_HALVING = new Date('2028-03-30T00:00:00Z');
+
+interface WhaleTrade {
+  timestamp: number;
+  side: 'buy' | 'sell';
+  price: number;
+  amount: number;
+  symbol: string;
+}
+
+function WhaleTradesCard() {
+  // Obtener trades de ballenas en tiempo real
+  const whaleTrades = useWhaleTrades({
+    minUsd: 100000, // Solo trades grandes (ajustar según necesidad)
+    symbols: ["BTCUSDT", "ETHUSDT"] // Pares a monitorear
+  }) as WhaleTrade[];
+
+  // Contar trades de compra y venta en los últimos 5 minutos
+  const now = Date.now();
+  const fiveMinutesAgo = now - (5 * 60 * 1000);
+  
+  const recentTrades = whaleTrades.filter(trade => trade.timestamp > fiveMinutesAgo);
+  const buyTrades = recentTrades.filter(trade => trade.side === 'buy').length;
+  const sellTrades = recentTrades.filter(trade => trade.side === 'sell').length;
+  const totalTrades = buyTrades + sellTrades;
+  
+  // Calcular porcentajes para el gráfico
+  const buyPercentage = totalTrades > 0 ? Math.round((buyTrades / totalTrades) * 100) : 50;
+  const sellPercentage = totalTrades > 0 ? 100 - buyPercentage : 50;
+
+  return (
+    <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
+      <CardHeader className="items-center pb-2">
+        <CardTitle>Whales Toro vs Oso</CardTitle>
+        <CardDescription className="text-black">
+          Actividad reciente de ballenas (últimos 5 min)
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 flex items-center justify-center pb-0">
+        <ChartContainer
+          config={{
+            toro: { label: "Toro", color: "#22c55e" },
+            oso: { label: "Oso", color: "#ef4444" },
+          }}
+          className="mx-auto aspect-square w-full max-w-[220px] mt-10"
+        >
+          <RadialBarChart
+            data={[{ whalesToro: buyPercentage, whalesOso: sellPercentage }]}
+            endAngle={180}
+            innerRadius={80}
+            outerRadius={130}
+          >
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent hideLabel />}
+            />
+            <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+              <Label
+                content={({ viewBox }: { viewBox?: LabelViewBox }) => {
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                    return (
+                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                          <tspan
+                            x={viewBox?.cx || 0}
+                            y={(viewBox?.cy || 0) - 16}
+                            className="fill-foreground text-2xl font-bold"
+                          >
+                          {totalTrades}
+                        </tspan>
+                        <tspan
+                          x={viewBox?.cx || 0}
+                          y={((viewBox?.cy || 0) + 4)}
+                          className="fill-muted-foreground text-xs"
+                        >
+                          trades
+                        </tspan>
+                      </text>
+                    );
+                  }
+                }}
+              />
+            </PolarRadiusAxis>
+            <RadialBar
+              dataKey="whalesToro"
+              stackId="a"
+              cornerRadius={5}
+              fill="#22c55e"
+              className="stroke-transparent stroke-2"
+            />
+            <RadialBar
+              dataKey="whalesOso"
+              fill="#ef4444"
+              stackId="a"
+              cornerRadius={5}
+              className="stroke-transparent stroke-2"
+            />
+          </RadialBarChart>
+        </ChartContainer>
+      </CardContent>
+      <CardFooter className="flex-col gap-2 text-sm">
+        <div className="flex items-center gap-2 font-medium leading-none">
+          <span className="text-green-600">Toro: {buyTrades}</span> | 
+          <span className="text-red-600">Oso: {sellTrades}</span>
+        </div>
+        <div className="leading-none text-muted-foreground text-xs">
+          Actualizado: {new Date().toLocaleTimeString()}
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -616,13 +791,17 @@ export default function ProfilePage() {
                       <ChartTooltipContent
                         hideLabel
                         className="w-[180px]"
-                        formatter={(value, name, item, index) => (
+                        formatter={(value: ValueType, name: NameType, item: any) => {
+                          const payload = item?.payload || { longs: 0, shorts: 0 };
+                          const index = item?.index;
+                          const color = name === 'longs' ? '#22c55e' : '#ef4444';
+                          const longs = 'longs' in payload ? payload.longs : 0;
+                          const shorts = 'shorts' in payload ? payload.shorts : 0;
+                          return (
                           <>
                             <div
-                              className="h-2.5 w-2.5 shrink-0 rounded-[1px] bg-[--color-bg]"
-                              style={{
-                                "--color-bg": name === "longs" ? "#22c55e" : "#ef4444",
-                              } as React.CSSProperties}
+                              className="h-2.5 w-2.5 shrink-0 rounded-[1px]"
+                              style={{ backgroundColor: color }}
                             />
                             {name === "longs" ? "Longs" : "Shorts"}
                             <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
@@ -633,13 +812,14 @@ export default function ProfilePage() {
                               <div className="mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium text-foreground">
                                 Total
                                 <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
-                                  {item.payload.longs + item.payload.shorts}
+                                  {longs + shorts}
                                   <span className="font-normal text-muted-foreground">contratos</span>
                                 </div>
                               </div>
                             )}
                           </>
-                        )}
+                        );
+                        }}
                       />
                     }
                     cursor={false}
@@ -651,84 +831,7 @@ export default function ProfilePage() {
         </div>
         {/* Tarjetas adicionales para nuevas métricas personalizadas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-8">
-          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
-            <CardHeader className="items-center pb-2">
-              <CardTitle>Whales Toro vs Oso</CardTitle>
-              <CardDescription className="text-black">Actividad de grandes jugadores detectada</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center pb-0">
-              {/* RadialBarChart de whales toros/osos */}
-              {/* Puedes reemplazar los datos por los reales cuando los tengas */}
-              <ChartContainer
-                config={{
-                  toro: { label: "Toro", color: "#22c55e" },
-                  oso: { label: "Oso", color: "#ef4444" },
-                }}
-                className="mx-auto aspect-square w-full max-w-[220px] mt-10"
-              >
-                <RadialBarChart
-                  data={[{ whalesToro: 5, whalesOso: 2 }]}
-                  endAngle={180}
-                  innerRadius={80}
-                  outerRadius={130}
-                >
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                  />
-                  <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-                    <Label
-                      content={({ viewBox }) => {
-                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                          const totalWhales = 6 + 1;
-                          return (
-                            <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                              <tspan
-                                x={viewBox.cx}
-                                y={(viewBox.cy || 0) - 16}
-                                className="fill-foreground text-2xl font-bold"
-                              >
-                                {totalWhales.toLocaleString()}
-                              </tspan>
-                              <tspan
-                                x={viewBox.cx}
-                                y={(viewBox.cy || 0) + 4}
-                                className="fill-muted-foreground"
-                              >
-                                Whales totales
-                              </tspan>
-                            </text>
-                          );
-                        }
-                      }}
-                    />
-                  </PolarRadiusAxis>
-                  <RadialBar
-                    dataKey="whalesToro"
-                    stackId="a"
-                    cornerRadius={5}
-                    fill="#22c55e"
-                    className="stroke-transparent stroke-2"
-                  />
-                  <RadialBar
-                    dataKey="whalesOso"
-                    fill="#ef4444"
-                    stackId="a"
-                    cornerRadius={5}
-                    className="stroke-transparent stroke-2"
-                  />
-                </RadialBarChart>
-              </ChartContainer>
-            </CardContent>
-            <CardFooter className="flex-col gap-2 text-sm">
-              <div className="flex items-center gap-2 font-medium leading-none">
-                Tendencia mensual: +5.2% <TrendingUp className="h-4 w-4" />
-              </div>
-              <div className="leading-none text-muted-foreground">
-                
-              </div>
-            </CardFooter>
-          </Card>
+          <WhaleTradesCard />
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
             <CardHeader className="items-center pb-0">
               <CardTitle>Evolución de apuestas</CardTitle>
@@ -746,7 +849,8 @@ export default function ProfilePage() {
                     const { bets } = useGame();
                     let bullish = 0;
                     let bearish = 0;
-                    return bets
+                    const typedBets = bets as Array<{ timestamp: number; prediction: string }>;
+                    return [...typedBets]
                       .sort((a, b) => a.timestamp - b.timestamp)
                       .map((bet, i) => {
                         if (bet.prediction === "BULLISH") bullish++;
