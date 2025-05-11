@@ -23,7 +23,9 @@ import {
   Label,
   PieChart,
   Pie,
-  Sector
+  Sector,
+  Cell,
+  LabelList
 } from "recharts";
 
 type LabelViewBox = {
@@ -682,7 +684,7 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-2">
-              <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center -mt-1">
+              <div className="mx-auto w-full max-w-[240px] aspect-square min-h-[240px] rounded-xl bg-black flex items-center justify-center -mt-1">
                 {/* Obtener datos de apuestas */}
                 {(() => {
                   const { radarData } = betCharts;
@@ -775,7 +777,7 @@ export default function ProfilePage() {
               <CardDescription className="text-black">Winrate vs Lossrate en tus apuestas.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-2">
-              <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center">
+              <div className="mx-auto w-full max-w-[240px] aspect-square min-h-[240px] rounded-xl bg-black flex items-center justify-center">
                 {(() => {
                   const { won, lost, total } = betCharts;
                   const winrate = total ? Math.round((won / total) * 100) : 0;
@@ -813,7 +815,7 @@ export default function ProfilePage() {
                   longs: { label: "Longs", color: "#22c55e" },
                   shorts: { label: "Shorts", color: "#ef4444" },
                 }}
-                className="mx-auto w-full max-w-[250px] aspect-square rounded-xl bg-black flex items-center justify-center -mt-14"
+                className="mx-auto w-full max-w-[240px] aspect-square rounded-xl bg-black flex items-center justify-center -mt-14"
               >
                 <BarChart
                   width={210}
@@ -938,10 +940,10 @@ export default function ProfilePage() {
             <CardContent className="flex-1 flex items-center justify-center">
           
               {/* LineChart de evolución de apuestas bullish/bearish */}
-              <div className="w-full max-w-[260px] h-[250px] bg-black rounded-lg flex items-center justify-center">
+              <div className="w-full max-w-[240px] h-[240px] bg-black rounded-lg flex items-center justify-center">
                 <LineChart
-                  width={250}
-                  height={225}
+                  width={225}
+                  height={210}
                   data={(() => {
                     // Evolución acumulada de apuestas bullish y bearish
                     const { bets } = useGame();
@@ -978,7 +980,7 @@ export default function ProfilePage() {
               <CardDescription className="text-black">Proporción de apuestas bullish o bearish.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center pb-0">
-              <div className="mx-auto w-full max-w-[250px] aspect-square min-h-[250px] rounded-xl bg-black flex items-center justify-center -mt-4">
+              <div className="mx-auto w-full max-w-[240px] aspect-square min-h-[240px] rounded-xl bg-black flex items-center justify-center -mt-4">
                 {(() => {
                   const { bullish, bearish, total } = betCharts;
                   const bullPct = total ? Math.round((bullish / total) * 100) : 0;
@@ -1142,15 +1144,32 @@ export default function ProfilePage() {
                         },
                         { 
                           indicator: "Volumen", 
-                          bullish: lastEntry.volumeVote === "BULLISH" ? 80 : 20, 
-                          bearish: lastEntry.volumeVote === "BEARISH" ? 80 : 20 
+                          // Revisar múltiples posibles propiedades para volumen
+                          bullish: lastEntry.volumeVote === "BULLISH" || 
+                                  (lastEntry.votesSnapshot?.volumeVote === "BULLISH") ? 80 : 20, 
+                          bearish: lastEntry.volumeVote === "BEARISH" || 
+                                  (lastEntry.votesSnapshot?.volumeVote === "BEARISH") ? 80 : 20 
                         },
                         { 
                           indicator: "Ballenas", 
-                          bullish: lastEntry.whaleVote === "BULLISH" ? 80 : 20, 
-                          bearish: lastEntry.whaleVote === "BEARISH" ? 80 : 20 
+                          // Revisar múltiples posibles propiedades para ballenas
+                          bullish: lastEntry.whaleVote === "BULLISH" || 
+                                  (lastEntry.votesSnapshot?.whaleVote === "BULLISH") ? 80 : 20, 
+                          bearish: lastEntry.whaleVote === "BEARISH" || 
+                                  (lastEntry.votesSnapshot?.whaleVote === "BEARISH") ? 80 : 20 
                         },
                       ];
+                      
+                      // Añadir logging para debug
+                      console.log("Datos de AutoMix:", {
+                        rsi: lastEntry.rsiSignal,
+                        macd: lastEntry.macdSignal,
+                        mayoría: lastEntry.majoritySignal,
+                        valle: lastEntry.valleyVote,
+                        volumen: lastEntry.volumeVote || (lastEntry.votesSnapshot?.volumeVote),
+                        ballenas: lastEntry.whaleVote || (lastEntry.votesSnapshot?.whaleVote),
+                        votesSnapshot: lastEntry.votesSnapshot
+                      });
                     }
                   } catch (error) {
                     console.error("Error leyendo autoMixMemory:", error);
@@ -1171,44 +1190,45 @@ export default function ProfilePage() {
                 
                 return (
                   <>
-                    <ChartContainer
-                      config={chartConfig}
-                      className="mx-auto aspect-square max-h-[250px]"
-                    >
-                      <RadarChart data={chartData}>
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent indicator="line" />}
-                        />
-                        <PolarAngleAxis 
-                          dataKey="indicator" 
-                          tick={{ fill: '#fff', fontSize: 10 }}
-                        />
-                        <PolarGrid radialLines={false} stroke="#444" />
-                        <Radar
-                          dataKey="bullish"
-                          fill="var(--color-bullish)"
-                          fillOpacity={0}
-                          stroke="var(--color-bullish)"
-                          strokeWidth={2}
-                        />
-                        <Radar
-                          dataKey="bearish"
-                          fill="var(--color-bearish)"
-                          fillOpacity={0}
-                          stroke="var(--color-bearish)"
-                          strokeWidth={2}
-                        />
-                      </RadarChart>
-                    </ChartContainer>
+                    <div className="bg-black rounded-lg p-2 mx-auto max-w-[240px]">
+                      <ChartContainer
+                        config={chartConfig}
+                        className="mx-auto aspect-square max-h-[240px]"
+                      >
+                        <RadarChart data={chartData}>
+                          <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent indicator="line" />}
+                          />
+                          <PolarAngleAxis 
+                            dataKey="indicator" 
+                            tick={{ fill: '#fff', fontSize: 9 }}
+                          />
+                          <PolarGrid radialLines={false} stroke="#333" />
+                          <Radar
+                            dataKey="bullish"
+                            fill="var(--color-bullish)"
+                            fillOpacity={0}
+                            stroke="var(--color-bullish)"
+                            strokeWidth={2}
+                          />
+                          <Radar
+                            dataKey="bearish"
+                            fill="var(--color-bearish)"
+                            fillOpacity={0}
+                            stroke="var(--color-bearish)"
+                            strokeWidth={1.5}
+                          />
+                        </RadarChart>
+                      </ChartContainer>
+                    </div>
                     
                     <div className="mt-2">
-                      <div className="flex items-center gap-2 font-medium leading-none">
-                        <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span> Señales alcistas vs 
-                        <span className="inline-block w-3 h-3 bg-red-500 rounded-full"></span> Señales bajistas
+                      <div className="flex items-center justify-center gap-2 font-medium leading-none text-xs">
+                        <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span> Alcista vs 
+                        <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span> Bajista
                       </div>
-                      <div className="flex items-center gap-2 leading-none text-black font-medium mt-2">
-                        Última decisión: 
+                      <div className="flex flex-wrap items-center justify-center gap-1 leading-none text-black font-medium mt-2 text-xs">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                           lastBetDirection === "BULLISH" ? "bg-green-500 text-white" : 
                           lastBetDirection === "BEARISH" ? "bg-red-500 text-white" : 
@@ -1219,7 +1239,7 @@ export default function ProfilePage() {
                           "DESCONOCIDO"}
                         </span>
                         {lastBetResult && (
-                          <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                             lastBetResult === "WIN" ? "bg-green-500 text-white" : 
                             lastBetResult === "LOSS" || lastBetResult === "LIQ" ? "bg-red-500 text-white" : 
                             "bg-gray-500 text-white"
@@ -1230,8 +1250,8 @@ export default function ProfilePage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 leading-none text-muted-foreground mt-1">
-                        Última actualización: {lastBetTime} (actualiza cada 1 min)
+                      <div className="flex items-center justify-center gap-1 leading-none text-muted-foreground mt-1 text-xs">
+                        Actualizado: {lastBetTime}
                       </div>
                     </div>
                   </>
@@ -1246,14 +1266,275 @@ export default function ProfilePage() {
           {/* Nueva tarjeta 2 */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
             <CardHeader className="items-center pb-2">
-              <CardTitle>Gráfico Personalizado 2</CardTitle>
-              <CardDescription className="text-black">Espacio para gráfico personalizado</CardDescription>
+              <CardTitle>Últimas Velas</CardTitle>
+              <CardDescription className="text-black">Últimas 6 velas de 1 minuto</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center">
-              <div className="w-full max-w-[250px] h-[250px] bg-black rounded-lg flex items-center justify-center">
-                {/* Contenido del gráfico será agregado aquí */}
-              </div>
+            <CardContent className="pb-0">
+              {(() => {
+                // Estado para almacenar y actualizar las velas
+                const [candlesData, setCandlesData] = React.useState([
+                  { time: "00:00", price: 0, isUp: true, priceChange: 0 },
+                  { time: "00:01", price: 0, isUp: false, priceChange: 0 },
+                  { time: "00:02", price: 0, isUp: true, priceChange: 0 },
+                  { time: "00:03", price: 0, isUp: false, priceChange: 0 },
+                  { time: "00:04", price: 0, isUp: true, priceChange: 0 },
+                  { time: "00:05", price: 0, isUp: false, priceChange: 0 },
+                ]);
+                
+                // Hook para forzar re-renderizado
+                const [key, setKey] = React.useState(0);
+                
+                // Función para obtener velas de binance o del hook disponible
+                React.useEffect(() => {
+                  let intervalId: NodeJS.Timeout | null = null;
+                  
+                  // Función principal de actualización
+                  const updateCandles = async () => {
+                    try {
+                      // Obtener datos de Binance (fuente más confiable para precios reales)
+                      const binanceData = await fetchBinanceData();
+                      
+                      if (binanceData) {
+                        // Si tenemos datos de Binance, usarlos
+                        setCandlesData(binanceData);
+                        console.log("Actualizado con datos de Binance:", new Date().toLocaleTimeString());
+                      } else {
+                        // Si no hay datos de Binance, intentar con datos del juego
+                        const gameData = getGameCandles();
+                        if (gameData && gameData.length > 0) {
+                          setCandlesData(gameData);
+                          console.log("Actualizado con datos del juego:", new Date().toLocaleTimeString());
+                        }
+                      }
+                    } catch (error) {
+                      console.error("Error en la actualización de velas:", error);
+                    }
+                  };
+                  
+                  // Función para obtener datos de Binance
+                  const fetchBinanceData = async (): Promise<any[] | null> => {
+                    try {
+                      const response = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=6');
+                      
+                      if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Verificar que tenemos un array con suficientes datos
+                        if (Array.isArray(data) && data.length > 0) {
+                          // Transformar los datos al formato necesario
+                          return data.map((vela) => {
+                            const timestamp = parseInt(vela[0]);
+                            const open = parseFloat(vela[1]);
+                            const close = parseFloat(vela[4]);
+                            const time = new Date(timestamp).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            });
+                            
+                            return {
+                              time,
+                              price: close / 1000, // Mantener el escalado para la visualización
+                              priceChange: Math.abs(close - open) / 1000,
+                              isUp: close >= open,
+                              close: close / 1000,
+                              open: open / 1000,
+                              realPrice: close // Guardar también el precio real
+                            };
+                          });
+                        }
+                      }
+                      return null;
+                    } catch (error) {
+                      console.error("Error obteniendo datos de Binance:", error);
+                      return null;
+                    }
+                  };
+                  
+                  // Función para obtener datos del juego
+                  const getGameCandles = () => {
+                    try {
+                      const { candles } = useGame();
+                      
+                      if (candles && candles.length >= 6) {
+                        // Tomar las últimas 6 velas
+                        return candles.slice(-6).map(candle => {
+                          const time = new Date(candle.timestamp || Date.now()).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          });
+                          
+                          // Asegurar que siempre hay valores válidos
+                          const close = candle.close || 30000;
+                          const open = candle.open || (close - 50); // Diferencia pequeña fija
+                          
+                          return {
+                            time,
+                            price: close / 1000,
+                            priceChange: Math.abs(close - open) / 1000,
+                            isUp: close >= open,
+                            close: close / 1000,
+                            open: open / 1000,
+                            realPrice: close
+                          };
+                        });
+                      }
+                      return null;
+                    } catch (error) {
+                      console.error("Error obteniendo datos del juego:", error);
+                      return null;
+                    }
+                  };
+                  
+                  // Función para programar la actualización al inicio del siguiente minuto
+                  const scheduleNextMinuteUpdate = () => {
+                    // Cancelar cualquier intervalo existente
+                    if (intervalId) {
+                      clearInterval(intervalId);
+                      intervalId = null;
+                    }
+                    
+                    // Calcular milisegundos hasta el próximo minuto
+                    const now = new Date();
+                    const nextMinute = new Date(now);
+                    nextMinute.setMinutes(now.getMinutes() + 1);
+                    nextMinute.setSeconds(0);
+                    nextMinute.setMilliseconds(0);
+                    
+                    const delay = nextMinute.getTime() - now.getTime();
+                    
+                    // Programar la actualización para el inicio del próximo minuto
+                    const timeoutId = setTimeout(() => {
+                      // Actualizar datos inmediatamente
+                      updateCandles();
+                      
+                      // Establecer intervalo para actualizaciones al inicio de cada minuto
+                      intervalId = setInterval(() => {
+                        updateCandles();
+                      }, 60000); // Actualizar cada minuto exacto
+                      
+                    }, delay);
+                    
+                    return timeoutId;
+                  };
+                  
+                  // Actualizar inmediatamente al montar
+                  updateCandles();
+                  
+                  // Programar las futuras actualizaciones
+                  const timeoutId = scheduleNextMinuteUpdate();
+                  
+                  // Limpieza al desmontar
+                  return () => {
+                    if (timeoutId) clearTimeout(timeoutId);
+                    if (intervalId) clearInterval(intervalId);
+                  };
+                }, []);
+                
+                // Configuración de colores para el gráfico
+                const chartConfig = {
+                  price: {
+                    label: "Precio",
+                    color: "#ffffff",
+                  },
+                };
+                
+                // Formatear los datos para el gráfico
+                const chartData = candlesData.map(candle => ({
+                  time: candle.time,
+                  price: candle.price,
+                  priceChange: candle.priceChange,
+                  isUp: candle.isUp,
+                  value: candle.isUp ? candle.price : -candle.price // Usar el precio real directamente
+                }));
+                
+                return (
+                  <>
+                    <div className="bg-black rounded-lg p-2 mx-auto max-w-[240px]">
+                      <ChartContainer
+                        config={chartConfig}
+                        className="mx-auto aspect-square max-h-[240px]"
+                      >
+                        <BarChart 
+                          data={chartData}
+                          margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
+                          maxBarSize={20} // Barras más delgadas
+                          barGap={5}
+                        >
+                          <CartesianGrid vertical={false} stroke="#333" />
+                          <YAxis 
+                            domain={['auto', 'auto']} 
+                            hide 
+                          />
+                          <XAxis 
+                            dataKey="time" 
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#fff', fontSize: 10 }}
+                          />
+                          <ChartTooltip
+                            cursor={false}
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                // Calcular el precio real multiplicando por 1000 para revertir el escalado
+                                const precioReal = Math.abs(data.price) * 1000;
+                                const cambioReal = data.priceChange * 1000;
+                                
+                                return (
+                                  <div className="bg-black/80 p-2 rounded border border-yellow-500/30 shadow">
+                                    <p className="font-medium text-white">{data.time}</p>
+                                    <p className="text-xs">
+                                      <span className={`font-bold ${
+                                        data.isUp ? 'text-green-400' : 'text-red-400'
+                                      }`}>
+                                        {data.isUp ? 'Alcista' : 'Bajista'}
+                                      </span>
+                                    </p>
+                                    <p className="text-xs text-white">Precio: {precioReal.toLocaleString('es-ES')} USD</p>
+                                    <p className="text-xs text-white">Cambio: {cambioReal.toLocaleString('es-ES')} USD</p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Bar 
+                            dataKey="value"
+                            animationDuration={500}
+                          >
+                            {chartData.map((item, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={item.isUp ? "#22c55e" : "#ef4444"}
+                                stroke={item.isUp ? "#22c55e" : "#ef4444"}
+                                strokeWidth={1}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ChartContainer>
+                    </div>
+                    
+                    <div className="mt-2">
+                      <div className="flex items-center justify-center gap-4 font-medium leading-none text-xs">
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span> Alcista
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span> Bajista
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center gap-1 leading-none text-muted-foreground mt-1 text-xs">
+                        Actualización cada minuto
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              {/* Información adicional si se requiere */}
+            </CardFooter>
           </Card>
           
           {/* Nueva tarjeta 3 */}
@@ -1425,8 +1706,8 @@ export default function ProfilePage() {
         {/* Botón volver y login abajo del todo */}
         <div className="flex justify-center mt-20">
           <div className="flex flex-row gap-9 items-center">
-  <LoginLogoutButton />
-</div>
+            <LoginLogoutButton />
+          </div>
         </div>
       </div>
       {/* Modal de galería de perfiles */}
