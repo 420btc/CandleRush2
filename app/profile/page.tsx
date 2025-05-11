@@ -394,15 +394,20 @@ function LoginLogoutButton() {
 const FECHA_HALVING = new Date('2028-03-30T00:00:00Z');
 
 interface WhaleTrade {
+  id?: string; // Añadido campo id como opcional
   timestamp: number;
   side: 'buy' | 'sell';
   price: number;
   amount: number;
   symbol: string;
+  exchange?: string;
+  usd?: number;
+  raw?: any;
 }
 
 function WhaleTradesCard() {
   const [currentTime, setCurrentTime] = React.useState(Date.now());
+  const [whaleTrades, setWhaleTrades] = React.useState<WhaleTrade[]>([]);
   
   // Actualizar el tiempo cada segundo para forzar el re-renderizado
   React.useEffect(() => {
@@ -433,25 +438,102 @@ function WhaleTradesCard() {
   }, []);
   
   // Obtener trades de ballenas en tiempo real
-  const whaleTrades = useWhaleTrades({
-    minUsd: 10000, // Mostrar trades mayores a $10,000
-    symbols: ["btcusdt@trade", "ethusdt@trade"], // Pares a monitorear en minúsculas con @trade
-    refreshInterval: 1000, // Actualizar cada segundo
-    limit: 10000 // Aumentar el límite a 10000 transacciones
-  }) as WhaleTrade[];
-
+  React.useEffect(() => {
+    // En lugar de usar el hook directamente, lo implementamos aquí
+    const minUsd = 10000;
+    const symbols = ["btcusdt@trade", "ethusdt@trade"];
+    const limit = 10000;
+    
+    let wsRef: WebSocket | null = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    
+    const connectWebSocket = () => {
+      if (wsRef) return;
+      
+      const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbols.join('/')}`);
+      wsRef = ws;
+      
+      ws.onopen = () => {
+        console.log('WebSocket connected to Binance');
+        reconnectAttempts = 0;
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.e === 'trade') {
+            const price = parseFloat(data.p);
+            const amount = parseFloat(data.q);
+            const usdValue = price * amount;
+            
+            if (usdValue >= minUsd) {
+              const trade: WhaleTrade = {
+                id: data.t.toString(),
+                exchange: 'binance',
+                symbol: data.s,
+                price,
+                amount,
+                usd: usdValue,
+                side: data.m ? 'sell' : 'buy',
+                timestamp: data.T,
+                raw: data
+              };
+              
+              setWhaleTrades(prevTrades => {
+                const newTrades = [trade, ...prevTrades];
+                return newTrades.slice(0, limit);
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error processing trade:', error);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      
+      ws.onclose = () => {
+        console.log('WebSocket closed');
+        wsRef = null;
+        
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+          reconnectAttempts++;
+          console.log(`Reconnecting in ${delay}ms... (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+          
+          setTimeout(() => {
+            connectWebSocket();
+          }, delay);
+        } else {
+          console.error('Max reconnection attempts reached');
+        }
+      };
+    };
+    
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef) {
+        wsRef.close();
+        wsRef = null;
+      }
+    };
+  }, []);
+  
   // Contar trades de compra y venta en los últimos 5 minutos
   const fiveMinutesAgo = currentTime - (5 * 60 * 1000);
   
   const recentTrades = React.useMemo(() => {
-    console.log('Todos los trades:', whaleTrades); // Debug
     return whaleTrades.filter(trade => trade.timestamp > fiveMinutesAgo);
   }, [whaleTrades, fiveMinutesAgo]);
   
   const { buyTrades, sellTrades } = React.useMemo(() => {
     const buys = recentTrades.filter(trade => trade.side === 'buy').length;
     const sells = recentTrades.filter(trade => trade.side === 'sell').length;
-    console.log('Buy trades:', buys, 'Sell trades:', sells); // Debug
     return { buyTrades: buys, sellTrades: sells };
   }, [recentTrades]);
   
@@ -598,7 +680,41 @@ function WhaleTradesCard() {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const betCharts = useBetChartsData();
+  const { bets, userBalance, candles } = useGame();
+  // Función para obtener y computar métricas de apuestas del usuario logueado
+  const betCharts = useMemo(() => {
+    // Definir el tipo para las apuestas
+    type BetWithStatus = Bet & { status: string; prediction: string; timestamp: number };
+
+    // Radar: estados de apuesta
+    const radarData = [
+      { status: 'Ganadas', value: bets.filter(b => b.status === 'WON').length },
+      { status: 'Perdidas', value: bets.filter(b => b.status === 'LOST').length },
+      { status: 'Liquidadas', value: bets.filter(b => b.status === 'LIQUIDATED').length },
+      { status: 'Pendientes', value: bets.filter(b => b.status === 'PENDING').length },
+    ];
+
+    // RadialBar: bullish vs bearish
+    const typedBets = bets as BetWithStatus[];
+    const bullish = typedBets.filter(b => b.prediction === 'BULLISH').length;
+    const bearish = typedBets.filter(b => b.prediction === 'BEARISH').length;
+    const radialData = [
+      { name: 'Bullish', value: bullish, fill: '#22c55e' },
+      { name: 'Bearish', value: bearish, fill: '#ef4444' },
+    ];
+
+    // Pie: ganadas vs perdidas vs liquidadas
+    const won = bets.filter((b: any) => b.status === 'WON').length;
+    const lost = bets.filter((b: any) => b.status === 'LOST').length;
+    const liquidated = bets.filter((b: any) => b.status === 'LIQUIDATED').length;
+    const pieData = [
+      { name: 'Ganadas', value: won, fill: '#22c55e' },
+      { name: 'Perdidas', value: lost, fill: '#ef4444' },
+      { name: 'Liquidadas', value: liquidated, fill: '#eab308' },
+    ];
+
+    return { radarData, radialData, pieData, bullish, bearish, won, lost, liquidated, total: bets.length };
+  }, [bets]);
 
   // Lista de imágenes de perfiles para la galería
   const cryptoImages = [
@@ -1353,8 +1469,6 @@ export default function ProfilePage() {
                   // Función para obtener datos del juego
                   const getGameCandles = () => {
                     try {
-                      const { candles } = useGame();
-                      
                       if (candles && candles.length >= 6) {
                         // Tomar las últimas 6 velas
                         return candles.slice(-6).map(candle => {
@@ -1428,7 +1542,7 @@ export default function ProfilePage() {
                     if (timeoutId) clearTimeout(timeoutId);
                     if (intervalId) clearInterval(intervalId);
                   };
-                }, []);
+                }, [candles]);
                 
                 // Configuración de colores para el gráfico
                 const chartConfig = {
@@ -1540,13 +1654,213 @@ export default function ProfilePage() {
           {/* Nueva tarjeta 3 */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
             <CardHeader className="items-center pb-2">
-              <CardTitle>Gráfico Personalizado 3</CardTitle>
-              <CardDescription className="text-black">Espacio para gráfico personalizado</CardDescription>
+              <CardTitle>Nuestro Balance</CardTitle>
+              <CardDescription className="text-black">Evolución de tu balance en tiempo real</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center">
-              <div className="w-full max-w-[250px] h-[250px] bg-black rounded-lg flex items-center justify-center">
-                {/* Contenido del gráfico será agregado aquí */}
-              </div>
+            <CardContent className="pb-0">
+              {(() => {
+                // Estado para almacenar el historial de balance
+                const [balanceHistory, setBalanceHistory] = React.useState<Array<{
+                  time: string;
+                  balance: number;
+                }>>([]);
+                
+                // Estado para el balance actual
+                const [currentBalance, setCurrentBalance] = React.useState(0);
+                
+                // Obtener datos del juego y actualizar el balance
+                React.useEffect(() => {
+                  // Inicializar con el balance actual
+                  if (typeof userBalance === 'number') {
+                    setCurrentBalance(userBalance);
+                  }
+                  
+                  // Crear historial inicial
+                  const now = new Date();
+                  const initialHistory: Array<{time: string, balance: number}> = [];
+                  
+                  // Si hay apuestas recientes, usar estas para mostrar la evolución
+                  if (Array.isArray(bets) && bets.length > 0) {
+                    // Crear puntos basados en el balance actual
+                    // Añadir algunos puntos basados en horas recientes
+                    for (let i = 0; i < 6; i++) {
+                      const time = new Date(now);
+                      time.setMinutes(now.getMinutes() - (5 - i));
+                      
+                      const timeStr = time.toLocaleTimeString([], {
+                        hour: '2-digit', 
+                        minute: '2-digit'
+                      });
+                      
+                      // Simular variación en el balance para crear una gráfica interesante
+                      // Basada en el número de apuestas ganadas vs perdidas
+                      const wonBets = bets.filter(b => (b as any).status === 'WON').length;
+                      const totalBets = bets.length;
+                      const winRate = totalBets > 0 ? wonBets / totalBets : 0.5;
+                      
+                      // Crear una curva que refleje el historial de victorias/derrotas
+                      const baseBalance = userBalance || 1000;
+                      const variation = baseBalance * 0.05 * (i / 5); // Hasta 5% de variación
+                      
+                      // Si win rate > 0.5, tendencia alcista, sino bajista
+                      const multiplier = winRate > 0.5 ? 1 : -1;
+                      const simulatedBalance = baseBalance + (variation * multiplier);
+                      
+                      initialHistory.push({
+                        time: timeStr,
+                        balance: Math.round(simulatedBalance)
+                      });
+                    }
+                  } 
+                  // Si no hay apuestas, crear puntos planos
+                  else {
+                    for (let i = 0; i < 6; i++) {
+                      const time = new Date(now);
+                      time.setMinutes(now.getMinutes() - (5 - i));
+                      
+                      const timeStr = time.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+                      
+                      initialHistory.push({
+                        time: timeStr,
+                        balance: userBalance || 1000
+                      });
+                    }
+                  }
+                  
+                  // Establecer el historial inicial
+                  setBalanceHistory(initialHistory);
+                  
+                  // Configurar monitoreo en tiempo real del balance
+                  const intervalId = setInterval(() => {
+                    if (typeof userBalance === 'number' && userBalance !== currentBalance) {
+                      // Obtener hora actual
+                      const now = new Date();
+                      const timeStr = now.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+                      
+                      // Actualizar el historial
+                      setBalanceHistory(prev => {
+                        // Mantener máximo 6 puntos
+                        const newHistory = [...prev, { time: timeStr, balance: userBalance }];
+                        if (newHistory.length > 6) {
+                          return newHistory.slice(-6);
+                        }
+                        return newHistory;
+                      });
+                      
+                      // Actualizar el balance actual
+                      setCurrentBalance(userBalance);
+                    }
+                  }, 10000); // Verificar cada 10 segundos
+                  
+                  return () => clearInterval(intervalId);
+                }, [userBalance, bets, currentBalance]);
+                
+                // Configuración del gráfico
+                const chartConfig = {
+                  balance: {
+                    label: "Balance",
+                    color: "#22c55e", // Verde
+                  }
+                };
+                
+                // Calcular indicador de tendencia
+                const trendDirection = balanceHistory.length >= 2 
+                  ? (balanceHistory[balanceHistory.length - 1].balance > balanceHistory[0].balance ? "up" : "down")
+                  : "up";
+                
+                const trendPercentage = balanceHistory.length >= 2
+                  ? ((balanceHistory[balanceHistory.length - 1].balance - balanceHistory[0].balance) / balanceHistory[0].balance * 100).toFixed(1)
+                  : "0.0";
+                
+                return (
+                  <>
+                    <div className="bg-black rounded-lg p-2 mx-auto max-w-[240px]">
+                      <ChartContainer
+                        config={chartConfig}
+                        className="mx-auto aspect-square max-h-[240px]"
+                      >
+                        <LineChart
+                          data={balanceHistory}
+                          margin={{
+                            top: 20,
+                            left: 12,
+                            right: 12,
+                            bottom: 5
+                          }}
+                        >
+                          <CartesianGrid vertical={false} stroke="#333" />
+                          <XAxis
+                            dataKey="time"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tick={{ fill: '#fff', fontSize: 10 }}
+                          />
+                          <ChartTooltip
+                            cursor={false}
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                return (
+                                  <div className="bg-black/80 p-2 rounded border border-yellow-500/30 shadow">
+                                    <p className="font-medium text-white">{data.time}</p>
+                                    <p className="text-sm text-white">
+                                      Balance: <span className="font-bold">{data.balance.toLocaleString('es-ES')}</span>
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Line
+                            dataKey="balance"
+                            type="natural"
+                            stroke={trendDirection === "up" ? "#22c55e" : "#ef4444"}
+                            strokeWidth={2}
+                            dot={{
+                              fill: trendDirection === "up" ? "#22c55e" : "#ef4444",
+                              r: 4
+                            }}
+                            activeDot={{
+                              r: 6,
+                              stroke: "#fff",
+                              strokeWidth: 1
+                            }}
+                          >
+                            <LabelList
+                              dataKey="balance"
+                              position="top"
+                              offset={12}
+                              fill="#fff"
+                              fontSize={10}
+                              formatter={(value: number) => value.toLocaleString('es-ES')}
+                            />
+                          </Line>
+                        </LineChart>
+                      </ChartContainer>
+                    </div>
+                    
+                    <div className="mt-2">
+                      <div className="flex items-center justify-center gap-2 font-medium leading-none text-xs">
+                        <span className={`flex items-center gap-1 ${trendDirection === "up" ? "text-green-500" : "text-red-500"}`}>
+                          <TrendingUp className={`h-4 w-4 ${trendDirection === "down" ? "transform rotate-180" : ""}`} />
+                          {trendDirection === "up" ? "Subiendo" : "Bajando"} un {Math.abs(parseFloat(trendPercentage))}% 
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center gap-1 leading-none text-muted-foreground mt-1 text-xs">
+                        Balance actual: {currentBalance.toLocaleString('es-ES')}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
