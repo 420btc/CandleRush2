@@ -17,7 +17,7 @@ export function TiltedScroll({
   return (
     <div className={cn("flex items-center justify-center", className)}>
       <div className="relative overflow-hidden [mask-composite:intersect] [mask-image:linear-gradient(to_right,transparent,black_5rem),linear-gradient(to_left,transparent,black_5rem),linear-gradient(to_bottom,transparent,black_5rem),linear-gradient(to_top,transparent,black_5rem)]">
-        <div className="grid h-[640px] w-[420px] gap-4 animate-skew-scroll grid-cols-1">
+        <div className="grid h-[640px] w-[420px] gap-6 animate-skew-scroll grid-cols-1">
           {items.map((item) => (
             <div
               key={item.id}
