@@ -49,33 +49,33 @@ export default function HowToPlayPage() {
 
   return (
     <main className="min-h-screen bg-black p-8">
-      <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8">
-        <div className="md:w-1/2">
-          <h1 className="text-4xl font-bold text-yellow-400 mb-8 text-center md:text-left">
+      <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8 h-[840px]">
+        <div className="md:w-1/2 flex flex-col justify-between h-full">
+          <h1 className="text-4xl font-bold text-yellow-400 mb-4 text-center md:text-left">
             Cómo Jugar Candle<span className="text-red-600">Rush</span> <span className="text-green-600">2</span>
           </h1>
-          <ol className="space-y-4 text-yellow-400">
+          <ol className="flex-1 space-y-2 text-yellow-400">
             <li>
               Elige el tamaño de tu apuesta y el apalancamiento deseado.
             </li>
             <li>
               Selecciona la dirección de la vela:
               <ul className="list-disc pl-5 text-yellow-400">
-                <li><span className="font-black text-yellow-400">BULL</span>: Apostarás a que la vela cerrará más arriba (alcista).</li>
-                <li><span className="font-black text-yellow-400">BEAR</span>: Apostarás a que la vela cerrará más abajo (bajista).</li>
+                <li><span className="font-black text-green-600">BULL</span>: Apostarás a que la vela cerrará más arriba (alcista).</li>
+                <li><span className="font-black text-red-600">BEAR</span>: Apostarás a que la vela cerrará más abajo (bajista).</li>
               </ul>
             </li>
             <li>
-              Espera a que termine el intervalo. Si acertaste la dirección, ¡ganas el premio!
+              Espera a que termine el intervalo, puede ser 1min o incluso 12h o 1d!.  Si acertaste la dirección, ¡ganas el premio al instante en la resolucion automatica!
             </li>
             <li>
-              Consulta tu historial y sigue mejorando tu estrategia.
+              Consulta tu historial y sigue mejorando tu estrategia. Tambien puedes usar AutoMix y ver como el algoritmo apuesta el solo durante minutos o incluso horas si no pierdes todas las monedas!
             </li>
           </ol>
           <div className="bg-black text-yellow-400 rounded-xl p-4 w-full text-center text-md shadow-lg border-2 border-yellow-400 mb-4">
-            <strong className="text-yellow-400">Consejo:</strong> ¡Elige bien tu apalancamiento! Un mayor apalancamiento puede aumentar tus ganancias, pero también el riesgo de liquidación.
+            <strong className="text-yellow-400">Consejo:</strong> ¡Elige bien tu apalancamiento!  Un mayor apalancamiento puede aumentar tus ganancias, pero también el riesgo de liquidación.
           </div>
-          <Link href="/menu" className="mt-4 inline-block px-6 py-3 rounded-full bg-black text-yellow-400 border-2 border-yellow-400 font-bold text-lg shadow hover:bg-yellow-400 hover:text-black transition uppercase">Volver al menú</Link>
+          <Link href="/menu" className="mt-4 inline-block px-8 py-4 rounded-full bg-black text-yellow-400 border-2 border-yellow-400 font-bold text-lg shadow-lg hover:bg-yellow-400 hover:text-black transition-all duration-300 ease-in-out transform hover:scale-105 hover:-translate-y-1 uppercase tracking-wider">Volver al menú</Link>
         </div>
         <div className="flex justify-center items-center w-full">
           <TiltedScroll 
