@@ -81,7 +81,7 @@ const radialConfig = {
 const pieConfig = {
   Ganadas: { label: 'Ganadas', color: '#22c55e' },
   Perdidas: { label: 'Perdidas', color: '#ef4444' },
-  Liquidadas: { label: 'Liquidadas', color: '#eab308' },
+  Liquidadas: { label: 'Liquidadas', color: '#000000' },
 } satisfies ChartConfig;
 
 // Datos y configuración para la gráfica radial
@@ -838,7 +838,7 @@ export default function ProfilePage() {
                 config={{
                   won: { label: "Ganadas", color: "#22c55e" },
                   lost: { label: "Perdidas", color: "#ef4444" },
-                  liquidated: { label: "Liquidadas", color: "#eab308" },
+                  liquidated: { label: "Liquidadas", color: "#000000" },
                 }}
                 className="aspect-auto h-[300px] w-full"
               >
@@ -874,8 +874,8 @@ export default function ProfilePage() {
                       <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
                     </linearGradient>
                     <linearGradient id="fillLiquidated" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#eab308" stopOpacity={0.1} />
+                      <stop offset="5%" stopColor="#000000" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#000000" stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid vertical={false} />
