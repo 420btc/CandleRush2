@@ -119,24 +119,33 @@ export default function MinijuegoPage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden">
-      {/* Botón de volver al menú */}
-      <a
-        href="/menu"
-        className="fixed top-4 left-4 z-20 bg-black/70 rounded-full p-2 shadow-lg hover:bg-yellow-400/90 transition-colors group"
-        style={{ pointerEvents: 'auto' }}
-        aria-label="Volver al menú"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-          stroke="currentColor"
-          className="w-8 h-8 text-yellow-400 group-hover:text-black"
+      {/* Botones de navegación */}
+      <div className="fixed top-4 left-4 z-20 flex gap-2">
+        <a
+          href="/menu"
+          className="bg-black/70 rounded-full p-2 shadow-lg hover:bg-yellow-400/90 transition-colors group"
+          style={{ pointerEvents: 'auto' }}
+          aria-label="Volver al menú"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-        </svg>
-      </a>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="w-8 h-8 text-yellow-400 group-hover:text-black"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </a>
+        <a
+          href="/game"
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
+          style={{ pointerEvents: 'auto' }}
+        >
+          Volver a Jugar
+        </a>
+      </div>
       <main className="flex flex-col items-center justify-start min-h-screen w-full bg-black overflow-x-hidden">
         <div className="w-full flex flex-col items-center mt-8 select-none">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight drop-shadow-xl italic" style={{ fontStyle: 'italic' }}>
