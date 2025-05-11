@@ -21,7 +21,7 @@ export function TiltedScroll({
           {items.map((item) => (
             <div
               key={item.id}
-              className="group flex items-center gap-2 cursor-pointer rounded-md border-2 border-yellow-400 bg-yellow-400 p-4 shadow-md transition-all duration-300 ease-in-out hover:scale-105 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-xl"
+              className="group flex items-center gap-2 cursor-pointer rounded-md border-2 border-yellow-400 bg-yellow-400 p-4 shadow-md transition-all duration-300 ease-in-out hover:scale-110 hover:-translate-x-2 hover:-translate-y-2 hover:shadow-2xl animate-card-glow"
             >
               <CheckCircleIcon className="h-6 w-6 mr-2 stroke-blue-600 transition-colors group-hover:stroke-blue-600" />
               <p className="text-black font-bold transition-colors group-hover:text-black">

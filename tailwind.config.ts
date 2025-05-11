@@ -60,6 +60,14 @@ const config = {
         sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
+        "card-glow": {
+          "0%": {
+            boxShadow: "0 0 10px 5px rgba(255,215,0,0.3)"
+          },
+          "100%": {
+            boxShadow: "0 0 10px 5px rgba(255,215,0,0.3)"
+          }
+        },
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -78,6 +86,10 @@ const config = {
         },
       },
       animation: {
+        "card-glow": "card-glow 2s linear infinite",
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        'skew-scroll': 'skew-scroll 40s linear infinite',
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         'skew-scroll': 'skew-scroll 40s linear infinite',
