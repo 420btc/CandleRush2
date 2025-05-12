@@ -1675,14 +1675,61 @@ export default function ProfilePage() {
                     setCurrentBalance(userBalance);
                   }
                   
+                  // Recuperar el historial previo desde localStorage
+                  const getStoredHistory = () => {
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const stored = localStorage.getItem('balance_history');
+                        if (stored) {
+                          const parsedHistory = JSON.parse(stored);
+                          
+                          // Verificar que los datos tengan el formato correcto
+                          if (Array.isArray(parsedHistory) && parsedHistory.length > 0 && 
+                              'time' in parsedHistory[0] && 'balance' in parsedHistory[0]) {
+                            return parsedHistory;
+                          }
+                        }
+                      } catch (e) {
+                        console.error('Error al recuperar historial de balance:', e);
+                      }
+                    }
+                    return null;
+                  };
+                  
                   // Crear historial inicial
                   const now = new Date();
-                  const initialHistory: Array<{time: string, balance: number}> = [];
+                  let initialHistory: Array<{time: string, balance: number}> = [];
                   
-                  // Si hay apuestas recientes, usar estas para mostrar la evolución
-                  if (Array.isArray(bets) && bets.length > 0) {
-                    // Crear puntos basados en el balance actual
-                    // Añadir algunos puntos basados en horas recientes
+                  // Intentar recuperar el historial guardado
+                  const storedHistory = getStoredHistory();
+                  
+                  if (storedHistory && storedHistory.length > 0) {
+                    // Usar el historial guardado, pero actualizar el último punto
+                    initialHistory = storedHistory;
+                    
+                    // Verificar si el balance actual es diferente del último guardado
+                    if (userBalance !== storedHistory[storedHistory.length - 1].balance) {
+                      // Si es diferente, añadir un nuevo punto
+                      const timeStr = now.toLocaleTimeString([], {
+                        hour: '2-digit', 
+                        minute: '2-digit'
+                      });
+                      
+                      initialHistory.push({
+                        time: timeStr,
+                        balance: userBalance || 1000
+                      });
+                      
+                      // Limitar a 6 puntos máximo
+                      if (initialHistory.length > 6) {
+                        initialHistory = initialHistory.slice(-6);
+                      }
+                    }
+                  } else {
+                    // Si no hay historial guardado, inicializar con puntos predeterminados
+                    // que tengan algunas variaciones para mostrar una línea interesante
+                    const baseBalance = userBalance || 1000;
+                    
                     for (let i = 0; i < 6; i++) {
                       const time = new Date(now);
                       time.setMinutes(now.getMinutes() - (5 - i));
@@ -1692,40 +1739,14 @@ export default function ProfilePage() {
                         minute: '2-digit'
                       });
                       
-                      // Simular variación en el balance para crear una gráfica interesante
-                      // Basada en el número de apuestas ganadas vs perdidas
-                      const wonBets = bets.filter(b => (b as any).status === 'WON').length;
-                      const totalBets = bets.length;
-                      const winRate = totalBets > 0 ? wonBets / totalBets : 0.5;
-                      
-                      // Crear una curva que refleje el historial de victorias/derrotas
-                      const baseBalance = userBalance || 1000;
-                      const variation = baseBalance * 0.05 * (i / 5); // Hasta 5% de variación
-                      
-                      // Si win rate > 0.5, tendencia alcista, sino bajista
-                      const multiplier = winRate > 0.5 ? 1 : -1;
-                      const simulatedBalance = baseBalance + (variation * multiplier);
+                      // Crear algunas variaciones alrededor del balance actual
+                      // Solo para visualización inicial hasta que se acumulen datos reales
+                      const randomVariation = Math.random() * 0.15 - 0.075; // Entre -7.5% y +7.5%
+                      const adjustedBalance = baseBalance * (1 + randomVariation);
                       
                       initialHistory.push({
                         time: timeStr,
-                        balance: Math.round(simulatedBalance)
-                      });
-                    }
-                  } 
-                  // Si no hay apuestas, crear puntos planos
-                  else {
-                    for (let i = 0; i < 6; i++) {
-                      const time = new Date(now);
-                      time.setMinutes(now.getMinutes() - (5 - i));
-                      
-                      const timeStr = time.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      });
-                      
-                      initialHistory.push({
-                        time: timeStr,
-                        balance: userBalance || 1000
+                        balance: Math.round(adjustedBalance)
                       });
                     }
                   }
@@ -1733,33 +1754,114 @@ export default function ProfilePage() {
                   // Establecer el historial inicial
                   setBalanceHistory(initialHistory);
                   
-                  // Configurar monitoreo en tiempo real del balance
-                  const intervalId = setInterval(() => {
-                    if (typeof userBalance === 'number' && userBalance !== currentBalance) {
-                      // Obtener hora actual
-                      const now = new Date();
-                      const timeStr = now.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      });
-                      
-                      // Actualizar el historial
-                      setBalanceHistory(prev => {
-                        // Mantener máximo 6 puntos
-                        const newHistory = [...prev, { time: timeStr, balance: userBalance }];
-                        if (newHistory.length > 6) {
-                          return newHistory.slice(-6);
-                        }
-                        return newHistory;
-                      });
-                      
-                      // Actualizar el balance actual
-                      setCurrentBalance(userBalance);
-                    }
-                  }, 10000); // Verificar cada 10 segundos
+                  // Guardar en localStorage
+                  if (typeof window !== 'undefined' && initialHistory.length > 0) {
+                    localStorage.setItem('balance_history', JSON.stringify(initialHistory));
+                  }
                   
-                  return () => clearInterval(intervalId);
-                }, [userBalance, bets, currentBalance]);
+                  // Configurar monitoreo en tiempo real del balance cada minuto exacto
+                  const setupMinuteUpdates = (): (() => void) => {
+                    // Calcular tiempo hasta el próximo minuto exacto
+                    const now = new Date();
+                    const nextMinute = new Date(now);
+                    nextMinute.setMinutes(now.getMinutes() + 1);
+                    nextMinute.setSeconds(0);
+                    nextMinute.setMilliseconds(0);
+                    
+                    const timeToNextMinute = nextMinute.getTime() - now.getTime();
+                    
+                    // Programar primera actualización al inicio del próximo minuto
+                    const timeoutId = setTimeout(() => {
+                      // Registrar balance exacto
+                      if (typeof userBalance === 'number') {
+                        // Obtener hora actual exacta
+                        const currentTime = new Date();
+                        const timeStr = currentTime.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+                        
+                        // Actualizar historial solo si el balance ha cambiado
+                        if (userBalance !== currentBalance) {
+                          // Actualizar historial con balance actual exacto
+                          setBalanceHistory(prev => {
+                            const newHistory = [...prev, { time: timeStr, balance: userBalance }];
+                            if (newHistory.length > 6) {
+                              const limitedHistory = newHistory.slice(-6);
+                              
+                              // Guardar en localStorage
+                              if (typeof window !== 'undefined') {
+                                localStorage.setItem('balance_history', JSON.stringify(limitedHistory));
+                              }
+                              
+                              return limitedHistory;
+                            }
+                            
+                            // Guardar en localStorage
+                            if (typeof window !== 'undefined') {
+                              localStorage.setItem('balance_history', JSON.stringify(newHistory));
+                            }
+                            
+                            return newHistory;
+                          });
+                          
+                          // Actualizar el balance actual
+                          setCurrentBalance(userBalance);
+                        }
+                      }
+                      
+                      // Configurar intervalo para actualizar cada minuto exacto
+                      const intervalId = setInterval(() => {
+                        if (typeof userBalance === 'number') {
+                          // Obtener hora actual exacta
+                          const currentTime = new Date();
+                          const timeStr = currentTime.toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          });
+                          
+                          // Actualizar historial solo si el balance ha cambiado
+                          if (userBalance !== currentBalance) {
+                            // Actualizar historial con balance actual exacto
+                            setBalanceHistory(prev => {
+                              const newHistory = [...prev, { time: timeStr, balance: userBalance }];
+                              if (newHistory.length > 6) {
+                                const limitedHistory = newHistory.slice(-6);
+                                
+                                // Guardar en localStorage
+                                if (typeof window !== 'undefined') {
+                                  localStorage.setItem('balance_history', JSON.stringify(limitedHistory));
+                                }
+                                
+                                return limitedHistory;
+                              }
+                              
+                              // Guardar en localStorage
+                              if (typeof window !== 'undefined') {
+                                localStorage.setItem('balance_history', JSON.stringify(newHistory));
+                              }
+                              
+                              return newHistory;
+                            });
+                            
+                            // Actualizar el balance actual
+                            setCurrentBalance(userBalance);
+                          }
+                        }
+                      }, 60000); // Exactamente cada minuto
+                      
+                      return () => clearInterval(intervalId);
+                    }, timeToNextMinute);
+                    
+                    return () => clearTimeout(timeoutId);
+                  };
+                  
+                  const cleanup = setupMinuteUpdates();
+                  
+                  return () => {
+                    cleanup();
+                  };
+                }, [userBalance, currentBalance]);
                 
                 // Configuración del gráfico
                 const chartConfig = {
@@ -1769,14 +1871,60 @@ export default function ProfilePage() {
                   }
                 };
                 
-                // Calcular indicador de tendencia
-                const trendDirection = balanceHistory.length >= 2 
+                // Verificar que tenemos datos suficientes para mostrar una tendencia
+                const hasEnoughData = balanceHistory.length >= 2 && 
+                  balanceHistory.some((item, i) => i > 0 && item.balance !== balanceHistory[0].balance);
+                
+                // Calcular estadísticas para indicadores
+                const trendDirection = hasEnoughData
                   ? (balanceHistory[balanceHistory.length - 1].balance > balanceHistory[0].balance ? "up" : "down")
                   : "up";
                 
-                const trendPercentage = balanceHistory.length >= 2
+                const trendPercentage = hasEnoughData
                   ? ((balanceHistory[balanceHistory.length - 1].balance - balanceHistory[0].balance) / balanceHistory[0].balance * 100).toFixed(1)
                   : "0.0";
+                
+                // Calcular el valor mínimo y máximo para el dominio del eje Y
+                const balanceValues = balanceHistory.map(item => item.balance);
+                const minBalance = Math.min(...balanceValues);
+                const maxBalance = Math.max(...balanceValues);
+                
+                // Calcular el valor medio para centrar la gráfica
+                const midBalance = (minBalance + maxBalance) / 2;
+                
+                // Calcular cambios punto a punto para determinar el color de cada punto
+                const getPointColors = () => {
+                  const colors = [];
+                  for (let i = 0; i < balanceHistory.length; i++) {
+                    if (i === 0) {
+                      colors.push(trendDirection === "up" ? "#22c55e" : "#ef4444");
+                    } else {
+                      const isPointUp = balanceHistory[i].balance >= balanceHistory[i-1].balance;
+                      colors.push(isPointUp ? "#22c55e" : "#ef4444");
+                    }
+                  }
+                  return colors;
+                };
+                
+                const pointColors = getPointColors();
+                
+                // Calcular un rango de visualización adecuado para centrar la línea
+                const calculateYDomain = () => {
+                  // Si todos los valores son iguales, crear un rango artificial
+                  if (minBalance === maxBalance) {
+                    const value = minBalance;
+                    // Crear un rango de ±10% alrededor del valor
+                    return [value * 0.9, value * 1.1];
+                  }
+                  
+                  // Calcular un rango con margen del 20% arriba y abajo
+                  const range = maxBalance - minBalance;
+                  const margin = range * 0.2;
+                  
+                  return [minBalance - margin, maxBalance + margin];
+                };
+                
+                const yDomain = calculateYDomain();
                 
                 return (
                   <>
@@ -1794,13 +1942,22 @@ export default function ProfilePage() {
                             bottom: 5
                           }}
                         >
-                          <CartesianGrid vertical={false} stroke="#333" />
+                          <CartesianGrid vertical={false} horizontal={true} stroke="#333" />
                           <XAxis
                             dataKey="time"
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
                             tick={{ fill: '#fff', fontSize: 10 }}
+                          />
+                          <YAxis
+                            domain={yDomain}
+                            tickCount={5}
+                            width={40}
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#fff', fontSize: 10 }}
+                            tickFormatter={(value) => value.toLocaleString('es-ES')}
                           />
                           <ChartTooltip
                             cursor={false}
@@ -1821,12 +1978,21 @@ export default function ProfilePage() {
                           />
                           <Line
                             dataKey="balance"
-                            type="natural"
+                            type="monotone"
                             stroke={trendDirection === "up" ? "#22c55e" : "#ef4444"}
-                            strokeWidth={2}
-                            dot={{
-                              fill: trendDirection === "up" ? "#22c55e" : "#ef4444",
-                              r: 4
+                            strokeWidth={3}
+                            dot={(props) => {
+                              const { cx, cy, index } = props;
+                              return (
+                                <circle
+                                  cx={cx}
+                                  cy={cy}
+                                  r={4}
+                                  fill={pointColors[index]}
+                                  stroke="#fff"
+                                  strokeWidth={1}
+                                />
+                              );
                             }}
                             activeDot={{
                               r: 6,
