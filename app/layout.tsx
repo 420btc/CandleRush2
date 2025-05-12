@@ -3,8 +3,6 @@ import './globals.css'
 import ClientProviders from '@/components/ClientProviders'
 import { Analytics } from '@vercel/analytics/react';
 import BtcTitleUpdater from "./BtcTitleUpdater";
-import { GameProvider } from '@/context/game-context';
-import { AchievementProvider } from '@/context/achievement-context';
 
 export const metadata: Metadata = {
   title: 'Candle Rush!',
@@ -44,13 +42,9 @@ export default function RootLayout({
       <BtcTitleUpdater />
       <body className="min-h-screen bg-background text-foreground">
         <ClientProviders>
-          <GameProvider>
-            <AchievementProvider>
-              <main className="flex flex-col min-h-screen">
-                {children}
-              </main>
-            </AchievementProvider>
-          </GameProvider>
+          <main className="flex flex-col min-h-screen">
+            {children}
+          </main>
         </ClientProviders>
         <Analytics />
       </body>

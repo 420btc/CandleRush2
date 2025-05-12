@@ -105,7 +105,36 @@ const GameContext = createContext<GameContextType | undefined>(undefined)
 export function GameProvider({ children }: { children: ReactNode }) {
   // --- PERSISTENCIA POR USUARIO ---
   const [currentUser, setCurrentUser] = useState<string | null>(typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null);
-  const [userBalance, setUserBalance] = useState<number>(100);
+  
+  // Inicializar el balance con un valor que se actualiza inmediatamente en el useEffect
+  const [userBalance, setUserBalance] = useState<number>(() => {
+    if (typeof window === 'undefined') return 100;
+    
+    // Intentar obtener el balance del localStorage directamente
+    const directBalance = localStorage.getItem("userBalance");
+    if (directBalance) {
+      const parsed = parseFloat(directBalance);
+      if (!isNaN(parsed)) return parsed;
+    }
+    
+    // Si no hay balance directo, intentar obtenerlo de userData
+    const username = localStorage.getItem('currentUser');
+    if (username) {
+      try {
+        const userData = localStorage.getItem(`userData_${username}`);
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          if (parsed && typeof parsed.balance === 'number') {
+            return parsed.balance;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading user balance:', e);
+      }
+    }
+    
+    return 100; // Valor por defecto
+  });
   const [achievements, setAchievements] = useState<string[]>([]);
   const [autoMixMemory, setAutoMixMemory] = useState<any[]>([]); // Ajusta el tipo según tu definición
   const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, any[]>>>({});
@@ -162,7 +191,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (currentUser) {
       const data = loadUserData(currentUser);
-      setUserBalance(data.balance ?? 100);
+      
+      // Comparar con el balance en localStorage y usar el más alto
+      const directBalance = localStorage.getItem("userBalance");
+      let balanceToUse = data.balance ?? 100;
+      
+      if (directBalance) {
+        const parsedDirectBalance = parseFloat(directBalance);
+        if (!isNaN(parsedDirectBalance) && parsedDirectBalance > balanceToUse) {
+          balanceToUse = parsedDirectBalance;
+          // Actualizar el userData con el balance más alto
+          data.balance = balanceToUse;
+          saveUserData(currentUser, data);
+        }
+      }
+      
+      setUserBalance(balanceToUse);
       // Corrige betsByPair: añade candleTimestamp si falta
       const migratedBetsByPair = {} as typeof data.betsByPair;
       for (const pair in (data.betsByPair ?? {})) {
@@ -201,7 +245,26 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // Sin límite: el usuario puede tener cualquier cantidad de monedas
     setUserBalance((prev) => {
       const newBalance = prev + amount;
+      
+      // Guardar en ambos sistemas de almacenamiento para mantener la coherencia
       localStorage.setItem("userBalance", String(newBalance));
+      
+      // Guardar inmediatamente en el sistema de userData para evitar pérdida de datos al recargar
+      if (currentUser) {
+        try {
+          const userData = loadUserData(currentUser);
+          userData.balance = newBalance;
+          saveUserData(currentUser, userData);
+          
+          // Disparar un evento personalizado para notificar a otras partes de la aplicación
+          if (typeof window !== 'undefined') {
+            const event = new CustomEvent('userBalanceChanged', { detail: { balance: newBalance } });
+            window.dispatchEvent(event);
+          }
+        } catch (e) {
+          console.error('Error saving user balance:', e);
+        }
+      }
       
       // Verificar logros relacionados con el balance
       checkAchievements({

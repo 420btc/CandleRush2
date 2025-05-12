@@ -804,7 +804,41 @@ function WhaleTradesCard() {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { bets, userBalance, candles } = useGame();
+  const { bets, userBalance, candles, addCoins } = useGame();
+  
+  // Forzar actualización del balance cuando cambia
+  const [forceUpdate, setForceUpdate] = useState(0);
+  
+  // Escuchar eventos de cambio de balance
+  useEffect(() => {
+    const handleBalanceChange = (event: any) => {
+      console.log('Balance changed event detected in profile:', event.detail.balance);
+      setForceUpdate(prev => prev + 1);
+    };
+    
+    window.addEventListener('userBalanceChanged', handleBalanceChange);
+    
+    // También verificar el balance directamente del localStorage cada segundo
+    const intervalId = setInterval(() => {
+      if (typeof window !== 'undefined') {
+        const storedBalance = localStorage.getItem('userBalance');
+        if (storedBalance) {
+          const parsedBalance = parseFloat(storedBalance);
+          if (!isNaN(parsedBalance) && parsedBalance !== userBalance) {
+            console.log('Balance mismatch detected in profile, forcing update');
+            // Forzar sincronización llamando a addCoins con 0
+            addCoins(0);
+            setForceUpdate(prev => prev + 1);
+          }
+        }
+      }
+    }, 1000);
+    
+    return () => {
+      window.removeEventListener('userBalanceChanged', handleBalanceChange);
+      clearInterval(intervalId);
+    };
+  }, [userBalance, addCoins]);
   // Función para obtener y computar métricas de apuestas del usuario logueado
   const betCharts = useMemo(() => {
     // Definir el tipo para las apuestas
