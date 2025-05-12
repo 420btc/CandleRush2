@@ -39,11 +39,11 @@ import {
 
 // Colores para diferentes categorías de logros
 const COLORS: Record<string, string> = {
-  basico: '#10b981', // verde esmeralda
-  intermedio: '#3b82f6', // azul
-  avanzado: '#8b5cf6', // púrpura
-  experto: '#f59e0b', // ámbar
-  automix: '#ec4899', // rosa
+  basico: '#fef3c7',    // Amarillo muy claro
+  intermedio: '#fde68a', // Amarillo claro
+  avanzado: '#fcd34d',  // Amarillo medio
+  experto: '#fbbf24',   // Amarillo fuerte
+  automix: '#f59e0b',   // Naranja/dorado
   especial: '#f43f5e', // rojo rosa
 };
 
@@ -56,12 +56,36 @@ export default function AchievementsPage() {
 
   // Datos para gráficos
   const achievementData = useMemo(() => [
-    { category: 'Básicos', total: achievements.filter(a => a.category === 'basico').length, unlocked: achievements.filter(a => a.category === 'basico' && unlockedAchievements.includes(a.id)).length },
-    { category: 'Intermedios', total: achievements.filter(a => a.category === 'intermedio').length, unlocked: achievements.filter(a => a.category === 'intermedio' && unlockedAchievements.includes(a.id)).length },
-    { category: 'Avanzados', total: achievements.filter(a => a.category === 'avanzado').length, unlocked: achievements.filter(a => a.category === 'avanzado' && unlockedAchievements.includes(a.id)).length },
-    { category: 'Experto', total: achievements.filter(a => a.category === 'experto').length, unlocked: achievements.filter(a => a.category === 'experto' && unlockedAchievements.includes(a.id)).length },
-    { category: 'AutoMix', total: achievements.filter(a => a.category === 'automix').length, unlocked: achievements.filter(a => a.category === 'automix' && unlockedAchievements.includes(a.id)).length },
-    { category: 'Especial', total: achievements.filter(a => a.category === 'especial').length, unlocked: achievements.filter(a => a.category === 'especial' && unlockedAchievements.includes(a.id)).length },
+    { 
+      name: 'Básicos', 
+      total: achievements.filter(a => a.category === 'basico').length,
+      completados: achievements.filter(a => a.category === 'basico' && unlockedAchievements.includes(a.id)).length,
+      color: COLORS.basico
+    },
+    { 
+      name: 'Intermedios', 
+      total: achievements.filter(a => a.category === 'intermedio').length,
+      completados: achievements.filter(a => a.category === 'intermedio' && unlockedAchievements.includes(a.id)).length,
+      color: COLORS.intermedio
+    },
+    { 
+      name: 'Avanzados', 
+      total: achievements.filter(a => a.category === 'avanzado').length,
+      completados: achievements.filter(a => a.category === 'avanzado' && unlockedAchievements.includes(a.id)).length,
+      color: COLORS.avanzado
+    },
+    { 
+      name: 'Expertos', 
+      total: achievements.filter(a => a.category === 'experto').length,
+      completados: achievements.filter(a => a.category === 'experto' && unlockedAchievements.includes(a.id)).length,
+      color: COLORS.experto
+    },
+    { 
+      name: 'AutoMix', 
+      total: achievements.filter(a => a.category === 'automix').length,
+      completados: achievements.filter(a => a.category === 'automix' && unlockedAchievements.includes(a.id)).length,
+      color: COLORS.automix
+    }
   ], [achievements, unlockedAchievements]);
 
   // Datos para el gráfico de radar
@@ -197,14 +221,38 @@ export default function AchievementsPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="total"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, total, completados }) => `${completados}/${total}`}
                     >
                       {achievementData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={Object.values(COLORS)[index % Object.values(COLORS).length]} />
+                        <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip />
-                    <Legend />
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-black border border-yellow-400 rounded-lg p-2 text-sm">
+                              <p className="font-bold text-yellow-400">{data.name}</p>
+                              <p className="text-yellow-400">
+                                Completados: {data.completados} de {data.total}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend 
+                      formatter={(value, entry) => {
+                        const data = achievementData.find(d => d.name === value);
+                        return <span style={{ fontSize: '12px', color: '#000' }}>{`${value} (${data?.completados}/${data?.total})`}</span>;
+                      }}
+                      wrapperStyle={{
+                        fontSize: '12px',
+                        padding: '0px'
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
