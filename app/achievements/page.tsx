@@ -36,6 +36,7 @@ import {
   PolarRadiusAxis,
   Radar
 } from "recharts";
+import RewardNotification from "@/components/ui/reward-notification";
 
 // Colores para diferentes categorías de logros
 const COLORS: Record<string, string> = {
@@ -48,10 +49,36 @@ const COLORS: Record<string, string> = {
 
 export default function AchievementsPage() {
   const router = useRouter();
-  const { achievements, unlockedAchievements, gameStats } = useAchievement();
+  const { achievements, unlockedAchievements, claimAchievement, claimedAchievements, gameStats } = useAchievement();
   const { userBalance } = useGame();
   const [activeTab, setActiveTab] = useState('todos');
   const [showAll, setShowAll] = useState(false);
+  const [showRewardNotification, setShowRewardNotification] = useState(false);
+  const [claimedAmount, setClaimedAmount] = useState(0);
+
+  // Calcular recompensas disponibles
+  const availableRewards = useMemo(() => {
+    return unlockedAchievements
+      .filter(id => !claimedAchievements.includes(id))
+      .reduce((total, id) => {
+        const achievement = achievements.find(a => a.id === id);
+        return total + (achievement?.reward || 0);
+      }, 0);
+  }, [unlockedAchievements, claimedAchievements, achievements]);
+
+  // Función para reclamar todas las recompensas
+  const claimAllRewards = () => {
+    let totalReward = 0;
+    unlockedAchievements.forEach(id => {
+      if (!claimedAchievements.includes(id)) {
+        totalReward += claimAchievement(id);
+      }
+    });
+    if (totalReward > 0) {
+      setClaimedAmount(totalReward);
+      setShowRewardNotification(true);
+    }
+  };
 
   // Datos para gráficos
   const achievementData = useMemo(() => [
@@ -174,6 +201,26 @@ export default function AchievementsPage() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
         </svg>
       </button>
+
+      {/* Botón para reclamar recompensas */}
+      {availableRewards > 0 && (
+        <button
+          onClick={claimAllRewards}
+          className="fixed top-20 right-6 z-50 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black font-bold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 flex items-center gap-2 animate-pulse"
+        >
+          <span>Reclamar {availableRewards} monedas</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+          </svg>
+        </button>
+      )}
+
+      {showRewardNotification && (
+        <RewardNotification
+          amount={claimedAmount}
+          onClose={() => setShowRewardNotification(false)}
+        />
+      )}
 
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-16">

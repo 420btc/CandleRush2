@@ -68,6 +68,16 @@ const config = {
   					boxShadow: '0 0 10px 5px rgba(255,215,0,0.3)'
   				}
   			},
+        'gradient-xy': {
+          '0%, 100%': {
+            'background-size': '400% 400%',
+            'background-position': 'left center'
+          },
+          '50%': {
+            'background-size': '200% 200%',
+            'background-position': 'right center'
+          }
+        },
   			'accordion-down': {
   				from: {
   					height: '0'
@@ -95,6 +105,7 @@ const config = {
   		},
   		animation: {
   			'card-glow': 'card-glow 4s linear infinite',
+        'gradient-xy': 'gradient-xy 15s ease infinite',
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.9s ease-out',
   			'skew-scroll': 'skew-scroll 69s linear infinite'

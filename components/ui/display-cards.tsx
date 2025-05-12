@@ -35,7 +35,7 @@ function DisplayCard({
         </span>
         <p className={cn("text-lg font-medium", titleClassName)}>{title}</p>
       </div>
-      <p className="whitespace-nowrap text-lg">{description}</p>
+      <p className="whitespace-nowrap text-lg text-black">{description}</p>
       <p className="text-muted-foreground">{date}</p>
     </div>
   );
@@ -48,13 +48,13 @@ interface DisplayCardsProps {
 export default function DisplayCards({ cards }: DisplayCardsProps) {
   const defaultCards = [
     {
-      className: "[grid-area:stack] hover:-translate-y-10 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-['']  grayscale-0 hover:before:opacity-0 before:transition-opacity before:duration:700 hover:grayscale-0 before:left-0 before:top-0",
+      className: "[grid-area:stack] hover:-translate-y-10 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-gradient-to-r before:from-purple-500/30 before:via-pink-500/30 before:to-yellow-500/30 hover:before:opacity-0 before:transition-opacity before:duration-700 before:animate-gradient-xy before:left-0 before:top-0 before:blur-md",
     },
     {
-      className: "[grid-area:stack] translate-x-16 translate-y-10 hover:-translate-y-1 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-['']  grayscale-0 hover:before:opacity-0 before:transition-opacity before:duration:700 hover:grayscale-0 before:left-0 before:top-0",
+      className: "[grid-area:stack] translate-x-16 translate-y-10 hover:-translate-y-1 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-gradient-to-r before:from-blue-500/30 before:via-green-500/30 before:to-yellow-500/30 hover:before:opacity-0 before:transition-opacity before:duration-700 before:animate-gradient-xy before:left-0 before:top-0 before:blur-md",
     },
     {
-      className: "[grid-area:stack] translate-x-32 translate-y-20 hover:translate-y-10",
+      className: "[grid-area:stack] translate-x-32 translate-y-20 hover:translate-y-10 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-gradient-to-r before:from-red-500/30 before:via-orange-500/30 before:to-yellow-500/30 hover:before:opacity-0 before:transition-opacity before:duration-700 before:animate-gradient-xy before:left-0 before:top-0 before:blur-md",
     },
   ];
 
