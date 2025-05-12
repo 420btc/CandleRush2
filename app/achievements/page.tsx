@@ -50,7 +50,7 @@ const COLORS: Record<string, string> = {
 export default function AchievementsPage() {
   const router = useRouter();
   const { achievements, unlockedAchievements, claimAchievement, claimedAchievements, gameStats } = useAchievement();
-  const { userBalance } = useGame();
+  const { userBalance, addCoins } = useGame();
   const [activeTab, setActiveTab] = useState('todos');
   const [showAll, setShowAll] = useState(false);
   const [showRewardNotification, setShowRewardNotification] = useState(false);
@@ -71,10 +71,12 @@ export default function AchievementsPage() {
     let totalReward = 0;
     unlockedAchievements.forEach(id => {
       if (!claimedAchievements.includes(id)) {
-        totalReward += claimAchievement(id);
+        const reward = claimAchievement(id);
+        totalReward += reward;
       }
     });
     if (totalReward > 0) {
+      addCoins(totalReward);
       setClaimedAmount(totalReward);
       setShowRewardNotification(true);
     }
