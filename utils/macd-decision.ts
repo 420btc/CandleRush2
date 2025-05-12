@@ -491,8 +491,8 @@ try {
     }
     
     // Mantener dirección en rachas ganadoras
-    if (consecutiveWins >= 2) { // Mantener dirección después de 2 ganancias consecutivas
-      return lastDirection;
+    if (consecutiveWins >= 2 && lastDirection) { // Mantener dirección después de 2 ganancias consecutivas
+      return lastDirection as "BULLISH" | "BEARISH"; // Aseguramos que no sea null
     }
   } catch {}
 
@@ -521,10 +521,17 @@ try {
     const recent = memory.slice(-N);
     // Consenso: todos los votos y dirección final iguales
     const allSameDirection = recent.length === N && recent.every(e => e.direction === direction);
+    // Consenso ampliado para incluir todos los votos disponibles
+    // Verificamos que los valores sean iguales o ambos sean null/undefined
     const allSameVotes = recent.length === N && recent.every(e => (
-      e.majoritySignal === majoritySignal &&
-      e.rsiSignal === rsiSignal &&
-      e.macdSignal === macdSignal
+      (e.majoritySignal === majoritySignal || (e.majoritySignal === null && majoritySignal === null)) &&
+      (e.rsiSignal === rsiSignal || (e.rsiSignal === null && rsiSignal === null)) &&
+      (e.macdSignal === macdSignal || (e.macdSignal === null && macdSignal === null)) &&
+      (e.valleyVote === valleyVote || (e.valleyVote === null && valleyVote === null)) &&
+      (e.volumeVote === volumeVote || (e.volumeVote === null && volumeVote === null)) &&
+      (e.whaleVote === whaleVote || (e.whaleVote === null && whaleVote === null)) &&
+      (e.adxMemoryVote === adxMemoryVote || (e.adxMemoryVote === null && adxMemoryVote === null)) &&
+      (e.crossSignal === crossSignal || (e.crossSignal === null && crossSignal === null))
     ));
     // Consenso sólo si además no hay racha de pérdidas en esas velas
     const hasLossStreak = recent.filter(e => e.result === "LOSS" || e.result === "LIQ").length >= 2;
@@ -552,30 +559,35 @@ try {
   const finalDirection = shouldInvert ? (direction === "BULLISH" ? "BEARISH" : "BULLISH") : direction;
 
   try {
+    // Crear una estructura de datos consistente para todos los votos
     const entry: AutoMixMemoryEntry = {
       betId: 'macd-bet',
       timestamp: Date.now(),
       direction: finalDirection,
       result: null,
+      // Votos principales - disponibles tanto en el objeto principal como en votesSnapshot
       majoritySignal,
       rsiSignal,
       macdSignal,
-      consecutiveBets,
       valleyVote,
-      rsi,
-      macd: macdLine,
-      macdSignalLine: signalLine,
       volumeVote,
       whaleVote,
       adxMemoryVote,
       crossSignal: crossSignal ?? null,
+      emaPositionVote,  // Añadido para consistencia
+      // Valores numéricos
+      consecutiveBets,
+      rsi,
+      macd: macdLine,
+      macdSignalLine: signalLine,
+      // Metadatos
       wasRandom: false,
-      // --- Desglose de votos y contexto ---
       bullishVotes,
       bearishVotes,
       totalVotes,
       directionAntesDeInvertir: direction,
       timeframe,
+      // Snapshot completo de todos los votos para consistencia
       votesSnapshot: {
         majoritySignal,
         rsiSignal,

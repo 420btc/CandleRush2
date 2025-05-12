@@ -12,6 +12,7 @@ export interface Candle {
   isClosed?: boolean
   isFinal?: boolean  // Marca la última vela simulada
   isSimulated?: boolean // Marca si la vela es simulada
+  isError?: boolean // Marca si la vela se creó por una resolución de emergencia
   /**
    * Tipo de ruptura (breakout) si la vela fue generada como ruptura: 'weak' | 'medium' | 'strong'.
    */
@@ -41,5 +42,6 @@ export interface Bet {
   wasLiquidated?: boolean; // true si fue liquidada antes del cierre
   winnings?: number; // ganancia real de la apuesta
   liquidationFee?: number; // penalización por liquidación
+  emergencyResolved?: boolean; // true si fue resuelta por el mecanismo de emergencia
 }
 

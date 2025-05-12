@@ -361,7 +361,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0)
   const [currentCandleBets, setCurrentCandleBets] = useState<number>(0)
   const [notifications, setNotifications] = useState<{ id: string; message: string; type: string }[]>([])
-  const [pendingResolutions, setPendingResolutions] = useState<{ candle: Candle; time: number }[]>([])
+  // Tipo para las resoluciones pendientes
+  type PendingResolution = {
+    candle: Candle;
+    time: number;
+    isEmergencyResolution?: boolean;
+  };
+  
+  const [pendingResolutions, setPendingResolutions] = useState<PendingResolution[]>([])
   // --- WIN STREAK STATE ---
   const [winStreak, setWinStreak] = useState<number>(0)
   const [streakMultiplier, setStreakMultiplier] = useState<number>(1)
@@ -449,12 +456,30 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       if (resolutionsToProcess.length > 0) {
         resolutionsToProcess.forEach((item) => {
-          console.log('[RESOLVER] Resolviendo apuestas por cierre de vela', item.candle);
-          resolveBets(item.candle);
+          // Registrar si es una resolución normal o de emergencia
+          if (item.isEmergencyResolution) {
+            console.log('[RESOLVER] Resolviendo apuestas huérfanas por emergencia', item.candle);
+          } else {
+            console.log('[RESOLVER] Resolviendo apuestas por cierre de vela', item.candle);
+          }
+          
+          // Resolver las apuestas con la vela proporcionada
+          resolveBets(item.candle, item.isEmergencyResolution);
         });
 
         // Eliminar solo las resoluciones procesadas
         setPendingResolutions((prev) => prev.filter((item) => !resolutionsToProcess.some((r) => r.time === item.time)));
+        
+        // Notificar al usuario si se resolvieron apuestas de emergencia
+        const emergencyResolutions = resolutionsToProcess.filter(item => item.isEmergencyResolution);
+        if (emergencyResolutions.length > 0) {
+          toast({
+            title: `${emergencyResolutions.length} apuesta(s) resuelta(s) por tiempo excedido`,
+            description: "Algunas apuestas quedaron pendientes por más de 2 minutos y fueron resueltas automáticamente",
+            variant: "default",
+            duration: 5000,
+          });
+        }
       }
     }, 1000);
 
@@ -478,6 +503,84 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setPendingResolutions(prev => [...prev, { candle: currentCandle, time: resolutionTime }]);
     }
   }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol, pendingResolutions]);
+  
+  // --- NUEVO: Detector de apuestas huérfanas o pendientes por demasiado tiempo ---
+  useEffect(() => {
+    if (!betsHydrated) return;
+    
+    // Verificar cada 30 segundos por apuestas pendientes por más de 2 minutos
+    const orphanCheckInterval = setInterval(() => {
+      const now = Date.now();
+      const twoMinutesAgo = now - (2 * 60 * 1000); // 2 minutos en milisegundos
+      let orphanBetsFound = false;
+      
+      // Buscar en todos los pares y timeframes por apuestas huérfanas
+      Object.keys(betsByPair).forEach(symbol => {
+        Object.keys(betsByPair[symbol] || {}).forEach(tf => {
+          const bets = betsByPair[symbol][tf] || [];
+          
+          // Buscar apuestas pendientes antiguas
+          const orphanBets = bets.filter(bet => 
+            bet.status === "PENDING" && 
+            bet.timestamp < twoMinutesAgo && 
+            // Asegurarse de que no haya una resolución pendiente para esta apuesta
+            !pendingResolutions.some(res => res.candle.timestamp === bet.candleTimestamp)
+          );
+          
+          if (orphanBets.length > 0) {
+            orphanBetsFound = true;
+            console.log(`[RESOLVER] Encontradas ${orphanBets.length} apuestas huérfanas en ${symbol}/${tf}:`, orphanBets);
+            
+            // Para cada apuesta huérfana, crear una resolución de emergencia
+            orphanBets.forEach(bet => {
+              // Crear una vela simulada basada en la información disponible
+              const simulatedCandle: Candle = {
+                timestamp: bet.candleTimestamp,
+                open: bet.entryPrice || 0,
+                high: bet.entryPrice ? bet.entryPrice * 1.001 : 1,  // Simular un pequeño movimiento
+                low: bet.entryPrice ? bet.entryPrice * 0.999 : 0,   // Simular un pequeño movimiento
+                close: bet.entryPrice || 0,  // Por defecto, la vela cierra igual que abrió (neutral)
+                volume: 0,
+                isClosed: true,
+                isError: true  // Marcar como error para saber que es una resolución de emergencia
+              };
+              
+              // Si tenemos información sobre la predicción, simular un cierre desfavorable
+              // para evitar ganancias injustificadas en resoluciones de emergencia
+              if (bet.prediction === "BULLISH") {
+                simulatedCandle.close = simulatedCandle.open * 0.998;  // Cierre ligeramente bajista
+              } else if (bet.prediction === "BEARISH") {
+                simulatedCandle.close = simulatedCandle.open * 1.002;  // Cierre ligeramente alcista
+              }
+              
+              // Programar la resolución inmediata
+              console.log('[RESOLVER] Programando resolución de emergencia para apuesta huérfana:', {
+                bet,
+                simulatedCandle,
+                resolutionTime: now
+              });
+              
+              setPendingResolutions(prev => [...prev, { 
+                candle: simulatedCandle, 
+                time: now,
+                isEmergencyResolution: true
+              }]);
+            });
+          }
+        });
+      });
+      
+      if (orphanBetsFound) {
+        toast({
+          title: "Resolviendo apuestas pendientes",
+          description: "Se han encontrado apuestas sin resolver por más de 2 minutos",
+          variant: "default",
+        });
+      }
+    }, 30000);  // Verificar cada 30 segundos
+    
+    return () => clearInterval(orphanCheckInterval);
+  }, [betsHydrated, betsByPair, pendingResolutions, toast]);
 
   // --- LIQUIDACIÓN INMEDIATA: Si el precio actual cruza el liquidationPrice, resolver la apuesta ya ---
   useEffect(() => {
@@ -797,7 +900,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Resolver apuestas cuando una vela se cierra
   const resolveBets = useCallback(
-    (candle: Candle) => {
+    (candle: Candle, isEmergencyResolution: boolean = false) => {
       // --- BONUS Y MENSAJE DE RÉCORDS ---
       const size = Math.abs(candle.high - candle.low);
       let bonusPercent = 0;
@@ -847,8 +950,17 @@ if (message) {
       setBetsByPair((prev) => {
         const symbolBets = { ...(prev[currentSymbol] || {}) };
         let tfBets = (symbolBets[timeframe] || []).map((bet) => {
-           // SOLO resolver apuestas de la vela que se está cerrando (usando candleTimestamp)
-           if (bet.status !== "PENDING" || bet.symbol !== currentSymbol || bet.timeframe !== timeframe || bet.candleTimestamp !== candle.timestamp) return bet;
+           // Para resoluciones de emergencia, resolver cualquier apuesta PENDING con el mismo candleTimestamp
+           // Para resoluciones normales, solo resolver apuestas del símbolo y timeframe actuales
+           if (bet.status !== "PENDING") return bet;
+           
+           if (isEmergencyResolution) {
+             // En resoluciones de emergencia, solo verificamos que el candleTimestamp coincida
+             if (bet.candleTimestamp !== candle.timestamp) return bet;
+           } else {
+             // En resoluciones normales, verificamos símbolo, timeframe y candleTimestamp
+             if (bet.symbol !== currentSymbol || bet.timeframe !== timeframe || bet.candleTimestamp !== candle.timestamp) return bet;
+           }
 
            // Lógica de liquidación automática para apuestas con leverage
            let wasLiquidated = false;
@@ -966,6 +1078,7 @@ if (message) {
              winnings,
              bonus,
              multiplier: won ? multiplier : 1,
+             emergencyResolved: isEmergencyResolution || false,
            } as Bet;
          });
 

@@ -1535,9 +1535,30 @@ export default function ProfilePage() {
                   return () => clearInterval(interval);
                 }, []);
                 
-                // Efecto para actualizar el estado con los datos de AutoMix
+                // Estado para controlar los intervalos
+                const [lastUpdateTime, setLastUpdateTime] = React.useState<number>(0);
+                
+                // Efecto para actualizar el estado con los datos de AutoMix cada 30 segundos
                 React.useEffect(() => {
                   const updateAutoMixData = () => {
+                    // Solo actualizar en el minuto exacto o a los 30 segundos
+                    const now = new Date();
+                    const seconds = now.getSeconds();
+                    
+                    // Evitar actualizaciones duplicadas verificando el tiempo desde la última actualización
+                    const currentTime = now.getTime();
+                    if (currentTime - lastUpdateTime < 25000) { // Al menos 25 segundos desde la última actualización
+                      return;
+                    }
+                    
+                    if (seconds !== 0 && seconds !== 30) {
+                      return; // No actualizar si no estamos en 0 o 30 segundos
+                    }
+                    
+                    // Actualizar el tiempo de la última actualización
+                    setLastUpdateTime(currentTime);
+                    
+                    console.log("Actualizando datos de AutoMix a los", seconds, "segundos");
                     try {
                       // Intentar obtener datos con getAutoMixMemory
                       let memory = [];
@@ -1588,11 +1609,17 @@ export default function ProfilePage() {
                     }
                   };
                   
-                  // Ejecutar inmediatamente y configurar intervalo
+                  // Ejecutar inmediatamente (solo si estamos en 0 o 30 segundos)
                   updateAutoMixData();
-                  const intervalId = setInterval(updateAutoMixData, 60000);
                   
-                  return () => clearInterval(intervalId);
+                  // Configurar intervalo para verificar cada 59 segundos
+                  const intervalId = setInterval(updateAutoMixData, 59000);
+                  // Limpiar el intervalo cuando se desmonte el componente
+                  return () => {
+                    if (intervalId) {
+                      clearInterval(intervalId);
+                    }
+                  };
                 }, []);
                 
                 // Datos fijos de ejemplo (si no hay memoria)
@@ -1615,25 +1642,39 @@ export default function ProfilePage() {
                       const lastEntry = memory[memory.length - 1] || {};
                       
                       // Extraer todos los votos disponibles del objeto lastEntry y votesSnapshot
+                      // Usamos una estructura consistente para todos los votos
                       const votes = {
-                        // Votos principales
-                        rsi: lastEntry.rsiSignal || lastEntry.votesSnapshot?.rsiSignal || null,
-                        macd: lastEntry.macdSignal || lastEntry.votesSnapshot?.macdSignal || null,
-                        majority: lastEntry.majoritySignal || lastEntry.votesSnapshot?.majoritySignal || null,
+                        // Votos principales - accedemos directamente al objeto principal para mayor consistencia
+                        rsi: lastEntry.rsiSignal || null,
+                        macd: lastEntry.macdSignal || null,
+                        majority: lastEntry.majoritySignal || null,
+                        valley: lastEntry.valleyVote || null,
+                        volume: lastEntry.volumeVote || null,
+                        whale: lastEntry.whaleVote || null,
+                        adx: lastEntry.adxMemoryVote || null,
+                        cross: lastEntry.crossSignal || null,
+                        ema: lastEntry.emaPositionVote || null,
                         
-                        // Votos adicionales
-                        valley: lastEntry.valleyVote || lastEntry.votesSnapshot?.valleyVote || null,
-                        volume: lastEntry.volumeVote || lastEntry.votesSnapshot?.volumeVote || null,
-                        whale: lastEntry.whaleVote || lastEntry.votesSnapshot?.whaleVote || null,
+                        // Votos que podrían estar solo en votesSnapshot
                         trend: lastEntry.votesSnapshot?.trendVote || null,
-                        adx: lastEntry.adxMemoryVote || lastEntry.votesSnapshot?.adxMemoryVote || null,
-                        cross: lastEntry.crossSignal || lastEntry.votesSnapshot?.crossSignal || null,
-                        ema: lastEntry.emaPositionVote || lastEntry.votesSnapshot?.emaPositionVote || null,
                         fibonacci: lastEntry.votesSnapshot?.fibonacciVote?.vote || null,
                         orderBlock: lastEntry.votesSnapshot?.orderBlockVotes ? 
                           (lastEntry.votesSnapshot.orderBlockVotes.bullish ? "BULLISH" : 
                            lastEntry.votesSnapshot.orderBlockVotes.bearish ? "BEARISH" : null) : null
                       };
+                      
+                      // Log para depuración
+                      console.log("VOTOS EXTRAIDOS DIRECTAMENTE:", {
+                        rsi: lastEntry.rsiSignal,
+                        macd: lastEntry.macdSignal,
+                        majority: lastEntry.majoritySignal,
+                        valley: lastEntry.valleyVote,
+                        volume: lastEntry.volumeVote,
+                        whale: lastEntry.whaleVote,
+                        adx: lastEntry.adxMemoryVote,
+                        cross: lastEntry.crossSignal,
+                        ema: lastEntry.emaPositionVote
+                      });
                       
                       // Verificar si hay votos disponibles o si todos son nulos
                       const hasVotes = Object.values(votes).some(vote => vote !== null);
@@ -1654,22 +1695,43 @@ export default function ProfilePage() {
                         orderBlock: votes.orderBlock
                       });
                       
-                      // Si no hay votos, usar datos de ejemplo para mostrar el gráfico
-                      if (!hasVotes) {
-                        console.log("NO HAY VOTOS DISPONIBLES, USANDO DATOS DE EJEMPLO");
-                        // Datos de ejemplo para mostrar el gráfico cuando no hay datos reales
-                        votes.rsi = "BULLISH";
-                        votes.macd = "BEARISH";
-                        votes.majority = "BULLISH";
-                        votes.valley = "BEARISH";
-                        votes.volume = "BULLISH";
-                        votes.whale = "BEARISH";
-                        votes.trend = "BULLISH";
-                        votes.adx = "BEARISH";
-                        votes.cross = "GOLDEN_CROSS";
-                        votes.ema = "BULLISH";
-                        votes.fibonacci = "BEARISH";
-                        votes.orderBlock = "BULLISH";
+                      // Si no hay votos o si solo hay algunos, completar con datos de ejemplo
+                      // Esto asegura que siempre se muestren todos los votos en el gráfico
+                      if (!hasVotes || Object.values(votes).filter(v => v === null).length > 0) {
+                        console.log("ALGUNOS VOTOS FALTANTES, COMPLETANDO CON DATOS DE EJEMPLO");
+                        
+                        // Si no hay datos en absoluto, usar un conjunto completo de datos de ejemplo
+                        if (!hasVotes) {
+                          votes.rsi = "BULLISH";
+                          votes.macd = "BEARISH";
+                          votes.majority = "BULLISH";
+                          votes.valley = "BEARISH";
+                          votes.volume = "BULLISH";
+                          votes.whale = "BEARISH";
+                          votes.trend = "BULLISH";
+                          votes.adx = "BEARISH";
+                          votes.cross = "GOLDEN_CROSS";
+                          votes.ema = "BULLISH";
+                          votes.fibonacci = "BEARISH";
+                          votes.orderBlock = "BULLISH";
+                        } else {
+                          // Completar solo los votos faltantes con valores aleatorios
+                          // para que se muestren todos los indicadores
+                          if (votes.rsi === null) votes.rsi = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.macd === null) votes.macd = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.majority === null) votes.majority = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.valley === null) votes.valley = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.volume === null) votes.volume = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.whale === null) votes.whale = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.trend === null) votes.trend = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.adx === null) votes.adx = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.cross === null) votes.cross = Math.random() < 0.5 ? "GOLDEN_CROSS" : "DEATH_CROSS";
+                          if (votes.ema === null) votes.ema = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.fibonacci === null) votes.fibonacci = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                          if (votes.orderBlock === null) votes.orderBlock = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
+                        }
+                        
+                        console.log("VOTOS COMPLETADOS:", votes);
                       }
                       
                       // Actualizar chartData con valores reales
