@@ -2,12 +2,23 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
+// Definir el tipo para las estadísticas del juego
+interface GameStats {
+  winRate: number
+  totalVolume: number
+  profitPercentage: number
+  totalBets: number
+  maxConsecutiveWins: number
+}
+
 interface Achievement {
   id: string
   title: string
   description: string
   reward: number
   condition: string
+  category: string
+  icon?: string | React.ReactNode
 }
 
 interface AchievementContextType {
@@ -16,6 +27,15 @@ interface AchievementContextType {
   claimedAchievements: string[]
   unlockAchievement: (id: string) => void
   claimAchievement: (id: string) => number
+  gameStats: GameStats
+}
+
+const defaultGameStats: GameStats = {
+  winRate: 50,
+  totalVolume: 10000,
+  profitPercentage: 25,
+  totalBets: 45,
+  maxConsecutiveWins: 4
 }
 
 const AchievementContext = createContext<AchievementContextType | undefined>(undefined)
@@ -28,6 +48,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: "Realiza tu primera apuesta",
     reward: 50,
     condition: "Realizar la primera apuesta",
+    category: "basico"
   },
   {
     id: "winning_streak",
@@ -35,6 +56,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: "Gana 10 apuestas en total",
     reward: 100,
     condition: "Ganar 10 apuestas",
+    category: "intermedio"
   },
   {
     id: "high_roller",
@@ -42,6 +64,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: "Realiza 5 apuestas simultáneas",
     reward: 200,
     condition: "Tener 5 apuestas pendientes a la vez",
+    category: "avanzado"
   },
   {
     id: "crypto_master",
@@ -49,6 +72,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: "Apuesta en 5 pares diferentes",
     reward: 150,
     condition: "Apostar en 5 pares de criptomonedas diferentes",
+    category: "intermedio"
   },
   {
     id: "profitable",
@@ -56,17 +80,20 @@ const ACHIEVEMENTS: Achievement[] = [
     description: "Alcanza un balance de 2000",
     reward: 0,
     condition: "Llegar a un balance de 2000",
+    category: "experto"
   },
 ]
 
 export function AchievementProvider({ children }: { children: ReactNode }) {
   const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([])
   const [claimedAchievements, setClaimedAchievements] = useState<string[]>([])
+  const [gameStats, setGameStats] = useState<GameStats>(defaultGameStats)
 
   useEffect(() => {
     // Load achievements from localStorage
     const savedUnlocked = localStorage.getItem("unlockedAchievements")
     const savedClaimed = localStorage.getItem("claimedAchievements")
+    const savedGameStats = localStorage.getItem("gameStats")
 
     if (savedUnlocked) {
       try {
@@ -81,6 +108,14 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
         setClaimedAchievements(JSON.parse(savedClaimed))
       } catch (error) {
         console.error("Error parsing claimed achievements:", error)
+      }
+    }
+
+    if (savedGameStats) {
+      try {
+        setGameStats(JSON.parse(savedGameStats))
+      } catch (error) {
+        console.error("Error parsing game stats:", error)
       }
     }
   }, [])
@@ -114,6 +149,15 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
     return achievement.reward
   }
 
+  // Función para actualizar las estadísticas del juego
+  const updateGameStats = (newStats: Partial<GameStats>) => {
+    setGameStats(prevStats => {
+      const updatedStats = { ...prevStats, ...newStats };
+      localStorage.setItem("gameStats", JSON.stringify(updatedStats));
+      return updatedStats;
+    });
+  };
+
   return (
     <AchievementContext.Provider
       value={{
@@ -122,6 +166,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
         claimedAchievements,
         unlockAchievement,
         claimAchievement,
+        gameStats
       }}
     >
       {children}
