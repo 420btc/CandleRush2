@@ -789,11 +789,11 @@ function WhaleTradesCard() {
         </div>
         </div>
           <div className="text-right">
-            <div className="text-xs text-muted-foreground">
+            <div className="text-[10px] text-black font-medium">
               Último trade: {recentTrades[0] ? new Date(recentTrades[0].timestamp).toLocaleTimeString() : 'Ninguno'}
       </div>
-            <div className="text-xs text-muted-foreground">
-              Total: {totalTrades} trades (5 min)
+            <div className="text-[10px] text-black font-medium">
+              Total: {totalTrades} trades
         </div>
         </div>
       </div>
