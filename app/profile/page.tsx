@@ -4,6 +4,7 @@
 
 import Image from "next/image";
 import { TrendingUp } from "lucide-react"
+import { useLiquidations } from "@/components/game/liquidations";
 import { 
   PolarRadiusAxis, 
   PolarAngleAxis, 
@@ -2512,7 +2513,8 @@ export default function ProfilePage() {
               <ChartContainer
                 config={{
                   heatValue: { label: "Intensidad", color: "#ef4444" },
-                  liquidations: { label: "Liquidaciones", color: "#ffffff" }
+                  liquidations: { label: "Liquidaciones", color: "#ffffff" },
+                  liveLiquidations: { label: "Liquidaciones en vivo", color: "#00ff00" }
                 }}
                 className="aspect-auto h-[200px] w-full"
               >
@@ -2524,7 +2526,17 @@ export default function ProfilePage() {
                       heatValue: number;
                       liquidations: number;
                       bets: number;
+                      liveLiquidations: number;
                     };
+                    
+                    // Obtener datos de liquidaciones en vivo directamente sin depender del contexto
+                    const { liquidations: liveLiquidations } = useLiquidations({ 
+                      symbol: 'BTCUSDT', 
+                      minSize: 0, 
+                      maxSize: 500, 
+                      limit: 99, 
+                      smallLimit: 10
+                    });
                     
                     // Generar datos para el mapa de calor por hora del día
                     const { bets } = useGame();
@@ -2532,6 +2544,7 @@ export default function ProfilePage() {
                       hour: i,
                       heatValue: 0,
                       liquidations: 0,
+                      liveLiquidations: 0,
                       bets: 0
                     }));
                     
@@ -2547,10 +2560,23 @@ export default function ProfilePage() {
                       }
                     });
                     
+                    // Contar liquidaciones en vivo (siempre habilitadas en el perfil)
+                    if (liveLiquidations.length > 0) {
+                      liveLiquidations.forEach(liq => {
+                        const date = new Date(liq.timestamp);
+                        const hour = date.getHours();
+                        hourData[hour].liveLiquidations += 1;
+                        
+                        // También sumamos a la intensidad del mapa de calor
+                        hourData[hour].heatValue += 10; // Añadimos un valor fijo para que se note
+                      });
+                    }
+                    
                     // Normalizar los valores de calor (0-100)
                     const maxBets = Math.max(...hourData.map(d => d.bets), 1);
                     hourData.forEach(d => {
-                      d.heatValue = (d.bets / maxBets) * 100;
+                      // Aseguramos que el valor no exceda 100
+                      d.heatValue = Math.min((d.bets / maxBets) * 100 + (d.liveLiquidations * 5), 100);
                     });
                     
                     return hourData;
@@ -2595,6 +2621,7 @@ export default function ProfilePage() {
                             <p className="font-medium text-white">{data.hour}:00 - {data.hour}:59</p>
                             <p className="text-xs text-yellow-400">Intensidad: {Math.round(data.heatValue)}%</p>
                             <p className="text-xs text-red-400">Liquidaciones: {data.liquidations}</p>
+                            <p className="text-xs text-green-400">Liquidaciones en vivo: {data.liveLiquidations}</p>
                             <p className="text-xs text-white">Total apuestas: {data.bets}</p>
                           </div>
                         );
@@ -2624,6 +2651,15 @@ export default function ProfilePage() {
                     strokeWidth={2}
                     dot={{ fill: '#ffffff', r: 4 }}
                     activeDot={{ r: 6, fill: '#ffffff', stroke: '#000' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="liveLiquidations"
+                    yAxisId="right"
+                    stroke="#00ff00"
+                    strokeWidth={2}
+                    dot={{ fill: '#00ff00', r: 4 }}
+                    activeDot={{ r: 6, fill: '#00ff00', stroke: '#000' }}
                   />
                   <Legend verticalAlign="bottom" height={36} />
                 </BarChart>
