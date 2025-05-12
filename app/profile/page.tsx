@@ -648,24 +648,24 @@ function WhaleTradesCard() {
               <Label
                 content={({ viewBox }: { viewBox?: LabelViewBox }) => {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                        <tspan
-                          x={viewBox?.cx || 0}
-                          y={(viewBox?.cy || 0) - 16}
-                          className="fill-foreground text-2xl font-bold transition-all duration-300"
-                        >
-                          {Math.round(animatedValue)}
-                        </tspan>
-                        <tspan
-                          x={viewBox?.cx || 0}
-                          y={((viewBox?.cy || 0) + 4)}
-                          className="fill-muted-foreground text-xs"
-                        >
-                          trades
-                        </tspan>
-                      </text>
-                    );
+                                                      return (
+                                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                                      <tspan
+                                        x={viewBox?.cx || 0}
+                                        y={(viewBox?.cy || 0) - 16}
+                                        className="fill-black text-2xl font-bold transition-all duration-300"
+                                      >
+                                        {Math.round(animatedValue)}
+                                      </tspan>
+                                      <tspan
+                                        x={viewBox?.cx || 0}
+                                        y={((viewBox?.cy || 0) + 4)}
+                                        className="fill-black text-xs"
+                                      >
+                                        trades
+                                      </tspan>
+                                    </text>
+                                  );
                   }
                 }}
               />
