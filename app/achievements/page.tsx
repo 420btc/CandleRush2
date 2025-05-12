@@ -224,7 +224,7 @@ export default function AchievementsPage() {
                     <Line 
                       type="monotone" 
                       dataKey="logros" 
-                      stroke="#8b5cf6" 
+                      stroke="#000000" 
                       activeDot={{ r: 8 }} 
                       strokeWidth={2}
                     />
@@ -348,7 +348,7 @@ export default function AchievementsPage() {
                     <CardTitle className="!text-yellow-400">
                       {achievement.title}
                     </CardTitle>
-                    <CardDescription className="text-white">{achievement.description}</CardDescription>
+                    <CardDescription className="!text-white">{achievement.description}</CardDescription>
                 </div>
               </CardHeader>
                 <CardContent className="pb-2">
