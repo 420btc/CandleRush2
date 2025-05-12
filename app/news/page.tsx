@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ContainerScroll } from '@/components/ui/container-scroll-animation';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/ui/footer';
+import { CgScrollV } from 'react-icons/cg';
 
 import { ArrowLeft } from 'lucide-react';
 
@@ -50,6 +51,9 @@ export default async function NewsPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ContainerScroll titleComponent="">
           <div className="w-full h-full flex flex-col gap-4">
+            <div className="flex justify-center items-center mb-4" style={{ marginTop: '-46px' }}>
+              <CgScrollV className="text-yellow-400 text-6xl animate-bounce" />
+            </div>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
                 <Link href="/menu" className="flex items-center gap-2 p-2 rounded-md bg-yellow-400 text-black hover:bg-yellow-300 transition-colors">
