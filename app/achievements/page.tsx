@@ -141,6 +141,17 @@ export default function AchievementsPage() {
         </svg>
       </button>
 
+      {/* Botón para jugar */}
+      <button
+        onClick={() => router.push('/game')}
+        className="fixed top-6 right-6 z-50 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 flex items-center gap-2"
+      >
+        <span>Jugar</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+        </svg>
+      </button>
+
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-16">
           <h1 className="text-7xl font-black text-yellow-400 mb-6 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]">
