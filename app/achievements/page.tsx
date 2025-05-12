@@ -410,7 +410,13 @@ export default function AchievementsPage() {
                       cursor={false}
                     />
                     <Legend 
-                      wrapperStyle={{ color: '#000', fontWeight: 'bold' }}
+                      verticalAlign="bottom"
+                      align="center"
+                      wrapperStyle={{ 
+                        color: '#000', 
+                        fontWeight: 'bold',
+                        paddingTop: '20px'
+                      }}
                       formatter={(value) => <span className="text-black font-bold">Nivel de {value}</span>}
                     />
                   </RadarChart>
