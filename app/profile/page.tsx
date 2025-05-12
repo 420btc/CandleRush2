@@ -566,7 +566,7 @@ function WhaleTradesCard() {
     // En lugar de usar el hook directamente, lo implementamos aquí
     const minUsd = 10000;
     const symbols = ["btcusdt@trade", "ethusdt@trade"];
-    const limit = 10000;
+    const limit = 100000;
     
     let wsRef: WebSocket | null = null;
     let reconnectAttempts = 0;
@@ -648,12 +648,12 @@ function WhaleTradesCard() {
     };
   }, []);
   
-  // Contar trades de compra y venta en los últimos 5 minutos
-  const fiveMinutesAgo = currentTime - (5 * 60 * 1000);
+  // Contar trades de compra y venta en las últimas 6 horas
+  const sixHoursAgo = currentTime - (6 * 60 * 60 * 1000);
   
   const recentTrades = React.useMemo(() => {
-    return whaleTrades.filter(trade => trade.timestamp > fiveMinutesAgo);
-  }, [whaleTrades, fiveMinutesAgo]);
+    return whaleTrades.filter(trade => trade.timestamp > sixHoursAgo);
+  }, [whaleTrades, sixHoursAgo]);
   
   const { buyTrades, sellTrades } = React.useMemo(() => {
     const buys = recentTrades.filter(trade => trade.side === 'buy').length;
@@ -707,7 +707,7 @@ function WhaleTradesCard() {
           )}
         </CardTitle>
         <CardDescription className="text-black">
-          Actividad reciente de ballenas (últimos 5 min)
+          Actividad reciente de ballenas (últimas 6h)
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex items-center justify-center p-0">
