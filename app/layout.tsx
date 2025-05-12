@@ -3,6 +3,8 @@ import './globals.css'
 import ClientProviders from '@/components/ClientProviders'
 import { Analytics } from '@vercel/analytics/react';
 import BtcTitleUpdater from "./BtcTitleUpdater";
+import { GameProvider } from '@/context/game-context';
+import { AchievementProvider } from '@/context/achievement-context';
 
 export const metadata: Metadata = {
   title: 'Candle Rush!',
@@ -32,18 +34,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-
-
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <link rel="icon" href="/intro.png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       {/* Actualiza el título con el precio BTC en vivo */}
       <BtcTitleUpdater />
-      <body className="bg-black min-h-screen">
+      <body className="min-h-screen bg-background text-foreground">
         <ClientProviders>
-          {children}
+          <GameProvider>
+            <AchievementProvider>
+              <main className="flex flex-col min-h-screen">
+                {children}
+              </main>
+            </AchievementProvider>
+          </GameProvider>
         </ClientProviders>
         <Analytics />
       </body>

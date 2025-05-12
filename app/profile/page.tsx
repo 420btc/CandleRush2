@@ -64,6 +64,8 @@ import DisplayCards from "@/components/ui/display-cards";
 import { Modal } from "../components/modal";
 import { Button } from "../components/button";
 import type { Bet } from "@/types/game";
+import { Book } from "@/components/ui/book";
+import { GrAchievement } from "react-icons/gr";
 
 // Componente para mostrar el balance actualizado cada minuto
 function BalanceIndicator({ balance }: { balance: number }) {
@@ -276,7 +278,7 @@ function PieChartCard() {
       <ChartStyle id={id} config={pieChartConfig} />
       <CardHeader className="flex-row items-start space-y-0 pb-0">
         <div className="grid gap-1">
-          <CardTitle>Pie Chart - Interactive</CardTitle>
+          <CardTitle className="text-black">Pie Chart - Interactive</CardTitle>
           <CardDescription className="text-black">January - June 2024</CardDescription>
         </div>
         <Select value={activeMonth} onValueChange={setActiveMonth}>
@@ -533,9 +535,9 @@ function WhaleTradesCard() {
           setTimeout(() => {
             connectWebSocket();
           }, delay);
-        } else {
+      } else {
           console.error('Max reconnection attempts reached');
-        }
+      }
       };
     };
     
@@ -627,21 +629,21 @@ function WhaleTradesCard() {
               outerRadius={85}
               barSize={14}
             >
-            <ChartTooltip
-              cursor={false}
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const data = payload[0].payload;
-                  return (
-                    <div className="bg-background p-2 border rounded shadow-lg">
-                      <p className="font-medium">{data.name}</p>
+              <ChartTooltip
+                cursor={false}
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                        return (
+                          <div className="bg-background p-2 border rounded shadow-lg">
+                            <p className="font-medium">{data.name}</p>
                       <p className="text-sm">{data.value}%</p>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }: { viewBox?: LabelViewBox }) => {
@@ -668,39 +670,39 @@ function WhaleTradesCard() {
                 }}
               />
             </PolarRadiusAxis>
-            <RadialBar
-              dataKey="value"
-              cornerRadius={5}
+                  <RadialBar
+                    dataKey="value"
+                    cornerRadius={5}
               className="stroke-transparent stroke-2"
-            />
-            </RadialBarChart>
+                  />
+                </RadialBarChart>
           </ChartContainer>
-        </div>
+              </div>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-              <span>Bullish: {buyTrades}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
-              <span>Bearish: {sellTrades}</span>
-            </div>
-          </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                <span>Bullish: {buyTrades}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                <span>Bearish: {sellTrades}</span>
+        </div>
+        </div>
           <div className="text-right">
             <div className="text-xs text-muted-foreground">
               Último trade: {recentTrades[0] ? new Date(recentTrades[0].timestamp).toLocaleTimeString() : 'Ninguno'}
-            </div>
+      </div>
             <div className="text-xs text-muted-foreground">
               Total: {totalTrades} trades (5 min)
-            </div>
-          </div>
         </div>
+        </div>
+      </div>
       </CardFooter>
-    </Card>
-  );
+  </Card>
+);
 }
 
 export default function ProfilePage() {
@@ -796,36 +798,65 @@ export default function ProfilePage() {
       {/* Perfil y logo arriba */}
       <div className="container mx-auto w-full flex flex-col pt-8 items-center">
         <div className="flex flex-col items-center gap-4 mb-8">
+          <div className="flex items-start justify-center gap-8 w-full max-w-5xl">
+            {/* Contenedor izquierdo con foto y nombre */}
   <div className="w-56 flex flex-col items-center bg-black/70 rounded-xl border-4 border-yellow-400 overflow-hidden shadow-2xl" style={{boxShadow: '0 0 48px 12px #fde047cc'}}>
     <div className="relative h-36 w-36 mx-auto mt-4">
       <Image src={selectedImage} alt="Foto de perfil" fill className="object-cover rounded-xl" />
     </div>
     <span className="block w-full text-center text-3xl font-black text-yellow-400 py-2 drop-shadow">{currentUser ? currentUser.slice(0, 12) : "Usuario Pro"}</span>
   </div>
-  <div className="flex justify-center gap-4 w-full max-w-lg mx-auto">
+
+            {/* Componente Book a la derecha */}
+            <div className="flex-1 max-w-xl flex items-center justify-start">
+              <div className="cursor-pointer transform transition-transform hover:scale-105" onClick={() => router.push('/achievements')}>
+                <Book 
+                  color="#fbbf24" 
+                  width={150} 
+                  depth={3}
+                  texture={true}
+                >
+                  <div className="flex flex-col h-full bg-gradient-to-b from-yellow-400 to-yellow-500 rounded-lg border-t border-yellow-300">
+                    <div className="p-4 text-black flex flex-col items-center justify-center h-full">
+                      <div className="bg-yellow-300/50 rounded-full p-4 mb-4 shadow-inner">
+                        <GrAchievement size={32} className="text-black" />
+                      </div>
+                      <h3 className="text-lg font-black mb-2 text-center text-black/90">Mis Logros</h3>
+                      <div className="px-3 py-1 bg-black/10 rounded-full">
+                        <p className="text-xs font-medium">Nivel Pro Trader</p>
+                      </div>
+                    </div>
+                    <div className="h-8 bg-gradient-to-b from-yellow-500 to-yellow-600 rounded-b-lg border-t border-yellow-600/20" />
+                  </div>
+                </Book>
+              </div>
+            </div>
+          </div>
+
+  <div className="flex gap-4">
     <Button
       variant="outline"
       onClick={() => setIsGalleryOpen(true)}
-      className="bg-yellow-400 hover:bg-yellow-500 text-black rounded-lg shadow-lg transition-all duration-300 hover:scale-105 w-1/3 h-16 flex items-center justify-center"
+      className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-2 rounded-lg shadow-lg transition-all duration-300 hover:scale-105"
     >
-      <span className="text-md font-medium tracking-widest uppercase text-shadow-sm">Cambiar foto</span>
+      <span className="text-lg font-medium tracking-widest uppercase text-shadow-sm px-4 py-1">Cambiar foto</span>
     </Button>
-    
-    {/* Indicador de balance */}
-    <div className="flex flex-col items-center justify-center bg-black rounded-lg border-2 border-yellow-500 shadow-inner w-1/3 h-16">
-      <span className="text-sm font-semibold text-yellow-400 uppercase">Balance</span>
-      <span className="text-xl font-bold text-yellow-400">{(userBalance || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-    </div>
-    
+            
+            {/* Indicador de balance */}
+            <div className="flex flex-col items-center justify-center bg-black rounded-lg border-2 border-yellow-500 shadow-inner w-1/3 h-16">
+              <span className="text-sm font-semibold text-yellow-400 uppercase">Balance</span>
+              <span className="text-xl font-bold text-yellow-400">{(userBalance || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+            </div>
+            
     <Button
       variant="outline"
       onClick={() => {
         const randomImage = cryptoImages[Math.floor(Math.random() * cryptoImages.length)];
         setSelectedImage(randomImage.src);
       }}
-      className="bg-yellow-400 hover:bg-yellow-500 text-black rounded-lg shadow-lg transition-all duration-300 hover:scale-105 w-1/3 h-16 flex items-center justify-center"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black rounded-lg shadow-lg transition-all duration-300 hover:scale-105 w-1/3 h-16 flex items-center justify-center"
     >
-      <span className="text-md font-medium tracking-widest uppercase text-shadow-sm">Aleatorio</span>
+              <span className="text-md font-medium tracking-widest uppercase text-shadow-sm">Aleatorio</span>
     </Button>
   </div>
 </div>
@@ -2227,8 +2258,8 @@ export default function ProfilePage() {
         {/* Botón volver y login abajo del todo */}
         <div className="flex justify-center mt-20">
           <div className="flex flex-row gap-9 items-center">
-            <LoginLogoutButton />
-          </div>
+  <LoginLogoutButton />
+</div>
         </div>
       </div>
       {/* Modal de galería de perfiles */}
