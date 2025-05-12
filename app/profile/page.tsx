@@ -2529,14 +2529,39 @@ export default function ProfilePage() {
                       liveLiquidations: number;
                     };
                     
+                    // Definimos la interfaz para las liquidaciones
+                    interface LiveLiquidation {
+                      orderId: string;
+                      symbol: string;
+                      side: 'LONG' | 'SHORT';
+                      price: number;
+                      quantity: number;
+                      timestamp: number;
+                      sizeUsd: number;
+                      exchange: string;
+                    }
+                    
                     // Obtener datos de liquidaciones en vivo directamente sin depender del contexto
-                    const { liquidations: liveLiquidations } = useLiquidations({ 
-                      symbol: 'BTCUSDT', 
-                      minSize: 0, 
-                      maxSize: 500, 
-                      limit: 99, 
-                      smallLimit: 10
-                    });
+                    // Usamos un try-catch para manejar posibles errores
+                    let liveLiquidations: LiveLiquidation[] = [];
+                    try {
+                      const result = useLiquidations({ 
+                        symbol: 'BTCUSDT', 
+                        minSize: 0, 
+                        maxSize: 500, 
+                        limit: 99, 
+                        smallLimit: 10
+                      });
+                      
+                      // Verificamos que el resultado y las liquidaciones existan
+                      if (result && result.liquidations) {
+                        liveLiquidations = result.liquidations;
+                      }
+                    } catch (error) {
+                      console.error('Error al obtener liquidaciones:', error);
+                      // Si hay un error, usamos un array vacío
+                      liveLiquidations = [];
+                    }
                     
                     // Generar datos para el mapa de calor por hora del día
                     const { bets } = useGame();
@@ -2561,23 +2586,47 @@ export default function ProfilePage() {
                     });
                     
                     // Contar liquidaciones en vivo (siempre habilitadas en el perfil)
-                    if (liveLiquidations.length > 0) {
+                    // Verificamos que liveLiquidations exista y sea un array
+                    if (Array.isArray(liveLiquidations) && liveLiquidations.length > 0) {
+                      // Usamos un try-catch dentro del forEach para evitar errores
                       liveLiquidations.forEach(liq => {
+                        try {
                         const date = new Date(liq.timestamp);
                         const hour = date.getHours();
-                        hourData[hour].liveLiquidations += 1;
-                        
-                        // También sumamos a la intensidad del mapa de calor
-                        hourData[hour].heatValue += 10; // Añadimos un valor fijo para que se note
+                          // Verificamos que hour sea un índice válido
+                          if (hour >= 0 && hour < 24 && hourData[hour]) {
+                            hourData[hour].liveLiquidations += 1;
+                            
+                            // También sumamos a la intensidad del mapa de calor
+                            hourData[hour].heatValue += 10; // Añadimos un valor fijo para que se note
+                          }
+                        } catch (error) {
+                          console.error('Error al procesar liquidación:', error);
+                        }
                       });
                     }
                     
                     // Normalizar los valores de calor (0-100)
-                    const maxBets = Math.max(...hourData.map(d => d.bets), 1);
-                    hourData.forEach(d => {
-                      // Aseguramos que el valor no exceda 100
-                      d.heatValue = Math.min((d.bets / maxBets) * 100 + (d.liveLiquidations * 5), 100);
-                    });
+                    // Usamos un try-catch para evitar errores durante la normalización
+                    try {
+                      const maxBets = Math.max(...hourData.map(d => d.bets || 0), 1);
+                      hourData.forEach(d => {
+                        // Verificamos que d y sus propiedades existan
+                        if (d) {
+                          // Aseguramos que todos los valores sean números válidos
+                          const betsValue = (d.bets || 0) / maxBets * 100;
+                          const liqValue = (d.liveLiquidations || 0) * 5;
+                          // Aseguramos que el valor no exceda 100
+                          d.heatValue = Math.min(betsValue + liqValue, 100);
+                        }
+                      });
+                    } catch (error) {
+                      console.error('Error al normalizar valores de calor:', error);
+                      // Si hay un error, asignamos valores por defecto
+                      hourData.forEach(d => {
+                        if (d) d.heatValue = d.bets > 0 ? 50 : 0;
+                      });
+                    }
                     
                     return hourData;
                   })()} 
