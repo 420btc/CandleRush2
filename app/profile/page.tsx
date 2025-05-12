@@ -1,4 +1,12 @@
 "use client";
+
+// Extender Window para incluir nuestra propiedad personalizada
+declare global {
+  interface Window {
+    hourDataForHeatMap?: any[];
+  }
+}
+
 import Image from "next/image";
 import { TrendingUp } from "lucide-react"
 import { 
@@ -2370,6 +2378,146 @@ export default function ProfilePage() {
                   />
                   <Legend />
                 </AreaChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Nuevo gráfico de mapa de calor y liquidaciones */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Mapa de Calor y Liquidaciones</CardTitle>
+              <CardDescription className="text-black">Distribución de apuestas y liquidaciones por hora del día</CardDescription>
+            </CardHeader>
+            <CardContent className="px-2 pt-0 sm:px-6">
+              <ChartContainer
+                config={{
+                  heatValue: { label: "Intensidad", color: "#fbbf24" },
+                  liquidations: { label: "Liquidaciones", color: "#ef4444" }
+                }}
+                className="aspect-auto h-[200px] w-full"
+              >
+                <BarChart
+                  data={(() => {
+                    // Definir tipo para los datos de hora
+                    type HourDataType = {
+                      hour: number;
+                      heatValue: number;
+                      liquidations: number;
+                      bets: number;
+                    };
+                    
+                    // Generar datos para el mapa de calor por hora del día
+                    const { bets } = useGame();
+                    const hourData: HourDataType[] = Array(24).fill(0).map((_, i) => ({
+                      hour: i,
+                      heatValue: 0,
+                      liquidations: 0,
+                      bets: 0
+                    }));
+                    
+                    // Contar apuestas por hora
+                    bets.forEach(bet => {
+                      const date = new Date(bet.timestamp);
+                      const hour = date.getHours();
+                      hourData[hour].bets += 1;
+                      
+                      // Contar liquidaciones
+                      if (bet.status === 'LIQUIDATED') {
+                        hourData[hour].liquidations += 1;
+                      }
+                    });
+                    
+                    // Normalizar los valores de calor (0-100)
+                    const maxBets = Math.max(...hourData.map(d => d.bets), 1);
+                    hourData.forEach(d => {
+                      d.heatValue = (d.bets / maxBets) * 100;
+                    });
+                    
+                    // Guardar los datos para usarlos en la función de renderizado de celdas
+                    window.hourDataForHeatMap = hourData;
+                    
+                    return hourData;
+                  })()} 
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                  <XAxis 
+                    dataKey="hour" 
+                    tickFormatter={(hour) => `${hour}h`}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#fff', fontSize: 10 }}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    orientation="left"
+                    domain={[0, 100]}
+                    tickFormatter={(value) => `${value}%`}
+                    width={40}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#fff', fontSize: 10 }}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    domain={[0, 'dataMax + 1']}
+                    tickCount={5}
+                    width={40}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#fff', fontSize: 10 }}
+                  />
+                  <Tooltip
+                    cursor={false}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-black/80 p-2 rounded border border-yellow-500/30 shadow">
+                            <p className="font-medium text-white">{data.hour}:00 - {data.hour}:59</p>
+                            <p className="text-xs text-yellow-400">Intensidad: {Math.round(data.heatValue)}%</p>
+                            <p className="text-xs text-red-400">Liquidaciones: {data.liquidations}</p>
+                            <p className="text-xs text-white">Total apuestas: {data.bets}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar 
+                    dataKey="heatValue" 
+                    yAxisId="left"
+                    fill="#fbbf24"
+                    radius={[4, 4, 0, 0]}
+                    opacity={0.8}
+                  >
+                    {(() => {
+                      // Colorear barras según intensidad
+                      // Usamos los datos guardados en window
+                      if (typeof window !== 'undefined' && window.hourDataForHeatMap) {
+                        return window.hourDataForHeatMap.map((entry: any, index: number) => {
+                          // Generar color basado en intensidad (amarillo a naranja)
+                          const intensity = entry.heatValue / 100;
+                          const r = Math.floor(251 - (intensity * 50));
+                          const g = Math.floor(191 - (intensity * 100));
+                          const b = Math.floor(36 - (intensity * 36));
+                          return <Cell key={`cell-${index}`} fill={`rgb(${r}, ${g}, ${b})`} />;
+                        });
+                      }
+                      return null;
+                    })()}
+                  </Bar>
+                  <Line
+                    type="monotone"
+                    dataKey="liquidations"
+                    yAxisId="right"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    dot={{ fill: '#ef4444', r: 4 }}
+                    activeDot={{ r: 6, fill: '#ef4444', stroke: '#fff' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} />
+                </BarChart>
               </ChartContainer>
             </CardContent>
           </Card>
