@@ -25,7 +25,8 @@ import {
   Pie,
   Sector,
   Cell,
-  LabelList
+  LabelList,
+  ReferenceLine
 } from "recharts";
 
 type LabelViewBox = {
@@ -2066,6 +2067,7 @@ export default function ProfilePage() {
                             tick={{ fill: '#fff', fontSize: 10 }}
                             tickFormatter={(value) => value.toLocaleString('es-ES')}
                           />
+                          <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} />
                           <ChartTooltip
                             cursor={false}
                             content={({ active, payload }) => {
