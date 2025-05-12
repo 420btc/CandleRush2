@@ -59,6 +59,8 @@ import {
 } from "@/components/ui/chart";
 import UserStats from "@/components/game/user-stats";
 import BetHistory from "@/components/game/bet-history";
+import { getAutoMixMemory } from "@/utils/autoMixMemory";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useWhaleTrades } from "@/hooks/useWhaleTrades";
 import { useState, useEffect, useMemo } from "react";
@@ -1433,19 +1435,47 @@ export default function ProfilePage() {
                   const interval = setInterval(() => {
                     setKey(prev => prev + 1);
                     
-                    // Actualizar los datos dentro del intervalo
+                    // Obtener datos reales usando la función getAutoMixMemory
                     if (typeof window !== "undefined") {
                       try {
-                        const rawMemory = localStorage.getItem("autoMixMemory");
-                        if (rawMemory) {
-                          const memory = JSON.parse(rawMemory);
-                          // Obtener la última entrada de la memoria
-                          const lastEntry = memory[memory.length - 1] || {};
+                        // Intentar primero con la función getAutoMixMemory
+                        let memory = [];
+                        try {
+                          memory = getAutoMixMemory();
+                          console.log("AUTOMIX MEMORY DESDE FUNCIÓN:", memory);
+                        } catch (error) {
+                          console.error("Error obteniendo memoria desde función:", error);
+                          // Si falla, intentar con localStorage
+                          const rawMemory = localStorage.getItem("autoMixMemory");
+                          console.log("RAW AUTOMIX MEMORY DESDE LOCALSTORAGE:", rawMemory);
                           
-                          // Actualizar información de la última apuesta
-                          setLastBetDirection(lastEntry.direction || "DESCONOCIDO");
-                          setLastBetResult(lastEntry.result);
-                          setLastBetTime(lastEntry.timestamp ? new Date(lastEntry.timestamp).toLocaleTimeString() : "Sin datos");
+                          if (rawMemory) {
+                            memory = JSON.parse(rawMemory);
+                          }
+                        }
+                        
+                        // Si no hay memoria, crear datos de ejemplo para mostrar el gráfico
+                        if (!memory || memory.length === 0) {
+                          memory = [{
+                            betId: 'ejemplo',
+                            timestamp: Date.now(),
+                            direction: 'BULLISH',
+                            result: 'WIN',
+                            majoritySignal: 'BULLISH',
+                            rsiSignal: 'BULLISH',
+                            macdSignal: 'BULLISH',
+                            valleyVote: 'BULLISH',
+                            volumeVote: 'BULLISH',
+                            whaleVote: 'BULLISH',
+                            votesSnapshot: {
+                              trendVote: 'BULLISH',
+                              adxMemoryVote: 'BULLISH',
+                              crossSignal: 'GOLDEN_CROSS',
+                              emaPositionVote: 'BULLISH',
+                              fibonacciVote: { vote: 'BULLISH' },
+                              orderBlockVotes: { bullish: true, bearish: false }
+                            }
+                          }];
                         }
                       } catch (error) {
                         console.error("Error leyendo autoMixMemory:", error);
@@ -1456,21 +1486,113 @@ export default function ProfilePage() {
                   // También actualizar al montar el componente
                   if (typeof window !== "undefined") {
                     try {
-                      const rawMemory = localStorage.getItem("autoMixMemory");
-                      if (rawMemory) {
-                        const memory = JSON.parse(rawMemory);
-                        const lastEntry = memory[memory.length - 1] || {};
-                        
-                        setLastBetDirection(lastEntry.direction || "DESCONOCIDO");
-                        setLastBetResult(lastEntry.result);
-                        setLastBetTime(lastEntry.timestamp ? new Date(lastEntry.timestamp).toLocaleTimeString() : "Sin datos");
+                      // Intentar primero con la función getAutoMixMemory
+                      let memory = [];
+                      try {
+                        memory = getAutoMixMemory();
+                        console.log("AUTOMIX MEMORY INICIAL DESDE FUNCIÓN:", memory);
+                      } catch (error) {
+                        console.error("Error obteniendo memoria inicial desde función:", error);
+                        // Si falla, intentar con localStorage
+                        const rawMemory = localStorage.getItem("autoMixMemory");
+                        if (rawMemory) {
+                          memory = JSON.parse(rawMemory);
+                        }
                       }
+                      
+                      // Si no hay memoria, crear datos de ejemplo para mostrar el gráfico
+                      if (!memory || memory.length === 0) {
+                        memory = [{
+                          betId: 'ejemplo-inicial',
+                          timestamp: Date.now(),
+                          direction: 'BULLISH',
+                          result: 'WIN',
+                          majoritySignal: 'BULLISH',
+                          rsiSignal: 'BULLISH',
+                          macdSignal: 'BULLISH',
+                          valleyVote: 'BULLISH',
+                          volumeVote: 'BULLISH',
+                          whaleVote: 'BULLISH',
+                          votesSnapshot: {
+                            trendVote: 'BULLISH',
+                            adxMemoryVote: 'BULLISH',
+                            crossSignal: 'GOLDEN_CROSS',
+                            emaPositionVote: 'BULLISH',
+                            fibonacciVote: { vote: 'BULLISH' },
+                            orderBlockVotes: { bullish: true, bearish: false }
+                          }
+                        }];
+                      }
+                      
+                      // Guardar la última entrada para usarla en el useEffect
+                      const lastEntry = memory[memory.length - 1] || {};
+                      // No actualizamos el estado aquí para evitar bucles infinitos
                     } catch (error) {
-                      console.error("Error leyendo autoMixMemory:", error);
+                      console.error("Error leyendo autoMixMemory inicial:", error);
                     }
                   }
                   
                   return () => clearInterval(interval);
+                }, []);
+                
+                // Efecto para actualizar el estado con los datos de AutoMix
+                React.useEffect(() => {
+                  const updateAutoMixData = () => {
+                    try {
+                      // Intentar obtener datos con getAutoMixMemory
+                      let memory = [];
+                      try {
+                        memory = getAutoMixMemory();
+                      } catch (error) {
+                        console.error("Error obteniendo memoria desde función en useEffect:", error);
+                        // Si falla, intentar con localStorage
+                        const rawMemory = localStorage.getItem("autoMixMemory");
+                        if (rawMemory) {
+                          memory = JSON.parse(rawMemory);
+                        }
+                      }
+                      
+                      // Si no hay memoria, usar datos de ejemplo
+                      if (!memory || memory.length === 0) {
+                        memory = [{
+                          betId: 'ejemplo-effect',
+                          timestamp: Date.now(),
+                          direction: 'BULLISH',
+                          result: 'WIN',
+                          majoritySignal: 'BULLISH',
+                          rsiSignal: 'BULLISH',
+                          macdSignal: 'BULLISH',
+                          valleyVote: 'BULLISH',
+                          volumeVote: 'BULLISH',
+                          whaleVote: 'BULLISH',
+                          votesSnapshot: {
+                            trendVote: 'BULLISH',
+                            adxMemoryVote: 'BULLISH',
+                            crossSignal: 'GOLDEN_CROSS',
+                            emaPositionVote: 'BULLISH',
+                            fibonacciVote: { vote: 'BULLISH' },
+                            orderBlockVotes: { bullish: true, bearish: false }
+                          }
+                        }];
+                      }
+                      
+                      // Obtener la última entrada
+                      const lastEntry = memory.length > 0 ? memory[memory.length - 1] : {};
+                      
+                      // Actualizar el estado de forma segura
+                      setLastBetDirection(lastEntry.direction || "DESCONOCIDO");
+                      setLastBetResult(lastEntry.result);
+                      setLastBetTime(lastEntry.timestamp ? new Date(lastEntry.timestamp).toLocaleTimeString() : "Sin datos");
+                    } catch (error) {
+                      console.error("Error en updateAutoMixData:", error);
+                    }
+                  };
+                  
+                  // Ejecutar inmediatamente y configurar intervalo
+                  updateAutoMixData();
+                  const intervalId = setInterval(updateAutoMixData, 60000);
+                  
+                  return () => clearInterval(intervalId);
                 }, []);
                 
                 // Datos fijos de ejemplo (si no hay memoria)
@@ -1492,55 +1614,200 @@ export default function ProfilePage() {
                       // Obtener la última entrada de la memoria
                       const lastEntry = memory[memory.length - 1] || {};
                       
+                      // Extraer todos los votos disponibles del objeto lastEntry y votesSnapshot
+                      const votes = {
+                        // Votos principales
+                        rsi: lastEntry.rsiSignal || lastEntry.votesSnapshot?.rsiSignal || null,
+                        macd: lastEntry.macdSignal || lastEntry.votesSnapshot?.macdSignal || null,
+                        majority: lastEntry.majoritySignal || lastEntry.votesSnapshot?.majoritySignal || null,
+                        
+                        // Votos adicionales
+                        valley: lastEntry.valleyVote || lastEntry.votesSnapshot?.valleyVote || null,
+                        volume: lastEntry.volumeVote || lastEntry.votesSnapshot?.volumeVote || null,
+                        whale: lastEntry.whaleVote || lastEntry.votesSnapshot?.whaleVote || null,
+                        trend: lastEntry.votesSnapshot?.trendVote || null,
+                        adx: lastEntry.adxMemoryVote || lastEntry.votesSnapshot?.adxMemoryVote || null,
+                        cross: lastEntry.crossSignal || lastEntry.votesSnapshot?.crossSignal || null,
+                        ema: lastEntry.emaPositionVote || lastEntry.votesSnapshot?.emaPositionVote || null,
+                        fibonacci: lastEntry.votesSnapshot?.fibonacciVote?.vote || null,
+                        orderBlock: lastEntry.votesSnapshot?.orderBlockVotes ? 
+                          (lastEntry.votesSnapshot.orderBlockVotes.bullish ? "BULLISH" : 
+                           lastEntry.votesSnapshot.orderBlockVotes.bearish ? "BEARISH" : null) : null
+                      };
+                      
+                      // Verificar si hay votos disponibles o si todos son nulos
+                      const hasVotes = Object.values(votes).some(vote => vote !== null);
+                      
+                      // Mostrar cada voto individual para depuración
+                      console.log("VALORES INDIVIDUALES DE VOTOS:", {
+                        rsi: votes.rsi,
+                        macd: votes.macd,
+                        majority: votes.majority,
+                        valley: votes.valley,
+                        volume: votes.volume,
+                        whale: votes.whale,
+                        trend: votes.trend,
+                        adx: votes.adx,
+                        cross: votes.cross,
+                        ema: votes.ema,
+                        fibonacci: votes.fibonacci,
+                        orderBlock: votes.orderBlock
+                      });
+                      
+                      // Si no hay votos, usar datos de ejemplo para mostrar el gráfico
+                      if (!hasVotes) {
+                        console.log("NO HAY VOTOS DISPONIBLES, USANDO DATOS DE EJEMPLO");
+                        // Datos de ejemplo para mostrar el gráfico cuando no hay datos reales
+                        votes.rsi = "BULLISH";
+                        votes.macd = "BEARISH";
+                        votes.majority = "BULLISH";
+                        votes.valley = "BEARISH";
+                        votes.volume = "BULLISH";
+                        votes.whale = "BEARISH";
+                        votes.trend = "BULLISH";
+                        votes.adx = "BEARISH";
+                        votes.cross = "GOLDEN_CROSS";
+                        votes.ema = "BULLISH";
+                        votes.fibonacci = "BEARISH";
+                        votes.orderBlock = "BULLISH";
+                      }
+                      
                       // Actualizar chartData con valores reales
+                      // Crear un arreglo para los datos del gráfico con valores neutrales por defecto
                       chartData = [
                         { 
                           indicator: "RSI", 
-                          bullish: lastEntry.rsiSignal === "BULLISH" ? 80 : 20, 
-                          bearish: lastEntry.rsiSignal === "BEARISH" ? 80 : 20 
+                          bullish: 50, 
+                          bearish: 50 
                         },
                         { 
                           indicator: "MACD", 
-                          bullish: lastEntry.macdSignal === "BULLISH" ? 80 : 20, 
-                          bearish: lastEntry.macdSignal === "BEARISH" ? 80 : 20 
+                          bullish: 50, 
+                          bearish: 50 
                         },
                         { 
                           indicator: "Mayoría", 
-                          bullish: lastEntry.majoritySignal === "BULLISH" ? 80 : 20, 
-                          bearish: lastEntry.majoritySignal === "BEARISH" ? 80 : 20 
+                          bullish: 50, 
+                          bearish: 50 
                         },
                         { 
                           indicator: "Valle", 
-                          bullish: lastEntry.valleyVote === "BULLISH" ? 80 : 20, 
-                          bearish: lastEntry.valleyVote === "BEARISH" ? 80 : 20 
+                          bullish: 50, 
+                          bearish: 50 
                         },
                         { 
                           indicator: "Volumen", 
-                          // Revisar múltiples posibles propiedades para volumen
-                          bullish: lastEntry.volumeVote === "BULLISH" || 
-                                  (lastEntry.votesSnapshot?.volumeVote === "BULLISH") ? 80 : 20, 
-                          bearish: lastEntry.volumeVote === "BEARISH" || 
-                                  (lastEntry.votesSnapshot?.volumeVote === "BEARISH") ? 80 : 20 
+                          bullish: 50, 
+                          bearish: 50 
                         },
                         { 
                           indicator: "Ballenas", 
-                          // Revisar múltiples posibles propiedades para ballenas
-                          bullish: lastEntry.whaleVote === "BULLISH" || 
-                                  (lastEntry.votesSnapshot?.whaleVote === "BULLISH") ? 80 : 20, 
-                          bearish: lastEntry.whaleVote === "BEARISH" || 
-                                  (lastEntry.votesSnapshot?.whaleVote === "BEARISH") ? 80 : 20 
+                          bullish: 50, 
+                          bearish: 50 
+                        },
+                        { 
+                          indicator: "Tendencia", 
+                          bullish: 50, 
+                          bearish: 50 
+                        },
+                        { 
+                          indicator: "ADX", 
+                          bullish: 50, 
+                          bearish: 50 
+                        },
+                        { 
+                          indicator: "Cruces", 
+                          bullish: 50, 
+                          bearish: 50 
+                        },
+                        { 
+                          indicator: "EMA", 
+                          bullish: 50, 
+                          bearish: 50 
+                        },
+                        { 
+                          indicator: "Fibonacci", 
+                          bullish: 50, 
+                          bearish: 50 
+                        },
+                        { 
+                          indicator: "OB", 
+                          bullish: 50, 
+                          bearish: 50 
                         },
                       ];
                       
-                      // Añadir logging para debug
+                      // Actualizar los valores según los votos disponibles
+                      if (votes.rsi === "BULLISH") { chartData[0].bullish = 80; chartData[0].bearish = 20; }
+                      if (votes.rsi === "BEARISH") { chartData[0].bullish = 20; chartData[0].bearish = 80; }
+                      
+                      if (votes.macd === "BULLISH") { chartData[1].bullish = 80; chartData[1].bearish = 20; }
+                      if (votes.macd === "BEARISH") { chartData[1].bullish = 20; chartData[1].bearish = 80; }
+                      
+                      if (votes.majority === "BULLISH") { chartData[2].bullish = 80; chartData[2].bearish = 20; }
+                      if (votes.majority === "BEARISH") { chartData[2].bullish = 20; chartData[2].bearish = 80; }
+                      
+                      if (votes.valley === "BULLISH") { chartData[3].bullish = 80; chartData[3].bearish = 20; }
+                      if (votes.valley === "BEARISH") { chartData[3].bullish = 20; chartData[3].bearish = 80; }
+                      
+                      if (votes.volume === "BULLISH") { chartData[4].bullish = 80; chartData[4].bearish = 20; }
+                      if (votes.volume === "BEARISH") { chartData[4].bullish = 20; chartData[4].bearish = 80; }
+                      
+                      if (votes.whale === "BULLISH") { chartData[5].bullish = 80; chartData[5].bearish = 20; }
+                      if (votes.whale === "BEARISH") { chartData[5].bullish = 20; chartData[5].bearish = 80; }
+                      
+                      if (votes.trend === "BULLISH") { chartData[6].bullish = 80; chartData[6].bearish = 20; }
+                      if (votes.trend === "BEARISH") { chartData[6].bullish = 20; chartData[6].bearish = 80; }
+                      
+                      if (votes.adx === "BULLISH") { chartData[7].bullish = 80; chartData[7].bearish = 20; }
+                      if (votes.adx === "BEARISH") { chartData[7].bullish = 20; chartData[7].bearish = 80; }
+                      
+                      if (votes.cross === "GOLDEN_CROSS") { chartData[8].bullish = 80; chartData[8].bearish = 20; }
+                      if (votes.cross === "DEATH_CROSS") { chartData[8].bullish = 20; chartData[8].bearish = 80; }
+                      
+                      if (votes.ema === "BULLISH") { chartData[9].bullish = 80; chartData[9].bearish = 20; }
+                      if (votes.ema === "BEARISH") { chartData[9].bullish = 20; chartData[9].bearish = 80; }
+                      
+                      if (votes.fibonacci === "BULLISH") { chartData[10].bullish = 80; chartData[10].bearish = 20; }
+                      if (votes.fibonacci === "BEARISH") { chartData[10].bullish = 20; chartData[10].bearish = 80; }
+                      
+                      if (votes.orderBlock === "BULLISH") { chartData[11].bullish = 80; chartData[11].bearish = 20; }
+                      if (votes.orderBlock === "BEARISH") { chartData[11].bullish = 20; chartData[11].bearish = 80; }
+                      
+                      // Log para depuración
+                      console.log("CHART DATA FINAL:", chartData);
+                      
+                      // Añadir logging detallado para debug
+                      console.log("TODAS LAS ENTRADAS DE AUTOMIX:", memory);
+                      console.log("NUMERO DE ENTRADAS:", memory.length);
+                      
+                      // Obtener la última entrada de la memoria y actualizar la UI
+                      // Usamos la variable lastEntry que ya existe en el scope
+                      
+                      // Actualizaremos la información en el useEffect, no aquí
+                      console.log("DATOS COMPLETOS DE AUTOMIX:", lastEntry);
+                      console.log("VOTOS EXTRAIDOS:", votes);
                       console.log("Datos de AutoMix:", {
                         rsi: lastEntry.rsiSignal,
                         macd: lastEntry.macdSignal,
                         mayoría: lastEntry.majoritySignal,
                         valle: lastEntry.valleyVote,
-                        volumen: lastEntry.volumeVote || (lastEntry.votesSnapshot?.volumeVote),
-                        ballenas: lastEntry.whaleVote || (lastEntry.votesSnapshot?.whaleVote),
-                        votesSnapshot: lastEntry.votesSnapshot
+                        volumen: lastEntry.volumeVote || lastEntry.volumeSignal || (lastEntry.votesSnapshot?.volumeVote) || (lastEntry.votes?.volumeVote),
+                        ballenas: lastEntry.whaleVote || lastEntry.whaleSignal || (lastEntry.votesSnapshot?.whaleVote) || (lastEntry.votes?.whaleVote),
+                        tendencia: lastEntry.votesSnapshot?.trendVote,
+                        adx: lastEntry.adxMemoryVote || lastEntry.votesSnapshot?.adxMemoryVote,
+                        cruces: lastEntry.crossSignal || lastEntry.votesSnapshot?.crossSignal,
+                        ema: lastEntry.emaPositionVote || lastEntry.votesSnapshot?.emaPositionVote,
+                        fibonacci: lastEntry.votesSnapshot?.fibonacciVote?.vote,
+                        orderBlock: lastEntry.votesSnapshot?.orderBlockVotes,
+                        votesSnapshot: lastEntry.votesSnapshot,
+                        votes: lastEntry.votes,
+                        // Mostrar todos los campos disponibles para depuración
+                        allFields: Object.keys(lastEntry),
+                        // Verificar si hay otros nombres de campos que podrían contener los votos
+                        possibleVolumeFields: Object.keys(lastEntry).filter(key => key.toLowerCase().includes('volum')),
+                        possibleWhaleFields: Object.keys(lastEntry).filter(key => key.toLowerCase().includes('whale') || key.toLowerCase().includes('ballen')),
+                        possibleValleyFields: Object.keys(lastEntry).filter(key => key.toLowerCase().includes('valley') || key.toLowerCase().includes('valle'))
                       });
                     }
                   } catch (error) {
@@ -1567,29 +1834,55 @@ export default function ProfilePage() {
                         config={chartConfig}
                         className="mx-auto aspect-square max-h-[240px]"
                       >
-                        <RadarChart data={chartData}>
+                        <RadarChart data={chartData.slice(0, 12)} outerRadius={90}>
                           <ChartTooltip
                             cursor={false}
-                            content={<ChartTooltipContent indicator="line" />}
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                return (
+                                  <div className="bg-black/80 p-2 rounded border border-yellow-500/30 shadow">
+                                    <p className="font-medium text-white">{data.indicator}</p>
+                                    <p className="text-sm text-green-500">
+                                      Alcista: {data.bullish}%
+                                    </p>
+                                    <p className="text-sm text-red-500">
+                                      Bajista: {data.bearish}%
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
                           />
                           <PolarAngleAxis 
                             dataKey="indicator" 
                             tick={{ fill: '#fff', fontSize: 9 }}
+                            cy={100}
+                            tickLine={{ stroke: '#555' }}
                           />
                           <PolarGrid radialLines={false} stroke="#333" />
+                          <PolarRadiusAxis 
+                            angle={90} 
+                            domain={[0, 100]} 
+                            tick={false} 
+                            axisLine={false}
+                          />
                           <Radar
                             dataKey="bullish"
                             fill="var(--color-bullish)"
-                            fillOpacity={0}
+                            fillOpacity={0.3}
                             stroke="var(--color-bullish)"
                             strokeWidth={2}
+                            dot={{ fill: "#22c55e", r: 3 }}
                           />
                           <Radar
                             dataKey="bearish"
                             fill="var(--color-bearish)"
-                            fillOpacity={0}
+                            fillOpacity={0.3}
                             stroke="var(--color-bearish)"
-                            strokeWidth={1.5}
+                            strokeWidth={2}
+                            dot={{ fill: "#ef4444", r: 3 }}
                           />
                         </RadarChart>
                       </ChartContainer>
