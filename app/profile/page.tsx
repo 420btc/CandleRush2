@@ -102,37 +102,129 @@ function useBetChartsData() {
   // Definir el tipo para las apuestas
   type BetWithStatus = Bet & { status: string; prediction: string; timestamp: number };
 
-  // Radar: estados de apuesta
+  // Función para obtener la fecha en formato YYYY-MM-DD
+  const getDateKey = (timestamp: number) => {
+    return new Date(timestamp).toISOString().split('T')[0];
+  };
+
+  // Radar: estados de apuesta con persistencia
   const radarData = useMemo(() => {
+    const LS_KEY = 'radar_chart_history';
+    let historicalData = {};
+    
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(LS_KEY);
+        if (saved) {
+          historicalData = JSON.parse(saved);
+        }
+      } catch (error) {
+        console.error('Error loading radar data:', error);
+      }
+    }
+
     const typedBets = bets as BetWithStatus[];
+    const currentData = {
+      won: typedBets.filter(b => b.status === 'WON').length,
+      lost: typedBets.filter(b => b.status === 'LOST').length,
+      liquidated: typedBets.filter(b => b.status === 'LIQUIDATED').length,
+      pending: typedBets.filter(b => b.status === 'PENDING').length,
+    };
+
+    const combinedData = { ...historicalData, [getDateKey(Date.now())]: currentData };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LS_KEY, JSON.stringify(combinedData));
+    }
+
     return [
-      { status: 'Ganadas', value: typedBets.filter(b => b.status === 'WON').length },
-      { status: 'Perdidas', value: typedBets.filter(b => b.status === 'LOST').length },
-      { status: 'Liquidadas', value: typedBets.filter(b => b.status === 'LIQUIDATED').length },
-      { status: 'Pendientes', value: typedBets.filter(b => b.status === 'PENDING').length },
+      { status: 'Ganadas', value: currentData.won },
+      { status: 'Perdidas', value: currentData.lost },
+      { status: 'Liquidadas', value: currentData.liquidated },
+      { status: 'Pendientes', value: currentData.pending },
     ];
   }, [bets]);
 
-  // RadialBar: bullish vs bearish
-  const typedBets = bets as BetWithStatus[];
-  const bullish = typedBets.filter(b => b.prediction === 'BULLISH').length;
-  const bearish = typedBets.filter(b => b.prediction === 'BEARISH').length;
-  const radialData = [
-    { name: 'Bullish', value: bullish, fill: '#22c55e' },
-    { name: 'Bearish', value: bearish, fill: '#ef4444' },
-  ];
+  // RadialBar: bullish vs bearish con persistencia
+  const radialData = useMemo(() => {
+    const LS_KEY = 'radial_chart_history';
+    let historicalData = {};
+    
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(LS_KEY);
+        if (saved) {
+          historicalData = JSON.parse(saved);
+        }
+      } catch (error) {
+        console.error('Error loading radial data:', error);
+      }
+    }
 
-  // Pie: ganadas vs perdidas vs liquidadas
-  const won = bets.filter((b: any) => b.status === 'WON').length;
-  const lost = bets.filter((b: any) => b.status === 'LOST').length;
-  const liquidated = bets.filter((b: any) => b.status === 'LIQUIDATED').length;
-  const pieData = [
-    { name: 'Ganadas', value: won, fill: '#22c55e' },
-    { name: 'Perdidas', value: lost, fill: '#ef4444' },
-    { name: 'Liquidadas', value: liquidated, fill: '#eab308' },
-  ];
+    const typedBets = bets as BetWithStatus[];
+    const currentData = {
+      bullish: typedBets.filter(b => b.prediction === 'BULLISH').length,
+      bearish: typedBets.filter(b => b.prediction === 'BEARISH').length,
+    };
 
-  return { radarData, radialData, pieData, bullish, bearish, won, lost, liquidated, total: bets.length };
+    const combinedData = { ...historicalData, [getDateKey(Date.now())]: currentData };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LS_KEY, JSON.stringify(combinedData));
+    }
+
+    return [
+      { name: 'Bullish', value: currentData.bullish, fill: '#22c55e' },
+      { name: 'Bearish', value: currentData.bearish, fill: '#ef4444' },
+    ];
+  }, [bets]);
+
+  // Pie: ganadas vs perdidas vs liquidadas con persistencia
+  const pieData = useMemo(() => {
+    const LS_KEY = 'pie_chart_history';
+    let historicalData = {};
+    
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(LS_KEY);
+        if (saved) {
+          historicalData = JSON.parse(saved);
+        }
+      } catch (error) {
+        console.error('Error loading pie data:', error);
+      }
+    }
+
+    const currentData = {
+      won: bets.filter((b: any) => b.status === 'WON').length,
+      lost: bets.filter((b: any) => b.status === 'LOST').length,
+      liquidated: bets.filter((b: any) => b.status === 'LIQUIDATED').length,
+    };
+
+    const combinedData = { ...historicalData, [getDateKey(Date.now())]: currentData };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LS_KEY, JSON.stringify(combinedData));
+    }
+
+    return [
+      { name: 'Ganadas', value: currentData.won, fill: '#22c55e' },
+      { name: 'Perdidas', value: currentData.lost, fill: '#ef4444' },
+      { name: 'Liquidadas', value: currentData.liquidated, fill: '#eab308' },
+    ];
+  }, [bets]);
+
+  return { 
+    radarData, 
+    radialData, 
+    pieData, 
+    bullish: radialData[0].value, 
+    bearish: radialData[1].value, 
+    won: pieData[0].value, 
+    lost: pieData[1].value, 
+    liquidated: pieData[2].value, 
+    total: bets.length 
+  };
 }
 
 // Configs para los charts
@@ -1047,40 +1139,59 @@ export default function ProfilePage() {
                   data={(() => {
                     // Agrupa apuestas por fecha (día) y suma volumen de longs y shorts
                     const { bets } = useGame();
-                    // Leer y guardar datos en localStorage
-                    const LS_KEY = 'bet_volume_chart_days';
-                    let grouped = bets.reduce((acc: Record<string, { longs: number; shorts: number }>, bet) => {
+                    const LS_KEY = 'bet_volume_history';
+                    
+                    // Función para obtener la fecha en formato YYYY-MM-DD
+                    const getDateKey = (timestamp: number) => {
+                      return new Date(timestamp).toISOString().split('T')[0];
+                    };
+
+                    // Obtener historial guardado
+                    let historicalData: Record<string, { longs: number; shorts: number }> = {};
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const saved = localStorage.getItem(LS_KEY);
+                        if (saved) {
+                          historicalData = JSON.parse(saved);
+                        }
+                      } catch (error) {
+                        console.error('Error loading historical data:', error);
+                      }
+                    }
+
+                    // Procesar apuestas actuales
+                    const currentData = bets.reduce((acc: Record<string, { longs: number; shorts: number }>, bet) => {
                       if (!bet.timestamp) return acc;
-                      const date = new Date(bet.timestamp).toISOString().slice(0, 10);
-                      if (!acc[date]) acc[date] = { longs: 0, shorts: 0 };
-                      if (bet.prediction === "BULLISH") acc[date].longs += bet.amount;
-                      if (bet.prediction === "BEARISH") acc[date].shorts += bet.amount;
+                      const dateKey = getDateKey(bet.timestamp);
+                      if (!acc[dateKey]) acc[dateKey] = { longs: 0, shorts: 0 };
+                      if (bet.prediction === "BULLISH") acc[dateKey].longs += bet.amount;
+                      if (bet.prediction === "BEARISH") acc[dateKey].shorts += bet.amount;
                       return acc;
                     }, {});
-                    // Generar los próximos 4 días a partir de hoy
+
+                    // Combinar datos históricos con datos actuales
+                    const combinedData = { ...historicalData, ...currentData };
+
+                    // Obtener últimos 30 días para mostrar
                     const today = new Date();
-                    const days = [] as string[];
-                    for (let i = 0; i < 5; i++) {
-                      const d = new Date(today.getTime());
-                      d.setDate(today.getDate() + i);
-                      const dateStr = d.toISOString().slice(0, 10);
-                      days.push(dateStr);
-                    }
-                    // Completa con ceros si no hay apuestas para esos días
+                    const days = Array.from({ length: 30 }, (_, i) => {
+                      const d = new Date(today);
+                      d.setDate(today.getDate() - i);
+                      return getDateKey(d.getTime());
+                    }).reverse();
+
+                    // Crear array final de datos
                     const chartData = days.map(date => ({
                       date,
-                      longs: grouped[date]?.longs || 0,
-                      shorts: grouped[date]?.shorts || 0,
+                      longs: combinedData[date]?.longs || 0,
+                      shorts: combinedData[date]?.shorts || 0,
                     }));
-                    // Persistir en localStorage
+
+                    // Guardar datos combinados en localStorage
                     if (typeof window !== 'undefined') {
-                      window.localStorage.setItem(LS_KEY, JSON.stringify(chartData));
+                      localStorage.setItem(LS_KEY, JSON.stringify(combinedData));
                     }
-                    // Leer de localStorage si no hay apuestas
-                    if (bets.length === 0 && typeof window !== 'undefined') {
-                      const stored = window.localStorage.getItem(LS_KEY);
-                      if (stored) return JSON.parse(stored);
-                    }
+
                     return chartData;
                   })()}
                 >
@@ -1091,9 +1202,8 @@ export default function ProfilePage() {
                     axisLine={false}
                     tickFormatter={(value) => {
                       return new Date(value).toLocaleDateString("es-ES", {
-                        weekday: "short",
                         day: "2-digit",
-                        month: "short"
+                        month: "2-digit"
                       });
                     }}
                     tick={{ fill: '#fff', fontSize: 10 }}
@@ -1787,15 +1897,10 @@ export default function ProfilePage() {
                   const getStoredHistory = () => {
                     if (typeof window !== 'undefined') {
                       try {
-                        const stored = localStorage.getItem('balance_history');
+                        const stored = localStorage.getItem('balance_history_infinite');
                         if (stored) {
                           const parsedHistory = JSON.parse(stored);
-                          
-                          // Verificar que los datos tengan el formato correcto
-                          if (Array.isArray(parsedHistory) && parsedHistory.length > 0 && 
-                              'time' in parsedHistory[0] && 'balance' in parsedHistory[0]) {
-                            return parsedHistory;
-                          }
+                          return parsedHistory;
                         }
                       } catch (e) {
                         console.error('Error al recuperar historial de balance:', e);
@@ -1864,7 +1969,7 @@ export default function ProfilePage() {
                   
                   // Guardar en localStorage
                   if (typeof window !== 'undefined' && initialHistory.length > 0) {
-                    localStorage.setItem('balance_history', JSON.stringify(initialHistory));
+                    localStorage.setItem('balance_history_infinite', JSON.stringify(initialHistory));
                   }
                   
                   // Configurar monitoreo en tiempo real del balance cada minuto exacto
@@ -1899,7 +2004,7 @@ export default function ProfilePage() {
                               
                               // Guardar en localStorage
                               if (typeof window !== 'undefined') {
-                                localStorage.setItem('balance_history', JSON.stringify(limitedHistory));
+                                localStorage.setItem('balance_history_infinite', JSON.stringify(limitedHistory));
                               }
                               
                               return limitedHistory;
@@ -1907,7 +2012,7 @@ export default function ProfilePage() {
                             
                             // Guardar en localStorage
                             if (typeof window !== 'undefined') {
-                              localStorage.setItem('balance_history', JSON.stringify(newHistory));
+                              localStorage.setItem('balance_history_infinite', JSON.stringify(newHistory));
                             }
                             
                             return newHistory;
@@ -1938,7 +2043,7 @@ export default function ProfilePage() {
                                 
                                 // Guardar en localStorage
                                 if (typeof window !== 'undefined') {
-                                  localStorage.setItem('balance_history', JSON.stringify(limitedHistory));
+                                  localStorage.setItem('balance_history_infinite', JSON.stringify(limitedHistory));
                                 }
                                 
                                 return limitedHistory;
@@ -1946,7 +2051,7 @@ export default function ProfilePage() {
                               
                               // Guardar en localStorage
                               if (typeof window !== 'undefined') {
-                                localStorage.setItem('balance_history', JSON.stringify(newHistory));
+                                localStorage.setItem('balance_history_infinite', JSON.stringify(newHistory));
                               }
                               
                               return newHistory;
