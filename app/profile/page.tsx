@@ -1622,7 +1622,7 @@ export default function ProfilePage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center justify-center gap-1 leading-none text-muted-foreground mt-1 text-xs">
+                      <div className="flex items-center justify-center gap-1 leading-none text-black font-medium mt-1 text-xs">
                         Actualizado: {lastBetTime}
                       </div>
                     </div>
@@ -1894,7 +1894,7 @@ export default function ProfilePage() {
                           <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span> Bajista
                         </span>
                       </div>
-                      <div className="flex items-center justify-center gap-1 leading-none text-muted-foreground mt-1 text-xs">
+                      <div className="flex items-center justify-center gap-1 leading-none text-black font-medium mt-1 text-xs">
                         Actualización cada minuto
                       </div>
                     </div>
@@ -2272,7 +2272,7 @@ export default function ProfilePage() {
                           {trendDirection === "up" ? "Subiendo" : "Bajando"} un {Math.abs(parseFloat(trendPercentage))}% 
                         </span>
                       </div>
-                      <div className="flex items-center justify-center gap-1 leading-none text-muted-foreground mt-1 text-xs">
+                      <div className="flex items-center justify-center gap-1 leading-none text-black font-medium mt-1 text-xs">
                         Balance actual: {currentBalance.toLocaleString('es-ES')}
                       </div>
                     </div>
