@@ -59,9 +59,9 @@ export default function AchievementsPage() {
   // Calcular recompensas disponibles
   const availableRewards = useMemo(() => {
     return unlockedAchievements
-      .filter(id => !claimedAchievements.includes(id))
-      .reduce((total, id) => {
-        const achievement = achievements.find(a => a.id === id);
+      .filter(unlock => !claimedAchievements.includes(unlock.id))
+      .reduce((total, unlock) => {
+        const achievement = achievements.find(a => a.id === unlock.id);
         return total + (achievement?.reward || 0);
       }, 0);
   }, [unlockedAchievements, claimedAchievements, achievements]);
@@ -69,9 +69,9 @@ export default function AchievementsPage() {
   // Función para reclamar todas las recompensas
   const claimAllRewards = () => {
     let totalReward = 0;
-    unlockedAchievements.forEach(id => {
-      if (!claimedAchievements.includes(id)) {
-        const reward = claimAchievement(id);
+    unlockedAchievements.forEach(unlock => {
+      if (!claimedAchievements.includes(unlock.id)) {
+        const reward = claimAchievement(unlock.id);
         totalReward += reward;
       }
     });
@@ -87,31 +87,31 @@ export default function AchievementsPage() {
     { 
       name: 'Básicos', 
       total: achievements.filter(a => a.category === 'basico').length,
-      completados: achievements.filter(a => a.category === 'basico' && unlockedAchievements.includes(a.id)).length,
+      completados: achievements.filter(a => a.category === 'basico' && unlockedAchievements.some(u => u.id === a.id)).length,
       color: COLORS.basico
     },
     { 
       name: 'Intermedios', 
       total: achievements.filter(a => a.category === 'intermedio').length,
-      completados: achievements.filter(a => a.category === 'intermedio' && unlockedAchievements.includes(a.id)).length,
+      completados: achievements.filter(a => a.category === 'intermedio' && unlockedAchievements.some(u => u.id === a.id)).length,
       color: COLORS.intermedio
     },
     { 
       name: 'Avanzados', 
       total: achievements.filter(a => a.category === 'avanzado').length,
-      completados: achievements.filter(a => a.category === 'avanzado' && unlockedAchievements.includes(a.id)).length,
+      completados: achievements.filter(a => a.category === 'avanzado' && unlockedAchievements.some(u => u.id === a.id)).length,
       color: COLORS.avanzado
     },
     { 
       name: 'Expertos', 
       total: achievements.filter(a => a.category === 'experto').length,
-      completados: achievements.filter(a => a.category === 'experto' && unlockedAchievements.includes(a.id)).length,
+      completados: achievements.filter(a => a.category === 'experto' && unlockedAchievements.some(u => u.id === a.id)).length,
       color: COLORS.experto
     },
     { 
       name: 'AutoMix', 
       total: achievements.filter(a => a.category === 'automix').length,
-      completados: achievements.filter(a => a.category === 'automix' && unlockedAchievements.includes(a.id)).length,
+      completados: achievements.filter(a => a.category === 'automix' && unlockedAchievements.some(u => u.id === a.id)).length,
       color: COLORS.automix
     }
   ], [achievements, unlockedAchievements]);
@@ -152,7 +152,7 @@ export default function AchievementsPage() {
     return activeTab === 'todos' 
       ? achievements 
       : activeTab === 'desbloqueados' 
-        ? achievements.filter(a => unlockedAchievements.includes(a.id))
+        ? achievements.filter(a => unlockedAchievements.some(u => u.id === a.id))
         : achievements.filter(a => a.category === activeTab);
   }, [activeTab, achievements, unlockedAchievements]);
 
@@ -160,8 +160,8 @@ export default function AchievementsPage() {
   const sortedAchievements = useMemo(() => {
     return [...filteredAchievements].sort((a, b) => {
       // Primero, ordenar por estado de desbloqueo
-      const aUnlocked = unlockedAchievements.includes(a.id);
-      const bUnlocked = unlockedAchievements.includes(b.id);
+      const aUnlocked = unlockedAchievements.some(u => u.id === a.id);
+      const bUnlocked = unlockedAchievements.some(u => u.id === b.id);
       
       if (aUnlocked && !bUnlocked) return -1;
       if (!aUnlocked && bUnlocked) return 1;
@@ -456,8 +456,9 @@ export default function AchievementsPage() {
         {/* Lista de logros */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {displayedAchievements.map((achievement) => {
-            const isUnlocked = unlockedAchievements.includes(achievement.id);
-            const progress = isUnlocked ? 100 : 0; // Simplified progress
+            const unlockedInfo = unlockedAchievements.find(a => a.id === achievement.id);
+            const isUnlocked = !!unlockedInfo;
+            const progress = isUnlocked ? 100 : 0;
             const categoryColor = COLORS[achievement.category] || COLORS.basico;
             
             return (
@@ -498,6 +499,11 @@ export default function AchievementsPage() {
                         {isUnlocked ? 'Completado' : 'Pendiente'}
                     </span>
                   </div>
+                  {isUnlocked && unlockedInfo?.unlockedAt && (
+                    <div className="text-xs text-zinc-400 text-right">
+                      Completado el {unlockedInfo.unlockedAt}
+                    </div>
+                  )}
                 </div>
               </CardContent>
                 <CardFooter className="pt-0 pb-4">

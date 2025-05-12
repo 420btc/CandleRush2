@@ -19,11 +19,12 @@ interface Achievement {
   condition: string
   category: string
   icon?: string | React.ReactNode
+  unlockedAt?: string // Añadiendo campo para la fecha/hora de desbloqueo
 }
 
 interface AchievementContextType {
   achievements: Achievement[]
-  unlockedAchievements: string[]
+  unlockedAchievements: Array<{id: string, unlockedAt: string}> // Modificando para incluir tiempo
   claimedAchievements: string[]
   unlockAchievement: (id: string) => void
   claimAchievement: (id: string) => number
@@ -608,67 +609,72 @@ const ACHIEVEMENTS: Achievement[] = [
 ]
 
 export function AchievementProvider({ children }: { children: ReactNode }) {
-  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([])
+  const [achievements] = useState<Achievement[]>(ACHIEVEMENTS)
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Array<{id: string, unlockedAt: string}>>([])
   const [claimedAchievements, setClaimedAchievements] = useState<string[]>([])
   const [gameStats, setGameStats] = useState<GameStats>(defaultGameStats)
 
+  // Cargar logros desbloqueados al inicio
   useEffect(() => {
-    // Load achievements from localStorage
-    const savedUnlocked = localStorage.getItem("unlockedAchievements")
-    const savedClaimed = localStorage.getItem("claimedAchievements")
-    const savedGameStats = localStorage.getItem("gameStats")
+    if (typeof window !== 'undefined') {
+      const savedUnlocked = localStorage.getItem('unlockedAchievements')
+      const savedClaimed = localStorage.getItem('claimedAchievements')
+      const savedStats = localStorage.getItem('gameStats')
 
-    if (savedUnlocked) {
-      try {
-        setUnlockedAchievements(JSON.parse(savedUnlocked))
-      } catch (error) {
-        console.error("Error parsing unlocked achievements:", error)
+      if (savedUnlocked) {
+        try {
+          const parsed = JSON.parse(savedUnlocked)
+          // Migrar datos antiguos si es necesario
+          const formattedUnlocked = Array.isArray(parsed) 
+            ? parsed.map(id => typeof id === 'string' 
+                ? {id, unlockedAt: new Date().toLocaleString()} 
+                : id)
+            : []
+          setUnlockedAchievements(formattedUnlocked)
+        } catch (e) {
+          console.error('Error parsing unlocked achievements:', e)
+        }
       }
-    }
-
-    if (savedClaimed) {
-      try {
-        setClaimedAchievements(JSON.parse(savedClaimed))
-      } catch (error) {
-        console.error("Error parsing claimed achievements:", error)
+      if (savedClaimed) {
+        try {
+          setClaimedAchievements(JSON.parse(savedClaimed))
+        } catch (e) {
+          console.error('Error parsing claimed achievements:', e)
+        }
       }
-    }
-
-    if (savedGameStats) {
-      try {
-        setGameStats(JSON.parse(savedGameStats))
-      } catch (error) {
-        console.error("Error parsing game stats:", error)
+      if (savedStats) {
+        try {
+          setGameStats(JSON.parse(savedStats))
+        } catch (e) {
+          console.error('Error parsing game stats:', e)
+        }
       }
     }
   }, [])
 
+  // Guardar logros cuando cambien
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('unlockedAchievements', JSON.stringify(unlockedAchievements))
+      localStorage.setItem('claimedAchievements', JSON.stringify(claimedAchievements))
+      localStorage.setItem('gameStats', JSON.stringify(gameStats))
+    }
+  }, [unlockedAchievements, claimedAchievements, gameStats])
+
   const unlockAchievement = (id: string) => {
-    if (unlockedAchievements.includes(id)) return
-
-    const achievement = ACHIEVEMENTS.find((a) => a.id === id)
-    if (!achievement) return
-
-    setUnlockedAchievements((prev) => {
-      const updated = [...prev, id]
-      localStorage.setItem("unlockedAchievements", JSON.stringify(updated))
-      return updated
+    setUnlockedAchievements(current => {
+      if (current.some(a => a.id === id)) return current
+      return [...current, { id, unlockedAt: new Date().toLocaleString() }]
     })
   }
 
   const claimAchievement = (id: string) => {
     if (claimedAchievements.includes(id)) return 0
-    if (!unlockedAchievements.includes(id)) return 0
-
-    const achievement = ACHIEVEMENTS.find((a) => a.id === id)
+    
+    const achievement = achievements.find(a => a.id === id)
     if (!achievement) return 0
-
-    setClaimedAchievements((prev) => {
-      const updated = [...prev, id]
-      localStorage.setItem("claimedAchievements", JSON.stringify(updated))
-      return updated
-    })
-
+    
+    setClaimedAchievements(current => [...current, id])
     return achievement.reward
   }
 
@@ -684,7 +690,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
   return (
     <AchievementContext.Provider
       value={{
-        achievements: ACHIEVEMENTS,
+        achievements,
         unlockedAchievements,
         claimedAchievements,
         unlockAchievement,
