@@ -202,9 +202,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setUserBalance((prev) => {
       const newBalance = prev + amount;
       localStorage.setItem("userBalance", String(newBalance));
+      
+      // Verificar logros relacionados con el balance
+      checkAchievements({
+        balance: newBalance,
+        isFirstDeposit: amount > 0 && prev === 100, // Si es el primer depósito (balance inicial = 100)
+      });
+      
       return newBalance;
     });
-  } // Sin restricciones  }
+  }
   const [candleSizes, setCandleSizes] = useState<number[]>([]);
   const [bonusInfo, setBonusInfo] = useState<{ bonus: number; size: number; message: string } | null>(null);
   const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING")
@@ -232,6 +239,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (newVal) {
         setAutoBullish(false);
         setAutoBearish(false);
+        
+        // Verificar logros de AutoMix al activarlo
+        checkAchievements({
+          isAutomix: true,
+        });
       }
       return newVal;
     });
@@ -665,7 +677,62 @@ export function GameProvider({ children }: { children: ReactNode }) {
     [gamePhase, timeframe, serverTimeOffset, toast],
   )
 
-  // Resolve bets when a candle closes
+  // Función para verificar logros
+  const checkAchievements = useCallback((stats: {
+    balance?: number,
+    betsCount?: number,
+    consecutiveWins?: number,
+    winRate?: number,
+    totalVolume?: number,
+    differentPairs?: string[],
+    isFirstBet?: boolean,
+    isFirstWin?: boolean,
+    isFirstDeposit?: boolean,
+    wasLiquidated?: boolean,
+    profitPercentage?: number,
+    isAutomix?: boolean,
+    automixProfits?: number,
+    automixConsecutiveWins?: number,
+    automixVolume?: number,
+    automixTime?: number,
+  }) => {
+    // Logros básicos
+    if (stats.isFirstBet === true) unlockAchievement("first_bet");
+    if (stats.isFirstWin === true) unlockAchievement("first_win");
+    if (stats.isFirstDeposit === true) unlockAchievement("first_deposit");
+    if (stats.balance && stats.balance >= 500) unlockAchievement("balance_500");
+    if (stats.betsCount && stats.betsCount >= 10) unlockAchievement("ten_bets");
+    
+    // Logros intermedios
+    if (stats.consecutiveWins && stats.consecutiveWins >= 3) unlockAchievement("consecutive_win_3");
+    if (stats.balance && stats.balance >= 1000) unlockAchievement("balance_1000");
+    if (stats.betsCount && stats.betsCount >= 50) unlockAchievement("fifty_bets");
+    if (stats.winRate && stats.winRate >= 60) unlockAchievement("win_ratio_60");
+    if (stats.differentPairs && stats.differentPairs.length >= 5) unlockAchievement("crypto_master");
+    
+    // Logros avanzados
+    if (stats.consecutiveWins && stats.consecutiveWins >= 7) unlockAchievement("consecutive_win_7");
+    if (stats.balance && stats.balance >= 5000) unlockAchievement("balance_5000");
+    if (stats.betsCount && stats.betsCount >= 500) unlockAchievement("five_hundred_trades");
+    if (stats.winRate && stats.winRate >= 75) unlockAchievement("win_ratio_75");
+    if (stats.differentPairs && stats.differentPairs.length >= 20) unlockAchievement("twenty_pairs");
+    
+    // Logros expertos
+    if (stats.consecutiveWins && stats.consecutiveWins >= 10) unlockAchievement("consecutive_win_10");
+    if (stats.balance && stats.balance >= 10000) unlockAchievement("balance_10000");
+    if (stats.betsCount && stats.betsCount >= 1000) unlockAchievement("thousand_trades");
+    if (stats.winRate && stats.winRate >= 85) unlockAchievement("win_ratio_85");
+    if (stats.differentPairs && stats.differentPairs.length >= 30) unlockAchievement("thirty_pairs");
+    
+    // Logros AutoMix
+    if (stats.isAutomix === true) unlockAchievement("first_automix");
+    if (stats.automixProfits && stats.automixProfits > 0) unlockAchievement("automix_profit");
+    if (stats.automixConsecutiveWins && stats.automixConsecutiveWins >= 5) unlockAchievement("automix_streak");
+    if (stats.automixVolume && stats.automixVolume >= 5000) unlockAchievement("automix_volume");
+    if (stats.automixTime && stats.automixTime >= 24 * 60 * 60 * 1000) unlockAchievement("automix_24h");
+  }, [unlockAchievement]);
+
+  // Resolver apuestas cuando una vela se cierra
   const resolveBets = useCallback(
     (candle: Candle) => {
       // --- BONUS Y MENSAJE DE RÉCORDS ---
@@ -807,9 +874,30 @@ if (message) {
                message: wonCount >= 10 ? '¡JACKPOT! 10+ apuestas en racha' : '¡Racha especial! 3+ apuestas ganadas en una ronda',
              });
            }
+
+           // Después de resolver cada apuesta, verificar logros
+           if (bet.status === "PENDING") {
+             const stats = {
+               balance: userBalance,
+               betsCount: Object.values(prev).reduce((total, timeBets) => 
+                 total + Object.values(timeBets).reduce((sum, bets) => sum + bets.length, 0), 0),
+               isFirstBet: Object.values(prev).every(timeBets => 
+                 Object.values(timeBets).every(bets => bets.length === 0)),
+               isFirstWin: won && Object.values(prev).every(timeBets => 
+                 Object.values(timeBets).every(bets => !bets.some(b => b.status === "WON"))),
+               consecutiveWins: wonCount,
+               winRate: (wonCount / (wonCount + lostCount)) * 100,
+               differentPairs: [...new Set(Object.keys(prev))],
+               wasLiquidated: liquidationTouched,
+               isAutomix: bet.autoType === "MIX",
+               automixProfits: won && bet.autoType === "MIX" ? winnings : 0,
+             };
+             checkAchievements(stats);
+           }
+
            return {
              ...bet,
-             status: won ? 'WON' : 'LOST',
+             status: won ? "WON" : "LOST",
              wasLiquidated: false,
              resolvedAt: Date.now(),
              winnings,
@@ -837,7 +925,7 @@ if (message) {
         return { ...prev, [currentSymbol]: symbolBets };
       });
     },
-    [bets, currentSymbol, timeframe, toast, unlockAchievement, winStreak, streakMultiplier],
+    [bets, currentSymbol, timeframe, toast, unlockAchievement, winStreak, streakMultiplier, checkAchievements],
   )
 
   // Efecto para transición automática de fases por temporizador

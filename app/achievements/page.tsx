@@ -162,7 +162,7 @@ export default function AchievementsPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Tarjetas de gráficos */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Tarjeta 1: Distribución de logros */}
@@ -330,45 +330,45 @@ export default function AchievementsPage() {
             const categoryColor = COLORS[achievement.category] || COLORS.basico;
             
             return (
-              <Card 
-                key={achievement.id}
-                className={`bg-zinc-900 border-2 transition-all duration-300 hover:scale-105 ${
+            <Card 
+              key={achievement.id}
+              className={`bg-zinc-900 border-2 transition-all duration-300 hover:scale-105 ${
                   isUnlocked 
                     ? 'border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]' 
                     : 'border-zinc-800 opacity-70'
-                }`}
-              >
+              }`}
+            >
                 <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                  <div className={`p-3 rounded-full ${
+                <div className={`p-3 rounded-full ${
                     isUnlocked ? 'bg-yellow-400 text-black' : 'bg-zinc-800 text-zinc-500'
-                  }`}>
+                }`}>
                     <div className="text-xl">{getCategoryIcon(achievement.category)}</div>
-                  </div>
-                  <div>
+                </div>
+                <div>
                     <CardTitle className="!text-yellow-400">
                       {achievement.title}
                     </CardTitle>
                     <CardDescription className="text-white">{achievement.description}</CardDescription>
-                  </div>
-                </CardHeader>
+                </div>
+              </CardHeader>
                 <CardContent className="pb-2">
-                  <div className="space-y-2">
-                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
+                <div className="space-y-2">
+                  <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${
                           isUnlocked ? 'bg-yellow-400' : 'bg-zinc-700'
-                        }`}
+                      }`}
                         style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-sm">
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm">
                       <span className="text-zinc-500">{achievement.condition}</span>
                       <span className={isUnlocked ? 'text-yellow-400' : 'text-zinc-500'}>
                         {isUnlocked ? 'Completado' : 'Pendiente'}
-                      </span>
-                    </div>
+                    </span>
                   </div>
-                </CardContent>
+                </div>
+              </CardContent>
                 <CardFooter className="pt-0 pb-4">
                   <div className="flex items-center text-xs">
                     <span 
@@ -384,7 +384,7 @@ export default function AchievementsPage() {
                     )}
                   </div>
                 </CardFooter>
-              </Card>
+            </Card>
             );
           })}
         </div>
