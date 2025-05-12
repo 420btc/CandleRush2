@@ -39,12 +39,11 @@ import {
 
 // Colores para diferentes categorías de logros
 const COLORS: Record<string, string> = {
-  basico: '#fef3c7',    // Amarillo muy claro
-  intermedio: '#fde68a', // Amarillo claro
-  avanzado: '#fcd34d',  // Amarillo medio
-  experto: '#fbbf24',   // Amarillo fuerte
-  automix: '#f59e0b',   // Naranja/dorado
-  especial: '#f43f5e', // rojo rosa
+  basico: '#4ade80',    // Verde eléctrico
+  intermedio: '#2563eb', // Azul brillante
+  avanzado: '#7c3aed',  // Púrpura eléctrico
+  experto: '#eab308',   // Amarillo eléctrico
+  automix: '#ec4899',   // Rosa neón
 };
 
 export default function AchievementsPage() {
@@ -246,12 +245,17 @@ export default function AchievementsPage() {
                     <Legend 
                       formatter={(value, entry) => {
                         const data = achievementData.find(d => d.name === value);
-                        return <span style={{ fontSize: '12px', color: '#000' }}>{`${value} (${data?.completados}/${data?.total})`}</span>;
+                        return (
+                          <span className="!text-black" style={{ fontSize: '12px' }}>
+                            {`${value} (${data?.completados}/${data?.total})`}
+                          </span>
+                        );
                       }}
                       wrapperStyle={{
                         fontSize: '12px',
                         padding: '0px'
                       }}
+                      iconType="circle"
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -328,14 +332,14 @@ export default function AchievementsPage() {
                     <Radar
                       name="Habilidades"
                       dataKey="value"
-                      stroke="#000"
-                      fill="#000"
+                      stroke="#93c5fd"
+                      fill="#93c5fd"
                       fillOpacity={0.5}
                       strokeWidth={2}
                       animationDuration={500}
                       animationEasing="ease-out"
-                      dot={{ fill: "#000", strokeWidth: 0, r: 3 }}
-                      activeDot={{ fill: "#fbbf24", stroke: "#000", strokeWidth: 2, r: 5 }}
+                      dot={{ fill: "#93c5fd", strokeWidth: 0, r: 3 }}
+                      activeDot={{ fill: "#bfdbfe", stroke: "#93c5fd", strokeWidth: 2, r: 5 }}
                     />
                     <Tooltip 
                       formatter={(value: number) => [((value as number) * 100).toFixed(0) + '%', 'Nivel']} 
