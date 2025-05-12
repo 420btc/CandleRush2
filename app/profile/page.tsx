@@ -65,6 +65,31 @@ import { Modal } from "../components/modal";
 import { Button } from "../components/button";
 import type { Bet } from "@/types/game";
 
+// Componente para mostrar el balance actualizado cada minuto
+function BalanceIndicator({ balance }: { balance: number }) {
+  const [displayBalance, setDisplayBalance] = useState(balance || 0);
+  
+  // Actualizar el balance cada minuto
+  useEffect(() => {
+    // Actualizar inmediatamente
+    setDisplayBalance(balance || 0);
+    
+    // Configurar intervalo para actualización cada minuto
+    const intervalId = setInterval(() => {
+      setDisplayBalance(balance || 0);
+    }, 60000); // 60000ms = 1 minuto
+    
+    return () => clearInterval(intervalId);
+  }, [balance]);
+  
+  return (
+    <div className="flex flex-col items-center justify-center bg-black rounded-lg px-6 py-1 border-2 border-yellow-500 shadow-inner">
+      <span className="text-sm font-semibold text-yellow-400 uppercase">Balance</span>
+      <span className="text-xl font-bold text-yellow-400">{displayBalance.toLocaleString('es-ES')}</span>
+    </div>
+  );
+}
+
 // Hook para obtener y computar métricas de apuestas del usuario logueado
 
 function useBetChartsData() {
@@ -777,23 +802,30 @@ export default function ProfilePage() {
     </div>
     <span className="block w-full text-center text-3xl font-black text-yellow-400 py-2 drop-shadow">{currentUser ? currentUser.slice(0, 12) : "Usuario Pro"}</span>
   </div>
-  <div className="flex gap-4">
+  <div className="flex justify-center gap-4 w-full max-w-lg mx-auto">
     <Button
       variant="outline"
       onClick={() => setIsGalleryOpen(true)}
-      className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-2 rounded-lg shadow-lg transition-all duration-300 hover:scale-105"
+      className="bg-yellow-400 hover:bg-yellow-500 text-black rounded-lg shadow-lg transition-all duration-300 hover:scale-105 w-1/3 h-16 flex items-center justify-center"
     >
-      <span className="text-lg font-medium tracking-widest uppercase text-shadow-sm px-4 py-1">Cambiar foto</span>
+      <span className="text-md font-medium tracking-widest uppercase text-shadow-sm">Cambiar foto</span>
     </Button>
+    
+    {/* Indicador de balance */}
+    <div className="flex flex-col items-center justify-center bg-black rounded-lg border-2 border-yellow-500 shadow-inner w-1/3 h-16">
+      <span className="text-sm font-semibold text-yellow-400 uppercase">Balance</span>
+      <span className="text-xl font-bold text-yellow-400">{(userBalance || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+    </div>
+    
     <Button
       variant="outline"
       onClick={() => {
         const randomImage = cryptoImages[Math.floor(Math.random() * cryptoImages.length)];
         setSelectedImage(randomImage.src);
       }}
-      className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-2 rounded-lg shadow-lg transition-all duration-300 hover:scale-105"
+      className="bg-yellow-400 hover:bg-yellow-500 text-black rounded-lg shadow-lg transition-all duration-300 hover:scale-105 w-1/3 h-16 flex items-center justify-center"
     >
-      <span className="text-lg font-medium tracking-widest uppercase text-shadow-sm px-4 py-1">Aleatorio</span>
+      <span className="text-md font-medium tracking-widest uppercase text-shadow-sm">Aleatorio</span>
     </Button>
   </div>
 </div>
