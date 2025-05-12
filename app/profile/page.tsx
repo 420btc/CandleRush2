@@ -2511,8 +2511,8 @@ export default function ProfilePage() {
             <CardContent className="px-2 pt-0 sm:px-6">
               <ChartContainer
                 config={{
-                  heatValue: { label: "Intensidad", color: "#fbbf24" },
-                  liquidations: { label: "Liquidaciones", color: "#ef4444" }
+                  heatValue: { label: "Intensidad", color: "#ef4444" },
+                  liquidations: { label: "Liquidaciones", color: "#ffffff" }
                 }}
                 className="aspect-auto h-[200px] w-full"
               >
@@ -2555,9 +2555,9 @@ export default function ProfilePage() {
                     
                     return hourData;
                   })()} 
-                  barCategoryGap={1} 
+                  barCategoryGap={1}
                 >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} stroke="#000000" />
                   <XAxis 
                     dataKey="hour" 
                     tickFormatter={(hour) => `${hour}h`}
@@ -2605,25 +2605,25 @@ export default function ProfilePage() {
                   <Bar 
                     dataKey="heatValue" 
                     yAxisId="left"
-                    fill="#fbbf24"
+                    fill="#ef4444"
                     radius={[4, 4, 0, 0]}
-                    opacity={0.8}
+                    opacity={0.9}
                   >
-                    {/* Usar colores estáticos predefinidos para evitar problemas de SSR */}
-                    <Cell fill="#fbbf24" />
-                    <Cell fill="#f59e0b" />
-                    <Cell fill="#d97706" />
-                    <Cell fill="#b45309" />
-                    <Cell fill="#92400e" />
+                    {/* Usar colores rojos para las barras */}
+                    <Cell fill="#ef4444" />
+                    <Cell fill="#dc2626" />
+                    <Cell fill="#b91c1c" />
+                    <Cell fill="#991b1b" />
+                    <Cell fill="#7f1d1d" />
                   </Bar>
                   <Line
                     type="monotone"
                     dataKey="liquidations"
                     yAxisId="right"
-                    stroke="#ef4444"
+                    stroke="#ffffff"
                     strokeWidth={2}
-                    dot={{ fill: '#ef4444', r: 4 }}
-                    activeDot={{ r: 6, fill: '#ef4444', stroke: '#fff' }}
+                    dot={{ fill: '#ffffff', r: 4 }}
+                    activeDot={{ r: 6, fill: '#ffffff', stroke: '#000' }}
                   />
                   <Legend verticalAlign="bottom" height={36} />
                 </BarChart>
