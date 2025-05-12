@@ -48,7 +48,7 @@ export default async function NewsPage() {
   return (
     <>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <ContainerScroll titleComponent="NOTICIAS">
+        <ContainerScroll titleComponent="">
           <div className="w-full h-full flex flex-col gap-4">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
