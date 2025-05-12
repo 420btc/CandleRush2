@@ -2382,6 +2382,131 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
+          {/* Nuevo gráfico de rachas */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Rachas de Trading</CardTitle>
+              <CardDescription className="text-black">Análisis de tus rachas ganadoras y perdedoras</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center items-center p-6">
+              <div className="grid grid-cols-3 gap-8 w-full">
+                {/* Gráfico Radial */}
+                <div className="col-span-1 bg-black rounded-xl p-4 flex flex-col items-center justify-center gap-8">
+                  <div className="w-full flex justify-center" style={{ position: 'relative' }}>
+                    <RadialBarChart
+                      width={200}
+                      height={160}
+                      innerRadius={30}
+                      outerRadius={80}
+                      data={[
+                        {
+                          name: 'Racha Actual',
+                          value: streakStats.currentWinStreak || streakStats.currentLoseStreak,
+                          fill: streakStats.currentWinStreak > 0 ? '#22c55e' : '#ef4444'
+                        },
+                        {
+                          name: 'Racha Máxima',
+                          value: streakStats.maxWinStreak,
+                          fill: '#eab308'
+                        },
+                        {
+                          name: 'Racha Perdedora',
+                          value: streakStats.maxLoseStreak,
+                          fill: '#ef4444'
+                        }
+                      ]}
+                      startAngle={0}
+                      endAngle={360}
+                    >
+                      <RadialBar
+                        background
+                        dataKey="value"
+                        cornerRadius={10}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-black p-2 rounded border border-yellow-500">
+                                <p className="text-white">{`${payload[0].name}: ${payload[0].value}`}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </RadialBarChart>
+                  </div>
+                  <div className="w-full text-center mt-4">
+                    <div className="flex justify-center gap-4">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span className="text-xs text-white">Racha Actual</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                        <span className="text-xs text-white">Racha Máxima</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                        <span className="text-xs text-white">Racha Perdedora</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estadísticas de Rachas */}
+                <div className="col-span-2 grid grid-cols-2 gap-4">
+                  {/* Racha Actual */}
+                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
+                    <p className="text-yellow-400 text-lg font-medium mb-2">Racha Actual</p>
+                    <div className="flex items-center gap-2">
+                      <div className={`text-4xl font-bold ${streakStats.currentWinStreak > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {streakStats.currentWinStreak || streakStats.currentLoseStreak}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {streakStats.currentWinStreak > 0 ? 'victorias' : 'derrotas'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mejor Racha */}
+                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
+                    <p className="text-yellow-400 text-lg font-medium mb-2">Mejor Racha</p>
+                    <div className="flex items-center gap-2">
+                      <div className="text-4xl font-bold text-green-500">
+                        {streakStats.maxWinStreak}
+                      </div>
+                      <div className="text-sm text-gray-400">victorias</div>
+                    </div>
+                  </div>
+
+                  {/* Peor Racha */}
+                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
+                    <p className="text-yellow-400 text-lg font-medium mb-2">Peor Racha</p>
+                    <div className="flex items-center gap-2">
+                      <div className="text-4xl font-bold text-red-500">
+                        {streakStats.maxLoseStreak}
+                      </div>
+                      <div className="text-sm text-gray-400">derrotas</div>
+                    </div>
+                  </div>
+
+                  {/* Promedio */}
+                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
+                    <p className="text-yellow-400 text-lg font-medium mb-2">Promedio</p>
+                    <div className="flex items-center gap-2">
+                      <div className="text-4xl font-bold text-blue-500">
+                        {Math.round((streakStats.maxWinStreak + streakStats.maxLoseStreak) / 2)}
+                      </div>
+                      <div className="text-sm text-gray-400">apuestas</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Nuevo gráfico de mapa de calor y liquidaciones */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
             <CardHeader className="items-center pb-4">
@@ -2519,131 +2644,6 @@ export default function ProfilePage() {
                   <Legend verticalAlign="bottom" height={36} />
                 </BarChart>
               </ChartContainer>
-            </CardContent>
-          </Card>
-
-          {/* Nuevo gráfico de rachas */}
-          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
-            <CardHeader className="items-center pb-4">
-              <CardTitle>Rachas de Trading</CardTitle>
-              <CardDescription className="text-black">Análisis de tus rachas ganadoras y perdedoras</CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center items-center p-6">
-              <div className="grid grid-cols-3 gap-8 w-full">
-                {/* Gráfico Radial */}
-                <div className="col-span-1 bg-black rounded-xl p-4 flex flex-col items-center justify-center gap-8">
-                  <div className="w-full flex justify-center" style={{ position: 'relative' }}>
-                    <RadialBarChart
-                      width={200}
-                      height={160}
-                      innerRadius={30}
-                      outerRadius={80}
-                      data={[
-                        {
-                          name: 'Racha Actual',
-                          value: streakStats.currentWinStreak || streakStats.currentLoseStreak,
-                          fill: streakStats.currentWinStreak > 0 ? '#22c55e' : '#ef4444'
-                        },
-                        {
-                          name: 'Racha Máxima',
-                          value: streakStats.maxWinStreak,
-                          fill: '#eab308'
-                        },
-                        {
-                          name: 'Racha Perdedora',
-                          value: streakStats.maxLoseStreak,
-                          fill: '#ef4444'
-                        }
-                      ]}
-                      startAngle={0}
-                      endAngle={360}
-                    >
-                      <RadialBar
-                        background
-                        dataKey="value"
-                        cornerRadius={10}
-                      />
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="bg-black p-2 rounded border border-yellow-500">
-                                <p className="text-white">{`${payload[0].name}: ${payload[0].value}`}</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                    </RadialBarChart>
-                  </div>
-                  <div className="w-full text-center mt-4">
-                    <div className="flex justify-center gap-4">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                        <span className="text-xs text-white">Racha Actual</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                        <span className="text-xs text-white">Racha Máxima</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                        <span className="text-xs text-white">Racha Perdedora</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Estadísticas de Rachas */}
-                <div className="col-span-2 grid grid-cols-2 gap-4">
-                  {/* Racha Actual */}
-                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
-                    <p className="text-yellow-400 text-lg font-medium mb-2">Racha Actual</p>
-                    <div className="flex items-center gap-2">
-                      <div className={`text-4xl font-bold ${streakStats.currentWinStreak > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {streakStats.currentWinStreak || streakStats.currentLoseStreak}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {streakStats.currentWinStreak > 0 ? 'victorias' : 'derrotas'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mejor Racha */}
-                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
-                    <p className="text-yellow-400 text-lg font-medium mb-2">Mejor Racha</p>
-                    <div className="flex items-center gap-2">
-                      <div className="text-4xl font-bold text-green-500">
-                        {streakStats.maxWinStreak}
-                      </div>
-                      <div className="text-sm text-gray-400">victorias</div>
-                    </div>
-                  </div>
-
-                  {/* Peor Racha */}
-                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
-                    <p className="text-yellow-400 text-lg font-medium mb-2">Peor Racha</p>
-                    <div className="flex items-center gap-2">
-                      <div className="text-4xl font-bold text-red-500">
-                        {streakStats.maxLoseStreak}
-                      </div>
-                      <div className="text-sm text-gray-400">derrotas</div>
-                    </div>
-                  </div>
-
-                  {/* Promedio */}
-                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
-                    <p className="text-yellow-400 text-lg font-medium mb-2">Promedio</p>
-                    <div className="flex items-center gap-2">
-                      <div className="text-4xl font-bold text-blue-500">
-                        {Math.round((streakStats.maxWinStreak + streakStats.maxLoseStreak) / 2)}
-                      </div>
-                      <div className="text-sm text-gray-400">apuestas</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>
