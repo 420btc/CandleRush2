@@ -279,16 +279,29 @@ export default function AchievementsPage() {
                     data={progressionData}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#000000" />
+                    <XAxis dataKey="day" stroke="#000000" tick={{ fill: '#000000' }} />
+                    <YAxis stroke="#000000" tick={{ fill: '#000000' }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#000', 
+                        color: '#fbbf24', 
+                        border: '1px solid #fbbf24', 
+                        borderRadius: '8px', 
+                        padding: '8px',
+                        fontSize: '12px'
+                      }}
+                    />
+                    <Legend 
+                      wrapperStyle={{ color: '#000000' }}
+                      formatter={(value) => <span className="text-black font-bold">{value}</span>}
+                    />
                     <Line 
                       type="monotone" 
                       dataKey="logros" 
-                      stroke="#000000" 
-                      activeDot={{ r: 8 }} 
+                      stroke="#22c55e" 
+                      activeDot={{ r: 8, fill: "#000000" }}
+                      dot={{ r: 4, fill: "#000000" }}
                       strokeWidth={2}
                     />
                   </LineChart>
@@ -332,14 +345,14 @@ export default function AchievementsPage() {
                     <Radar
                       name="Habilidades"
                       dataKey="value"
-                      stroke="#93c5fd"
-                      fill="#93c5fd"
+                      stroke="#ef4444"
+                      fill="#ef4444"
                       fillOpacity={0.5}
                       strokeWidth={2}
                       animationDuration={500}
                       animationEasing="ease-out"
-                      dot={{ fill: "#93c5fd", strokeWidth: 0, r: 3 }}
-                      activeDot={{ fill: "#bfdbfe", stroke: "#93c5fd", strokeWidth: 2, r: 5 }}
+                      dot={{ fill: "#ef4444", strokeWidth: 0, r: 3 }}
+                      activeDot={{ fill: "#fca5a5", stroke: "#ef4444", strokeWidth: 2, r: 5 }}
                     />
                     <Tooltip 
                       formatter={(value: number) => [((value as number) * 100).toFixed(0) + '%', 'Nivel']} 
