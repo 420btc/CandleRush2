@@ -759,6 +759,15 @@ export default function ProfilePage() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
         </svg>
       </button>
+
+      {/* Botón para ir al juego arriba derecha */}
+      <button
+        className="fixed top-6 right-6 z-50 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-lg py-2 px-4 shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        title="Ir al juego"
+        onClick={() => router.push('/game')}
+      >
+        Jugar Ahora
+      </button>
       {/* Perfil y logo arriba */}
       <div className="container mx-auto w-full flex flex-col pt-8 items-center">
         <div className="flex flex-col items-center gap-4 mb-8">
