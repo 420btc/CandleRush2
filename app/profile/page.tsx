@@ -1,11 +1,6 @@
 "use client";
 
-// Extender Window para incluir nuestra propiedad personalizada
-declare global {
-  interface Window {
-    hourDataForHeatMap?: any[];
-  }
-}
+// Ya no necesitamos extender Window
 
 import Image from "next/image";
 import { TrendingUp } from "lucide-react"
@@ -2558,11 +2553,9 @@ export default function ProfilePage() {
                       d.heatValue = (d.bets / maxBets) * 100;
                     });
                     
-                    // Guardar los datos para usarlos en la función de renderizado de celdas
-                    window.hourDataForHeatMap = hourData;
-                    
                     return hourData;
                   })()} 
+                  barCategoryGap={1} 
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                   <XAxis 
@@ -2616,21 +2609,12 @@ export default function ProfilePage() {
                     radius={[4, 4, 0, 0]}
                     opacity={0.8}
                   >
-                    {(() => {
-                      // Colorear barras según intensidad
-                      // Usamos los datos guardados en window
-                      if (typeof window !== 'undefined' && window.hourDataForHeatMap) {
-                        return window.hourDataForHeatMap.map((entry: any, index: number) => {
-                          // Generar color basado en intensidad (amarillo a naranja)
-                          const intensity = entry.heatValue / 100;
-                          const r = Math.floor(251 - (intensity * 50));
-                          const g = Math.floor(191 - (intensity * 100));
-                          const b = Math.floor(36 - (intensity * 36));
-                          return <Cell key={`cell-${index}`} fill={`rgb(${r}, ${g}, ${b})`} />;
-                        });
-                      }
-                      return null;
-                    })()}
+                    {/* Usar colores estáticos predefinidos para evitar problemas de SSR */}
+                    <Cell fill="#fbbf24" />
+                    <Cell fill="#f59e0b" />
+                    <Cell fill="#d97706" />
+                    <Cell fill="#b45309" />
+                    <Cell fill="#92400e" />
                   </Bar>
                   <Line
                     type="monotone"
