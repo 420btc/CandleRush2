@@ -307,6 +307,59 @@ useEffect(() => {
   }
 }, [candles, autoDrawActive, simCandles]);
 
+// Función para solicitar permiso para mostrar notificaciones
+const requestNotificationPermission = useCallback(async () => {
+  if (!('Notification' in window)) {
+    console.log('Este navegador no soporta notificaciones de escritorio');
+    return false;
+  }
+  
+  if (Notification.permission === 'granted') {
+    return true;
+  }
+  
+  if (Notification.permission !== 'denied') {
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  }
+  
+  return false;
+}, []);
+
+// Detectar cambios significativos en el precio (más de 250 dólares) y mostrar notificación
+useEffect(() => {
+  // Solo ejecutar si hay velas y currentCandle está disponible
+  if (!candles.length || !currentCandle) return;
+  
+  // Obtener la vela actual y la anterior
+  const currentIdx = candles.findIndex(c => c.timestamp === currentCandle.timestamp);
+  if (currentIdx <= 0) return; // Necesitamos al menos 2 velas para comparar
+  
+  const prevCandle = candles[currentIdx - 1];
+  const priceChange = Math.abs(currentCandle.close - prevCandle.close);
+  
+  // Si el cambio de precio es mayor a 250 dólares, mostrar notificación
+  if (priceChange >= 250) {
+    // Solicitar permiso y mostrar notificación
+    requestNotificationPermission().then(granted => {
+      if (granted && 'Notification' in window) {
+        const direction = currentCandle.close > prevCandle.close ? 'subida' : 'bajada';
+        const icon = currentCandle.close > prevCandle.close ? '/bull.png' : '/bear.png';
+        
+        const notification = new Notification(`¡Movimiento significativo de precio!`, {
+          body: `Se ha detectado una ${direction} de $${priceChange.toFixed(2)} en ${currentSymbol}`,
+          icon: icon,
+        });
+        
+        notification.onclick = function() {
+          window.focus();
+          notification.close();
+        };
+      }
+    });
+  }
+}, [currentCandle, candles, currentSymbol, requestNotificationPermission]);
+
   
   // Estado para mostrar/ocultar SMC+
   const [showSMC, setShowSMC] = useState(false);

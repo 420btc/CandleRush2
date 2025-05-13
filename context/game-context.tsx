@@ -7,6 +7,7 @@ import type { Candle, Bet, GamePhase } from "@/types/game"
 import { fetchHistoricalCandles, setupWebSocket } from "@/lib/binance-api"
 import { useToast } from "@/hooks/use-toast"
 import { useAchievement } from "@/context/achievement-context"
+import { usePriceAlerts } from "@/hooks/usePriceAlerts"
 
 // Generate simulated candle data for testing when real data isn't available
 function generateSimulatedCandles(count: number, basePrice = 30000): Candle[] {

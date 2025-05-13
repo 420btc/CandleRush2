@@ -5,6 +5,7 @@ import { AuthProvider } from '../context/auth-context';
 import { AchievementProvider } from '../context/achievement-context';
 import { GameProvider } from '../context/game-context';
 import { SessionProvider } from "next-auth/react";
+import { PriceAlertProvider } from './price-alert-provider';
 
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export default function ClientProviders({ children }: { children: React.ReactNod
         <AuthProvider>
           <AchievementProvider>
             <GameProvider>
-              {children}
+              <PriceAlertProvider>
+                {children}
+              </PriceAlertProvider>
             </GameProvider>
           </AchievementProvider>
         </AuthProvider>
