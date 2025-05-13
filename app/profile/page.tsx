@@ -1297,7 +1297,7 @@ export default function ProfilePage() {
                     }
                   ];
                   return (
-                    <ChartContainer config={radialConfig} className="w-full h-full">                      <RadialBarChart 
+                    <ChartContainer config={radialConfig} className="w-full h-full"><RadialBarChart 
                         data={radialData} 
                         innerRadius={60}  // Ajustado para tener un hueco central más grande
                         outerRadius={90}  // Ajustado para mantener proporción
@@ -1317,12 +1317,11 @@ export default function ProfilePage() {
                               if (viewBox && "cx" in viewBox && "cy" in viewBox) {                                const cy = viewBox?.cy ?? 0;
                                 return (
                                   <>
-                                    <text
-                                      x={viewBox?.cx ?? 0}
+                                    <text                                      x={viewBox?.cx ?? 0}
                                       y={cy - 10}
                                       textAnchor="middle"
                                       dominantBaseline="middle"
-                                      className="text-4xl font-bold fill-white"
+                                      className="text-4xl font-semibold fill-white"
                                     >
                                       {winrate}%
                                     </text>
