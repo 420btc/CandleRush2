@@ -892,6 +892,10 @@ export default function ProfilePage() {
   const [selectedImage, setSelectedImage] = useState(cryptoImages[0].src);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
+  // Estado para el modal de apuestas pendientes
+  const [isPendingBetsModalOpen, setIsPendingBetsModalOpen] = useState(false);
+  const [pendingBets, setPendingBets] = useState<Bet[]>([]);
+
   // Calcula los días restantes para el halving
   const diasParaHalving = useMemo(() => {
     const ahora = new Date();
@@ -2896,6 +2900,24 @@ export default function ProfilePage() {
                 </AreaChart>
               </ChartContainer>
             </CardContent>
+            {/* Botón para ver apuestas pendientes */}
+            {bets.filter(bet => bet.status === "PENDING").length > 0 && (
+              <div className="flex justify-center pb-4">
+                <button
+                  onClick={() => {
+                    const pendingBets = bets.filter(bet => bet.status === "PENDING");
+                    setPendingBets(pendingBets);
+                    setIsPendingBetsModalOpen(true);
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-full px-4 py-2 text-sm flex items-center gap-2 transition-all duration-200 shadow-md"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Ver {bets.filter(bet => bet.status === "PENDING").length} apuestas pendientes
+                </button>
+              </div>
+            )}
           </Card>
 
           {/* Nuevo gráfico de rachas */}
@@ -3341,6 +3363,78 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
+        </div>
+      </Modal>
+      
+      {/* Modal de apuestas pendientes */}
+      <Modal isOpen={isPendingBetsModalOpen} onClose={() => setIsPendingBetsModalOpen(false)}>
+        <div className="p-6 max-w-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-white">Apuestas Pendientes</h2>
+            <button 
+              onClick={() => setIsPendingBetsModalOpen(false)}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          {pendingBets.length > 0 ? (
+            <div className="space-y-4">
+              {pendingBets.map((bet, index) => (
+                <div key={bet.id} className="bg-black/60 border border-blue-500/50 rounded-lg p-4 shadow-md">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-blue-400 font-bold text-lg">Apuesta #{index + 1}</span>
+                    <span className="text-gray-300 text-sm">{new Date(bet.timestamp).toLocaleTimeString('es-ES')}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="bg-black/80 p-2 rounded">
+                      <span className="text-gray-400 text-xs">Predicción</span>
+                      <div className={`font-bold ${bet.prediction === "BULLISH" ? "text-green-500" : "text-red-500"}`}>
+                        {bet.prediction === "BULLISH" ? "ALCISTA" : "BAJISTA"}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-black/80 p-2 rounded">
+                      <span className="text-gray-400 text-xs">Monto</span>
+                      <div className="font-bold text-yellow-400">{bet.amount} monedas</div>
+                    </div>
+                    
+                    <div className="bg-black/80 p-2 rounded">
+                      <span className="text-gray-400 text-xs">Apalancamiento</span>
+                      <div className="font-bold text-white">{bet.leverage || 1}x</div>
+                    </div>
+                    
+                    <div className="bg-black/80 p-2 rounded">
+                      <span className="text-gray-400 text-xs">Par</span>
+                      <div className="font-bold text-white">{bet.symbol || "BTCUSDT"}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 text-xs text-gray-400 flex justify-between">
+                    <span>Timeframe: {bet.timeframe || "1m"}</span>
+                    <span>ID: {bet.id.substring(0, 8)}...</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">No tienes apuestas pendientes</div>
+              <button 
+                onClick={() => {
+                  setIsPendingBetsModalOpen(false);
+                  router.push('/game');
+                }}
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-lg px-4 py-2 mt-2"
+              >
+                Ir a jugar
+              </button>
+            </div>
+          )}
         </div>
       </Modal>
       {/* Footer visible y fijo al final */}
