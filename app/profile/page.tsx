@@ -2853,10 +2853,9 @@ export default function ProfilePage() {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-black/90 p-3 rounded-lg border border-yellow-400 shadow-lg">                            <div className="text-white font-medium mb-1">
-                              Apuesta #{data.ronda} - {data.time}
+                          <div className="bg-black/90 p-3 rounded-lg border border-yellow-400 shadow-lg">                            <div className="text-white font-medium mb-1">                              Apuesta #{data.ronda} • {data.tiempo}
                               <span className={`ml-2 ${data.betPrediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>
-                                ({data.betPrediction === "BULLISH" ? "Alcista" : "Bajista"})
+                                {data.betPrediction === "BULLISH" ? "Alcista" : "Bajista"}
                               </span>
                               {data.betStatus !== "PENDING" && (
                                 <span className={`ml-2 ${
