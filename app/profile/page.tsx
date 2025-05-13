@@ -713,8 +713,10 @@ function WhaleTradesCard() {
           Actividad reciente de ballenas (últimas 6h)
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 flex items-center justify-center p-0">
-        <div className="w-full h-full flex items-center justify-center" style={{ marginTop: '-20px' }}>
+      <CardContent className="flex-1 flex flex-col items-center justify-center p-0">
+        {/* Espacio adicional arriba */}
+        <div className="h-6"></div>
+        <div className="w-full flex items-center justify-center">
           <ChartContainer
             config={{
               toro: { label: "Toro", color: "#22c55e" },
