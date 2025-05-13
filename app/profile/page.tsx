@@ -1980,17 +1980,6 @@ export default function ProfilePage() {
                         }`}>
                           {lastBetDirection === "BULLISH" ? "ALCISTA" : "BAJISTA"}
                         </span>
-                        {lastBetResult && (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                            lastBetResult === "WIN" ? "bg-green-500 text-white" : 
-                            lastBetResult === "LOSS" || lastBetResult === "LIQ" ? "bg-red-500 text-white" : 
-                            "bg-gray-500 text-white"
-                          }`}>
-                            {lastBetResult === "WIN" ? "GANADA" : 
-                            lastBetResult === "LOSS" ? "PERDIDA" : 
-                            lastBetResult === "LIQ" ? "LIQUIDADA" : "..."}
-                          </span>
-                        )}
                       </div>
                       <div className="flex items-center justify-center gap-1 leading-none text-black font-medium mt-1 text-xs">
                         Actualizado: {lastBetTime}
@@ -2341,9 +2330,9 @@ export default function ProfilePage() {
                         balance: userBalance || 1000
                       });
                       
-                      // Limitar a 6 puntos máximo
-                      if (initialHistory.length > 6) {
-                        initialHistory = initialHistory.slice(-6);
+                      // Limitar a 12 puntos máximo
+                      if (initialHistory.length > 12) {
+                        initialHistory = initialHistory.slice(-12);
                       }
                     }
                   } else {
@@ -2351,9 +2340,13 @@ export default function ProfilePage() {
                     // que tengan algunas variaciones para mostrar una línea interesante
                     const baseBalance = userBalance || 1000;
                     
-                    for (let i = 0; i < 6; i++) {
+                    // Generar exactamente 12 puntos, uno para cada minuto
+                    for (let i = 0; i < 12; i++) {
                       const time = new Date(now);
-                      time.setMinutes(now.getMinutes() - (5 - i));
+                      // Asegurarnos de que cada punto sea exactamente un minuto
+                      time.setMinutes(now.getMinutes() - (11 - i));
+                      time.setSeconds(0);
+                      time.setMilliseconds(0);
                       
                       const timeStr = time.toLocaleTimeString([], {
                         hour: '2-digit', 
@@ -2389,6 +2382,11 @@ export default function ProfilePage() {
                     nextMinute.setSeconds(0);
                     nextMinute.setMilliseconds(0);
                     
+                    // Asegurarnos de que el tiempo actual está en el minuto exacto para la comparación
+                    const exactNow = new Date(now);
+                    exactNow.setSeconds(0);
+                    exactNow.setMilliseconds(0);
+                    
                     const timeToNextMinute = nextMinute.getTime() - now.getTime();
                     
                     // Programar primera actualización al inicio del próximo minuto
@@ -2407,8 +2405,8 @@ export default function ProfilePage() {
                           // Actualizar historial con balance actual exacto
                           setBalanceHistory(prev => {
                             const newHistory = [...prev, { time: timeStr, balance: userBalance }];
-                            if (newHistory.length > 6) {
-                              const limitedHistory = newHistory.slice(-6);
+                            if (newHistory.length > 12) {
+                              const limitedHistory = newHistory.slice(-12);
                               
                               // Guardar en localStorage
                               if (typeof window !== 'undefined') {
@@ -2436,6 +2434,9 @@ export default function ProfilePage() {
                         if (typeof userBalance === 'number') {
                           // Obtener hora actual exacta
                           const currentTime = new Date();
+                          // Asegurarnos de que estamos en el minuto exacto
+                          currentTime.setSeconds(0);
+                          currentTime.setMilliseconds(0);
                           const timeStr = currentTime.toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -2446,8 +2447,8 @@ export default function ProfilePage() {
                             // Actualizar historial con balance actual exacto
                             setBalanceHistory(prev => {
                               const newHistory = [...prev, { time: timeStr, balance: userBalance }];
-                              if (newHistory.length > 6) {
-                                const limitedHistory = newHistory.slice(-6);
+                              if (newHistory.length > 12) {
+                                const limitedHistory = newHistory.slice(-12);
                                 
                                 // Guardar en localStorage
                                 if (typeof window !== 'undefined') {
@@ -2622,14 +2623,7 @@ export default function ProfilePage() {
                               strokeWidth: 1
                             }}
                           >
-                            <LabelList
-                              dataKey="balance"
-                              position="top"
-                              offset={12}
-                              fill="#fff"
-                              fontSize={10}
-                              formatter={(value: number) => value.toLocaleString('es-ES')}
-                            />
+                            {/* Etiquetas de texto sobre los puntos eliminadas */}
                           </Line>
                         </LineChart>
                       </ChartContainer>
