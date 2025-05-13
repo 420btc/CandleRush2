@@ -2765,23 +2765,64 @@ export default function ProfilePage() {
                         const total = won + lost + liquidated + pending || 1;
                           // Calculamos si estamos en una racha
                         let currentStreak = 0;
-                        let streakType = null;                        // Para rachas ganadoras, revisamos desde el inicio (mínimo 3)
-                        let winningStreak = 0;
-                        for (let j = i; j >= 0 && bets[j].status === "WON"; j--) {
-                          winningStreak++;
-                        }
-                        if (winningStreak >= 3) {
-                          currentStreak = Math.min(winningStreak * 20, 100);
-                          streakType = 'win';
+                        let streakType = null;                        // Revisamos si estamos al final de una racha (últimas 3 apuestas)
+                        const lastThreeBets = bets.slice(Math.max(0, i - 2), i + 1);
+                        
+                        // Para rachas ganadoras (mínimo 3)
+                        if (lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "WON")) {
+                          // Si encontramos 3 victorias seguidas, buscamos el inicio real de la racha
+                          let startIndex = i - 2; // Comenzamos desde el inicio de las 3 victorias detectadas
+                          while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
+                            startIndex--;
+                          }
+                          
+                          // Marcar toda la racha desde el inicio hasta la posición actual
+                          if (i >= startIndex) {
+                            currentStreak = Math.min((i - startIndex + 1) * 20, 100);
+                            streakType = 'win';
+                          }
                         }
 
-                        // Para rachas perdedoras, mantenemos el mínimo de 3
-                        const lastFiveBets = bets.slice(Math.max(0, i - 4), i + 1);
-                        if (lastFiveBets.length >= 3) {
-                          const allLost = lastFiveBets.every(b => b.status === "LOST");
-                          if (allLost) {
-                            currentStreak = Math.min(lastFiveBets.length * 20, 100);
+                        // Para rachas perdedoras (mínimo 3)
+                        if (!streakType && lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "LOST")) {
+                          // Si encontramos 3 pérdidas seguidas, buscamos el inicio real de la racha
+                          let startIndex = i - 2; // Comenzamos desde el inicio de las 3 pérdidas detectadas
+                          while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
+                            startIndex--;
+                          }
+                          
+                          // Marcar toda la racha desde el inicio hasta la posición actual
+                          if (i >= startIndex) {
+                            currentStreak = Math.min((i - startIndex + 1) * 20, 100);
                             streakType = 'lose';
+                          }
+                        }
+                        
+                        // Si no estamos al final pero estamos dentro de una racha existente
+                        if (!streakType && i > 0) {
+                          // Verificar si estamos en medio de una racha ganadora
+                          if (bets[i].status === "WON" && bets[i-1].status === "WON") {
+                            let startIndex = i;
+                            while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
+                              startIndex--;
+                            }
+                            // Solo mostrar si hay al menos 3 en la racha
+                            if ((i - startIndex + 1) >= 3) {
+                              currentStreak = Math.min((i - startIndex + 1) * 20, 100);
+                              streakType = 'win';
+                            }
+                          }
+                          // Verificar si estamos en medio de una racha perdedora
+                          else if (bets[i].status === "LOST" && bets[i-1].status === "LOST") {
+                            let startIndex = i;
+                            while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
+                              startIndex--;
+                            }
+                            // Solo mostrar si hay al menos 3 en la racha
+                            if ((i - startIndex + 1) >= 3) {
+                              currentStreak = Math.min((i - startIndex + 1) * 20, 100);
+                              streakType = 'lose';
+                            }
                           }
                         }
                         
