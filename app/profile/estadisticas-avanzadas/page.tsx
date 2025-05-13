@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { useGame } from "@/context/game-context";
 
 // Importación dinámica para evitar problemas de SSR
 const TangledTreeChart = dynamic(
@@ -96,26 +95,99 @@ function convertBetsToTreeData(bets: any[]): TreeNode {
   return rootNode;
 }
 
+// Interface para los datos de apuestas en localStorage
+interface StoredBet {
+  id: string;
+  status: string;
+  timestamp: number;
+  amount: number;
+  // Otros campos necesarios
+}
+
+// Clave para localStorage
+const STORAGE_KEY = 'betting_stats_data';
+
 export default function EstadisticasAvanzadas() {
   const router = useRouter();
-  const { bets } = useGame();
-  const [treeData, setTreeData] = useState(convertBetsToTreeData(bets));
+  const [bets, setBets] = useState<StoredBet[]>([]);
+  const [treeData, setTreeData] = useState(convertBetsToTreeData([]));
   const [isAnimating, setIsAnimating] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Actualizar los datos cuando cambian las apuestas
+  // Cargar datos al montar el componente
   useEffect(() => {
-    if (bets.length > 0) {
-      setTreeData(convertBetsToTreeData(bets));
+    try {
+      // Intentar cargar datos guardados
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        // Filtrar solo las apuestas de las últimas 24 horas
+        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+        const recentBets = parsedData.filter((bet: StoredBet) => 
+          bet.timestamp >= twentyFourHoursAgo
+        );
+        setBets(recentBets);
+        setTreeData(convertBetsToTreeData(recentBets));
+      }
+    } catch (error) {
+      console.error('Error loading betting data:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [bets]);
+
+    // Configurar un intervalo para limpiar datos antiguos
+    const cleanupInterval = setInterval(() => {
+      try {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+          const recentBets = parsedData.filter((bet: StoredBet) => 
+            bet.timestamp >= twentyFourHoursAgo
+          );
+          
+          if (recentBets.length !== parsedData.length) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(recentBets));
+            setBets(recentBets);
+            setTreeData(convertBetsToTreeData(recentBets));
+          }
+        }
+      } catch (error) {
+        console.error('Error cleaning up old betting data:', error);
+      }
+    }, 5 * 60 * 1000); // Verificar cada 5 minutos
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
+
+  // Función para agregar una nueva apuesta (puede ser llamada desde otros componentes)
+  const addBet = (bet: StoredBet) => {
+    setBets(prevBets => {
+      // Evitar duplicados
+      if (prevBets.some(b => b.id === bet.id)) return prevBets;
+      
+      const newBets = [...prevBets, bet];
+      // Mantener solo las últimas 100 apuestas para evitar que el localStorage crezca demasiado
+      const limitedBets = newBets.slice(-100);
+      
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(limitedBets));
+      } catch (error) {
+        console.error('Error saving betting data:', error);
+      }
+      
+      return limitedBets;
+    });
+  };
 
   // Efecto para actualizar los datos periódicamente
   useEffect(() => {
-    if (!isAnimating) return;
+    if (!isAnimating || isLoading) return;
 
     const interval = setInterval(() => {
       // Actualizar el árbol con los datos actuales para la animación
       setTreeData(prevData => {
+        if (!prevData) return prevData;
         const newData = {...prevData};
         // Forzar actualización del timestamp
         newData.timestamp = Date.now();
@@ -124,7 +196,7 @@ export default function EstadisticasAvanzadas() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAnimating]);
+  }, [isAnimating, isLoading]);
 
   return (
     <div className="container mx-auto p-4 max-w-7xl min-h-screen">
@@ -163,7 +235,11 @@ export default function EstadisticasAvanzadas() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-[600px] w-full">
-              {bets.length > 0 ? (
+              {isLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-yellow-400/70">Cargando datos...</p>
+                </div>
+              ) : bets.length > 0 ? (
                 <TangledTreeChart 
                   width={800} 
                   height={600} 
@@ -171,7 +247,7 @@ export default function EstadisticasAvanzadas() {
                 />
               ) : (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-yellow-400/70">No hay datos de apuestas para mostrar</p>
+                  <p className="text-yellow-400/70">No hay datos de apuestas recientes</p>
                 </div>
               )}
             </div>
