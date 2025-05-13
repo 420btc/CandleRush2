@@ -2765,13 +2765,12 @@ export default function ProfilePage() {
                         const total = won + lost + liquidated + pending || 1;
                           // Calculamos si estamos en una racha
                         let currentStreak = 0;
-                        let streakType = null;
-                          // Para rachas ganadoras, revisamos desde el inicio (mínimo 2)
+                        let streakType = null;                        // Para rachas ganadoras, revisamos desde el inicio (mínimo 3)
                         let winningStreak = 0;
                         for (let j = i; j >= 0 && bets[j].status === "WON"; j--) {
                           winningStreak++;
                         }
-                        if (winningStreak >= 2) {
+                        if (winningStreak >= 3) {
                           currentStreak = Math.min(winningStreak * 20, 100);
                           streakType = 'win';
                         }
