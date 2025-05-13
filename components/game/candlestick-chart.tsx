@@ -129,9 +129,15 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   if (typeof setBetsByPair === 'function') {
     setBetsByPair(updatedByPair);
   }
-  // Mostrar toast/modal solo una vez
-  if (typeof window !== 'undefined' && (window as any).showBetResultModal) {
-    (window as any).showBetResultModal(updatedBets.filter((b: any) => b.status === 'WON' || b.status === 'LOST'));
+  // Mostrar toast/modal solo una vez cuando se resuelven nuevas apuestas
+  const newlyResolvedBets = updatedBets.filter((b: any) => 
+    (b.status === 'WON' || b.status === 'LOST') && 
+    // Solo mostrar para apuestas recién resueltas (en los últimos 5 segundos)
+    b.resolvedAt && (Date.now() - b.resolvedAt < 5000)
+  );
+  
+  if (newlyResolvedBets.length > 0 && typeof window !== 'undefined' && (window as any).showBetResultModal) {
+    (window as any).showBetResultModal(newlyResolvedBets);
   }
 }
 
@@ -203,12 +209,15 @@ useEffect(() => {
 
   // Handler para el botón
 // Nuevo handler: cada click añade UNA vela simulada a la secuencia
-const whaleTrades = useBinanceWhaleTrades({ minUsd: 10000, limit: 99 });
+// Usar el hook de whale trades sin argumentos, ya que el hook tiene valores por defecto
+const whaleTrades = useBinanceWhaleTrades();
 const handleAutoDraw = () => {
   if (timeframe !== '1m' && timeframe !== '3m') return; // Solo permitir en 1m o 3m
   // Si está inactivo, activar y generar la primera simulada
   if (!autoDrawActive) {
-    const { candles: simulated, finalPrice: price } = generateAutoDrawCandles([...candles], 1, timeframe, whaleTrades);
+    // Convertir whaleTrades a un array si no lo es
+    const whaleTradesArray = Array.isArray(whaleTrades) ? whaleTrades : [];
+    const { candles: simulated, finalPrice: price } = generateAutoDrawCandles([...candles], 1, timeframe, whaleTradesArray);
     setSimCandles(simulated);
     setFinalPrice(price);
     setAutoDrawActive(true);
@@ -216,7 +225,9 @@ const handleAutoDraw = () => {
   }
   // Si ya está activo, generar la siguiente simulada (en base a todas las previas)
   const base = [...candles, ...simCandles];
-  const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1, timeframe, whaleTrades);
+  // Convertir whaleTrades a un array si no lo es
+  const whaleTradesArray = Array.isArray(whaleTrades) ? whaleTrades : [];
+  const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1, timeframe, whaleTradesArray);
   setSimCandles([...simCandles, ...nextSim]);
   setFinalPrice(price);
 };
@@ -383,7 +394,9 @@ useEffect(() => {
         <button
           onClick={() => {
             if (!autoDrawActive) {
-              const { candles: simulated, finalPrice } = generateAutoDrawCandles([...candles], 1);
+              // Convertir whaleTrades a un array si no lo es
+              const whaleTradesArray = Array.isArray(whaleTrades) ? whaleTrades : [];
+              const { candles: simulated, finalPrice } = generateAutoDrawCandles([...candles], 1, timeframe, whaleTradesArray);
               setSimCandles(simulated);
               setAutoDrawActive(true);
               setShowFinalPrice(true); // Agregar esta línea
@@ -1294,13 +1307,14 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         } else if (firstSimIdx !== -1 && i === firstSimIdx) {
           // En la transición: continuar la EMA anterior (no reiniciar)
           // Simplemente sigue usando emaPrev, que ya es la EMA real previa
-          const ema = price * k + emaPrev! * (1 - k);
+          const ema: number = price * k + emaPrev! * (1 - k);
           emaArray.push(ema);
           emaPrev = ema;
         } else if (emaPrev !== null) {
-          const ema: number = price * k + emaPrev * (1 - k);
-          emaArray.push(ema);
-          emaPrev = ema;
+          // Calcular el valor de EMA con tipado explícito
+          const calculatedEma: number = price * k + emaPrev * (1 - k);
+          emaArray.push(calculatedEma);
+          emaPrev = calculatedEma;
         }
       }
       return emaArray;
@@ -1722,7 +1736,9 @@ const handleZoomOut = () => {
                   // Simular siempre sobre el estado más reciente
                   if (timeframe !== '1m' && timeframe !== '3m') return;
                   const base = [...candles, ...simCandlesRef.current];
-                  const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1, timeframe, whaleTrades);
+                  // Convertir whaleTrades a un array si no lo es
+                  const whaleTradesArray = Array.isArray(whaleTrades) ? whaleTrades : [];
+                  const { candles: nextSim, finalPrice: price } = generateAutoDrawCandles(base, 1, timeframe, whaleTradesArray);
                   setSimCandles(prev => {
                     const updated = [...prev, ...nextSim];
                     simCandlesRef.current = updated;
