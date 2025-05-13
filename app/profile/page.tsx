@@ -773,6 +773,7 @@ function WhaleTradesCard() {
               />
             </PolarRadiusAxis>
                   <RadialBar
+                    background={{ fill: '#000000' }}
                     dataKey="value"
                     cornerRadius={5}
               className="stroke-transparent stroke-2"
@@ -1250,7 +1251,7 @@ export default function ProfilePage() {
     );
   }
 }
-/>
+                        />
                         <Radar
                           name="Apuestas"
                           dataKey="value"
@@ -3144,7 +3145,7 @@ export default function ProfilePage() {
                       endAngle={360}
                     >
                       <RadialBar
-                        background
+                        background={{ fill: '#000000' }}
                         dataKey="value"
                         cornerRadius={10}
                       />
