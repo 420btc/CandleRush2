@@ -1321,13 +1321,13 @@ export default function ProfilePage() {
                                       y={cy - 10}
                                       textAnchor="middle"
                                       dominantBaseline="middle"
-                                      className="text-4xl font-semibold fill-white"
+                                      className="text-2xl font-medium fill-white"
                                     >
                                       {winrate}%
                                     </text>
                                     <text
                                       x={viewBox?.cx ?? 0}
-                                      y={cy + 20}
+                                      y={cy + 15}
                                       textAnchor="middle"
                                       dominantBaseline="middle"
                                       className="text-sm fill-gray-400"
