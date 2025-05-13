@@ -2969,8 +2969,8 @@ export default function ProfilePage() {
                               </div>                            )}                            {(data.rachaGanadora > 0 || data.rachaPerdedora > 0) && (                              <div className={`${data.rachaGanadora > 0 ? 'bg-green-900/50' : 'bg-red-900/50'} p-2 rounded mb-2 border ${data.rachaGanadora > 0 ? 'border-green-600' : 'border-red-600'}`}>
                                 <div className={`${data.rachaGanadora > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>
                                   ¡{data.rachaGanadora > 0 ? 'RACHA GANADORA!' : 'RACHA PERDEDORA!'}
-                                </div>
-                                <div className="text-white text-sm">                                  {Math.round((data.rachaGanadora || data.rachaPerdedora) / data.scaleFactor)} apuestas consecutivas
+                                </div>                                <div className="text-white text-sm">
+                                  {data.numApuestas} apuestas consecutivas
                                 </div>
                                 <div className="text-white/80 text-xs">
                                   Intensidad: {Math.round(data.rachaGanadora || data.rachaPerdedora)}%
