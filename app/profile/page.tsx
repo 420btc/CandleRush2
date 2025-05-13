@@ -2777,11 +2777,11 @@ export default function ProfilePage() {
                             startIndex--;
                           }
                             // Marcar toda la racha desde el inicio hasta la posición actual
-                          if (i >= startIndex) {
-                            // Calculamos el factor de escala basado en la racha más larga posible
-                            const maxPossibleStreak = bets.length;
-                            scaleFactor = 100 / Math.max(5, maxPossibleStreak);
-                            currentStreak = (i - startIndex + 1) * scaleFactor;
+                          if (i >= startIndex) {                            // Calculamos la intensidad basada en la longitud de la racha actual
+                            const streakLength = i - startIndex + 1;
+                            // Para rachas de 1-10: 50% de intensidad, 10-20: 100% de intensidad
+                            const intensity = streakLength <= 10 ? 50 : Math.min(100, 50 + ((streakLength - 10) * 5));
+                            currentStreak = intensity;
                             streakType = 'win';
                           }
                         }
@@ -2813,9 +2813,10 @@ export default function ProfilePage() {
                               startIndex--;
                             }                            // Solo mostrar si hay al menos 3 en la racha
                             if ((i - startIndex + 1) >= 3) {
-                              const maxPossibleStreak = bets.length;
-                              const scaleFactor = 100 / Math.max(5, maxPossibleStreak);
-                              currentStreak = (i - startIndex + 1) * scaleFactor;
+                              const streakLength = i - startIndex + 1;
+                              // Para rachas de 1-10: 50% de intensidad, 10-20: 100% de intensidad
+                              const intensity = streakLength <= 10 ? 50 : Math.min(100, 50 + ((streakLength - 10) * 5));
+                              currentStreak = intensity;
                               streakType = 'win';
                             }
                           }
@@ -2824,12 +2825,12 @@ export default function ProfilePage() {
                             let startIndex = i;
                             while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
                               startIndex--;
-                            }
-                            // Solo mostrar si hay al menos 3 en la racha
+                            }                            // Solo mostrar si hay al menos 3 en la racha
                             if ((i - startIndex + 1) >= 3) {
-                              const maxPossibleStreak = bets.length;
-                              const scaleFactor = 100 / Math.max(5, maxPossibleStreak);
-                              currentStreak = (i - startIndex + 1) * scaleFactor;
+                              const streakLength = i - startIndex + 1;
+                              // Para rachas de 1-10: 50% de intensidad, 10-20: 100% de intensidad
+                              const intensity = streakLength <= 10 ? 50 : Math.min(100, 50 + ((streakLength - 10) * 5));
+                              currentStreak = intensity;
                               streakType = 'lose';
                             }
                           }
