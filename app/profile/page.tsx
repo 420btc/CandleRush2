@@ -1324,13 +1324,12 @@ export default function ProfilePage() {
                                       className="text-2xl font-medium fill-white"
                                     >
                                       {winrate}%
-                                    </text>
-                                    <text
+                                    </text>                                    <text
                                       x={viewBox?.cx ?? 0}
                                       y={cy + 15}
                                       textAnchor="middle"
                                       dominantBaseline="middle"
-                                      className="text-sm fill-gray-400"
+                                      className="text-xs fill-gray-400"
                                     >
                                       Victorias
                                     </text>
@@ -3119,12 +3118,11 @@ export default function ProfilePage() {
               <div className="grid grid-cols-3 gap-8 w-full">
                 {/* Gráfico Radial */}
                 <div className="col-span-1 bg-black rounded-xl p-4 flex flex-col items-center justify-center gap-8">
-                  <div className="w-full flex justify-center" style={{ position: 'relative' }}>
-                    <RadialBarChart
+                  <div className="w-full flex justify-center" style={{ position: 'relative' }}>                    <RadialBarChart
                       width={200}
                       height={160}
                       innerRadius={30}
-                      outerRadius={80}
+                      outerRadius={90} // Adjusted to accommodate 3 bars after removing one
                       data={[
                         {
                           name: 'Racha Actual',
@@ -3132,14 +3130,14 @@ export default function ProfilePage() {
                           fill: streakStats.currentWinStreak > 0 ? '#22c55e' : '#ef4444'
                         },
                         {
-                          name: 'Racha Máxima',
-                          value: streakStats.maxWinStreak,
-                          fill: '#eab308'
-                        },
-                        {
                           name: 'Racha Perdedora',
                           value: streakStats.maxLoseStreak,
                           fill: '#ef4444'
+                        },
+                        {
+                          name: 'Racha Ganadora', // This will be labeled as 'Mejor Racha'
+                          value: streakStats.maxWinStreak,
+                          fill: '#22c55e'
                         }
                       ]}
                       startAngle={0}
@@ -3167,20 +3165,19 @@ export default function ProfilePage() {
                         }}
                       />
                     </RadialBarChart>
-                  </div>
-                  <div className="w-full text-center mt-4">
-                    <div className="flex justify-center gap-4">
+                  </div>                  <div className="w-full text-center mt-4">
+                    <div className="flex justify-center gap-4 flex-wrap">
                       <div className="flex items-center">
                         <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
                         <span className="text-xs text-white">Racha Actual</span>
                       </div>
                       <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                        <span className="text-xs text-white">Racha Máxima</span>
-                      </div>
-                      <div className="flex items-center">
                         <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
                         <span className="text-xs text-white">Racha Perdedora</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span className="text-xs text-white">Mejor Racha</span>
                       </div>
                     </div>
                   </div>
