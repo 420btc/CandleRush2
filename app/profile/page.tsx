@@ -2558,11 +2558,10 @@ export default function ProfilePage() {
                     cleanup();
                   };
                 }, [userBalance, currentBalance]);
-                
-                // Configuración del gráfico
+                  // Configuración del gráfico
                 const chartConfig = {
                   balance: {
-                    label: "Balance",
+                    label: "Saldo",
                     color: "#22c55e", // Verde
                   }
                 };
@@ -2663,9 +2662,8 @@ export default function ProfilePage() {
                                 const data = payload[0].payload;
                                 return (
                                   <div className="bg-black/80 p-2 rounded border border-yellow-500/30 shadow">
-                                    <p className="font-medium text-white">{data.time}</p>
-                                    <p className="text-sm text-white">
-                                      Balance: <span className="font-bold">{data.balance.toLocaleString('es-ES')}</span>
+                                    <p className="font-medium text-white">{data.time}</p>                                      <p className="text-sm text-white">
+                                      Saldo: <span className="font-bold">{data.balance.toLocaleString('es-ES')}</span>
                                     </p>
                                   </div>
                                 );
@@ -2786,16 +2784,15 @@ export default function ProfilePage() {
                         const betTime = new Date(bet.timestamp).toLocaleTimeString('es-ES', {
                           hour: '2-digit',
                           minute: '2-digit'
-                        });
-                          return {
+                        });                          return {
                           ronda: i + 1,
-                          time: betTime,
-                          winStreak: streakType === 'win' ? currentStreak : 0,
-                          loseStreak: streakType === 'lose' ? currentStreak : 0,
-                          won: (won / maxTotal) * 100,
-                          lost: (lost / maxTotal) * 100,
-                          liquidated: (liquidated / maxTotal) * 100,
-                          pending: (pending / maxTotal) * 100,
+                          tiempo: betTime,
+                          rachaGanadora: streakType === 'win' ? currentStreak : 0,
+                          rachaPerdedora: streakType === 'lose' ? currentStreak : 0,
+                          ganadas: (won / maxTotal) * 100,
+                          perdidas: (lost / maxTotal) * 100,
+                          liquidadas: (liquidated / maxTotal) * 100,
+                          pendientes: (pending / maxTotal) * 100,
                           // Datos adicionales para el tooltip
                           betAmount: bet.amount,
                           betStatus: bet.status,
@@ -2872,38 +2869,35 @@ export default function ProfilePage() {
                                   <div>Par: {data.betSymbol}</div>
                                   <div>Timeframe: {data.betTimeframe}</div>
                                 </div>
-                              </div>
-                            )}                            {(data.winStreak > 0 || data.loseStreak > 0) && (
-                              <div className={`${data.winStreak > 0 ? 'bg-green-900/50' : 'bg-red-900/50'} p-2 rounded mb-2 border ${data.winStreak > 0 ? 'border-green-600' : 'border-red-600'}`}>
-                                <div className={`${data.winStreak > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>
-                                  ¡{data.winStreak > 0 ? 'RACHA GANADORA!' : 'RACHA PERDEDORA!'}
+                              </div>                            )}                            {(data.rachaGanadora > 0 || data.rachaPerdedora > 0) && (
+                              <div className={`${data.rachaGanadora > 0 ? 'bg-green-900/50' : 'bg-red-900/50'} p-2 rounded mb-2 border ${data.rachaGanadora > 0 ? 'border-green-600' : 'border-red-600'}`}>
+                                <div className={`${data.rachaGanadora > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>
+                                  ¡{data.rachaGanadora > 0 ? 'RACHA GANADORA!' : 'RACHA PERDEDORA!'}
                                 </div>
                                 <div className="text-white text-sm">
-                                  Intensidad: {Math.round(data.winStreak || data.loseStreak)}%
+                                  Intensidad: {Math.round(data.rachaGanadora || data.rachaPerdedora)}%
                                 </div>
                               </div>
                             )}
                             <div className="grid grid-cols-3 gap-2">
-                              <div className="text-green-400 text-xs">Ganadas: {Math.round(data.won)}%</div>
-                              <div className="text-red-400 text-xs">Perdidas: {Math.round(data.lost)}%</div>
-                              <div className="text-yellow-400 text-xs">Liquidadas: {Math.round(data.liquidated)}%</div>
+                              <div className="text-green-400 text-xs">Ganadas: {Math.round(data.ganadas)}%</div>
+                              <div className="text-red-400 text-xs">Perdidas: {Math.round(data.perdidas)}%</div>
+                              <div className="text-yellow-400 text-xs">Liquidadas: {Math.round(data.liquidadas)}%</div>
                             </div>
                           </div>
                         );
                       }
                       return null;
                     }}
-                  />                  <Area
-                    dataKey="winStreak"
+                  />                  <Area                    dataKey="rachaGanadora"
                     type="monotone"
                     fill="url(#fillStreak)"
                     stroke="#166534"
                     strokeWidth={2}
                     stackId="0"
                     fillOpacity={1}
-                  />
-                  <Area
-                    dataKey="loseStreak"
+                  />                  <Area
+                    dataKey="rachaPerdedora"
                     type="monotone"
                     fill="url(#fillLoseStreak)"
                     stroke="#991b1b"
@@ -2912,7 +2906,7 @@ export default function ProfilePage() {
                     fillOpacity={1}
                   />
                   <Area
-                    dataKey="won"
+                    dataKey="ganadas"
                     type="monotone"
                     fill="url(#fillWon)"
                     stroke="#22c55e"
@@ -2920,7 +2914,7 @@ export default function ProfilePage() {
                     fillOpacity={0.8}
                   />
                   <Area
-                    dataKey="lost"
+                    dataKey="perdidas"
                     type="monotone"
                     fill="url(#fillLost)"
                     stroke="#ef4444"
@@ -2928,7 +2922,7 @@ export default function ProfilePage() {
                     fillOpacity={0.6}
                   />
                   <Area
-                    dataKey="liquidated"
+                    dataKey="liquidadas"
                     type="monotone"
                     fill="url(#fillLiquidated)"
                     stroke="#000000"
@@ -2937,7 +2931,7 @@ export default function ProfilePage() {
                     fillOpacity={0.7}
                   />
                   <Area
-                    dataKey="pending"
+                    dataKey="pendientes"
                     type="monotone"
                     fill="url(#fillPending)"
                     stroke="#60a5fa"
