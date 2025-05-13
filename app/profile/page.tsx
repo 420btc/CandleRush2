@@ -2330,9 +2330,9 @@ export default function ProfilePage() {
                         balance: userBalance || 1000
                       });
                       
-                      // Limitar a 12 puntos máximo
-                      if (initialHistory.length > 12) {
-                        initialHistory = initialHistory.slice(-12);
+                      // Limitar a 15 puntos máximo para mostrar más detalle
+                      if (initialHistory.length > 15) {
+                        initialHistory = initialHistory.slice(-15);
                       }
                     }
                   } else {
@@ -2340,17 +2340,17 @@ export default function ProfilePage() {
                     // que tengan algunas variaciones para mostrar una línea interesante
                     const baseBalance = userBalance || 1000;
                     
-                    // Generar exactamente 12 puntos, uno para cada minuto
+                    // Generar puntos iniciales que abarquen los últimos 12 minutos
+                    // pero permitiendo múltiples puntos por minuto si hay cambios
                     for (let i = 0; i < 12; i++) {
                       const time = new Date(now);
-                      // Asegurarnos de que cada punto sea exactamente un minuto
+                      // Distribuir los puntos en los últimos 12 minutos
                       time.setMinutes(now.getMinutes() - (11 - i));
-                      time.setSeconds(0);
-                      time.setMilliseconds(0);
                       
                       const timeStr = time.toLocaleTimeString([], {
                         hour: '2-digit', 
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        second: '2-digit'
                       });
                       
                       // Crear algunas variaciones alrededor del balance actual
@@ -2382,10 +2382,8 @@ export default function ProfilePage() {
                     nextMinute.setSeconds(0);
                     nextMinute.setMilliseconds(0);
                     
-                    // Asegurarnos de que el tiempo actual está en el minuto exacto para la comparación
+                    // Ya no necesitamos redondear al minuto exacto, queremos capturar todos los cambios
                     const exactNow = new Date(now);
-                    exactNow.setSeconds(0);
-                    exactNow.setMilliseconds(0);
                     
                     const timeToNextMinute = nextMinute.getTime() - now.getTime();
                     
@@ -2405,8 +2403,9 @@ export default function ProfilePage() {
                           // Actualizar historial con balance actual exacto
                           setBalanceHistory(prev => {
                             const newHistory = [...prev, { time: timeStr, balance: userBalance }];
-                            if (newHistory.length > 12) {
-                              const limitedHistory = newHistory.slice(-12);
+                            // Mantener hasta 15 puntos para mostrar más detalle
+                            if (newHistory.length > 15) {
+                              const limitedHistory = newHistory.slice(-15);
                               
                               // Guardar en localStorage
                               if (typeof window !== 'undefined') {
@@ -2432,23 +2431,22 @@ export default function ProfilePage() {
                       // Configurar intervalo para actualizar cada minuto exacto
                       const intervalId = setInterval(() => {
                         if (typeof userBalance === 'number') {
-                          // Obtener hora actual exacta
+                          // Obtener hora actual con segundos para mayor detalle
                           const currentTime = new Date();
-                          // Asegurarnos de que estamos en el minuto exacto
-                          currentTime.setSeconds(0);
-                          currentTime.setMilliseconds(0);
                           const timeStr = currentTime.toLocaleTimeString([], {
                             hour: '2-digit',
-                            minute: '2-digit'
+                            minute: '2-digit',
+                            second: '2-digit'
                           });
                           
-                          // Actualizar historial solo si el balance ha cambiado
+                          // Actualizar historial cada vez que el balance cambia
                           if (userBalance !== currentBalance) {
                             // Actualizar historial con balance actual exacto
                             setBalanceHistory(prev => {
                               const newHistory = [...prev, { time: timeStr, balance: userBalance }];
-                              if (newHistory.length > 12) {
-                                const limitedHistory = newHistory.slice(-12);
+                              // Mantener hasta 15 puntos para mostrar más detalle
+                              if (newHistory.length > 15) {
+                                const limitedHistory = newHistory.slice(-15);
                                 
                                 // Guardar en localStorage
                                 if (typeof window !== 'undefined') {
