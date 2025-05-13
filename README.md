@@ -173,10 +173,10 @@ El sistema puede conectarse a la API de Binance para:
 - Facilita auditoría del sistema
 - Mantiene histórico de trades y resultados
 
-### Transparencia
+### Transparencia en mi perfil
 
 - Todas las decisiones son registradas
-- Posibilidad de revisar el proceso de decisión
+- Posibilidad de revisar el proceso de decisión en mi perfil
 - Análisis de patrones de éxito y error
 - Verificación de señales técnicas
 
