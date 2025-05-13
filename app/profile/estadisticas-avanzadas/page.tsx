@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { useGame } from "@/context/game-context";
 
 // Importación dinámica para evitar problemas de SSR
 const TangledTreeChart = dynamic(
@@ -13,70 +14,117 @@ const TangledTreeChart = dynamic(
   { ssr: false }
 );
 
-// Función para generar datos de ejemplo
-function generateRandomData() {
-  const types: ('win' | 'loss' | 'liquidation')[] = ['win', 'loss', 'liquidation'];
-  const data = {
-    id: 'root',
-    type: 'win' as const,
-    timestamp: Date.now(),
-    value: 0,
-    children: [] as any[]
-  };
+// Definir tipos para los nodos del árbol
+type TreeNodeType = 'win' | 'loss' | 'liquidation';
 
-  // Generar datos iniciales
-  for (let i = 0; i < 5; i++) {
-    const type = types[Math.floor(Math.random() * types.length)];
-    data.children.push({
-      id: `node-${i}`,
-      type,
-      timestamp: Date.now() - Math.random() * 10000000,
-      value: Math.floor(Math.random() * 100) + 10,
+interface TreeNode {
+  id: string;
+  type: TreeNodeType;
+  timestamp: number;
+  value: number;
+  children: TreeNode[];
+}
+
+// Función para convertir datos de apuestas al formato del árbol
+function convertBetsToTreeData(bets: any[]): TreeNode {
+  if (!bets || bets.length === 0) {
+    return {
+      id: 'root',
+      type: 'win' as const,
+      timestamp: Date.now(),
+      value: 0,
       children: []
-    });
+    };
   }
 
-  return data;
+  // Ordenar apuestas por timestamp (más recientes primero)
+  const sortedBets = [...bets].sort((a, b) => b.timestamp - a.timestamp);
+
+  // Función para mapear el estado de la apuesta al tipo de nodo
+  const getNodeType = (status: string): TreeNodeType => {
+    if (status === 'WON') return 'win';
+    if (status === 'LOST') return 'loss';
+    return 'liquidation';
+  };
+
+  // Crear el nodo raíz con la apuesta más reciente
+  const rootBet = sortedBets[0];
+  const rootNode: TreeNode = {
+    id: rootBet.id,
+    type: getNodeType(rootBet.status),
+    timestamp: rootBet.timestamp,
+    value: rootBet.amount,
+    children: []
+  };
+
+  // Agregar apuestas posteriores como hijos
+  const addChildren = (node: TreeNode, parentBet: any, remainingBets: any[]): void => {
+    if (remainingBets.length === 0) return;
+
+    // Tomar hasta 3 apuestas aleatorias como hijos
+    const childCount = Math.min(3, remainingBets.length);
+    const childIndices = Array.from({ length: remainingBets.length }, (_, i) => i)
+      .sort(() => 0.5 - Math.random())
+      .slice(0, childCount);
+
+    childIndices.forEach(idx => {
+      const bet = remainingBets[idx];
+      const childNode: TreeNode = {
+        id: bet.id,
+        type: getNodeType(bet.status),
+        timestamp: bet.timestamp,
+        value: bet.amount,
+        children: []
+      };
+      
+      // Agregar el nodo hijo
+      node.children.push(childNode);
+      
+      // Llamada recursiva para agregar más niveles
+      const newRemainingBets = remainingBets.filter((_, i) => i !== idx);
+      if (newRemainingBets.length > 0) {
+        addChildren(childNode, bet, newRemainingBets);
+      }
+    });
+  };
+
+  // Comenzar a construir el árbol con las apuestas restantes
+  if (sortedBets.length > 1) {
+    addChildren(rootNode, rootBet, sortedBets.slice(1));
+  }
+
+  return rootNode;
 }
 
 export default function EstadisticasAvanzadas() {
   const router = useRouter();
-  const [treeData, setTreeData] = useState(generateRandomData());
+  const { bets } = useGame();
+  const [treeData, setTreeData] = useState(convertBetsToTreeData(bets));
   const [isAnimating, setIsAnimating] = useState(true);
 
-  // Efecto para actualizar los datos cada 5 segundos
+  // Actualizar los datos cuando cambian las apuestas
+  useEffect(() => {
+    if (bets.length > 0) {
+      setTreeData(convertBetsToTreeData(bets));
+    }
+  }, [bets]);
+
+  // Efecto para actualizar los datos periódicamente
   useEffect(() => {
     if (!isAnimating) return;
 
     const interval = setInterval(() => {
-      const newData = { ...treeData };
-      const types: ('win' | 'loss' | 'liquidation')[] = ['win', 'loss', 'liquidation'];
-      
-      // Añadir un nuevo nodo aleatorio
-      const newNode = {
-        id: `node-${Date.now()}`,
-        type: types[Math.floor(Math.random() * types.length)],
-        timestamp: Date.now(),
-        value: Math.floor(Math.random() * 100) + 10,
-        children: []
-      };
-
-      // Añadir el nuevo nodo a un nodo aleatorio existente o a la raíz
-      const addToRandomNode = (node: any) => {
-        if (node.children.length > 0 && Math.random() > 0.3) {
-          const randomChild = node.children[Math.floor(Math.random() * node.children.length)];
-          addToRandomNode(randomChild);
-        } else {
-          node.children.push(newNode);
-        }
-      };
-
-      addToRandomNode(newData);
-      setTreeData(JSON.parse(JSON.stringify(newData)));
+      // Actualizar el árbol con los datos actuales para la animación
+      setTreeData(prevData => {
+        const newData = {...prevData};
+        // Forzar actualización del timestamp
+        newData.timestamp = Date.now();
+        return newData;
+      });
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [treeData, isAnimating]);
+  }, [isAnimating]);
 
   return (
     <div className="container mx-auto p-4 max-w-7xl min-h-screen">
@@ -100,7 +148,7 @@ export default function EstadisticasAvanzadas() {
               <div>
                 <CardTitle className="text-yellow-400">Árbol de Operaciones</CardTitle>
                 <CardDescription className="text-yellow-100/60">
-                  Visualización de operaciones en tiempo real
+                  Visualización de tus apuestas en tiempo real
                 </CardDescription>
               </div>
               <Button 
@@ -115,11 +163,17 @@ export default function EstadisticasAvanzadas() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-[600px] w-full">
-              <TangledTreeChart 
-                width={800} 
-                height={600} 
-                data={treeData} 
-              />
+              {bets.length > 0 ? (
+                <TangledTreeChart 
+                  width={800} 
+                  height={600} 
+                  data={treeData} 
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-yellow-400/70">No hay datos de apuestas para mostrar</p>
+                </div>
+              )}
             </div>
             <div className="mt-4 flex justify-center space-x-6 text-sm">
               <div className="flex items-center">
