@@ -3,14 +3,12 @@ import { useWhaleTrades, WhaleTrade } from "@/hooks/useWhaleTrades";
 
 export default function WhaleTradeList({
   minUsd = 100000,
-  exchanges,
   symbols
 }: {
   minUsd?: number;
-  exchanges?: string[];
   symbols?: string[];
 }) {
-  const trades = useWhaleTrades({ minUsd, exchanges, symbols });
+  const trades = useWhaleTrades({ minUsd, symbols });
   return (
     <div className="bg-black/80 p-1 rounded-lg shadow-lg max-w-xs w-full">
       <div className="text-xs text-zinc-400 mb-1 font-bold">Whale Trades ({'>'}{minUsd.toLocaleString()} USD)</div>
