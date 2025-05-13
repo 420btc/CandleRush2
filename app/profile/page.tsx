@@ -3503,6 +3503,20 @@ export default function ProfilePage() {
               </ChartContainer>
             </CardContent>
           </Card>
+          
+          {/* Botón de Estadísticas Avanzadas */}
+          <div className="flex justify-center mt-6">
+            <button 
+              onClick={() => {
+                // Aquí puedes agregar la lógica para mostrar más estadísticas
+                // Por ejemplo, abrir un modal o navegar a otra sección
+                alert('Funcionalidad de estadísticas avanzadas en desarrollo');
+              }}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl border-2 border-yellow-600 text-lg"
+            >
+              Ver más Estadísticas Avanzadas
+            </button>
+          </div>
         </div>
         
         {/* Tarjetas destacadas debajo de los charts principales */}
