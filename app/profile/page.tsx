@@ -2722,7 +2722,7 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl">
             <CardHeader className="items-center pb-4">
               <CardTitle>Historial de Apuestas</CardTitle>
-              <CardDescription className="text-black">Evolución de tus apuestas ganadas, perdidas y liquidadas</CardDescription>
+              <CardDescription className="text-black">Evolución de tus apuestas ganadas, perdidas, liquidadas y pendientes</CardDescription>
             </CardHeader>
             <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
               <ChartContainer
@@ -2730,6 +2730,7 @@ export default function ProfilePage() {
                   won: { label: "Ganadas", color: "#22c55e" },
                   lost: { label: "Perdidas", color: "#ef4444" },
                   liquidated: { label: "Liquidadas", color: "#eab308" },
+                  pending: { label: "Pendientes", color: "#60a5fa" },
                 }}
                 className="aspect-auto h-[300px] w-full"
               >
@@ -2741,12 +2742,14 @@ export default function ProfilePage() {
                     let won = 0;
                     let lost = 0;
                     let liquidated = 0;
+                    let pending = 0;
                     
                     // Primero contamos los totales
                     const totalWon = bets.filter(b => b.status === "WON").length;
                     const totalLost = bets.filter(b => b.status === "LOST").length;
                     const totalLiquidated = bets.filter(b => b.status === "LIQUIDATED").length;
-                    const maxTotal = Math.max(totalWon, totalLost, totalLiquidated, 1);
+                    const totalPending = bets.filter(b => b.status === "PENDING").length;
+                    const maxTotal = Math.max(totalWon, totalLost, totalLiquidated, totalPending, 1);
                     
                     // Normalizamos los datos para que todas las áreas tengan la misma escala
                     return bets
@@ -2755,15 +2758,31 @@ export default function ProfilePage() {
                         if (bet.status === "WON") won++;
                         if (bet.status === "LOST") lost++;
                         if (bet.status === "LIQUIDATED") liquidated++;
+                        if (bet.status === "PENDING") pending++;
                         
                         // Normalizamos los valores para que vayan de 0 a 100
-                        const total = won + lost + liquidated || 1;
+                        const total = won + lost + liquidated + pending || 1;
+                        
+                        // Formateamos la hora para mostrarla en el tooltip
+                        const betTime = new Date(bet.timestamp).toLocaleTimeString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
                         
                         return {
                           ronda: i + 1,
+                          time: betTime,
                           won: (won / maxTotal) * 100,
                           lost: (lost / maxTotal) * 100,
                           liquidated: (liquidated / maxTotal) * 100,
+                          pending: (pending / maxTotal) * 100,
+                          // Datos adicionales para el tooltip
+                          betAmount: bet.amount,
+                          betStatus: bet.status,
+                          betPrediction: bet.prediction,
+                          betLeverage: bet.leverage || 1,
+                          betSymbol: bet.symbol,
+                          betTimeframe: bet.timeframe,
                         };
                       });
                   })()}
@@ -2780,6 +2799,10 @@ export default function ProfilePage() {
                     <linearGradient id="fillLiquidated" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#eab308" stopOpacity={0.8} />
                       <stop offset="95%" stopColor="#eab308" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="fillPending" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -2802,18 +2825,38 @@ export default function ProfilePage() {
                   />
                   <ChartTooltip
                     cursor={false}
-                    content={
-                      <ChartTooltipContent
-                        labelFormatter={(value) => {
-                          const date = new Date(value);
-                          return date.toLocaleDateString("es-ES", {
-                            month: "short",
-                            day: "numeric",
-                          });
-                        }}
-                        indicator="dot"
-                      />
-                    }
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-black/90 p-3 rounded-lg border border-yellow-400 shadow-lg">
+                            <div className="text-white font-medium mb-1">
+                              Apuesta #{data.ronda} - {data.time}
+                            </div>
+                            {data.betStatus === "PENDING" && (
+                              <div className="bg-blue-500/20 p-2 rounded mb-2 border border-blue-500/50">
+                                <div className="text-blue-300 font-bold">APUESTA PENDIENTE</div>
+                                <div className="text-white text-sm">
+                                  <div>Predicción: <span className={data.betPrediction === "BULLISH" ? "text-green-400" : "text-red-400"}>
+                                    {data.betPrediction === "BULLISH" ? "ALCISTA" : "BAJISTA"}
+                                  </span></div>
+                                  <div>Monto: {data.betAmount} monedas</div>
+                                  <div>Apalancamiento: {data.betLeverage}x</div>
+                                  <div>Par: {data.betSymbol}</div>
+                                  <div>Timeframe: {data.betTimeframe}</div>
+                                </div>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="text-green-400 text-xs">Ganadas: {Math.round(data.won)}%</div>
+                              <div className="text-red-400 text-xs">Perdidas: {Math.round(data.lost)}%</div>
+                              <div className="text-yellow-400 text-xs">Liquidadas: {Math.round(data.liquidated)}%</div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
                   />
                   <Area
                     dataKey="won"
@@ -2838,6 +2881,15 @@ export default function ProfilePage() {
                     stroke="#000000"
                     strokeWidth={1.5}
                     stackId="3"
+                    fillOpacity={0.7}
+                  />
+                  <Area
+                    dataKey="pending"
+                    type="monotone"
+                    fill="url(#fillPending)"
+                    stroke="#60a5fa"
+                    strokeWidth={1.5}
+                    stackId="4"
                     fillOpacity={0.7}
                   />
                   <Legend />
