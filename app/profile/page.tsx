@@ -1998,18 +1998,38 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl min-h-[250px] rounded-xl flex flex-col">
             <CardHeader className="items-center pb-2">
               <CardTitle>Últimas Velas</CardTitle>
-              <CardDescription className="text-black">Últimas 6 velas de 1 minuto</CardDescription>
+              <CardDescription className="text-black">Últimas 15 velas de 1 minuto</CardDescription>
             </CardHeader>
             <CardContent className="pb-0">
               {(() => {
+                // Definir el tipo para las velas con la propiedad realPrice
+                type CandleData = {
+                  time: string;
+                  price: number;
+                  isUp: boolean;
+                  priceChange: number;
+                  realPrice?: number;
+                  close?: number;
+                  open?: number;
+                };
+                
                 // Estado para almacenar y actualizar las velas
-                const [candlesData, setCandlesData] = React.useState([
-                  { time: "00:00", price: 0, isUp: true, priceChange: 0 },
-                  { time: "00:01", price: 0, isUp: false, priceChange: 0 },
-                  { time: "00:02", price: 0, isUp: true, priceChange: 0 },
-                  { time: "00:03", price: 0, isUp: false, priceChange: 0 },
-                  { time: "00:04", price: 0, isUp: true, priceChange: 0 },
-                  { time: "00:05", price: 0, isUp: false, priceChange: 0 },
+                const [candlesData, setCandlesData] = React.useState<CandleData[]>([
+                  { time: "00:00", price: 0, isUp: true, priceChange: 0, realPrice: 30000 },
+                  { time: "00:01", price: 0, isUp: false, priceChange: 0, realPrice: 30000 },
+                  { time: "00:02", price: 0, isUp: true, priceChange: 0, realPrice: 30000 },
+                  { time: "00:03", price: 0, isUp: false, priceChange: 0, realPrice: 30000 },
+                  { time: "00:04", price: 0, isUp: true, priceChange: 0, realPrice: 30000 },
+                  { time: "00:05", price: 0, isUp: false, priceChange: 0, realPrice: 30000 },
+                  { time: "00:06", price: 0, isUp: true, priceChange: 0, realPrice: 30000 },
+                  { time: "00:07", price: 0, isUp: false, priceChange: 0, realPrice: 30000 },
+                  { time: "00:08", price: 0, isUp: true, priceChange: 0, realPrice: 30000 },
+                  { time: "00:09", price: 0, isUp: false, priceChange: 0, realPrice: 30000 },
+                  { time: "00:10", price: 0, isUp: true, priceChange: 0, realPrice: 30000 },
+                  { time: "00:11", price: 0, isUp: false, priceChange: 0, realPrice: 30000 },
+                  { time: "00:12", price: 0, isUp: true, priceChange: 0, realPrice: 30000 },
+                  { time: "00:13", price: 0, isUp: false, priceChange: 0, realPrice: 30000 },
+                  { time: "00:14", price: 0, isUp: true, priceChange: 0, realPrice: 30000 },
                 ]);
                 
                 // Hook para forzar re-renderizado
@@ -2045,7 +2065,7 @@ export default function ProfilePage() {
                   // Función para obtener datos de Binance
                   const fetchBinanceData = async (): Promise<any[] | null> => {
                     try {
-                      const response = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=6');
+                      const response = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=15');
                       
                       if (response.ok) {
                         const data = await response.json();
@@ -2084,9 +2104,9 @@ export default function ProfilePage() {
                   // Función para obtener datos del juego
                   const getGameCandles = () => {
                     try {
-                      if (candles && candles.length >= 6) {
-                        // Tomar las últimas 6 velas
-                        return candles.slice(-6).map(candle => {
+                      if (candles && candles.length >= 15) {
+                        // Tomar las últimas 15 velas
+                        return candles.slice(-15).map(candle => {
                           const time = new Date(candle.timestamp || Date.now()).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -2167,14 +2187,41 @@ export default function ProfilePage() {
                   },
                 };
                 
+                // Calcular el rango de precios para normalizar
+                const precios = candlesData.map(c => c.realPrice || (Math.abs(c.price) * 1000));
+                const precioMinimo = Math.min(...precios);
+                const precioMaximo = Math.max(...precios);
+                const rango = precioMaximo - precioMinimo;
+                
                 // Formatear los datos para el gráfico
-                const chartData = candlesData.map(candle => ({
-                  time: candle.time,
-                  price: candle.price,
-                  priceChange: candle.priceChange,
-                  isUp: candle.isUp,
-                  value: candle.isUp ? candle.price : -candle.price // Usar el precio real directamente
-                }));
+                const chartData = candlesData.map(candle => {
+                  // Obtener el precio real
+                  const precioReal = candle.realPrice || Math.abs(candle.price) * 1000;
+                  
+                  // Normalizar el precio a un rango de 0-500
+                  // Asegurar que incluso cambios pequeños sean visibles (mínimo 10 de altura)
+                  let valorNormalizado;
+                  if (rango === 0) {
+                    // Si todos los precios son iguales, mostrar barras de altura media
+                    valorNormalizado = 250;
+                  } else {
+                    // Normalizar a escala 0-500 con un mínimo de 10 para cambios pequeños
+                    valorNormalizado = ((precioReal - precioMinimo) / rango) * 490 + 10;
+                  }
+                  
+                  return {
+                    time: candle.time,
+                    price: candle.price,
+                    priceChange: candle.priceChange,
+                    isUp: candle.isUp,
+                    // Usar el valor normalizado para la altura de la barra
+                    value: valorNormalizado,
+                    // Guardar el precio real para el tooltip
+                    precioReal: precioReal,
+                    // Mantener el signo para distinguir entre alcista/bajista
+                    direction: candle.isUp ? 1 : -1
+                  };
+                });
                 
                 return (
                   <>
@@ -2191,22 +2238,42 @@ export default function ProfilePage() {
                         >
                           <CartesianGrid vertical={false} stroke="#333" />
                           <YAxis 
-                            domain={['auto', 'auto']} 
+                            domain={['dataMin', 'dataMax']} 
                             hide 
                           />
                           <XAxis 
                             dataKey="time" 
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#fff', fontSize: 10 }}
+                            tick={(props) => {
+                              const { x, y, payload } = props;
+                              // Extraer solo los minutos del tiempo (HH:MM)
+                              const minutos = payload.value.split(':')[1];
+                              return (
+                                <g transform={`translate(${x},${y})`}>
+                                  <text 
+                                    x={-4} 
+                                    y={0} 
+                                    dy={8} 
+                                    textAnchor="middle" 
+                                    fill="#fff" 
+                                    fontSize={8}
+                                    transform="rotate(-45)"
+                                  >
+                                    {minutos}
+                                  </text>
+                                </g>
+                              );
+                            }}
+                            interval={0} // Mostrar todas las etiquetas
                           />
                           <ChartTooltip
                             cursor={false}
                             content={({ active, payload }) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload;
-                                // Calcular el precio real multiplicando por 1000 para revertir el escalado
-                                const precioReal = Math.abs(data.price) * 1000;
+                                // Usar el precio real que ya calculamos
+                                const precioReal = data.precioReal;
                                 const cambioReal = data.priceChange * 1000;
                                 
                                 return (
@@ -2230,10 +2297,13 @@ export default function ProfilePage() {
                           <Bar 
                             dataKey="value"
                             animationDuration={500}
+                            // Usar una función para normalizar los valores
+                            // y mantener la dirección (alcista/bajista)
                           >
                             {chartData.map((item, index) => (
                               <Cell
                                 key={`cell-${index}`}
+                                // Mantener los colores verde/rojo según dirección
                                 fill={item.isUp ? "#22c55e" : "#ef4444"}
                                 stroke={item.isUp ? "#22c55e" : "#ef4444"}
                                 strokeWidth={1}
