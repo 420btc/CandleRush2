@@ -3079,10 +3079,14 @@ export default function ProfilePage() {
                       />
                       <Tooltip
                         content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
+                          if (active && payload && payload.length) {                            const streakType = payload[0].payload.name;
+                            const streakLength = payload[0].payload.value;
+                            const streakText = streakType === 'Racha Actual' ? 
+                              `${streakType} (${streakLength} ${streakLength === 1 ? 'apuesta' : 'apuestas'})` :
+                              `${streakType} (${streakLength} apuestas consecutivas)`;
                             return (
                               <div className="bg-black p-2 rounded border border-yellow-500">
-                                <p className="text-white">{`${payload[0].name}: ${payload[0].value}`}</p>
+                                <p className="text-white">{streakText}</p>
                               </div>
                             );
                           }
