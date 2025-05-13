@@ -63,7 +63,7 @@ import { getAutoMixMemory } from "@/utils/autoMixMemory";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useWhaleTrades } from "@/hooks/useWhaleTrades";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useGame } from "@/context/game-context";
 import { useAuth } from "@/context/auth-context";
 import Login from "@/components/login";
@@ -906,6 +906,81 @@ export default function ProfilePage() {
     }
   }, []);
 
+  // Función para solicitar permiso para mostrar notificaciones
+  const requestNotificationPermission = useCallback(async () => {
+    if (!('Notification' in window)) {
+      console.log('Este navegador no soporta notificaciones de escritorio');
+      return false;
+    }
+    
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+    
+    if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    }
+    
+    return false;
+  }, []);
+  
+  // Función para mostrar una notificación de racha ganadora
+  const showWinStreakNotification = useCallback((streak: number) => {
+    if (!('Notification' in window)) return;
+    
+    if (Notification.permission === 'granted') {
+      // Personalizar el mensaje según la longitud de la racha
+      let title = '¡Racha ganadora!';
+      let body = `¡Felicidades! Has conseguido una racha de ${streak} victorias consecutivas.`;
+      
+      if (streak > 3) {
+        title = `¡${streak} VICTORIAS SEGUIDAS!`;
+        body = `¡Increíble! Continúas con tu racha ganadora. ¡Sigue así!`;
+      }
+      
+      const notification = new Notification(title, {
+        body: body,
+        icon: '/images/bull.png', // Asegúrate de que esta ruta sea correcta
+        badge: '/images/bull.png',
+      });
+      
+      notification.onclick = function() {
+        window.focus();
+        notification.close();
+      };
+      
+      // Cerrar automáticamente después de 5 segundos
+      setTimeout(() => notification.close(), 5000);
+    }
+  }, []);
+  
+  // Función para mostrar una notificación de racha perdedora
+  const showLoseStreakNotification = useCallback((streak: number) => {
+    if (!('Notification' in window)) return;
+    
+    if (Notification.permission === 'granted') {
+      const notification = new Notification('¡Atención!', {
+        body: `Has acumulado ${streak} derrotas consecutivas. Considera revisar tu estrategia.`,
+        icon: '/images/bear.png', // Asegúrate de que esta ruta sea correcta
+        badge: '/images/bear.png',
+      });
+      
+      notification.onclick = function() {
+        window.focus();
+        notification.close();
+      };
+      
+      // Cerrar automáticamente después de 5 segundos
+      setTimeout(() => notification.close(), 5000);
+    }
+  }, []);
+  
+  // Solicitar permiso para notificaciones al cargar la página
+  useEffect(() => {
+    requestNotificationPermission();
+  }, [requestNotificationPermission]);
+  
   // Calcular rachas
   const streakStats = useMemo(() => {
     let currentWinStreak = 0;
@@ -946,6 +1021,12 @@ export default function ProfilePage() {
           maxWinStreakBets = [...currentWinStreakBets];
         }
         
+        // Mostrar notificación cuando se alcance una racha de 3 victorias o más
+        if (currentWinStreak >= 3) {
+          // Usamos setTimeout para asegurar que esto se ejecute después de que el componente esté montado
+          setTimeout(() => showWinStreakNotification(currentWinStreak), 100);
+        }
+        
         lastResult = 'WON';
       } else if (bet.status === 'LOST' || bet.status === 'LIQUIDATED') {
         if (lastResult === 'LOST') {
@@ -963,6 +1044,12 @@ export default function ProfilePage() {
           maxLoseStreak = currentLoseStreak;
           maxLoseStreakTime = currentLoseStreakStartTime;
           maxLoseStreakBets = [...currentLoseStreakBets];
+        }
+        
+        // Mostrar notificación cuando se alcance una racha de 6 derrotas
+        if (currentLoseStreak === 6) {
+          // Usamos setTimeout para asegurar que esto se ejecute después de que el componente esté montado
+          setTimeout(() => showLoseStreakNotification(6), 100);
         }
         
         lastResult = 'LOST';
@@ -1469,207 +1556,85 @@ export default function ProfilePage() {
                 const [lastBetResult, setLastBetResult] = React.useState<string | null>(null);
                 const [lastBetTime, setLastBetTime] = React.useState("Sin datos");
                 
-                // Actualizar cada minuto en lugar de cada 5 segundos
-                React.useEffect(() => {
-                  const interval = setInterval(() => {
-                    setKey(prev => prev + 1);
-                    
-                    // Obtener datos reales usando la función getAutoMixMemory
-                    if (typeof window !== "undefined") {
-                      try {
-                        // Intentar primero con la función getAutoMixMemory
-                        let memory = [];
-                        try {
-                          memory = getAutoMixMemory();
-                          console.log("AUTOMIX MEMORY DESDE FUNCIÓN:", memory);
-                        } catch (error) {
-                          console.error("Error obteniendo memoria desde función:", error);
-                          // Si falla, intentar con localStorage
-                          const rawMemory = localStorage.getItem("autoMixMemory");
-                          console.log("RAW AUTOMIX MEMORY DESDE LOCALSTORAGE:", rawMemory);
-                          
-                          if (rawMemory) {
-                            memory = JSON.parse(rawMemory);
-                          }
-                        }
-                        
-                        // Si no hay memoria, crear datos de ejemplo para mostrar el gráfico
-                        if (!memory || memory.length === 0) {
-                          memory = [{
-                            betId: 'ejemplo',
-                            timestamp: Date.now(),
-                            direction: 'BULLISH',
-                            result: 'WIN',
-                            majoritySignal: 'BULLISH',
-                            rsiSignal: 'BULLISH',
-                            macdSignal: 'BULLISH',
-                            valleyVote: 'BULLISH',
-                            volumeVote: 'BULLISH',
-                            whaleVote: 'BULLISH',
-                            votesSnapshot: {
-                              trendVote: 'BULLISH',
-                              adxMemoryVote: 'BULLISH',
-                              crossSignal: 'GOLDEN_CROSS',
-                              emaPositionVote: 'BULLISH',
-                              fibonacciVote: { vote: 'BULLISH' },
-                              orderBlockVotes: { bullish: true, bearish: false }
-                            }
-                          }];
-                        }
-                      } catch (error) {
-                        console.error("Error leyendo autoMixMemory:", error);
-                      }
-                    }
-                  }, 60000); // 60000ms = 1 minuto
-                  
-                  // También actualizar al montar el componente
-                  if (typeof window !== "undefined") {
-                    try {
-                      // Intentar primero con la función getAutoMixMemory
-                      let memory = [];
-                      try {
-                        memory = getAutoMixMemory();
-                        console.log("AUTOMIX MEMORY INICIAL DESDE FUNCIÓN:", memory);
-                      } catch (error) {
-                        console.error("Error obteniendo memoria inicial desde función:", error);
-                        // Si falla, intentar con localStorage
-                        const rawMemory = localStorage.getItem("autoMixMemory");
-                        if (rawMemory) {
-                          memory = JSON.parse(rawMemory);
-                        }
-                      }
-                      
-                      // Si no hay memoria, crear datos de ejemplo para mostrar el gráfico
-                      if (!memory || memory.length === 0) {
-                        memory = [{
-                          betId: 'ejemplo-inicial',
-                          timestamp: Date.now(),
-                          direction: 'BULLISH',
-                          result: 'WIN',
-                          majoritySignal: 'BULLISH',
-                          rsiSignal: 'BULLISH',
-                          macdSignal: 'BULLISH',
-                          valleyVote: 'BULLISH',
-                          volumeVote: 'BULLISH',
-                          whaleVote: 'BULLISH',
-                          votesSnapshot: {
-                            trendVote: 'BULLISH',
-                            adxMemoryVote: 'BULLISH',
-                            crossSignal: 'GOLDEN_CROSS',
-                            emaPositionVote: 'BULLISH',
-                            fibonacciVote: { vote: 'BULLISH' },
-                            orderBlockVotes: { bullish: true, bearish: false }
-                          }
-                        }];
-                      }
-                      
-                      // Guardar la última entrada para usarla en el useEffect
-                      const lastEntry = memory[memory.length - 1] || {};
-                      // No actualizamos el estado aquí para evitar bucles infinitos
-                    } catch (error) {
-                      console.error("Error leyendo autoMixMemory inicial:", error);
-                    }
-                  }
-                  
-                  return () => clearInterval(interval);
-                }, []);
-                
-                // Estado para controlar los intervalos
-                const [lastUpdateTime, setLastUpdateTime] = React.useState<number>(0);
-                
-                // Efecto para actualizar el estado con los datos de AutoMix cada 30 segundos
-                React.useEffect(() => {
-                  const updateAutoMixData = () => {
-                    // Solo actualizar en el minuto exacto o a los 30 segundos
-                    const now = new Date();
-                    const seconds = now.getSeconds();
-                    
-                    // Evitar actualizaciones duplicadas verificando el tiempo desde la última actualización
-                    const currentTime = now.getTime();
-                    if (currentTime - lastUpdateTime < 25000) { // Al menos 25 segundos desde la última actualización
-                      return;
-                    }
-                    
-                    if (seconds !== 0 && seconds !== 30) {
-                      return; // No actualizar si no estamos en 0 o 30 segundos
-                    }
-                    
-                    // Actualizar el tiempo de la última actualización
-                    setLastUpdateTime(currentTime);
-                    
-                    console.log("Actualizando datos de AutoMix a los", seconds, "segundos");
-                    try {
-                      // Intentar obtener datos con getAutoMixMemory
-                      let memory = [];
-                      try {
-                        memory = getAutoMixMemory();
-                      } catch (error) {
-                        console.error("Error obteniendo memoria desde función en useEffect:", error);
-                        // Si falla, intentar con localStorage
-                        const rawMemory = localStorage.getItem("autoMixMemory");
-                        if (rawMemory) {
-                          memory = JSON.parse(rawMemory);
-                        }
-                      }
-                      
-                      // Si no hay memoria, usar datos de ejemplo
-                      if (!memory || memory.length === 0) {
-                        memory = [{
-                          betId: 'ejemplo-effect',
-                          timestamp: Date.now(),
-                          direction: 'BULLISH',
-                          result: 'WIN',
-                          majoritySignal: 'BULLISH',
-                          rsiSignal: 'BULLISH',
-                          macdSignal: 'BULLISH',
-                          valleyVote: 'BULLISH',
-                          volumeVote: 'BULLISH',
-                          whaleVote: 'BULLISH',
-                          votesSnapshot: {
-                            trendVote: 'BULLISH',
-                            adxMemoryVote: 'BULLISH',
-                            crossSignal: 'GOLDEN_CROSS',
-                            emaPositionVote: 'BULLISH',
-                            fibonacciVote: { vote: 'BULLISH' },
-                            orderBlockVotes: { bullish: true, bearish: false }
-                          }
-                        }];
-                      }
-                      
-                      // Obtener la última entrada
-                      const lastEntry = memory.length > 0 ? memory[memory.length - 1] : {};
-                      
-                      // Actualizar el estado de forma segura
-                      setLastBetDirection(lastEntry.direction || "DESCONOCIDO");
-                      setLastBetResult(lastEntry.result);
-                      setLastBetTime(lastEntry.timestamp ? new Date(lastEntry.timestamp).toLocaleTimeString() : "Sin datos");
-                    } catch (error) {
-                      console.error("Error en updateAutoMixData:", error);
-                    }
-                  };
-                  
-                  // Ejecutar inmediatamente (solo si estamos en 0 o 30 segundos)
-                  updateAutoMixData();
-                  
-                  // Configurar intervalo para verificar cada 59 segundos
-                  const intervalId = setInterval(updateAutoMixData, 59000);
-                  // Limpiar el intervalo cuando se desmonte el componente
-                  return () => {
-                    if (intervalId) {
-                      clearInterval(intervalId);
-                    }
-                  };
-                }, []);
-                
-                // Datos fijos de ejemplo (si no hay memoria)
-                let chartData = [
+                // Estado para almacenar los datos del gráfico
+                const [chartData, setChartData] = React.useState([
                   { indicator: "RSI", bullish: 70, bearish: 30 },
                   { indicator: "MACD", bullish: 80, bearish: 20 },
                   { indicator: "Mayoría", bullish: 60, bearish: 40 },
                   { indicator: "Valle", bullish: 50, bearish: 50 },
                   { indicator: "Volumen", bullish: 30, bearish: 70 },
                   { indicator: "Ballenas", bullish: 80, bearish: 20 },
-                ];
+                ]);
+                
+                // Actualizar solo cada minuto con datos aleatorios
+                React.useEffect(() => {
+                  // Función para generar datos aleatorios
+                  const generateRandomData = () => {
+                    // Generar dirección aleatoria (BULLISH o BEARISH)
+                    const direction = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH';
+                    // Generar resultado aleatorio (WIN, LOSS o LIQ)
+                    const results = ['WIN', 'LOSS', 'LIQ'];
+                    const result = results[Math.floor(Math.random() * results.length)];
+                    
+                    // Actualizar estados
+                    setLastBetDirection(direction);
+                    setLastBetResult(result);
+                    setLastBetTime(new Date().toLocaleTimeString());
+                    
+                    // Generar datos aleatorios para el gráfico
+                    const newChartData = [
+                      { indicator: "RSI", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
+                      { indicator: "MACD", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
+                      { indicator: "Mayoría", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
+                      { indicator: "Valle", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
+                      { indicator: "Volumen", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
+                      { indicator: "Ballenas", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
+                    ];
+                    
+                    // Actualizar el estado con los nuevos datos
+                    setChartData(newChartData);
+                    
+                    // Guardar en localStorage para simular persistencia
+                    if (typeof window !== "undefined") {
+                      const memory = [{
+                        betId: `ejemplo-${Date.now()}`,
+                        timestamp: Date.now(),
+                        direction: direction,
+                        result: result,
+                        majoritySignal: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                        rsiSignal: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                        macdSignal: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                        valleyVote: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                        volumeVote: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                        whaleVote: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                        votesSnapshot: {
+                          trendVote: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                          adxMemoryVote: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                          crossSignal: Math.random() > 0.5 ? 'GOLDEN_CROSS' : 'DEATH_CROSS',
+                          emaPositionVote: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH',
+                          fibonacciVote: { vote: Math.random() > 0.5 ? 'BULLISH' : 'BEARISH' },
+                          orderBlockVotes: { 
+                            bullish: Math.random() > 0.5, 
+                            bearish: Math.random() > 0.5 
+                          }
+                        }
+                      }];
+                      localStorage.setItem("autoMixMemory", JSON.stringify(memory));
+                    }
+                  };
+                  
+                  // Generar datos aleatorios iniciales
+                  generateRandomData();
+                  
+                  // Configurar intervalo para actualizar cada minuto
+                  const interval = setInterval(() => {
+                    console.log("Actualizando datos aleatorios (cada minuto)");
+                    generateRandomData();
+                    setKey(prev => prev + 1); // Forzar re-renderizado
+                  }, 60000); // 60000ms = 1 minuto
+                  
+                  return () => clearInterval(interval);
+                }, []);
                 
                 // Obtener datos reales si es posible
                 if (typeof window !== "undefined") {
@@ -1775,7 +1740,7 @@ export default function ProfilePage() {
                       
                       // Actualizar chartData con valores reales
                       // Crear un arreglo para los datos del gráfico con valores neutrales por defecto
-                      chartData = [
+                      const newChartData = [
                         { 
                           indicator: "RSI", 
                           bullish: 50, 
@@ -1839,41 +1804,41 @@ export default function ProfilePage() {
                       ];
                       
                       // Actualizar los valores según los votos disponibles
-                      if (votes.rsi === "BULLISH") { chartData[0].bullish = 80; chartData[0].bearish = 20; }
-                      if (votes.rsi === "BEARISH") { chartData[0].bullish = 20; chartData[0].bearish = 80; }
+                      if (votes.rsi === "BULLISH") { newChartData[0].bullish = 80; newChartData[0].bearish = 20; }
+                      if (votes.rsi === "BEARISH") { newChartData[0].bullish = 20; newChartData[0].bearish = 80; }
                       
-                      if (votes.macd === "BULLISH") { chartData[1].bullish = 80; chartData[1].bearish = 20; }
-                      if (votes.macd === "BEARISH") { chartData[1].bullish = 20; chartData[1].bearish = 80; }
+                      if (votes.macd === "BULLISH") { newChartData[1].bullish = 80; newChartData[1].bearish = 20; }
+                      if (votes.macd === "BEARISH") { newChartData[1].bullish = 20; newChartData[1].bearish = 80; }
                       
-                      if (votes.majority === "BULLISH") { chartData[2].bullish = 80; chartData[2].bearish = 20; }
-                      if (votes.majority === "BEARISH") { chartData[2].bullish = 20; chartData[2].bearish = 80; }
+                      if (votes.majority === "BULLISH") { newChartData[2].bullish = 80; newChartData[2].bearish = 20; }
+                      if (votes.majority === "BEARISH") { newChartData[2].bullish = 20; newChartData[2].bearish = 80; }
                       
-                      if (votes.valley === "BULLISH") { chartData[3].bullish = 80; chartData[3].bearish = 20; }
-                      if (votes.valley === "BEARISH") { chartData[3].bullish = 20; chartData[3].bearish = 80; }
+                      if (votes.valley === "BULLISH") { newChartData[3].bullish = 80; newChartData[3].bearish = 20; }
+                      if (votes.valley === "BEARISH") { newChartData[3].bullish = 20; newChartData[3].bearish = 80; }
                       
-                      if (votes.volume === "BULLISH") { chartData[4].bullish = 80; chartData[4].bearish = 20; }
-                      if (votes.volume === "BEARISH") { chartData[4].bullish = 20; chartData[4].bearish = 80; }
+                      if (votes.volume === "BULLISH") { newChartData[4].bullish = 80; newChartData[4].bearish = 20; }
+                      if (votes.volume === "BEARISH") { newChartData[4].bullish = 20; newChartData[4].bearish = 80; }
                       
-                      if (votes.whale === "BULLISH") { chartData[5].bullish = 80; chartData[5].bearish = 20; }
-                      if (votes.whale === "BEARISH") { chartData[5].bullish = 20; chartData[5].bearish = 80; }
+                      if (votes.whale === "BULLISH") { newChartData[5].bullish = 80; newChartData[5].bearish = 20; }
+                      if (votes.whale === "BEARISH") { newChartData[5].bullish = 20; newChartData[5].bearish = 80; }
                       
-                      if (votes.trend === "BULLISH") { chartData[6].bullish = 80; chartData[6].bearish = 20; }
-                      if (votes.trend === "BEARISH") { chartData[6].bullish = 20; chartData[6].bearish = 80; }
+                      if (votes.trend === "BULLISH") { newChartData[6].bullish = 80; newChartData[6].bearish = 20; }
+                      if (votes.trend === "BEARISH") { newChartData[6].bullish = 20; newChartData[6].bearish = 80; }
                       
-                      if (votes.adx === "BULLISH") { chartData[7].bullish = 80; chartData[7].bearish = 20; }
-                      if (votes.adx === "BEARISH") { chartData[7].bullish = 20; chartData[7].bearish = 80; }
+                      if (votes.adx === "BULLISH") { newChartData[7].bullish = 80; newChartData[7].bearish = 20; }
+                      if (votes.adx === "BEARISH") { newChartData[7].bullish = 20; newChartData[7].bearish = 80; }
                       
-                      if (votes.cross === "GOLDEN_CROSS") { chartData[8].bullish = 80; chartData[8].bearish = 20; }
-                      if (votes.cross === "DEATH_CROSS") { chartData[8].bullish = 20; chartData[8].bearish = 80; }
+                      if (votes.cross === "GOLDEN_CROSS") { newChartData[8].bullish = 80; newChartData[8].bearish = 20; }
+                      if (votes.cross === "DEATH_CROSS") { newChartData[8].bullish = 20; newChartData[8].bearish = 80; }
                       
-                      if (votes.ema === "BULLISH") { chartData[9].bullish = 80; chartData[9].bearish = 20; }
-                      if (votes.ema === "BEARISH") { chartData[9].bullish = 20; chartData[9].bearish = 80; }
+                      if (votes.ema === "BULLISH") { newChartData[9].bullish = 80; newChartData[9].bearish = 20; }
+                      if (votes.ema === "BEARISH") { newChartData[9].bullish = 20; newChartData[9].bearish = 80; }
                       
-                      if (votes.fibonacci === "BULLISH") { chartData[10].bullish = 80; chartData[10].bearish = 20; }
-                      if (votes.fibonacci === "BEARISH") { chartData[10].bullish = 20; chartData[10].bearish = 80; }
+                      if (votes.fibonacci === "BULLISH") { newChartData[10].bullish = 80; newChartData[10].bearish = 20; }
+                      if (votes.fibonacci === "BEARISH") { newChartData[10].bullish = 20; newChartData[10].bearish = 80; }
                       
-                      if (votes.orderBlock === "BULLISH") { chartData[11].bullish = 80; chartData[11].bearish = 20; }
-                      if (votes.orderBlock === "BEARISH") { chartData[11].bullish = 20; chartData[11].bearish = 80; }
+                      if (votes.orderBlock === "BULLISH") { newChartData[11].bullish = 80; newChartData[11].bearish = 20; }
+                      if (votes.orderBlock === "BEARISH") { newChartData[11].bullish = 20; newChartData[11].bearish = 80; }
                       
                       // Log para depuración
                       console.log("CHART DATA FINAL:", chartData);
@@ -1997,12 +1962,9 @@ export default function ProfilePage() {
                       <div className="flex flex-wrap items-center justify-center gap-1 leading-none text-black font-medium mt-2 text-xs">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                           lastBetDirection === "BULLISH" ? "bg-green-500 text-white" : 
-                          lastBetDirection === "BEARISH" ? "bg-red-500 text-white" : 
-                          "bg-gray-500 text-white"
+                          "bg-red-500 text-white"
                         }`}>
-                          {lastBetDirection === "BULLISH" ? "ALCISTA" : 
-                          lastBetDirection === "BEARISH" ? "BAJISTA" : 
-                          "DESCONOCIDO"}
+                          {lastBetDirection === "BULLISH" ? "ALCISTA" : "BAJISTA"}
                         </span>
                         {lastBetResult && (
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
