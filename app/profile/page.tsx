@@ -73,6 +73,7 @@ import { Button } from "../components/button";
 import type { Bet } from "@/types/game";
 import { Book } from "@/components/ui/book";
 import { GrAchievement } from "react-icons/gr";
+import { useAchievements } from "@/hooks/useAchievements";
 
 // Componente para mostrar el balance actualizado cada minuto
 function BalanceIndicator({ balance }: { balance: number }) {
@@ -1107,7 +1108,19 @@ export default function ProfilePage() {
 
             {/* Componente Book a la derecha, alineado verticalmente con la foto */}
             <div className="flex items-center justify-center h-full">
-              <div className="cursor-pointer transform transition-transform hover:scale-105" onClick={() => router.push('/achievements')}>
+              <div className="cursor-pointer transform transition-transform hover:scale-105 relative" onClick={() => router.push('/achievements')}>
+                {/* Indicador de logros sin reclamar */}
+                {(() => {
+                  const { getUnclaimedCount } = useAchievements();
+                  const unclaimedCount = getUnclaimedCount();
+                  
+                  return unclaimedCount > 0 ? (
+                    <div className="absolute -top-2 -right-2 z-10 flex items-center justify-center bg-red-500 text-white rounded-full w-8 h-8 border-2 border-yellow-400 shadow-lg animate-pulse">
+                      <span className="text-xs font-bold">{unclaimedCount}</span>
+                    </div>
+                  ) : null;
+                })()}
+                
                 <Book 
                   color="#fbbf24" 
                   width={150} 
