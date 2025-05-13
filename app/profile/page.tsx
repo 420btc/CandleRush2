@@ -2762,23 +2762,26 @@ export default function ProfilePage() {
                         if (bet.status === "LIQUIDATED") liquidated++;
                         if (bet.status === "PENDING") pending++;
                           // Normalizamos los valores para que vayan de 0 a 100
-                        const total = won + lost + liquidated + pending || 1;
-                          // Calculamos si estamos en una racha
+                        const total = won + lost + liquidated + pending || 1;                          // Variables para las rachas
                         let currentStreak = 0;
-                        let streakType = null;                        // Revisamos si estamos al final de una racha (últimas 3 apuestas)
+                        let streakType = null;
+                        let startIndex = i;
+                        let scaleFactor = 1;
+                        // Revisamos si estamos al final de una racha (últimas 3 apuestas)
                         const lastThreeBets = bets.slice(Math.max(0, i - 2), i + 1);
                         
                         // Para rachas ganadoras (mínimo 3)
-                        if (lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "WON")) {
-                          // Si encontramos 3 victorias seguidas, buscamos el inicio real de la racha
-                          let startIndex = i - 2; // Comenzamos desde el inicio de las 3 victorias detectadas
+                        if (lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "WON")) {                            // Si encontramos 3 victorias seguidas, buscamos el inicio real de la racha
+                          startIndex = i - 2; // Comenzamos desde el inicio de las 3 victorias detectadas
                           while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
                             startIndex--;
                           }
-                          
-                          // Marcar toda la racha desde el inicio hasta la posición actual
+                            // Marcar toda la racha desde el inicio hasta la posición actual
                           if (i >= startIndex) {
-                            currentStreak = Math.min((i - startIndex + 1) * 20, 100);
+                            // Calculamos el factor de escala basado en la racha más larga posible
+                            const maxPossibleStreak = bets.length;
+                            scaleFactor = 100 / Math.max(5, maxPossibleStreak);
+                            currentStreak = (i - startIndex + 1) * scaleFactor;
                             streakType = 'win';
                           }
                         }
@@ -2793,7 +2796,10 @@ export default function ProfilePage() {
                           
                           // Marcar toda la racha desde el inicio hasta la posición actual
                           if (i >= startIndex) {
-                            currentStreak = Math.min((i - startIndex + 1) * 20, 100);
+                            // Usamos el mismo factor de escala para mantener la proporción
+                            const maxPossibleStreak = bets.length;
+                            const scaleFactor = 100 / Math.max(5, maxPossibleStreak);
+                            currentStreak = (i - startIndex + 1) * scaleFactor;
                             streakType = 'lose';
                           }
                         }
@@ -2805,10 +2811,11 @@ export default function ProfilePage() {
                             let startIndex = i;
                             while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
                               startIndex--;
-                            }
-                            // Solo mostrar si hay al menos 3 en la racha
+                            }                            // Solo mostrar si hay al menos 3 en la racha
                             if ((i - startIndex + 1) >= 3) {
-                              currentStreak = Math.min((i - startIndex + 1) * 20, 100);
+                              const maxPossibleStreak = bets.length;
+                              const scaleFactor = 100 / Math.max(5, maxPossibleStreak);
+                              currentStreak = (i - startIndex + 1) * scaleFactor;
                               streakType = 'win';
                             }
                           }
@@ -2820,7 +2827,9 @@ export default function ProfilePage() {
                             }
                             // Solo mostrar si hay al menos 3 en la racha
                             if ((i - startIndex + 1) >= 3) {
-                              currentStreak = Math.min((i - startIndex + 1) * 20, 100);
+                              const maxPossibleStreak = bets.length;
+                              const scaleFactor = 100 / Math.max(5, maxPossibleStreak);
+                              currentStreak = (i - startIndex + 1) * scaleFactor;
                               streakType = 'lose';
                             }
                           }
@@ -2839,13 +2848,19 @@ export default function ProfilePage() {
                           perdidas: (lost / maxTotal) * 100,
                           liquidadas: (liquidated / maxTotal) * 100,
                           pendientes: (pending / maxTotal) * 100,
+                          numApuestas: i - startIndex + 1, // Número actual de apuestas en la racha
+                          racha: streakType === 'win' ? 'ganadora' : streakType === 'lose' ? 'perdedora' : null,
+                          startTime: streakType ? new Date(bets[startIndex].timestamp).toLocaleTimeString('es-ES', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : null,
                           // Datos adicionales para el tooltip
                           betAmount: bet.amount,
                           betStatus: bet.status,
                           betPrediction: bet.prediction,
                           betLeverage: bet.leverage || 1,
-                          betSymbol: bet.symbol,
-                          betTimeframe: bet.timeframe,
+                          betSymbol: bet.symbol,                          betTimeframe: bet.timeframe,
+                          scaleFactor: scaleFactor, // Agregar el factor de escala a los datos
                         };
                       });
                   })()}
@@ -2926,12 +2941,13 @@ export default function ProfilePage() {
                                   <div>Par: {data.betSymbol}</div>
                                   <div>Timeframe: {data.betTimeframe}</div>
                                 </div>
-                              </div>                            )}                            {(data.rachaGanadora > 0 || data.rachaPerdedora > 0) && (
-                              <div className={`${data.rachaGanadora > 0 ? 'bg-green-900/50' : 'bg-red-900/50'} p-2 rounded mb-2 border ${data.rachaGanadora > 0 ? 'border-green-600' : 'border-red-600'}`}>
+                              </div>                            )}                            {(data.rachaGanadora > 0 || data.rachaPerdedora > 0) && (                              <div className={`${data.rachaGanadora > 0 ? 'bg-green-900/50' : 'bg-red-900/50'} p-2 rounded mb-2 border ${data.rachaGanadora > 0 ? 'border-green-600' : 'border-red-600'}`}>
                                 <div className={`${data.rachaGanadora > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>
                                   ¡{data.rachaGanadora > 0 ? 'RACHA GANADORA!' : 'RACHA PERDEDORA!'}
                                 </div>
-                                <div className="text-white text-sm">
+                                <div className="text-white text-sm">                                  {Math.round((data.rachaGanadora || data.rachaPerdedora) / data.scaleFactor)} apuestas consecutivas
+                                </div>
+                                <div className="text-white/80 text-xs">
                                   Intensidad: {Math.round(data.rachaGanadora || data.rachaPerdedora)}%
                                 </div>
                               </div>
