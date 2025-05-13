@@ -1342,12 +1342,22 @@ const changeSymbol = useCallback(
   useEffect(() => {
     // Solo permitir apuestas automáticas si la vela está inicializada (close distinto de open)
     // Solo permitir una apuesta automática/MIX por vela
-    if (gamePhase !== "BETTING" || !currentCandle || currentCandleBets >= 1 || userBalance < 1) {
-      if (currentCandleBets >= 1) {
-        console.log('[AUTO BET] Ya existe una apuesta en esta vela, no se crea otra automática.');
-      }
+    if (gamePhase !== "BETTING" || !currentCandle || userBalance < 1) {
       return;
     }
+
+    // **NUEVA VERIFICACIÓN:** No crear apuesta automática si ya existe una apuesta PENDING para la vela actual
+    const currentCandleTimestamp = currentCandle.timestamp;
+    const hasPendingBetForCurrentCandle = bets.some(bet => 
+      bet.status === "PENDING" && 
+      bet.candleTimestamp === currentCandleTimestamp
+    );
+
+    if (hasPendingBetForCurrentCandle) {
+      console.log('[AUTO BET] Ya existe una apuesta PENDING para esta vela, no se crea otra automática.');
+      return;
+    }
+
     // Evita crear apuestas automáticas si la vela recién se ha creado y su close es igual al de la anterior
     const prevCandle = candles.length > 0 ? candles[candles.length - 1] : null;
     if (prevCandle && currentCandle.close === prevCandle.close) {

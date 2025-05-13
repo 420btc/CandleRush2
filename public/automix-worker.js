@@ -9,6 +9,7 @@ const AUTO_MIX_INTERVAL = 60000; // 1 minuto
 let ws = null;
 let lastCandles = [];
 let isAutoMixActive = false;
+let lastProcessedCandleTimestamp = 0;
 
 // Initialize WebSocket connection
 function initWebSocket() {
@@ -42,7 +43,11 @@ function initWebSocket() {
         
         // If candle is final and AutoMix is active, make decision
         if (candle.isFinal && isAutoMixActive) {
-          makeAutoMixDecision();
+          // Add this check to ensure only one decision per final candle
+          if (candle.timestamp !== lastProcessedCandleTimestamp) {
+            lastProcessedCandleTimestamp = candle.timestamp;
+            makeAutoMixDecision();
+          }
         }
       }
     } catch (error) {
@@ -206,4 +211,4 @@ async function saveAutoMixMemory(memory) {
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve();
   });
-} 
+}
