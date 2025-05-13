@@ -2768,9 +2768,7 @@ export default function ProfilePage() {
                         let startIndex = i;
                         let scaleFactor = 1;
                         // Revisamos si estamos al final de una racha (últimas 3 apuestas)
-                        const lastThreeBets = bets.slice(Math.max(0, i - 2), i + 1);
-                        
-                        // Para rachas ganadoras (mínimo 3)
+                        const lastThreeBets = bets.slice(Math.max(0, i - 2), i + 1);                            // Para rachas ganadoras (mínimo 3)
                         if (lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "WON")) {                            // Si encontramos 3 victorias seguidas, buscamos el inicio real de la racha
                           startIndex = i - 2; // Comenzamos desde el inicio de las 3 victorias detectadas
                           while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
@@ -2779,8 +2777,18 @@ export default function ProfilePage() {
                             // Marcar toda la racha desde el inicio hasta la posición actual
                           if (i >= startIndex) {                            // Calculamos la intensidad basada en la longitud de la racha actual
                             const streakLength = i - startIndex + 1;
-                            // Para rachas de 1-10: 50% de intensidad, 10-20: 100% de intensidad
-                            const intensity = streakLength <= 10 ? 50 : Math.min(100, 50 + ((streakLength - 10) * 5));
+                            // Nueva escala de intensidad:
+                            // 1-5: 25%, 5-10: 50%, 10-15: 75%, 15-20: 100%
+                            let intensity;
+                              if (streakLength <= 5) {
+                                intensity = 25;
+                              } else if (streakLength <= 10) {
+                                intensity = 50;
+                              } else if (streakLength <= 15) {
+                                intensity = 75;
+                              } else {
+                                intensity = 100;
+                              }
                             currentStreak = intensity;
                             streakType = 'win';
                           }
@@ -2814,8 +2822,16 @@ export default function ProfilePage() {
                             }                            // Solo mostrar si hay al menos 3 en la racha
                             if ((i - startIndex + 1) >= 3) {
                               const streakLength = i - startIndex + 1;
-                              // Para rachas de 1-10: 50% de intensidad, 10-20: 100% de intensidad
-                              const intensity = streakLength <= 10 ? 50 : Math.min(100, 50 + ((streakLength - 10) * 5));
+                              // Calcular intensidad basada en la longitud de la racha:
+                              // 1-5: 25%, 5-10: 50%, 10-20: 100%
+                              let intensity;
+                              if (streakLength <= 5) {
+                                intensity = 25;
+                              } else if (streakLength <= 10) {
+                                intensity = 50;
+                              } else {
+                                intensity = 100;
+                              }
                               currentStreak = intensity;
                               streakType = 'win';
                             }
@@ -2828,8 +2844,16 @@ export default function ProfilePage() {
                             }                            // Solo mostrar si hay al menos 3 en la racha
                             if ((i - startIndex + 1) >= 3) {
                               const streakLength = i - startIndex + 1;
-                              // Para rachas de 1-10: 50% de intensidad, 10-20: 100% de intensidad
-                              const intensity = streakLength <= 10 ? 50 : Math.min(100, 50 + ((streakLength - 10) * 5));
+                              // Calcular intensidad basada en la longitud de la racha:
+                              // 1-5: 25%, 5-10: 50%, 10-20: 100%
+                              let intensity;
+                              if (streakLength <= 5) {
+                                intensity = 25;
+                              } else if (streakLength <= 10) {
+                                intensity = 50;
+                              } else {
+                                intensity = 100;
+                              }
                               currentStreak = intensity;
                               streakType = 'lose';
                             }
