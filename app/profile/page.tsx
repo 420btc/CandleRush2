@@ -1095,17 +1095,18 @@ export default function ProfilePage() {
       {/* Perfil y logo arriba */}
       <div className="container mx-auto w-full flex flex-col pt-8 items-center">
         <div className="flex flex-col items-center gap-4 mb-8">
-          <div className="flex flex-col items-center gap-8 w-full max-w-5xl">
+          {/* Contenedor horizontal para foto y libro de logros */}
+          <div className="flex flex-row items-center justify-center gap-8 w-full max-w-5xl mb-4">
             {/* Contenedor izquierdo con foto y nombre */}
-  <div className="w-56 flex flex-col items-center bg-black/70 rounded-xl border-4 border-yellow-400 overflow-hidden shadow-2xl" style={{boxShadow: '0 0 48px 12px #fde047cc'}}>
-    <div className="relative h-36 w-36 mx-auto mt-4">
-      <Image src={selectedImage} alt="Foto de perfil" fill className="object-cover rounded-xl" />
-    </div>
-    <span className="block w-full text-center text-3xl font-black text-yellow-400 py-2 drop-shadow">{currentUser ? currentUser.slice(0, 12) : "Usuario Pro"}</span>
-  </div>
+            <div className="w-56 flex flex-col items-center bg-black/70 rounded-xl border-4 border-yellow-400 overflow-hidden shadow-2xl" style={{boxShadow: '0 0 48px 12px #fde047cc'}}>
+              <div className="relative h-36 w-36 mx-auto mt-4">
+                <Image src={selectedImage} alt="Foto de perfil" fill className="object-cover rounded-xl" />
+              </div>
+              <span className="block w-full text-center text-3xl font-black text-yellow-400 py-2 drop-shadow">{currentUser ? currentUser.slice(0, 12) : "Usuario Pro"}</span>
+            </div>
 
-            {/* Componente Book a la derecha */}
-            <div className="flex-1 max-w-xl flex items-center justify-start">
+            {/* Componente Book a la derecha, alineado verticalmente con la foto */}
+            <div className="flex items-center justify-center h-full">
               <div className="cursor-pointer transform transition-transform hover:scale-105" onClick={() => router.push('/achievements')}>
                 <Book 
                   color="#fbbf24" 
