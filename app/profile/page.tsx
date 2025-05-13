@@ -2763,18 +2763,24 @@ export default function ProfilePage() {
                         if (bet.status === "PENDING") pending++;
                           // Normalizamos los valores para que vayan de 0 a 100
                         const total = won + lost + liquidated + pending || 1;
-                        
-                        // Calculamos si estamos en una racha
+                          // Calculamos si estamos en una racha
                         let currentStreak = 0;
                         let streakType = null;
+                          // Para rachas ganadoras, revisamos desde el inicio (mínimo 2)
+                        let winningStreak = 0;
+                        for (let j = i; j >= 0 && bets[j].status === "WON"; j--) {
+                          winningStreak++;
+                        }
+                        if (winningStreak >= 2) {
+                          currentStreak = Math.min(winningStreak * 20, 100);
+                          streakType = 'win';
+                        }
+
+                        // Para rachas perdedoras, mantenemos el mínimo de 3
                         const lastFiveBets = bets.slice(Math.max(0, i - 4), i + 1);
                         if (lastFiveBets.length >= 3) {
-                          const allWon = lastFiveBets.every(b => b.status === "WON");
                           const allLost = lastFiveBets.every(b => b.status === "LOST");
-                          if (allWon) {
-                            currentStreak = Math.min(lastFiveBets.length * 20, 100);
-                            streakType = 'win';
-                          } else if (allLost) {
+                          if (allLost) {
                             currentStreak = Math.min(lastFiveBets.length * 20, 100);
                             streakType = 'lose';
                           }
@@ -2819,10 +2825,9 @@ export default function ProfilePage() {
                     <linearGradient id="fillPending" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.8} />
                       <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.1} />
-                    </linearGradient>
-                    <linearGradient id="fillStreak" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#166534" stopOpacity={0.9} />
-                      <stop offset="95%" stopColor="#166534" stopOpacity={0.3} />
+                    </linearGradient>                    <linearGradient id="fillStreak" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0.3} />
                     </linearGradient>
                     <linearGradient id="fillLoseStreak" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#991b1b" stopOpacity={0.9} />
@@ -2904,11 +2909,11 @@ export default function ProfilePage() {
                   />                  <Area                    dataKey="rachaGanadora"
                     type="monotone"
                     fill="url(#fillStreak)"
-                    stroke="#166534"
-                    strokeWidth={2}
+                    stroke="#22c55e"
+                    strokeWidth={3}
                     stackId="0"
                     fillOpacity={1}
-                  />                  <Area
+                  /><Area
                     dataKey="rachaPerdedora"
                     type="monotone"
                     fill="url(#fillLoseStreak)"
