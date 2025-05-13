@@ -2763,19 +2763,35 @@ export default function ProfilePage() {
                         if (bet.status === "LOST") lost++;
                         if (bet.status === "LIQUIDATED") liquidated++;
                         if (bet.status === "PENDING") pending++;
-                        
-                        // Normalizamos los valores para que vayan de 0 a 100
+                          // Normalizamos los valores para que vayan de 0 a 100
                         const total = won + lost + liquidated + pending || 1;
+                        
+                        // Calculamos si estamos en una racha
+                        let currentStreak = 0;
+                        let streakType = null;
+                        const lastFiveBets = bets.slice(Math.max(0, i - 4), i + 1);
+                        if (lastFiveBets.length >= 3) {
+                          const allWon = lastFiveBets.every(b => b.status === "WON");
+                          const allLost = lastFiveBets.every(b => b.status === "LOST");
+                          if (allWon) {
+                            currentStreak = Math.min(lastFiveBets.length * 20, 100);
+                            streakType = 'win';
+                          } else if (allLost) {
+                            currentStreak = Math.min(lastFiveBets.length * 20, 100);
+                            streakType = 'lose';
+                          }
+                        }
                         
                         // Formateamos la hora para mostrarla en el tooltip
                         const betTime = new Date(bet.timestamp).toLocaleTimeString('es-ES', {
                           hour: '2-digit',
                           minute: '2-digit'
                         });
-                        
-                        return {
+                          return {
                           ronda: i + 1,
                           time: betTime,
+                          winStreak: streakType === 'win' ? currentStreak : 0,
+                          loseStreak: streakType === 'lose' ? currentStreak : 0,
                           won: (won / maxTotal) * 100,
                           lost: (lost / maxTotal) * 100,
                           liquidated: (liquidated / maxTotal) * 100,
@@ -2790,8 +2806,7 @@ export default function ProfilePage() {
                         };
                       });
                   })()}
-                >
-                  <defs>
+                >                  <defs>
                     <linearGradient id="fillWon" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
                       <stop offset="95%" stopColor="#22c55e" stopOpacity={0.1} />
@@ -2807,6 +2822,14 @@ export default function ProfilePage() {
                     <linearGradient id="fillPending" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.8} />
                       <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="fillStreak" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#166534" stopOpacity={0.9} />
+                      <stop offset="95%" stopColor="#166534" stopOpacity={0.3} />
+                    </linearGradient>
+                    <linearGradient id="fillLoseStreak" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#991b1b" stopOpacity={0.9} />
+                      <stop offset="95%" stopColor="#991b1b" stopOpacity={0.3} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -2850,6 +2873,15 @@ export default function ProfilePage() {
                                   <div>Timeframe: {data.betTimeframe}</div>
                                 </div>
                               </div>
+                            )}                            {(data.winStreak > 0 || data.loseStreak > 0) && (
+                              <div className={`${data.winStreak > 0 ? 'bg-green-900/50' : 'bg-red-900/50'} p-2 rounded mb-2 border ${data.winStreak > 0 ? 'border-green-600' : 'border-red-600'}`}>
+                                <div className={`${data.winStreak > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>
+                                  ¡{data.winStreak > 0 ? 'RACHA GANADORA!' : 'RACHA PERDEDORA!'}
+                                </div>
+                                <div className="text-white text-sm">
+                                  Intensidad: {Math.round(data.winStreak || data.loseStreak)}%
+                                </div>
+                              </div>
                             )}
                             <div className="grid grid-cols-3 gap-2">
                               <div className="text-green-400 text-xs">Ganadas: {Math.round(data.won)}%</div>
@@ -2861,6 +2893,23 @@ export default function ProfilePage() {
                       }
                       return null;
                     }}
+                  />                  <Area
+                    dataKey="winStreak"
+                    type="monotone"
+                    fill="url(#fillStreak)"
+                    stroke="#166534"
+                    strokeWidth={2}
+                    stackId="0"
+                    fillOpacity={1}
+                  />
+                  <Area
+                    dataKey="loseStreak"
+                    type="monotone"
+                    fill="url(#fillLoseStreak)"
+                    stroke="#991b1b"
+                    strokeWidth={2}
+                    stackId="0"
+                    fillOpacity={1}
                   />
                   <Area
                     dataKey="won"
