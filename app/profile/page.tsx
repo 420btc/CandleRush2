@@ -2772,7 +2772,9 @@ export default function ProfilePage() {
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl">
             <CardHeader className="items-center pb-4">
               <CardTitle>Historial de Apuestas</CardTitle>
-              <CardDescription className="text-black">Evolución de tus apuestas ganadas, perdidas, liquidadas y pendientes</CardDescription>
+              <CardDescription className="text-black">
+                Evolución de tus apuestas <span className="text-green-700">ganadas</span>, <span className="text-red-700">perdidas</span>, <span className="text-yellow-700">liquidadas</span> y <span className="text-blue-700">pendientes</span>
+              </CardDescription>
             </CardHeader>
             <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
               <ChartContainer
@@ -2877,6 +2879,8 @@ export default function ProfilePage() {
                                 intensity = 25;
                               } else if (streakLength <= 10) {
                                 intensity = 50;
+                              } else if (streakLength <= 20) {
+                                intensity = 100;
                               } else {
                                 intensity = 100;
                               }
@@ -2899,6 +2903,8 @@ export default function ProfilePage() {
                                 intensity = 25;
                               } else if (streakLength <= 10) {
                                 intensity = 50;
+                              } else if (streakLength <= 20) {
+                                intensity = 100;
                               } else {
                                 intensity = 100;
                               }
