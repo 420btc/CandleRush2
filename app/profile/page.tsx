@@ -1279,20 +1279,69 @@ export default function ProfilePage() {
               <CardDescription className="text-black">Winrate vs Lossrate en tus apuestas.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-2">
-              <div className="mx-auto w-full max-w-[240px] aspect-square min-h-[240px] rounded-xl bg-black flex items-center justify-center">
-                {(() => {
-                  const { won, lost, total } = betCharts;
+              <div className="mx-auto w-full max-w-[240px] aspect-square min-h-[240px] rounded-xl bg-black flex items-center justify-center">                {(() => {                  const { won, lost, total } = betCharts;
                   const winrate = total ? Math.round((won / total) * 100) : 0;
                   const lossrate = total ? Math.round((lost / total) * 100) : 0;
+                  
+                  // Datos para mostrar dos anillos completos, uno para victorias y otro para derrotas
                   const radialData = [
-                    { name: 'Victorias', value: winrate, fill: '#22c55e' },
-                    { name: 'Derrotas', value: lossrate, fill: '#ef4444' },
+                    {
+                      name: 'Derrotas',
+                      value: lossrate,
+                      fill: '#ef4444',  // Rojo para derrotas
+                    },
+                    {
+                      name: 'Victorias',
+                      value: winrate,
+                      fill: '#22c55e',  // Verde para victorias
+                    }
                   ];
                   return (
-                    <ChartContainer config={radialConfig} className="w-full h-full">
-                      <RadialBarChart data={radialData} innerRadius={30} outerRadius={90} width={210} height={210}>
+                    <ChartContainer config={radialConfig} className="w-full h-full">                      <RadialBarChart 
+                        data={radialData} 
+                        innerRadius={60}  // Ajustado para tener un hueco central más grande
+                        outerRadius={90}  // Ajustado para mantener proporción
+                        startAngle={180} 
+                        endAngle={-180}
+                        width={210} 
+                        height={210}
+                        barSize={25}  // Reducido para tener barras más delgadas
+                      >
                         <PolarGrid gridType="circle" stroke="#444" />
-                        <RadialBar background dataKey="value" cornerRadius={10} />
+                        <RadialBar
+                          background
+                          dataKey="value"
+                          cornerRadius={10}                          label={{
+                            position: 'center',
+                            content: ({ viewBox }) => {
+                              if (viewBox && "cx" in viewBox && "cy" in viewBox) {                                const cy = viewBox?.cy ?? 0;
+                                return (
+                                  <>
+                                    <text
+                                      x={viewBox?.cx ?? 0}
+                                      y={cy - 10}
+                                      textAnchor="middle"
+                                      dominantBaseline="middle"
+                                      className="text-4xl font-bold fill-white"
+                                    >
+                                      {winrate}%
+                                    </text>
+                                    <text
+                                      x={viewBox?.cx ?? 0}
+                                      y={cy + 20}
+                                      textAnchor="middle"
+                                      dominantBaseline="middle"
+                                      className="text-sm fill-gray-400"
+                                    >
+                                      Victorias
+                                    </text>
+                                  </>
+                                );
+                              }
+                              return null;
+                            }
+                          }}
+                        />
                       </RadialBarChart>
                     </ChartContainer>
                   );
