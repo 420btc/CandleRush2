@@ -56,7 +56,14 @@ export default function Profile() {
                 className="absolute top-2 right-2 text-white text-xl font-bold"
                 onClick={() => setShowLogin(false)}
               >×</button>
-              <Login onLogin={(username) => { setUser(username); setShowLogin(false); }} />
+              <Login onClose={() => {
+                // Obtener el usuario actual del localStorage después del login exitoso
+                const currentUser = localStorage.getItem("currentUser");
+                if (currentUser) {
+                  setUser(currentUser);
+                }
+                setShowLogin(false);
+              }} />
             </div>
           </div>
         )}
