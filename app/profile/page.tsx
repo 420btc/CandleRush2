@@ -913,25 +913,58 @@ export default function ProfilePage() {
     let maxWinStreak = 0;
     let maxLoseStreak = 0;
     let lastResult: 'WON' | 'LOST' | null = null;
+    let maxWinStreakTime: number | null = null;
+    let maxLoseStreakTime: number | null = null;
+    let currentWinStreakStartTime: number | null = null;
+    let currentLoseStreakStartTime: number | null = null;
+    
+    // Arrays para guardar las apuestas de cada racha
+    let currentWinStreakBets: Bet[] = [];
+    let currentLoseStreakBets: Bet[] = [];
+    let maxWinStreakBets: Bet[] = [];
+    let maxLoseStreakBets: Bet[] = [];
 
-    bets.forEach(bet => {
+    // Ordenar las apuestas por timestamp (de más antigua a más reciente)
+    const sortedBets = [...bets].sort((a, b) => a.timestamp - b.timestamp);
+
+    sortedBets.forEach(bet => {
       if (bet.status === 'WON') {
         if (lastResult === 'WON') {
           currentWinStreak++;
+          currentWinStreakBets.push(bet);
         } else {
           currentWinStreak = 1;
           currentLoseStreak = 0;
+          currentWinStreakStartTime = bet.timestamp;
+          currentWinStreakBets = [bet];
+          currentLoseStreakBets = [];
         }
-        maxWinStreak = Math.max(maxWinStreak, currentWinStreak);
+        
+        if (currentWinStreak > maxWinStreak) {
+          maxWinStreak = currentWinStreak;
+          maxWinStreakTime = currentWinStreakStartTime;
+          maxWinStreakBets = [...currentWinStreakBets];
+        }
+        
         lastResult = 'WON';
       } else if (bet.status === 'LOST' || bet.status === 'LIQUIDATED') {
         if (lastResult === 'LOST') {
           currentLoseStreak++;
+          currentLoseStreakBets.push(bet);
         } else {
           currentLoseStreak = 1;
           currentWinStreak = 0;
+          currentLoseStreakStartTime = bet.timestamp;
+          currentLoseStreakBets = [bet];
+          currentWinStreakBets = [];
         }
-        maxLoseStreak = Math.max(maxLoseStreak, currentLoseStreak);
+        
+        if (currentLoseStreak > maxLoseStreak) {
+          maxLoseStreak = currentLoseStreak;
+          maxLoseStreakTime = currentLoseStreakStartTime;
+          maxLoseStreakBets = [...currentLoseStreakBets];
+        }
+        
         lastResult = 'LOST';
       }
     });
@@ -940,7 +973,13 @@ export default function ProfilePage() {
       currentWinStreak,
       currentLoseStreak,
       maxWinStreak,
-      maxLoseStreak
+      maxLoseStreak,
+      maxWinStreakTime,
+      maxLoseStreakTime,
+      currentWinStreakBets,
+      currentLoseStreakBets,
+      maxWinStreakBets,
+      maxLoseStreakBets
     };
   }, [bets]);
 
@@ -969,7 +1008,7 @@ export default function ProfilePage() {
       {/* Perfil y logo arriba */}
       <div className="container mx-auto w-full flex flex-col pt-8 items-center">
         <div className="flex flex-col items-center gap-4 mb-8">
-          <div className="flex items-start justify-center gap-8 w-full max-w-5xl">
+          <div className="flex flex-col items-center gap-8 w-full max-w-5xl">
             {/* Contenedor izquierdo con foto y nombre */}
   <div className="w-56 flex flex-col items-center bg-black/70 rounded-xl border-4 border-yellow-400 overflow-hidden shadow-2xl" style={{boxShadow: '0 0 48px 12px #fde047cc'}}>
     <div className="relative h-36 w-36 mx-auto mt-4">
@@ -1667,10 +1706,10 @@ export default function ProfilePage() {
                       console.log("VOTOS EXTRAIDOS DIRECTAMENTE:", {
                         rsi: lastEntry.rsiSignal,
                         macd: lastEntry.macdSignal,
-                        majority: lastEntry.majoritySignal,
-                        valley: lastEntry.valleyVote,
-                        volume: lastEntry.volumeVote,
-                        whale: lastEntry.whaleVote,
+                        mayoría: lastEntry.majoritySignal,
+                        valle: lastEntry.valleyVote,
+                        volumen: lastEntry.volumeVote,
+                        ballenas: lastEntry.whaleVote,
                         adx: lastEntry.adxMemoryVote,
                         cross: lastEntry.crossSignal,
                         ema: lastEntry.emaPositionVote
@@ -1683,10 +1722,10 @@ export default function ProfilePage() {
                       console.log("VALORES INDIVIDUALES DE VOTOS:", {
                         rsi: votes.rsi,
                         macd: votes.macd,
-                        majority: votes.majority,
-                        valley: votes.valley,
-                        volume: votes.volume,
-                        whale: votes.whale,
+                        mayoría: votes.majority,
+                        valle: votes.valley,
+                        volumen: votes.volume,
+                        ballenas: votes.whale,
                         trend: votes.trend,
                         adx: votes.adx,
                         cross: votes.cross,
@@ -2179,7 +2218,7 @@ export default function ProfilePage() {
                         config={chartConfig}
                         className="mx-auto aspect-square max-h-[240px]"
                       >
-                        <BarChart 
+                        <BarChart
                           data={chartData}
                           margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
                           maxBarSize={20} // Barras más delgadas
@@ -2548,7 +2587,7 @@ export default function ProfilePage() {
                             bottom: 5
                           }}
                         >
-                          <CartesianGrid vertical={false} horizontal={true} stroke="#333" />
+                          <CartesianGrid vertical={false} stroke="#333" />
                           <XAxis
                             dataKey="time"
                             tickLine={false}
@@ -2853,6 +2892,25 @@ export default function ProfilePage() {
                         {streakStats.currentWinStreak > 0 ? 'victorias' : 'derrotas'}
                       </div>
                     </div>
+                    {/* Visualización de apuestas de la racha */}
+                    <div className="flex flex-wrap justify-center mt-3 gap-1">
+                      {streakStats.currentWinStreak > 0 && streakStats.currentWinStreakBets && 
+                        streakStats.currentWinStreakBets.map((bet, index) => (
+                          <div 
+                            key={`current-win-${index}`} 
+                            className={`w-2 h-2 rounded-full ${bet.prediction === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}
+                            title={`${bet.prediction === 'BULLISH' ? 'Alcista' : 'Bajista'} - ${new Date(bet.timestamp).toLocaleTimeString()}`}
+                          />
+                      ))}
+                      {streakStats.currentLoseStreak > 0 && streakStats.currentLoseStreakBets && 
+                        streakStats.currentLoseStreakBets.map((bet, index) => (
+                          <div 
+                            key={`current-lose-${index}`} 
+                            className={`w-2 h-2 rounded-full ${bet.prediction === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}
+                            title={`${bet.prediction === 'BULLISH' ? 'Alcista' : 'Bajista'} - ${new Date(bet.timestamp).toLocaleTimeString()}`}
+                          />
+                      ))}
+                    </div>
                   </div>
 
                   {/* Mejor Racha */}
@@ -2864,6 +2922,21 @@ export default function ProfilePage() {
                       </div>
                       <div className="text-sm text-gray-400">victorias</div>
                     </div>
+                    {streakStats.maxWinStreakTime && (
+                      <div className="text-xs text-gray-400 mt-2">
+                        {new Date(streakStats.maxWinStreakTime).toLocaleTimeString()}
+                      </div>
+                    )}
+                    {/* Visualización de apuestas de la racha */}
+                    <div className="flex flex-wrap justify-center mt-3 gap-1">
+                      {streakStats.maxWinStreakBets && streakStats.maxWinStreakBets.map((bet, index) => (
+                        <div 
+                          key={`win-${index}`} 
+                          className={`w-2 h-2 rounded-full ${bet.prediction === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}
+                          title={`${bet.prediction === 'BULLISH' ? 'Alcista' : 'Bajista'} - ${new Date(bet.timestamp).toLocaleTimeString()}`}
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   {/* Peor Racha */}
@@ -2874,6 +2947,21 @@ export default function ProfilePage() {
                         {streakStats.maxLoseStreak}
                       </div>
                       <div className="text-sm text-gray-400">derrotas</div>
+                    </div>
+                    {streakStats.maxLoseStreakTime && (
+                      <div className="text-xs text-gray-400 mt-2">
+                        {new Date(streakStats.maxLoseStreakTime).toLocaleTimeString()}
+                      </div>
+                    )}
+                    {/* Visualización de apuestas de la racha */}
+                    <div className="flex flex-wrap justify-center mt-3 gap-1">
+                      {streakStats.maxLoseStreakBets && streakStats.maxLoseStreakBets.map((bet, index) => (
+                        <div 
+                          key={`lose-${index}`} 
+                          className={`w-2 h-2 rounded-full ${bet.prediction === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}
+                          title={`${bet.prediction === 'BULLISH' ? 'Alcista' : 'Bajista'} - ${new Date(bet.timestamp).toLocaleTimeString()}`}
+                        />
+                      ))}
                     </div>
                   </div>
 
