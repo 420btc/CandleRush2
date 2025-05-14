@@ -3058,7 +3058,7 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-              <div className="w-full h-[700px] bg-yellow-400 rounded-xl overflow-hidden">
+              <div className="w-full h-[800px] bg-yellow-400 rounded-xl overflow-hidden">
                 {(() => {
                   const { bets } = useGame();
                   
@@ -3088,8 +3088,8 @@ export default function ProfilePage() {
                     <div className="w-full h-full p-4 bg-yellow-400 rounded-xl">
                       <HexbinAreaChart 
                         data={filteredData}
-                        width={800}
-                        height={650}
+                        width={window.innerWidth > 1024 ? 900 : window.innerWidth - 80}
+                        height={750}
                       />
                     </div>
                   ) : (
