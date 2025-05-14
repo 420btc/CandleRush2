@@ -3390,10 +3390,17 @@ export default function ProfilePage() {
                     }
                   };
                   
+                  // Filtrar las apuestas de las últimas 2 horas (120 minutos)
+                  const twoHoursAgo = Date.now() - (120 * 60 * 1000);
+                  const recentBets = bets.filter(bet => {
+                    const betTime = new Date(bet.timestamp).getTime();
+                    return betTime >= twoHoursAgo;
+                  });
+                  
                   // Agrupar las apuestas por tipo
-                  const liquidatedBets = bets.filter(bet => bet.status === 'LIQUIDATED');
-                  const bullishBets = bets.filter(bet => bet.prediction === 'BULLISH' && bet.status !== 'LIQUIDATED');
-                  const bearishBets = bets.filter(bet => bet.prediction === 'BEARISH' && bet.status !== 'LIQUIDATED');
+                  const bullishBets = recentBets.filter(bet => bet.prediction === 'BULLISH' && bet.status !== 'LIQUIDATED');
+                  const bearishBets = recentBets.filter(bet => bet.prediction === 'BEARISH' && bet.status !== 'LIQUIDATED');
+                  const liquidatedBets = recentBets.filter(bet => bet.status === 'LIQUIDATED');
                   const currentBalance = userBalance || 0;
 
                   const treeData = {
@@ -3486,6 +3493,10 @@ export default function ProfilePage() {
                   
                   return bets.length > 0 ? (
                     <div className="flex flex-col items-center w-full">
+                      <p className="text-sm text-gray-500 mb-2">
+                        Mostrando apuestas de las últimas 2 horas 
+                        ({recentBets.length} de {bets.length} apuestas)
+                      </p>
                       <div className="flex justify-between w-full mb-8">
                         <div className="flex flex-wrap items-center gap-4">
                           <div className="flex items-center">
