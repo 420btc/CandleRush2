@@ -3322,7 +3322,7 @@ export default function ProfilePage() {
               <CardDescription className="text-black">Visualización del árbol de apuestas</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center items-center p-6 bg-yellow-400 rounded-b-xl">
-              <div className="w-full h-[400px] flex items-center justify-center">
+              <div className="w-full h-[530px] flex items-center justify-center">
                 {(() => {
                   const { bets } = useGame();
                   const getBetType = (status: string): 'win' | 'loss' | 'liquidation' | 'pending' => {
@@ -3333,50 +3333,90 @@ export default function ProfilePage() {
                   };
 
                   const formatTime = (timestamp: number) => {
-                    return new Date(timestamp).toLocaleTimeString('es-ES', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
+                    const date = new Date(timestamp);
+                    return `${date.getHours()}:${date.getMinutes()}`;
                   };
-
-                  // Usar el balance real del usuario en lugar de calcularlo
+                  
+                  // Agrupar las apuestas por tipo
+                  const bullishBets = bets.filter(bet => bet.prediction === 'BULLISH');
+                  const bearishBets = bets.filter(bet => bet.prediction === 'BEARISH');
+                  const liquidatedBets = bets.filter(bet => bet.status === 'LIQUIDATED');
                   const currentBalance = userBalance || 0;
 
                   const treeData = {
                     id: 'root',
                     type: 'balance' as const,
                     timestamp: Date.now(),
-                    value: currentBalance,
-                    label: `Balance: ${currentBalance.toLocaleString('es-ES')}$`,
-                    info: {
-                      prediction: 'Balance Actual',
-                      entryPrice: 0,
-                      status: 'BALANCE',
-                      amount: currentBalance
-                    },
-                    children: bets
-                      .sort((a, b) => b.timestamp - a.timestamp)
-                      .slice(0, 15)
-                      .map(bet => ({
-                        id: bet.id,
-                        type: getBetType(bet.status),
-                        timestamp: bet.timestamp,
-                        value: bet.amount,
-                        label: `${formatTime(bet.timestamp)} - ${bet.amount}$`,
-                        info: {
-                          prediction: bet.prediction,
-                          entryPrice: bet.entryPrice || 0,
-                          status: bet.status,
-                          amount: bet.amount
-                        },
-                        children: []
-                      }))
+                    value: userBalance,
+                    label: `$${userBalance.toLocaleString()}`,
+                    children: [
+                      // Subnodo para apuestas alcistas
+                      {
+                        id: 'bullish',
+                        type: 'bullish' as const,
+                        timestamp: Date.now(),
+                        value: bullishBets.reduce((sum, bet) => sum + bet.amount, 0),
+                        label: 'Alcistas',
+                        children: bullishBets.map(bet => ({
+                          id: bet.id,
+                          type: getBetType(bet.status),
+                          timestamp: new Date(bet.timestamp).getTime(),
+                          value: bet.amount,
+                          info: {
+                            prediction: bet.prediction,
+                            entryPrice: bet.entryPrice,
+                            status: bet.status,
+                            amount: bet.amount
+                          }
+                        }))
+                      },
+                      // Subnodo para apuestas bajistas
+                      {
+                        id: 'bearish',
+                        type: 'bearish' as const,
+                        timestamp: Date.now(),
+                        value: bearishBets.reduce((sum, bet) => sum + bet.amount, 0),
+                        label: 'Bajistas',
+                        children: bearishBets.map(bet => ({
+                          id: bet.id,
+                          type: getBetType(bet.status),
+                          timestamp: new Date(bet.timestamp).getTime(),
+                          value: bet.amount,
+                          info: {
+                            prediction: bet.prediction,
+                            entryPrice: bet.entryPrice,
+                            status: bet.status,
+                            amount: bet.amount
+                          }
+                        }))
+                      },
+                      // Subnodo para apuestas liquidadas
+                      {
+                        id: 'liquidated',
+                        type: 'liquidated' as const,
+                        timestamp: Date.now(),
+                        value: liquidatedBets.reduce((sum, bet) => sum + bet.amount, 0),
+                        label: 'Liquidadas',
+                        children: liquidatedBets.map(bet => ({
+                          id: bet.id,
+                          type: getBetType(bet.status),
+                          timestamp: new Date(bet.timestamp).getTime(),
+                          value: bet.amount,
+                          info: {
+                            prediction: bet.prediction,
+                            entryPrice: bet.entryPrice,
+                            status: bet.status,
+                            amount: bet.amount
+                          }
+                        }))
+                      }
+                    ].filter(group => group.children && group.children.length > 0) // Filtrar grupos vacíos
                   };
                   
                   return bets.length > 0 ? (
                     <div className="flex flex-col items-center w-full">
-                      <div className="flex justify-between w-full mb-4">
-                        <div className="flex items-center space-x-4">
+                      <div className="flex justify-between w-full mb-8">
+                        <div className="flex flex-wrap items-center gap-4">
                           <div className="flex items-center">
                             <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
                             <span className="text-sm">Ganadas</span>
@@ -3393,6 +3433,14 @@ export default function ProfilePage() {
                             <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
                             <span className="text-sm">Pendientes</span>
                           </div>
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-cyan-400 mr-2"></div>
+                            <span className="text-sm">Alcistas</span>
+                          </div>
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                            <span className="text-sm">Bajistas</span>
+                          </div>
                         </div>
                         <div className="text-sm font-medium">
                           Total: {bets.length} apuestas
@@ -3400,7 +3448,7 @@ export default function ProfilePage() {
                       </div>
                       <TangledTreeChart 
                         width={800} 
-                        height={400} 
+                        height={520} 
                         data={treeData}
                         linkColor="#000000"
                         linkWidth={2}
@@ -3409,7 +3457,10 @@ export default function ProfilePage() {
                           loss: '#ef4444',
                           liquidation: '#000000',
                           pending: '#a855f7',
-                          balance: '#3b82f6'
+                          balance: '#3b82f6',
+                          bullish: '#22d3ee',  // Azul claro
+                          bearish: '#f97316',  // Naranja
+                          liquidated: '#000000' // Negro
                         }}
                         showTooltip={true}
                         tooltipContent={(node: TreeNode) => (
@@ -3446,13 +3497,15 @@ export default function ProfilePage() {
           </Card>
 
           {/* Tarjeta 2: Distribución de Apuestas */}
-          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
-            <CardHeader className="items-center pb-4">
-              <CardTitle>Distribución de Apuestas</CardTitle>
-              <CardDescription className="text-black">Análisis de la distribución de tus apuestas por tipo y resultado</CardDescription>
+          <Card className="bg-zinc-900 border-zinc-800 shadow-xl rounded-xl mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white">Historial de Apuestas</CardTitle>
+              <CardDescription className="text-zinc-400">
+                Visualización de tus apuestas y balance a lo largo del tiempo
+              </CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-center items-center p-6 bg-black/10 rounded-b-xl">
-              <div className="w-full h-[300px] flex items-center justify-center text-zinc-600 font-medium bg-black rounded-xl">
+            <CardContent className="pt-0 pb-12">
+              <div className="w-full h-[700px] flex flex-col items-center justify-center text-zinc-600 font-medium bg-black rounded-xl">
                 Gráfico de distribución (próximamente)
               </div>
             </CardContent>

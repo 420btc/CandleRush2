@@ -6,13 +6,13 @@ import * as ReactDOM from 'react-dom/client';
 
 export interface Node {
   id: string;
-  type: 'win' | 'loss' | 'liquidation' | 'pending' | 'balance';
+  type: 'win' | 'loss' | 'liquidation' | 'pending' | 'balance' | 'bullish' | 'bearish' | 'liquidated';
   timestamp: number;
   value: number;
   label?: string;
   info?: {
     prediction: string;
-    entryPrice: number;
+    entryPrice?: number;
     status: string;
     amount: number;
   };
@@ -31,6 +31,9 @@ export interface TangledTreeChartProps {
     liquidation: string;
     pending: string;
     balance: string;
+    bullish: string;
+    bearish: string;
+    liquidated: string;
   };
   showTooltip?: boolean;
   tooltipContent?: (node: Node) => React.ReactNode;
@@ -47,7 +50,10 @@ export default function TangledTreeChart({
     loss: '#ef4444',
     liquidation: '#000000',
     pending: '#a855f7',
-    balance: '#3b82f6'
+    balance: '#3b82f6',
+    bullish: '#22d3ee',  // Azul claro
+    bearish: '#f97316',  // Naranja
+    liquidated: '#000000' // Negro
   },
   showTooltip = false,
   tooltipContent
