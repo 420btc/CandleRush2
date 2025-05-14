@@ -2782,6 +2782,227 @@ export default function ProfilePage() {
         
         {/* Sección para gráfico horizontal completo */}
         <div className="w-full max-w-5xl mx-auto mt-12">
+          {/* Gráfico de Rachas de Trading */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mb-4">
+            <CardHeader className="items-center py-2">
+              <CardTitle className="text-lg">Rachas de Trading</CardTitle>
+              <CardDescription className="text-black text-xs">Análisis de tus rachas ganadoras y perdedoras</CardDescription>
+            </CardHeader>
+            <CardContent className="px-3 py-2">
+              <div className="w-full bg-black rounded-xl p-3 text-white grid grid-cols-1 md:grid-cols-2 gap-2">
+                {(() => {
+                  const { bets } = useGame();
+                  
+                  // Verificar si hay apuestas disponibles
+                  if (!bets || bets.length === 0) {
+                    return (
+                      <div className="col-span-2 h-[200px] flex items-center justify-center text-white font-medium">
+                        No hay datos de apuestas disponibles
+                      </div>
+                    );
+                  }
+                  
+                  // Filtrar solo apuestas finalizadas (ganadas o perdidas)
+                  const finishedBets = bets.filter(bet => bet.status === 'WON' || bet.status === 'LOST');
+                  
+                  // Ordenar por timestamp
+                  const sortedBets = [...finishedBets].sort((a, b) => {
+                    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+                  });
+                  
+                  // Definir interfaces para las rachas
+                  interface StreakData {
+                    type: string;
+                    count: number;
+                    amount: number;
+                    timestamp: number;
+                  }
+                  
+                  // Calcular rachas
+                  const streaks: StreakData[] = [];
+                  let currentStreakData: StreakData = { type: '', count: 0, amount: 0, timestamp: 0 };
+                  
+                  for (const bet of sortedBets) {
+                    const betResult = bet.status === 'WON' ? 'win' : 'loss';
+                    const betTime = new Date(bet.timestamp).getTime();
+                    
+                    if (currentStreakData.count === 0) {
+                      // Iniciar una nueva racha
+                      currentStreakData = { 
+                        type: betResult, 
+                        count: 1, 
+                        amount: bet.status === 'WON' ? bet.amount : -bet.amount,
+                        timestamp: betTime
+                      };
+                    } else if (currentStreakData.type === betResult) {
+                      // Continuar la racha actual
+                      currentStreakData.count++;
+                      currentStreakData.amount += bet.status === 'WON' ? bet.amount : -bet.amount;
+                    } else {
+                      // Guardar la racha anterior y comenzar una nueva
+                      streaks.push({...currentStreakData});
+                      currentStreakData = { 
+                        type: betResult, 
+                        count: 1, 
+                        amount: bet.status === 'WON' ? bet.amount : -bet.amount,
+                        timestamp: betTime
+                      };
+                    }
+                  }
+                  
+                  // Añadir la última racha si existe
+                  if (currentStreakData.count > 0) {
+                    streaks.push({...currentStreakData});
+                  }
+                  
+                  // Calcular estadísticas
+                  const longestWinStreak = streaks.filter(s => s.type === 'win')
+                    .reduce((max, streak) => streak.count > max.count ? streak : max, { count: 0, timestamp: 0, type: '', amount: 0 });
+                    
+                  const longestLossStreak = streaks.filter(s => s.type === 'loss')
+                    .reduce((max, streak) => streak.count > max.count ? streak : max, { count: 0, timestamp: 0, type: '', amount: 0 });
+                    
+                  const currentStreak = streaks.length > 0 ? streaks[streaks.length - 1] : { type: '', count: 0, amount: 0, timestamp: 0 };
+                  
+                  // Calcular totales
+                  const totalBets = sortedBets.length;
+                  const totalWins = sortedBets.filter(bet => bet.status === 'WON').length;
+                  const totalLosses = sortedBets.filter(bet => bet.status === 'LOST').length;
+                  
+                  // Formatear timestamp para mostrar en el gráfico
+                  const formatTimestamp = (timestamp: number): string => {
+                    if (!timestamp) return '';
+                    const date = new Date(timestamp);
+                    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+                  };
+                  
+                  // Generar puntos para visualización de rachas
+                  const generateStreakDots = (count: number, type: string): React.ReactElement => {
+                    const dots: React.ReactElement[] = [];
+                    for (let i = 0; i < count; i++) {
+                      dots.push(
+                        <div 
+                          key={i} 
+                          className={`w-1.5 h-1.5 rounded-full ${type === 'win' ? 'bg-green-500' : 'bg-red-500'}`}
+                        />
+                      );
+                    }
+                    return (
+                      <div className="flex gap-0.5 mt-1 justify-center">
+                        {dots}
+                      </div>
+                    );
+                  };
+                  
+                  return (
+                    <>
+                      {/* Gráfico circular */}
+                      <div className="flex justify-center items-center">
+                        <div className="relative w-[150px] h-[150px]">
+                          {/* Círculo exterior */}
+                          <div 
+                            className="absolute inset-0 rounded-full border-[12px]"
+                            style={{
+                              borderColor: currentStreak.type === 'win' ? '#22c55e' : '#ef4444',
+                              borderRightColor: 'transparent',
+                              transform: `rotate(${(currentStreak.count / 20) * 360}deg)`,
+                              transition: 'transform 1s ease-in-out'
+                            }}
+                          />
+                          
+                          {/* Círculo medio */}
+                          <div 
+                            className="absolute inset-[15px] rounded-full border-[12px]"
+                            style={{
+                              borderColor: '#fbbf24',
+                              borderRightColor: 'transparent',
+                              transform: `rotate(${(longestWinStreak.count / 20) * 360}deg)`,
+                              transition: 'transform 1s ease-in-out'
+                            }}
+                          />
+                          
+                          {/* Círculo interior */}
+                          <div 
+                            className="absolute inset-[40px] rounded-full border-[10px]"
+                            style={{
+                              borderColor: '#ef4444',
+                              borderRightColor: 'transparent',
+                              transform: `rotate(${(longestLossStreak.count / 20) * 360}deg)`,
+                              transition: 'transform 1s ease-in-out'
+                            }}
+                          />
+                          
+                          {/* Fondo negro */}
+                          <div className="absolute inset-[60px] rounded-full bg-black" />
+                        </div>
+                      </div>
+                      
+                      {/* Leyenda */}
+                      <div className="flex flex-col justify-center gap-1 pl-48 text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                          <span className="text-xs">Racha Actual</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                          <span className="text-xs">Racha Máxima</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500" />
+                          <span className="text-xs">Racha Perdedora</span>
+                        </div>
+                      </div>
+                      
+                      {/* Estadísticas */}
+                      <div className="bg-black p-2 rounded-lg col-span-2 md:col-span-1">
+                        <h3 className="text-yellow-400 font-medium text-center text-sm">Racha Actual</h3>
+                        <div className={`text-3xl font-bold text-center ${currentStreak.type === 'win' ? 'text-green-500' : 'text-red-500'}`}>
+                          {currentStreak.count}
+                        </div>
+                        <div className="text-xs text-center text-gray-400">
+                          {currentStreak.type === 'win' ? 'victorias' : 'derrotas'}
+                        </div>
+                        {generateStreakDots(Math.min(currentStreak.count, 15), currentStreak.type)}
+                      </div>
+                      
+                      <div className="bg-black p-2 rounded-lg">
+                        <h3 className="text-yellow-400 font-medium text-center text-sm">Mejor Racha</h3>
+                        <div className="text-3xl font-bold text-center text-green-500">
+                          {longestWinStreak.count}
+                        </div>
+                        <div className="text-xs text-center text-gray-400">
+                          victorias
+                        </div>
+                        {generateStreakDots(Math.min(longestWinStreak.count, 15), 'win')}
+                      </div>
+                      
+                      <div className="bg-black p-2 rounded-lg">
+                        <h3 className="text-yellow-400 font-medium text-center text-sm">Peor Racha</h3>
+                        <div className="text-3xl font-bold text-center text-red-500">
+                          {longestLossStreak.count}
+                        </div>
+                        <div className="text-xs text-center text-gray-400">
+                          derrotas
+                        </div>
+                        {generateStreakDots(Math.min(longestLossStreak.count, 15), 'loss')}
+                      </div>
+                      
+                      <div className="bg-black p-2 rounded-lg">
+                        <h3 className="text-yellow-400 font-medium text-center text-sm">Promedio</h3>
+                        <div className="text-3xl font-bold text-center text-blue-500">
+                          {totalBets}
+                        </div>
+                        <div className="text-xs text-center text-gray-400">
+                          apuestas
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+          
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl">
             <CardHeader className="items-center pb-4">
               <CardTitle>Tu Tangle Map</CardTitle>
@@ -3102,15 +3323,94 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Tarjeta 3: Predicciones y Aciertos */}
+          {/* Tarjeta 3: Predicciones y Aciertos con Circle Packing */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
             <CardHeader className="items-center pb-4">
               <CardTitle>Predicciones y Aciertos</CardTitle>
-              <CardDescription className="text-black">Tasa de acierto en tus predicciones alcistas vs bajistas</CardDescription>
+              <CardDescription className="text-black">Visualización de tus predicciones alcistas vs bajistas y su tasa de acierto</CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-center items-center p-6 bg-black/10 rounded-b-xl">
-              <div className="w-full h-[300px] flex items-center justify-center text-zinc-600 font-medium bg-black rounded-xl">
-                Gráfico de predicciones (próximamente)
+            <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+              <div className="w-full h-[500px] bg-black/80 rounded-xl overflow-hidden">
+                {(() => {
+                  const { bets } = useGame();
+                  
+                  // Verificar si hay apuestas disponibles
+                  if (!bets || bets.length === 0) {
+                    return (
+                      <div className="w-full h-full flex items-center justify-center text-white font-medium">
+                        No hay datos de apuestas disponibles
+                      </div>
+                    );
+                  }
+                  
+                  // Calcular estadísticas para el gráfico de Circle Packing
+                  const bullishBets = bets.filter(bet => bet.prediction === 'BULLISH');
+                  const bearishBets = bets.filter(bet => bet.prediction === 'BEARISH');
+                  
+                  const bullishWon = bullishBets.filter(bet => bet.status === 'WON').length;
+                  const bullishLost = bullishBets.filter(bet => bet.status === 'LOST').length;
+                  const bullishPending = bullishBets.filter(bet => bet.status === 'PENDING').length;
+                  const bullishLiquidated = bullishBets.filter(bet => bet.status === 'LIQUIDATED').length;
+                  
+                  const bearishWon = bearishBets.filter(bet => bet.status === 'WON').length;
+                  const bearishLost = bearishBets.filter(bet => bet.status === 'LOST').length;
+                  const bearishPending = bearishBets.filter(bet => bet.status === 'PENDING').length;
+                  const bearishLiquidated = bearishBets.filter(bet => bet.status === 'LIQUIDATED').length;
+                  
+                  // Calcular tasas de acierto
+                  const bullishTotal = bullishWon + bullishLost;
+                  const bearishTotal = bearishWon + bearishLost;
+                  
+                  const bullishWinRate = bullishTotal > 0 ? Math.round((bullishWon / bullishTotal) * 100) : 0;
+                  const bearishWinRate = bearishTotal > 0 ? Math.round((bearishWon / bearishTotal) * 100) : 0;
+                  
+                  // Preparar datos para el Circle Packing
+                  const packData = {
+                    name: "Apuestas",
+                    children: [
+                      {
+                        name: `Alcistas (${bullishWinRate}% acierto)`,
+                        color: "#15803d", // Verde oscuro
+                        children: [
+                          { name: "Ganadas", value: bullishWon, color: "#22c55e" },
+                          { name: "Perdidas", value: bullishLost, color: "#ef4444" },
+                          { name: "Pendientes", value: bullishPending, color: "#a855f7" },
+                          { name: "Liquidadas", value: bullishLiquidated, color: "#000000" }
+                        ]
+                      },
+                      {
+                        name: `Bajistas (${bearishWinRate}% acierto)`,
+                        color: "#b91c1c", // Rojo oscuro
+                        children: [
+                          { name: "Ganadas", value: bearishWon, color: "#22c55e" },
+                          { name: "Perdidas", value: bearishLost, color: "#ef4444" },
+                          { name: "Pendientes", value: bearishPending, color: "#a855f7" },
+                          { name: "Liquidadas", value: bearishLiquidated, color: "#000000" }
+                        ]
+                      }
+                    ]
+                  };
+                  
+                  // Importar el componente CirclePackingChart
+                  const CirclePackingChart = dynamic(
+                    () => import('../../components/charts/CirclePackingChart'),
+                    { ssr: false }
+                  );
+                  
+                  // Usar un tamaño fijo para el gráfico
+                  const chartWidth = 800;
+                  const chartHeight = 450;
+                  
+                  return (
+                    <div className="w-full h-full p-4 flex justify-center">
+                      <CirclePackingChart 
+                        data={packData}
+                        width={chartWidth}
+                        height={chartHeight}
+                      />
+                    </div>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
