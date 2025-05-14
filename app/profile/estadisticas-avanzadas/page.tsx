@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
+import TestBetGenerator from "@/components/test-bet-generator";
 
 // Importación dinámica para evitar problemas de SSR
 const TangledTreeChart = dynamic(
@@ -109,6 +110,38 @@ interface StoredBet {
   // Otros campos necesarios
 }
 
+// Tipo para eventos personalizados de nuevas apuestas
+type NewBetEvent = CustomEvent<StoredBet>;
+
+// Extender la interfaz Window para incluir nuestro evento personalizado
+declare global {
+  interface WindowEventMap {
+    'newBet': NewBetEvent;
+  }
+}
+
+// Almacenamiento en memoria para las apuestas activas
+let activeBets: StoredBet[] = [];
+
+// Función para obtener apuestas activas (últimos 15 minutos)
+function getActiveBets(): StoredBet[] {
+  const MAX_BETS = 15; // Limitar a 15 apuestas para mejor visualización
+  const fifteenMinutesAgo = Date.now() - (15 * 60 * 1000);
+  
+  return activeBets
+    .filter(bet => bet.timestamp >= fifteenMinutesAgo)
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, MAX_BETS);
+}
+
+// Función para agregar una nueva apuesta activa
+function addActiveBet(bet: StoredBet) {
+  // Evitar duplicados
+  if (!activeBets.some(b => b.id === bet.id)) {
+    activeBets = [bet, ...activeBets].slice(0, 30); // Mantener máximo 30 apuestas en memoria
+  }
+}
+
 // Claves para localStorage
 const STORAGE_KEY = 'betting_stats_data';
 const BETS_BY_PAIR_KEY = 'betsByPair';
@@ -143,147 +176,99 @@ function getAllBetsFromStorage(): StoredBet[] {
 export default function EstadisticasAvanzadas() {
   const router = useRouter();
   const [bets, setBets] = useState<StoredBet[]>([]);
-  const [treeData, setTreeData] = useState(convertBetsToTreeData([]));
+  const [treeData, setTreeData] = useState<TreeNode>(convertBetsToTreeData([]));
   const [isAnimating, setIsAnimating] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLive, setIsLive] = useState(true);
+
+  // Función para manejar el clic en el botón de retroceso
+  const handleBack = () => {
+    router.back();
+  };
+
+  // Sincronizar con apuestas activas
+  const syncWithActiveBets = useCallback(() => {
+    try {
+      // Obtener apuestas de los últimos 15 minutos
+      const recentBets = getActiveBets();
+      
+      // Actualizar estados
+      setBets(recentBets);
+      setTreeData(convertBetsToTreeData(recentBets));
+    } catch (error) {
+      console.error('Error sincronizando apuestas activas:', error);
+    }
+  }, []);
 
   // Cargar datos al montar el componente
   useEffect(() => {
     try {
-      // Obtener todas las apuestas de localStorage
-      const allBets = getAllBetsFromStorage();
-      
-      // Filtrar solo las apuestas de las últimas 24 horas
-      const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-      const recentBets = allBets.filter(bet => 
-        bet.timestamp >= twentyFourHoursAgo
-      );
-      
-      // Ordenar por timestamp (más recientes primero)
-      recentBets.sort((a, b) => b.timestamp - a.timestamp);
-      
-      setBets(recentBets);
-      setTreeData(convertBetsToTreeData(recentBets));
-      
-      // Si hay apuestas, guardarlas en nuestro formato para futuras cargas
-      if (recentBets.length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(recentBets));
-      }
+      // Sincronizar con apuestas activas
+      syncWithActiveBets();
     } catch (error) {
       console.error('Error cargando datos de apuestas:', error);
     } finally {
       setIsLoading(false);
     }
 
-    // Configurar un intervalo para limpiar datos antiguos
-    const cleanupInterval = setInterval(() => {
-      try {
-        const savedData = localStorage.getItem(STORAGE_KEY);
-        if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-          const recentBets = parsedData.filter((bet: StoredBet) => 
-            bet.timestamp >= twentyFourHoursAgo
-          );
-          
-          if (recentBets.length !== parsedData.length) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(recentBets));
-            setBets(recentBets);
-            setTreeData(convertBetsToTreeData(recentBets));
-          }
-        }
-      } catch (error) {
-        console.error('Error cleaning up old betting data:', error);
-      }
-    }, 5 * 60 * 1000); // Verificar cada 5 minutos
+    // Configurar un intervalo para actualizar los datos cada 10 segundos
+    const updateInterval = setInterval(() => {
+      syncWithActiveBets();
+      setIsLive(prev => !prev); // Alternar para mostrar que está actualizando
+    }, 10000);
 
-    return () => clearInterval(cleanupInterval);
-  }, []);
+    // Limpiar intervalo al desmontar
+    return () => clearInterval(updateInterval);
+  }, [syncWithActiveBets]);
 
-  // Función para agregar una nueva apuesta (puede ser llamada desde otros componentes)
-  const addBet = (bet: StoredBet) => {
-    setBets(prevBets => {
-      // Evitar duplicados
-      if (prevBets.some(b => b.id === bet.id)) return prevBets;
-      
-      const newBets = [bet, ...prevBets]; // Agregar al inicio para mantener orden cronológico
-      // Mantener solo las últimas 100 apuestas para evitar que el localStorage crezca demasiado
-      const limitedBets = newBets.slice(0, 100);
-      
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(limitedBets));
-      } catch (error) {
-        console.error('Error guardando datos de apuestas:', error);
-      }
-      
-      return limitedBets;
-    });
-  };
-  
-  // Función para sincronizar con las apuestas existentes
-  const syncWithExistingBets = () => {
-    try {
-      const allBets = getAllBetsFromStorage();
-      const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-      const recentBets = allBets.filter(bet => bet.timestamp >= twentyFourHoursAgo);
-      recentBets.sort((a, b) => b.timestamp - a.timestamp);
-      
-      setBets(recentBets);
-      setTreeData(convertBetsToTreeData(recentBets));
-      
-      if (recentBets.length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(recentBets));
-      }
-    } catch (error) {
-      console.error('Error sincronizando apuestas:', error);
-    }
-  };
-  
-  // Sincronizar cuando se monta el componente
+  // Escuchar eventos de nuevas apuestas
   useEffect(() => {
-    syncWithExistingBets();
-  }, []);
-  // Efecto para actualizar los datos periódicamente
-  useEffect(() => {
-    if (!isAnimating || isLoading) return;
+    const handleNewBet = (event: NewBetEvent) => {
+      if (event.detail) {
+        // Agregar la nueva apuesta a las apuestas activas
+        addActiveBet(event.detail);
+        // Sincronizar con las apuestas activas
+        syncWithActiveBets();
+      }
+    };
 
-    const interval = setInterval(() => {
-      // Actualizar el árbol con los datos actuales para la animación
-      setTreeData(prevData => {
-        if (!prevData) return prevData;
-        const newData = {...prevData};
-        // Forzar actualización del timestamp
-        newData.timestamp = Date.now();
-        return newData;
-      });
-    }, 5000);
+    // Agregar listener para el evento 'newBet'
+    window.addEventListener('newBet', handleNewBet);
 
-    return () => clearInterval(interval);
-  }, [isAnimating, isLoading]);
+    // Limpiar listener al desmontar
+    return () => {
+      window.removeEventListener('newBet', handleNewBet);
+    };
+  }, [syncWithActiveBets]);
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl min-h-screen">
-      {/* Botón de volver */}
-      <Button 
-        onClick={() => router.back()}
-        variant="outline" 
-        className="mb-4 bg-black/50 border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-400 transition-colors"
-      >
-        <ChevronLeft className="w-4 h-4 mr-2" />
-        Volver al perfil
-      </Button>
+    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white">
+      {/* Test Bet Generator - Remove in production */}
+      <TestBetGenerator />
+      <div className="container mx-auto px-4 py-8">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBack}
+          className="mb-6 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20"
+        >
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Volver al perfil
+        </Button>
 
-      <h1 className="text-3xl font-bold text-yellow-400 mb-6">Estadísticas Avanzadas</h1>
-      
-      <div className="grid grid-cols-1 gap-8">
-        {/* Gráfico de árbol enredado */}
-        <Card className="bg-black/50 border-yellow-500/30 rounded-xl overflow-hidden shadow-xl">
-          <CardHeader className="border-b border-yellow-500/20 p-4">
+        <h1 className="text-3xl font-bold mb-8 text-yellow-400">Estadísticas Avanzadas</h1>
+
+        <Card className="bg-black/50 border-yellow-500/30 rounded-xl overflow-hidden shadow-xl mb-8">
+          <CardHeader className="border-b border-yellow-500/20">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-yellow-400 text-2xl font-bold tracking-tight [&>h3]:text-yellow-400">
+              <CardTitle className="flex items-center gap-2">
                 <h3 className="text-yellow-400">Visor Tangle Tree</h3>
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center">
+                  <div className={`w-2 h-2 rounded-full mr-2 ${isLive ? "bg-green-500 animate-pulse" : "bg-gray-500"}`}></div>
+                  <span className="text-xs text-yellow-400/70">Últimos 15 minutos</span>
+                </div>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -308,11 +293,11 @@ export default function EstadisticasAvanzadas() {
                 <TangledTreeChart 
                   width={800} 
                   height={600} 
-                  data={treeData} 
+                  data={treeData || convertBetsToTreeData([])} 
                 />
               ) : (
                 <div className="h-full flex items-center justify-center p-4">
-                  <p className="text-yellow-300/80 text-center">No hay datos de apuestas recientes en las últimas 24 horas</p>
+                  <p className="text-yellow-300/80 text-center">No hay datos de apuestas recientes en los últimos 15 minutos</p>
                 </div>
               )}
             </div>
