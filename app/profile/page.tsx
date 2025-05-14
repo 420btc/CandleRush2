@@ -2927,7 +2927,7 @@ export default function ProfilePage() {
                           perdidas: (lost / maxTotal) * 100,
                           liquidadas: (liquidated / maxTotal) * 100,
                           pendientes: (pending / maxTotal) * 100,
-                          numApuestas: i - startIndex + 1, // Número actual de apuestas en la racha
+                          numApuestas: streakType ? (i - startIndex + 1) : 0, // Número actual de apuestas en la racha
                           racha: streakType === 'win' ? 'ganadora' : streakType === 'lose' ? 'perdedora' : null,
                           startTime: streakType ? new Date(bets[startIndex].timestamp).toLocaleTimeString('es-ES', {
                             hour: '2-digit',
@@ -3024,7 +3024,7 @@ export default function ProfilePage() {
                                 <div className={`${data.rachaGanadora > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>
                                   ¡{data.rachaGanadora > 0 ? 'RACHA GANADORA!' : 'RACHA PERDEDORA!'}
                                 </div>                                <div className="text-white text-sm">
-                                  {data.numApuestas} apuestas consecutivas
+                                  {data.numApuestas > 0 ? data.numApuestas : 1} apuestas consecutivas
                                 </div>
                                 <div className="text-white/80 text-xs">
                                   Intensidad: {Math.round(data.rachaGanadora || data.rachaPerdedora)}%
