@@ -3338,9 +3338,9 @@ export default function ProfilePage() {
                   };
                   
                   // Agrupar las apuestas por tipo
-                  const bullishBets = bets.filter(bet => bet.prediction === 'BULLISH');
-                  const bearishBets = bets.filter(bet => bet.prediction === 'BEARISH');
                   const liquidatedBets = bets.filter(bet => bet.status === 'LIQUIDATED');
+                  const bullishBets = bets.filter(bet => bet.prediction === 'BULLISH' && bet.status !== 'LIQUIDATED');
+                  const bearishBets = bets.filter(bet => bet.prediction === 'BEARISH' && bet.status !== 'LIQUIDATED');
                   const currentBalance = userBalance || 0;
 
                   const treeData = {
