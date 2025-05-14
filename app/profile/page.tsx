@@ -18,6 +18,7 @@ const TangledTreeChart = dynamic<TangledTreeChartProps>(
 
 import { TrendingUp } from "lucide-react"
 import { useLiquidations } from "@/components/game/liquidations";
+import HexbinAreaChart from "@/components/charts/HexbinAreaChart";
 import { 
   PolarRadiusAxis, 
   PolarAngleAxis, 
@@ -2783,542 +2784,7 @@ export default function ProfilePage() {
         <div className="w-full max-w-5xl mx-auto mt-12">
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl">
             <CardHeader className="items-center pb-4">
-              <CardTitle>Historial de Apuestas</CardTitle>
-              <CardDescription className="text-black">
-                Evolución de tus apuestas <span className="text-green-700">ganadas</span>, <span className="text-red-700">perdidas</span>, <span className="text-yellow-700">liquidadas</span> y <span className="text-blue-700">pendientes</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-              <ChartContainer
-                config={{
-                  won: { label: "Ganadas", color: "#22c55e" },
-                  lost: { label: "Perdidas", color: "#ef4444" },
-                  liquidated: { label: "Liquidadas", color: "#eab308" },
-                  pending: { label: "Pendientes", color: "#60a5fa" },
-                }}
-                className="aspect-auto h-[300px] w-full"
-              >
-                <AreaChart
-                  data={(() => {
-                    // Evolución acumulada de apuestas por estado
-                    const { bets } = useGame();
-                    const data = [];
-                    let won = 0;
-                    let lost = 0;
-                    let liquidated = 0;
-                    let pending = 0;
-                    
-                    // Primero contamos los totales
-                    const totalWon = bets.filter(b => b.status === "WON").length;
-                    const totalLost = bets.filter(b => b.status === "LOST").length;
-                    const totalLiquidated = bets.filter(b => b.status === "LIQUIDATED").length;
-                    const totalPending = bets.filter(b => b.status === "PENDING").length;
-                    const maxTotal = Math.max(totalWon, totalLost, totalLiquidated, totalPending, 1);
-                    
-                    // Normalizamos los datos para que todas las áreas tengan la misma escala
-                    return bets
-                      .sort((a, b) => a.timestamp - b.timestamp)
-                      .map((bet, i) => {
-                        if (bet.status === "WON") won++;
-                        if (bet.status === "LOST") lost++;
-                        if (bet.status === "LIQUIDATED") liquidated++;
-                        if (bet.status === "PENDING") pending++;
-                          // Normalizamos los valores para que vayan de 0 a 100
-                        const total = won + lost + liquidated + pending || 1;                          // Variables para las rachas
-                        let currentStreak = 0;
-                        let streakType = null;
-                        let startIndex = i;
-                        let scaleFactor = 1;
-                        // Revisamos si estamos al final de una racha (últimas 3 apuestas)
-                        const lastThreeBets = bets.slice(Math.max(0, i - 2), i + 1);                            // Para rachas ganadoras (mínimo 3)
-                        if (lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "WON")) {                            // Si encontramos 3 victorias seguidas, buscamos el inicio real de la racha
-                          startIndex = i - 2; // Comenzamos desde el inicio de las 3 victorias detectadas
-                          while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
-                            startIndex--;
-                          }
-                            // Marcar toda la racha desde el inicio hasta la posición actual
-                          if (i >= startIndex) {                            // Calculamos la intensidad basada en la longitud de la racha actual
-                            const streakLength = i - startIndex + 1;
-                            // Nueva escala de intensidad:
-                            // 1-5: 25%, 5-10: 50%, 10-15: 75%, 15-20: 100%
-                            let intensity;
-                              if (streakLength <= 5) {
-                                intensity = 25;
-                              } else if (streakLength <= 10) {
-                                intensity = 50;
-                              } else if (streakLength <= 15) {
-                                intensity = 75;
-                              } else {
-                                intensity = 100;
-                              }
-                            currentStreak = intensity;
-                            streakType = 'win';
-                          }
-                        }
-
-                        // Para rachas perdedoras (mínimo 3)
-                        if (!streakType && lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "LOST")) {
-                          // Si encontramos 3 pérdidas seguidas, buscamos el inicio real de la racha
-                          startIndex = i - 2; // Comenzamos desde el inicio de las 3 pérdidas detectadas
-                          while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
-                            startIndex--;
-                          }
-                          
-                          // Marcar toda la racha desde el inicio hasta la posición actual
-                          if (i >= startIndex) {
-                            // Calculamos la intensidad basada en la longitud de la racha actual
-                            const streakLength = i - startIndex + 1;
-                            // Usamos la misma escala de intensidad que en el resto del código
-                            let intensity;
-                            if (streakLength <= 5) {
-                              intensity = 25;
-                            } else if (streakLength <= 10) {
-                              intensity = 50;
-                            } else if (streakLength <= 20) {
-                              intensity = 100;
-                            } else {
-                              intensity = 100;
-                            }
-                            currentStreak = intensity;
-                            streakType = 'lose';
-                          }
-                        }
-                        
-                        // Si no estamos al final pero estamos dentro de una racha existente
-                        // startIndex ya está declarado en la línea 2817
-                        
-                        if (!streakType && i > 0) {
-                          // Verificar si estamos en medio de una racha ganadora
-                          if (bets[i].status === "WON" && bets[i-1].status === "WON") {
-                            startIndex = i; // Reasignamos el valor
-                            while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
-                              startIndex--;
-                            }                            // Solo mostrar si hay al menos 3 en la racha
-                            if ((i - startIndex + 1) >= 3) {
-                              const streakLength = i - startIndex + 1;
-                              // Calcular intensidad basada en la longitud de la racha:
-                              // 1-5: 25%, 5-10: 50%, 10-20: 100%
-                              let intensity;
-                              if (streakLength <= 5) {
-                                intensity = 25;
-                              } else if (streakLength <= 10) {
-                                intensity = 50;
-                              } else if (streakLength <= 20) {
-                                intensity = 100;
-                              } else {
-                                intensity = 100;
-                              }
-                              currentStreak = intensity;
-                              streakType = 'win';
-                            }
-                          }
-                          // Verificar si estamos en medio de una racha perdedora
-                          else if (bets[i].status === "LOST" && bets[i-1].status === "LOST") {
-                            startIndex = i; // Reasignamos el valor
-                            while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
-                              startIndex--;
-                            }                            // Solo mostrar si hay al menos 3 en la racha
-                            if ((i - startIndex + 1) >= 3) {
-                              const streakLength = i - startIndex + 1;
-                              // Calcular intensidad basada en la longitud de la racha:
-                              // 1-5: 25%, 5-10: 50%, 10-20: 100%
-                              let intensity;
-                              if (streakLength <= 5) {
-                                intensity = 25;
-                              } else if (streakLength <= 10) {
-                                intensity = 50;
-                              } else if (streakLength <= 20) {
-                                intensity = 100;
-                              } else {
-                                intensity = 100;
-                              }
-                              currentStreak = intensity;
-                              streakType = 'lose';
-                            }
-                          }
-                        }
-                        
-                        // Formateamos la hora para mostrarla en el tooltip
-                        const betTime = new Date(bet.timestamp).toLocaleTimeString('es-ES', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        });                          return {
-                          ronda: i + 1,
-                          tiempo: betTime,
-                          rachaGanadora: streakType === 'win' ? currentStreak : 0,
-                          rachaPerdedora: streakType === 'lose' ? currentStreak : 0,
-                          ganadas: (won / maxTotal) * 100,
-                          perdidas: (lost / maxTotal) * 100,
-                          liquidadas: (liquidated / maxTotal) * 100,
-                          pendientes: (pending / maxTotal) * 100,
-                          numApuestas: streakType ? (i - startIndex + 1) : 0, // Número actual de apuestas en la racha
-                          racha: streakType === 'win' ? 'ganadora' : streakType === 'lose' ? 'perdedora' : null,
-                          startTime: streakType ? new Date(bets[startIndex].timestamp).toLocaleTimeString('es-ES', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : null,
-                          // Datos adicionales para el tooltip
-                          betAmount: bet.amount,
-                          betStatus: bet.status,
-                          betPrediction: bet.prediction,
-                          betLeverage: bet.leverage || 1,
-                          betSymbol: bet.symbol,                          betTimeframe: bet.timeframe,
-                          scaleFactor: scaleFactor, // Agregar el factor de escala a los datos
-                        };
-                      });
-                  })()}
-                >                  <defs>
-                    <linearGradient id="fillWon" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0.1} />
-                    </linearGradient>
-                    <linearGradient id="fillLost" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
-                    </linearGradient>
-                    <linearGradient id="fillLiquidated" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#eab308" stopOpacity={0.1} />
-                    </linearGradient>
-                    <linearGradient id="fillPending" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.1} />
-                    </linearGradient>                    <linearGradient id="fillStreak" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0.3} />
-                    </linearGradient>
-                    <linearGradient id="fillLoseStreak" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#991b1b" stopOpacity={0.9} />
-                      <stop offset="95%" stopColor="#991b1b" stopOpacity={0.3} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <YAxis 
-                    domain={[0, 100]}
-                    tickFormatter={(value) => `${value}%`}
-                    width={40}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    minTickGap={32}
-                    tickFormatter={(value) => {
-                      return value;
-                    }}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-black/90 p-3 rounded-lg border border-yellow-400 shadow-lg">                            <div className="text-white font-medium mb-1">                              Apuesta #{data.ronda} • {data.tiempo}
-                              <span className={`ml-2 ${data.betPrediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>
-                                {data.betPrediction === "BULLISH" ? "Alcista" : "Bajista"}
-                              </span>
-                              {data.betStatus !== "PENDING" && (
-                                <span className={`ml-2 ${
-                                  data.betStatus === "WON" ? "text-green-400" : 
-                                  data.betStatus === "LOST" ? "text-red-400" : 
-                                  "text-yellow-400"
-                                }`}>
-                                  {data.betStatus === "WON" ? "- Ganada" : 
-                                   data.betStatus === "LOST" ? "- Perdida" : 
-                                   "- Liquidada"}
-                                </span>
-                              )}
-                            </div>
-                            {data.betStatus === "PENDING" && (
-                              <div className="bg-blue-500/20 p-2 rounded mb-2 border border-blue-500/50">
-                                <div className="text-blue-300 font-bold">APUESTA PENDIENTE</div>
-                                <div className="text-white text-sm">
-                                  <div>Predicción: <span className={data.betPrediction === "BULLISH" ? "text-green-400" : "text-red-400"}>
-                                    {data.betPrediction === "BULLISH" ? "ALCISTA" : "BAJISTA"}
-                                  </span></div>
-                                  <div>Monto: {data.betAmount} monedas</div>
-                                  <div>Apalancamiento: {data.betLeverage}x</div>
-                                  <div>Par: {data.betSymbol}</div>
-                                  <div>Timeframe: {data.betTimeframe}</div>
-                                </div>
-                              </div>                            )}                            {(data.rachaGanadora > 0 || data.rachaPerdedora > 0) && (                              <div className={`${data.rachaGanadora > 0 ? 'bg-green-900/50' : 'bg-red-900/50'} p-2 rounded mb-2 border ${data.rachaGanadora > 0 ? 'border-green-600' : 'border-red-600'}`}>
-                                <div className={`${data.rachaGanadora > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>
-                                  ¡{data.rachaGanadora > 0 ? 'RACHA GANADORA!' : 'RACHA PERDEDORA!'}
-                                </div>                                <div className="text-white text-sm">
-                                  {data.numApuestas} apuestas consecutivas
-                                </div>
-                                <div className="text-white/80 text-xs">
-                                  Intensidad: {Math.round(data.rachaGanadora || data.rachaPerdedora)}%
-                                </div>
-                              </div>
-                            )}
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="text-green-400 text-xs">Ganadas: {Math.round(data.ganadas)}%</div>
-                              <div className="text-red-400 text-xs">Perdidas: {Math.round(data.perdidas)}%</div>
-                              <div className="text-yellow-400 text-xs">Liquidadas: {Math.round(data.liquidadas)}%</div>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />                  <Area                    dataKey="rachaGanadora"
-                    type="monotone"
-                    fill="url(#fillStreak)"
-                    stroke="#22c55e"
-                    strokeWidth={3}
-                    stackId="0"
-                    fillOpacity={1}
-                  /><Area
-                    dataKey="rachaPerdedora"
-                    type="monotone"
-                    fill="url(#fillLoseStreak)"
-                    stroke="#991b1b"
-                    strokeWidth={2}
-                    stackId="0"
-                    fillOpacity={1}
-                  />
-                  <Area
-                    dataKey="ganadas"
-                    type="monotone"
-                    fill="url(#fillWon)"
-                    stroke="#22c55e"
-                    stackId="1"
-                    fillOpacity={0.8}
-                  />
-                  <Area
-                    dataKey="perdidas"
-                    type="monotone"
-                    fill="url(#fillLost)"
-                    stroke="#ef4444"
-                    stackId="2"
-                    fillOpacity={0.6}
-                  />
-                  <Area
-                    dataKey="liquidadas"
-                    type="monotone"
-                    fill="url(#fillLiquidated)"
-                    stroke="#000000"
-                    strokeWidth={1.5}
-                    stackId="3"
-                    fillOpacity={0.7}
-                  />
-                  <Area
-                    dataKey="pendientes"
-                    type="monotone"
-                    fill="url(#fillPending)"
-                    stroke="#60a5fa"
-                    strokeWidth={1.5}
-                    stackId="4"
-                    fillOpacity={0.7}
-                  />
-                  <Legend />
-                </AreaChart>
-              </ChartContainer>
-            </CardContent>
-            {/* Botón para ver apuestas pendientes */}
-            {bets.filter(bet => bet.status === "PENDING").length > 0 && (
-              <div className="flex justify-center pb-4">
-                <button
-                  onClick={() => {
-                    const pendingBets = bets.filter(bet => bet.status === "PENDING");
-                    setPendingBets(pendingBets);
-                    setIsPendingBetsModalOpen(true);
-                  }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-full px-4 py-2 text-sm flex items-center gap-2 transition-all duration-200 shadow-md"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Ver {bets.filter(bet => bet.status === "PENDING").length} apuestas pendientes
-                </button>
-              </div>
-            )}
-          </Card>
-
-          {/* Nuevo gráfico de rachas */}
-          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
-            <CardHeader className="items-center pb-4">
-              <CardTitle>Rachas de Trading</CardTitle>
-              <CardDescription className="text-black">Análisis de tus rachas ganadoras y perdedoras</CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center items-center p-6">
-              <div className="grid grid-cols-3 gap-8 w-full">
-                {/* Gráfico Radial */}
-                <div className="col-span-1 bg-black rounded-xl p-4 flex flex-col items-center justify-center gap-8">
-                  <div className="w-full flex justify-center" style={{ position: 'relative' }}>                    <RadialBarChart
-                      width={200}
-                      height={160}
-                      innerRadius={30}
-                      outerRadius={90} // Adjusted to accommodate 3 bars after removing one
-                      data={[
-                        {
-                          name: 'Racha Actual',
-                          value: streakStats.currentWinStreak || streakStats.currentLoseStreak,
-                          fill: streakStats.currentWinStreak > 0 ? '#22c55e' : '#ef4444'
-                        },
-                        {
-                          name: 'Racha Perdedora',
-                          value: streakStats.maxLoseStreak,
-                          fill: '#ef4444'
-                        },
-                        {
-                          name: 'Racha Ganadora', // This will be labeled as 'Mejor Racha'
-                          value: streakStats.maxWinStreak,
-                          fill: '#22c55e'
-                        }
-                      ]}
-                      startAngle={0}
-                      endAngle={360}
-                    >
-                      <RadialBar
-                        background={{ fill: '#000000' }}
-                        dataKey="value"
-                        cornerRadius={10}
-                      />
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {                            const streakType = payload[0].payload.name;
-                            const streakLength = payload[0].payload.value;
-                            const streakText = streakType === 'Racha Actual' ? 
-                              `${streakType} (${streakLength} ${streakLength === 1 ? 'apuesta' : 'apuestas'})` :
-                              `${streakType} (${streakLength} apuestas consecutivas)`;
-                            return (
-                              <div className="bg-black p-2 rounded border border-yellow-500">
-                                <p className="text-white">{streakText}</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                    </RadialBarChart>
-                  </div>                  <div className="w-full text-center mt-4">
-                    <div className="flex justify-center gap-4 flex-wrap">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                        <span className="text-xs text-white">Racha Actual</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                        <span className="text-xs text-white">Racha Perdedora</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                        <span className="text-xs text-white">Mejor Racha</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Estadísticas de Rachas */}
-                <div className="col-span-2 grid grid-cols-2 gap-4">
-                  {/* Racha Actual */}
-                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
-                    <p className="text-yellow-400 text-lg font-medium mb-2">Racha Actual</p>
-                    <div className="flex items-center gap-2">
-                      <div className={`text-4xl font-bold ${streakStats.currentWinStreak > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {streakStats.currentWinStreak || streakStats.currentLoseStreak}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {streakStats.currentWinStreak > 0 ? 'victorias' : 'derrotas'}
-                      </div>
-                    </div>
-                    {/* Visualización de apuestas de la racha */}
-                    <div className="flex flex-wrap justify-center mt-3 gap-1">
-                      {streakStats.currentWinStreak > 0 && streakStats.currentWinStreakBets && 
-                        streakStats.currentWinStreakBets.map((bet, index) => (
-                          <div 
-                            key={`current-win-${index}`} 
-                            className={`w-2 h-2 rounded-full ${bet.prediction === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}
-                            title={`${bet.prediction === 'BULLISH' ? 'Alcista' : 'Bajista'} - ${new Date(bet.timestamp).toLocaleTimeString()}`}
-                          />
-                      ))}
-                      {streakStats.currentLoseStreak > 0 && streakStats.currentLoseStreakBets && 
-                        streakStats.currentLoseStreakBets.map((bet, index) => (
-                          <div 
-                            key={`current-lose-${index}`} 
-                            className={`w-2 h-2 rounded-full ${bet.prediction === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}
-                            title={`${bet.prediction === 'BULLISH' ? 'Alcista' : 'Bajista'} - ${new Date(bet.timestamp).toLocaleTimeString()}`}
-                          />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Mejor Racha */}
-                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
-                    <p className="text-yellow-400 text-lg font-medium mb-2">Mejor Racha</p>
-                    <div className="flex items-center gap-2">
-                      <div className="text-4xl font-bold text-green-500">
-                        {streakStats.maxWinStreak}
-                      </div>
-                      <div className="text-sm text-gray-400">victorias</div>
-                    </div>
-                    {streakStats.maxWinStreakTime && (
-                      <div className="text-xs text-gray-400 mt-2">
-                        {new Date(streakStats.maxWinStreakTime).toLocaleTimeString()}
-                      </div>
-                    )}
-                    {/* Visualización de apuestas de la racha */}
-                    <div className="flex flex-wrap justify-center mt-3 gap-1">
-                      {streakStats.maxWinStreakBets && streakStats.maxWinStreakBets.map((bet, index) => (
-                        <div 
-                          key={`win-${index}`} 
-                          className={`w-2 h-2 rounded-full ${bet.prediction === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}
-                          title={`${bet.prediction === 'BULLISH' ? 'Alcista' : 'Bajista'} - ${new Date(bet.timestamp).toLocaleTimeString()}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Peor Racha */}
-                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
-                    <p className="text-yellow-400 text-lg font-medium mb-2">Peor Racha</p>
-                    <div className="flex items-center gap-2">
-                      <div className="text-4xl font-bold text-red-500">
-                        {streakStats.maxLoseStreak}
-                      </div>
-                      <div className="text-sm text-gray-400">derrotas</div>
-                    </div>
-                    {streakStats.maxLoseStreakTime && (
-                      <div className="text-xs text-gray-400 mt-2">
-                        {new Date(streakStats.maxLoseStreakTime).toLocaleTimeString()}
-                      </div>
-                    )}
-                    {/* Visualización de apuestas de la racha */}
-                    <div className="flex flex-wrap justify-center mt-3 gap-1">
-                      {streakStats.maxLoseStreakBets && streakStats.maxLoseStreakBets.map((bet, index) => (
-                        <div 
-                          key={`lose-${index}`} 
-                          className={`w-2 h-2 rounded-full ${bet.prediction === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}
-                          title={`${bet.prediction === 'BULLISH' ? 'Alcista' : 'Bajista'} - ${new Date(bet.timestamp).toLocaleTimeString()}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Promedio */}
-                  <div className="bg-black rounded-xl p-6 flex flex-col items-center justify-center">
-                    <p className="text-yellow-400 text-lg font-medium mb-2">Promedio</p>
-                    <div className="flex items-center gap-2">
-                      <div className="text-4xl font-bold text-blue-500">
-                        {Math.round((streakStats.maxWinStreak + streakStats.maxLoseStreak) / 2)}
-                      </div>
-                      <div className="text-sm text-gray-400">apuestas</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Tarjeta 1: Análisis de Rentabilidad */}
-          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
-            <CardHeader className="items-center pb-4">
-              <CardTitle>Tu Tangled Map</CardTitle>
+              <CardTitle>Tu Tangle Map</CardTitle>
               <CardDescription className="text-black">Visualización del árbol de apuestas</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center items-center p-6 bg-yellow-400 rounded-b-xl">
@@ -3583,17 +3049,55 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Tarjeta 2: Distribución de Apuestas */}
-          <Card className="bg-zinc-900 border-zinc-800 shadow-xl rounded-xl mt-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold text-white">Historial de Apuestas</CardTitle>
-              <CardDescription className="text-zinc-400">
-                Visualización de tus apuestas y balance a lo largo del tiempo
+          {/* Gráfico Hexbin Area */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Gráfico Hexbin Area</CardTitle>
+              <CardDescription className="text-black">
+                Visualización de apuestas por precio y tiempo con Hexbin Area
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0 pb-12">
-              <div className="w-full h-[700px] flex flex-col items-center justify-center text-zinc-600 font-medium bg-black rounded-xl">
-                Gráfico de distribución (próximamente)
+            <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+              <div className="w-full h-[700px] bg-yellow-400 rounded-xl overflow-hidden">
+                {(() => {
+                  const { bets } = useGame();
+                  
+                  // Verificar si hay apuestas disponibles
+                  if (!bets || bets.length === 0) {
+                    return (
+                      <div className="w-full h-full flex items-center justify-center text-black font-medium bg-yellow-400 rounded-xl">
+                        No hay datos de apuestas disponibles
+                      </div>
+                    );
+                  }
+                  
+                  // Preparar los datos para el gráfico de hexbin
+                  const hexbinData = bets.map(bet => ({
+                    id: bet.id || '',
+                    amount: bet.amount || 0,
+                    price: bet.entryPrice || 0,
+                    timestamp: new Date(bet.timestamp).getTime(),
+                    prediction: bet.prediction as 'BULLISH' | 'BEARISH',
+                    status: bet.status as 'WON' | 'LOST' | 'PENDING' | 'LIQUIDATED'
+                  }));
+                  
+                  // Filtrar apuestas sin precio de entrada
+                  const filteredData = hexbinData.filter(bet => bet.price > 0);
+                  
+                  return filteredData.length > 0 ? (
+                    <div className="w-full h-full p-4 bg-yellow-400 rounded-xl">
+                      <HexbinAreaChart 
+                        data={filteredData}
+                        width={800}
+                        height={650}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-black font-medium bg-yellow-300/50 rounded-xl">
+                      No hay suficientes datos para generar el gráfico de distribución
+                    </div>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
