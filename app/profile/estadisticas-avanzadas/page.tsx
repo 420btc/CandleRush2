@@ -101,11 +101,44 @@ interface StoredBet {
   status: string;
   timestamp: number;
   amount: number;
+  prediction?: 'BULLISH' | 'BEARISH';
+  leverage?: number;
+  entryPrice?: number;
+  symbol?: string;
+  timeframe?: string;
   // Otros campos necesarios
 }
 
-// Clave para localStorage
+// Claves para localStorage
 const STORAGE_KEY = 'betting_stats_data';
+const BETS_BY_PAIR_KEY = 'betsByPair';
+
+// Función para obtener todas las apuestas de localStorage
+function getAllBetsFromStorage(): StoredBet[] {
+  try {
+    // Intentar obtener de nuestra clave primero
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    if (storedData) {
+      const parsed = JSON.parse(storedData);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+
+    // Si no hay datos en nuestra clave, intentar obtener de betsByPair
+    const betsByPairData = localStorage.getItem(BETS_BY_PAIR_KEY);
+    if (betsByPairData) {
+      const parsed = JSON.parse(betsByPairData);
+      // Aplanar el objeto de apuestas por par y timeframe
+      return Object.values(parsed).flatMap((pairData: any) => 
+        Object.values(pairData).flat()
+      ) as StoredBet[];
+    }
+  } catch (error) {
+    console.error('Error al leer apuestas de localStorage:', error);
+  }
+  return [];
+}
 
 export default function EstadisticasAvanzadas() {
   const router = useRouter();
@@ -117,20 +150,27 @@ export default function EstadisticasAvanzadas() {
   // Cargar datos al montar el componente
   useEffect(() => {
     try {
-      // Intentar cargar datos guardados
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        // Filtrar solo las apuestas de las últimas 24 horas
-        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-        const recentBets = parsedData.filter((bet: StoredBet) => 
-          bet.timestamp >= twentyFourHoursAgo
-        );
-        setBets(recentBets);
-        setTreeData(convertBetsToTreeData(recentBets));
+      // Obtener todas las apuestas de localStorage
+      const allBets = getAllBetsFromStorage();
+      
+      // Filtrar solo las apuestas de las últimas 24 horas
+      const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+      const recentBets = allBets.filter(bet => 
+        bet.timestamp >= twentyFourHoursAgo
+      );
+      
+      // Ordenar por timestamp (más recientes primero)
+      recentBets.sort((a, b) => b.timestamp - a.timestamp);
+      
+      setBets(recentBets);
+      setTreeData(convertBetsToTreeData(recentBets));
+      
+      // Si hay apuestas, guardarlas en nuestro formato para futuras cargas
+      if (recentBets.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recentBets));
       }
     } catch (error) {
-      console.error('Error loading betting data:', error);
+      console.error('Error cargando datos de apuestas:', error);
     } finally {
       setIsLoading(false);
     }
@@ -166,20 +206,43 @@ export default function EstadisticasAvanzadas() {
       // Evitar duplicados
       if (prevBets.some(b => b.id === bet.id)) return prevBets;
       
-      const newBets = [...prevBets, bet];
+      const newBets = [bet, ...prevBets]; // Agregar al inicio para mantener orden cronológico
       // Mantener solo las últimas 100 apuestas para evitar que el localStorage crezca demasiado
-      const limitedBets = newBets.slice(-100);
+      const limitedBets = newBets.slice(0, 100);
       
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(limitedBets));
       } catch (error) {
-        console.error('Error saving betting data:', error);
+        console.error('Error guardando datos de apuestas:', error);
       }
       
       return limitedBets;
     });
   };
-
+  
+  // Función para sincronizar con las apuestas existentes
+  const syncWithExistingBets = () => {
+    try {
+      const allBets = getAllBetsFromStorage();
+      const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+      const recentBets = allBets.filter(bet => bet.timestamp >= twentyFourHoursAgo);
+      recentBets.sort((a, b) => b.timestamp - a.timestamp);
+      
+      setBets(recentBets);
+      setTreeData(convertBetsToTreeData(recentBets));
+      
+      if (recentBets.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recentBets));
+      }
+    } catch (error) {
+      console.error('Error sincronizando apuestas:', error);
+    }
+  };
+  
+  // Sincronizar cuando se monta el componente
+  useEffect(() => {
+    syncWithExistingBets();
+  }, []);
   // Efecto para actualizar los datos periódicamente
   useEffect(() => {
     if (!isAnimating || isLoading) return;
@@ -204,40 +267,42 @@ export default function EstadisticasAvanzadas() {
       <Button 
         onClick={() => router.back()}
         variant="outline" 
-        className="mb-6 bg-black/50 border-yellow-500/50 hover:bg-yellow-500/20 hover:text-white transition-colors"
+        className="mb-4 bg-black/50 border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-400 transition-colors"
       >
         <ChevronLeft className="w-4 h-4 mr-2" />
         Volver al perfil
       </Button>
 
-      <h1 className="text-3xl font-bold text-white mb-8">Estadísticas Avanzadas</h1>
+      <h1 className="text-3xl font-bold text-yellow-400 mb-6">Estadísticas Avanzadas</h1>
       
       <div className="grid grid-cols-1 gap-8">
         {/* Gráfico de árbol enredado */}
         <Card className="bg-black/50 border-yellow-500/30 rounded-xl overflow-hidden shadow-xl">
-          <CardHeader className="border-b border-yellow-500/20">
+          <CardHeader className="border-b border-yellow-500/20 p-4">
             <div className="flex justify-between items-center">
-              <div>
-                <CardTitle className="text-yellow-400">Árbol de Operaciones</CardTitle>
-                <CardDescription className="text-yellow-100/60">
-                  Visualización de tus apuestas en tiempo real
-                </CardDescription>
+              <CardTitle className="text-yellow-400 text-2xl font-bold tracking-tight [&>h3]:text-yellow-400">
+                <h3 className="text-yellow-400">Visor Tangle Tree</h3>
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsAnimating(!isAnimating)}
+                  className="bg-black/30 border-yellow-500/30 hover:bg-yellow-500/20 text-yellow-400 h-8 px-3"
+                >
+                  {isAnimating ? 'Pausar' : 'Reanudar'}
+                </Button>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsAnimating(!isAnimating)}
-                className="bg-black/30 border-yellow-500/30 hover:bg-yellow-500/20 text-yellow-400"
-              >
-                {isAnimating ? 'Pausar' : 'Reanudar'}
-              </Button>
             </div>
+            <CardDescription className="text-white text-sm mt-0.5 [&>p]:text-white">
+              <p className="text-white">Visualización de tus apuestas en tiempo real</p>
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-[600px] w-full">
               {isLoading ? (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-yellow-400/70">Cargando datos...</p>
+                  <p className="text-yellow-300/80">Cargando datos...</p>
                 </div>
               ) : bets.length > 0 ? (
                 <TangledTreeChart 
@@ -246,23 +311,23 @@ export default function EstadisticasAvanzadas() {
                   data={treeData} 
                 />
               ) : (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-yellow-400/70">No hay datos de apuestas recientes</p>
+                <div className="h-full flex items-center justify-center p-4">
+                  <p className="text-yellow-300/80 text-center">No hay datos de apuestas recientes en las últimas 24 horas</p>
                 </div>
               )}
             </div>
-            <div className="mt-4 flex justify-center space-x-6 text-sm">
+            <div className="mt-3 flex justify-center gap-4 text-sm">
               <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                <span className="text-gray-300">Ganadas</span>
+                <div className="w-3 h-3 rounded-full bg-green-500 mr-1.5"></div>
+                <span className="text-yellow-100/80">Ganadas</span>
               </div>
               <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                <span className="text-gray-300">Perdidas</span>
+                <div className="w-3 h-3 rounded-full bg-red-500 mr-1.5"></div>
+                <span className="text-yellow-100/80">Perdidas</span>
               </div>
               <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                <span className="text-gray-300">Liquidadas</span>
+                <div className="w-3 h-3 rounded-full bg-yellow-500 mr-1.5"></div>
+                <span className="text-yellow-100/80">Liquidadas</span>
               </div>
             </div>
           </CardContent>
