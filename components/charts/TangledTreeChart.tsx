@@ -51,8 +51,8 @@ export default function TangledTreeChart({
     liquidation: '#000000',
     pending: '#a855f7',
     balance: '#3b82f6',
-    bullish: '#22d3ee',  // Azul claro
-    bearish: '#f97316',  // Naranja
+    bullish: '#15803d',  // Verde oscuro
+    bearish: '#b91c1c',  // Rojo oscuro
     liquidated: '#000000' // Negro
   },
   showTooltip = false,

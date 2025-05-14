@@ -3434,11 +3434,11 @@ export default function ProfilePage() {
                             <span className="text-sm">Pendientes</span>
                           </div>
                           <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-cyan-400 mr-2"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-700 mr-2"></div>
                             <span className="text-sm">Alcistas</span>
                           </div>
                           <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                            <div className="w-3 h-3 rounded-full bg-red-700 mr-2"></div>
                             <span className="text-sm">Bajistas</span>
                           </div>
                         </div>
@@ -3458,8 +3458,8 @@ export default function ProfilePage() {
                           liquidation: '#000000',
                           pending: '#a855f7',
                           balance: '#3b82f6',
-                          bullish: '#22d3ee',  // Azul claro
-                          bearish: '#f97316',  // Naranja
+                          bullish: '#15803d',  // Verde oscuro
+                          bearish: '#b91c1c',  // Rojo oscuro
                           liquidated: '#000000' // Negro
                         }}
                         showTooltip={true}
