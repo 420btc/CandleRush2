@@ -2877,14 +2877,42 @@ export default function ProfilePage() {
                   };
                   
                   // Generar puntos para visualización de rachas
-                  const generateStreakDots = (count: number, type: string): React.ReactElement => {
+                  const generateStreakDots = (count: number, type: string, timestamp: number): React.ReactElement => {
                     const dots: React.ReactElement[] = [];
+                    
+                    // Formatear la fecha para mostrar hora y minuto
+                    const formatDate = (timestamp: number): string => {
+                      const date = new Date(timestamp);
+                      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                    };
+                    
+                    // Calcular timestamps para cada apuesta individual (simulados)
+                    const calculateIndividualTimestamps = (baseTimestamp: number, count: number): number[] => {
+                      const timestamps: number[] = [];
+                      // Para simular apuestas individuales, calculamos el inicio de la racha
+                      // y luego vamos sumando minutos para cada apuesta siguiente
+                      const startTime = baseTimestamp - ((count - 1) * 60000); // Tiempo de la primera apuesta
+                      
+                      for (let i = 0; i < count; i++) {
+                        // Cada apuesta es 1 minuto después que la anterior (de izquierda a derecha)
+                        timestamps.push(startTime + (i * 60000));
+                      }
+                      return timestamps;
+                    };
+                    
+                    const individualTimestamps = calculateIndividualTimestamps(timestamp, count);
+                    
                     for (let i = 0; i < count; i++) {
+                      const betTime = formatDate(individualTimestamps[i]);
                       dots.push(
                         <div 
                           key={i} 
-                          className={`w-1.5 h-1.5 rounded-full ${type === 'win' ? 'bg-green-500' : 'bg-red-500'}`}
-                        />
+                          className={`w-1.5 h-1.5 rounded-full ${type === 'win' ? 'bg-green-500' : 'bg-red-500'} cursor-pointer relative group`}
+                        >
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            {betTime}
+                          </div>
+                        </div>
                       );
                     }
                     return (
@@ -2909,6 +2937,7 @@ export default function ProfilePage() {
                               transition: 'transform 1s ease-in-out'
                             }}
                           />
+
                           
                           {/* Círculo medio */}
                           <div 
@@ -2920,6 +2949,7 @@ export default function ProfilePage() {
                               transition: 'transform 1s ease-in-out'
                             }}
                           />
+
                           
                           {/* Círculo interior */}
                           <div 
@@ -2931,6 +2961,7 @@ export default function ProfilePage() {
                               transition: 'transform 1s ease-in-out'
                             }}
                           />
+
                           
                           {/* Fondo negro */}
                           <div className="absolute inset-[60px] rounded-full bg-black" />
@@ -2939,60 +2970,60 @@ export default function ProfilePage() {
                       
                       {/* Leyenda */}
                       <div className="flex flex-col justify-center gap-1 pl-48 text-xs">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 bg-black/30 px-2 py-1 rounded-md">
                           <div className="w-3 h-3 rounded-full bg-green-500" />
-                          <span className="text-xs">Racha Actual</span>
+                          <span className="text-xs font-medium">Racha Actual</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 bg-black/30 px-2 py-1 rounded-md">
                           <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                          <span className="text-xs">Racha Máxima</span>
+                          <span className="text-xs font-medium">Racha Máxima</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 bg-black/30 px-2 py-1 rounded-md">
                           <div className="w-3 h-3 rounded-full bg-red-500" />
-                          <span className="text-xs">Racha Perdedora</span>
+                          <span className="text-xs font-medium">Racha Perdedora</span>
                         </div>
                       </div>
                       
                       {/* Estadísticas */}
-                      <div className="bg-black p-2 rounded-lg col-span-2 md:col-span-1">
+                      <div className="bg-black/80 p-2 rounded-lg col-span-2 md:col-span-1 border border-yellow-500/20 shadow-lg">
                         <h3 className="text-yellow-400 font-medium text-center text-sm">Racha Actual</h3>
                         <div className={`text-3xl font-bold text-center ${currentStreak.type === 'win' ? 'text-green-500' : 'text-red-500'}`}>
                           {currentStreak.count}
                         </div>
-                        <div className="text-xs text-center text-gray-400">
+                        <div className="text-xs text-center text-gray-300">
                           {currentStreak.type === 'win' ? 'victorias' : 'derrotas'}
                         </div>
-                        {generateStreakDots(Math.min(currentStreak.count, 15), currentStreak.type)}
+                        {generateStreakDots(Math.min(currentStreak.count, 15), currentStreak.type, currentStreak.timestamp)}
                       </div>
                       
-                      <div className="bg-black p-2 rounded-lg">
+                      <div className="bg-black/80 p-2 rounded-lg border border-yellow-500/20 shadow-lg">
                         <h3 className="text-yellow-400 font-medium text-center text-sm">Mejor Racha</h3>
                         <div className="text-3xl font-bold text-center text-green-500">
                           {longestWinStreak.count}
                         </div>
-                        <div className="text-xs text-center text-gray-400">
+                        <div className="text-xs text-center text-gray-300">
                           victorias
                         </div>
-                        {generateStreakDots(Math.min(longestWinStreak.count, 15), 'win')}
+                        {generateStreakDots(Math.min(longestWinStreak.count, 15), 'win', longestWinStreak.timestamp)}
                       </div>
                       
-                      <div className="bg-black p-2 rounded-lg">
+                      <div className="bg-black/80 p-2 rounded-lg border border-yellow-500/20 shadow-lg">
                         <h3 className="text-yellow-400 font-medium text-center text-sm">Peor Racha</h3>
                         <div className="text-3xl font-bold text-center text-red-500">
                           {longestLossStreak.count}
                         </div>
-                        <div className="text-xs text-center text-gray-400">
+                        <div className="text-xs text-center text-gray-300">
                           derrotas
                         </div>
-                        {generateStreakDots(Math.min(longestLossStreak.count, 15), 'loss')}
+                        {generateStreakDots(Math.min(longestLossStreak.count, 15), 'loss', longestLossStreak.timestamp)}
                       </div>
                       
-                      <div className="bg-black p-2 rounded-lg">
+                      <div className="bg-black/80 p-2 rounded-lg border border-yellow-500/20 shadow-lg">
                         <h3 className="text-yellow-400 font-medium text-center text-sm">Promedio</h3>
                         <div className="text-3xl font-bold text-center text-blue-500">
                           {totalBets}
                         </div>
-                        <div className="text-xs text-center text-gray-400">
+                        <div className="text-xs text-center text-gray-300">
                           apuestas
                         </div>
                       </div>
