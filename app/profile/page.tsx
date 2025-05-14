@@ -2854,10 +2854,20 @@ export default function ProfilePage() {
                           
                           // Marcar toda la racha desde el inicio hasta la posición actual
                           if (i >= startIndex) {
-                            // Usamos el mismo factor de escala para mantener la proporción
-                            const maxPossibleStreak = bets.length;
-                            const scaleFactor = 100 / Math.max(5, maxPossibleStreak);
-                            currentStreak = (i - startIndex + 1) * scaleFactor;
+                            // Calculamos la intensidad basada en la longitud de la racha actual
+                            const streakLength = i - startIndex + 1;
+                            // Usamos la misma escala de intensidad que en el resto del código
+                            let intensity;
+                            if (streakLength <= 5) {
+                              intensity = 25;
+                            } else if (streakLength <= 10) {
+                              intensity = 50;
+                            } else if (streakLength <= 20) {
+                              intensity = 100;
+                            } else {
+                              intensity = 100;
+                            }
+                            currentStreak = intensity;
                             streakType = 'lose';
                           }
                         }
