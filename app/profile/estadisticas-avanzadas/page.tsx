@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
-import TestBetGenerator from "@/components/test-bet-generator";
+import { useGame } from "@/context/game-context";
+import { Play, Pause } from "lucide-react";
 
 // Importación dinámica para evitar problemas de SSR
 const TangledTreeChart = dynamic(
@@ -117,6 +118,7 @@ type NewBetEvent = CustomEvent<StoredBet>;
 declare global {
   interface WindowEventMap {
     'newBet': NewBetEvent;
+    'autoBet': NewBetEvent; // Evento específico para apuestas automáticas
   }
 }
 
@@ -139,6 +141,9 @@ function addActiveBet(bet: StoredBet) {
   // Evitar duplicados
   if (!activeBets.some(b => b.id === bet.id)) {
     activeBets = [bet, ...activeBets].slice(0, 30); // Mantener máximo 30 apuestas en memoria
+    
+    // Disparar evento para notificar que se ha añadido una nueva apuesta
+    console.log('Nueva apuesta añadida:', bet);
   }
 }
 
@@ -175,11 +180,13 @@ function getAllBetsFromStorage(): StoredBet[] {
 
 export default function EstadisticasAvanzadas() {
   const router = useRouter();
+  const { autoMix, toggleAutoMix, placeBet, betsByPair, currentSymbol, timeframe } = useGame();
   const [bets, setBets] = useState<StoredBet[]>([]);
   const [treeData, setTreeData] = useState<TreeNode>(convertBetsToTreeData([]));
   const [isAnimating, setIsAnimating] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isLive, setIsLive] = useState(true);
+  const [lastAutoMixBet, setLastAutoMixBet] = useState<StoredBet | null>(null);
 
   // Función para manejar el clic en el botón de retroceso
   const handleBack = () => {
@@ -221,6 +228,52 @@ export default function EstadisticasAvanzadas() {
     return () => clearInterval(updateInterval);
   }, [syncWithActiveBets]);
 
+  // Monitorear las apuestas de AutoMix
+  useEffect(() => {
+    // Función para monitorear nuevas apuestas en betsByPair
+    const checkForNewBets = () => {
+      if (!currentSymbol || !timeframe || !betsByPair[currentSymbol] || !betsByPair[currentSymbol][timeframe]) {
+        return;
+      }
+      
+      const currentBets = betsByPair[currentSymbol][timeframe];
+      if (currentBets.length === 0) return;
+      
+      // Obtener la apuesta más reciente
+      const latestBet = currentBets[currentBets.length - 1];
+      
+      // Verificar si es una apuesta automática de AutoMix
+      if (latestBet.esAutomatica === 'Sí' && latestBet.autoType === 'MIX') {
+        // Convertir a formato StoredBet
+        const newBet: StoredBet = {
+          id: latestBet.id,
+          status: latestBet.status || 'PENDING',
+          timestamp: latestBet.timestamp,
+          amount: latestBet.amount,
+          prediction: latestBet.prediction,
+          leverage: latestBet.leverage,
+          entryPrice: latestBet.entryPrice,
+          symbol: currentSymbol,
+          timeframe: timeframe
+        };
+        
+        // Verificar si ya tenemos esta apuesta
+        if (!lastAutoMixBet || lastAutoMixBet.id !== newBet.id) {
+          console.log('Nueva apuesta AutoMix detectada:', newBet);
+          setLastAutoMixBet(newBet);
+          addActiveBet(newBet);
+          syncWithActiveBets();
+        }
+      }
+    };
+    
+    // Verificar inmediatamente y luego cada segundo
+    checkForNewBets();
+    const interval = setInterval(checkForNewBets, 1000);
+    
+    return () => clearInterval(interval);
+  }, [betsByPair, currentSymbol, timeframe, lastAutoMixBet]);
+  
   // Escuchar eventos de nuevas apuestas
   useEffect(() => {
     const handleNewBet = (event: NewBetEvent) => {
@@ -243,8 +296,6 @@ export default function EstadisticasAvanzadas() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white">
-      {/* Test Bet Generator - Remove in production */}
-      <TestBetGenerator />
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
@@ -256,7 +307,7 @@ export default function EstadisticasAvanzadas() {
           Volver al perfil
         </Button>
 
-        <h1 className="text-3xl font-bold mb-8 text-yellow-400">Estadísticas Avanzadas</h1>
+        <h1 className="text-4xl font-bold mb-10 text-yellow-400 text-center">Estadísticas Avanzadas</h1>
 
         <Card className="bg-black/50 border-yellow-500/30 rounded-xl overflow-hidden shadow-xl mb-8">
           <CardHeader className="border-b border-yellow-500/20">
@@ -269,6 +320,12 @@ export default function EstadisticasAvanzadas() {
                   <div className={`w-2 h-2 rounded-full mr-2 ${isLive ? "bg-green-500 animate-pulse" : "bg-gray-500"}`}></div>
                   <span className="text-xs text-yellow-400/70">Últimos 15 minutos</span>
                 </div>
+                {lastAutoMixBet && (
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full mr-2 bg-blue-500 animate-pulse"></div>
+                    <span className="text-xs text-blue-400/90">Última AutoMix: {new Date(lastAutoMixBet.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                )}
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -277,6 +334,15 @@ export default function EstadisticasAvanzadas() {
                 >
                   {isAnimating ? 'Pausar' : 'Reanudar'}
                 </Button>
+                <Button 
+                  variant={autoMix ? "default" : "outline"}
+                  size="sm"
+                  onClick={toggleAutoMix}
+                  className={`flex items-center gap-1 h-8 px-3 ${autoMix ? "bg-yellow-500/30 hover:bg-yellow-500/40 text-yellow-100" : "bg-black/30 border-yellow-500/30 hover:bg-yellow-500/20 text-yellow-400"}`}
+                >
+                  {autoMix ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                  <span>AutoMix {autoMix ? 'ON' : 'OFF'}</span>
+                </Button>
               </div>
             </div>
             <CardDescription className="text-white text-sm mt-0.5 [&>p]:text-white">
@@ -284,17 +350,19 @@ export default function EstadisticasAvanzadas() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="h-[600px] w-full">
+            <div className="h-[600px] w-full flex items-center justify-center">
               {isLoading ? (
-                <div className="h-full flex items-center justify-center">
+                <div className="h-full w-full flex items-center justify-center">
                   <p className="text-yellow-300/80">Cargando datos...</p>
                 </div>
               ) : bets.length > 0 ? (
-                <TangledTreeChart 
-                  width={800} 
-                  height={600} 
-                  data={treeData || convertBetsToTreeData([])} 
-                />
+                <div className="flex items-center justify-center w-full h-full">
+                  <TangledTreeChart 
+                    width={800} 
+                    height={600} 
+                    data={treeData || convertBetsToTreeData([])} 
+                  />
+                </div>
               ) : (
                 <div className="h-full flex items-center justify-center p-4">
                   <p className="text-yellow-300/80 text-center">No hay datos de apuestas recientes en los últimos 15 minutos</p>
