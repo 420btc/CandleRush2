@@ -2847,7 +2847,7 @@ export default function ProfilePage() {
                         // Para rachas perdedoras (mínimo 3)
                         if (!streakType && lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "LOST")) {
                           // Si encontramos 3 pérdidas seguidas, buscamos el inicio real de la racha
-                          let startIndex = i - 2; // Comenzamos desde el inicio de las 3 pérdidas detectadas
+                          startIndex = i - 2; // Comenzamos desde el inicio de las 3 pérdidas detectadas
                           while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
                             startIndex--;
                           }
@@ -2863,10 +2863,12 @@ export default function ProfilePage() {
                         }
                         
                         // Si no estamos al final pero estamos dentro de una racha existente
+                        // startIndex ya está declarado en la línea 2817
+                        
                         if (!streakType && i > 0) {
                           // Verificar si estamos en medio de una racha ganadora
                           if (bets[i].status === "WON" && bets[i-1].status === "WON") {
-                            let startIndex = i;
+                            startIndex = i; // Reasignamos el valor
                             while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
                               startIndex--;
                             }                            // Solo mostrar si hay al menos 3 en la racha
@@ -2890,7 +2892,7 @@ export default function ProfilePage() {
                           }
                           // Verificar si estamos en medio de una racha perdedora
                           else if (bets[i].status === "LOST" && bets[i-1].status === "LOST") {
-                            let startIndex = i;
+                            startIndex = i; // Reasignamos el valor
                             while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
                               startIndex--;
                             }                            // Solo mostrar si hay al menos 3 en la racha
@@ -3024,7 +3026,7 @@ export default function ProfilePage() {
                                 <div className={`${data.rachaGanadora > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>
                                   ¡{data.rachaGanadora > 0 ? 'RACHA GANADORA!' : 'RACHA PERDEDORA!'}
                                 </div>                                <div className="text-white text-sm">
-                                  {data.numApuestas > 0 ? data.numApuestas : 1} apuestas consecutivas
+                                  {data.numApuestas} apuestas consecutivas
                                 </div>
                                 <div className="text-white/80 text-xs">
                                   Intensidad: {Math.round(data.rachaGanadora || data.rachaPerdedora)}%
