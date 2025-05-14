@@ -42,7 +42,7 @@ CandleRush2 es una plataforma gamificada de predicción de mercados, donde los u
 
 **Instalación:**
 ```bash
-npm install
+npm install o npm install --legacy-peer-deps
 ```
 
 **Ejecución en local:**
