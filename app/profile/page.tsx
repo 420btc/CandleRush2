@@ -3863,15 +3863,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Botón de Estadísticas Avanzadas */}
-          <div className="flex justify-center mt-6">
-            <a 
-              href="/profile/estadisticas-avanzadas"
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl border-2 border-yellow-600 text-lg inline-block"
-            >
-              Ver más Estadísticas Avanzadas
-            </a>
-          </div>
+
         </div>
         
         {/* Tarjetas destacadas debajo de los charts principales */}
