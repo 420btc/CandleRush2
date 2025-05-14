@@ -3354,6 +3354,219 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
+          {/* Nuevo gráfico de mapa de calor y liquidaciones */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Mapa de Calor y Liquidaciones</CardTitle>
+              <CardDescription className="text-black">Distribución de apuestas y liquidaciones por hora del día</CardDescription>
+            </CardHeader>
+            <CardContent className="px-2 pt-0 sm:px-6">
+              <ChartContainer
+                config={{
+                  heatValue: { label: "Intensidad", color: "#ef4444" },
+                  liquidations: { label: "Liquidaciones", color: "#ffffff" },
+                  liveLiquidations: { label: "Liquidaciones en vivo", color: "#00ff00" }
+                }}
+                className="aspect-auto h-[200px] w-full"
+              >
+                <BarChart
+                  data={(() => {
+                    // Definir tipo para los datos de hora
+                    type HourDataType = {
+                      hour: number;
+                      heatValue: number;
+                      liquidations: number;
+                      bets: number;
+                      liveLiquidations: number;
+                    };
+                    
+                    // Definimos la interfaz para las liquidaciones
+                    interface LiveLiquidation {
+                      orderId: string;
+                      symbol: string;
+                      side: 'LONG' | 'SHORT';
+                      price: number;
+                      quantity: number;
+                      timestamp: number;
+                      sizeUsd: number;
+                      exchange: string;
+                    }
+                    
+                    // Obtener datos de liquidaciones en vivo directamente sin depender del contexto
+                    // Usamos un try-catch para manejar posibles errores
+                    let liveLiquidations: LiveLiquidation[] = [];
+                    try {
+                      const result = useLiquidations({ 
+                        symbol: 'BTCUSDT', 
+                        minSize: 0, 
+                        maxSize: 500, 
+                        limit: 99, 
+                        smallLimit: 10
+                      });
+                      
+                      // Verificamos que el resultado y las liquidaciones existan
+                      if (result && result.liquidations) {
+                        liveLiquidations = result.liquidations;
+                      }
+                    } catch (error) {
+                      console.error('Error al obtener liquidaciones:', error);
+                      // Si hay un error, usamos un array vacío
+                      liveLiquidations = [];
+                    }
+                    
+                    // Generar datos para el mapa de calor por hora del día
+                    const { bets } = useGame();
+                    const hourData: HourDataType[] = Array(24).fill(0).map((_, i) => ({
+                      hour: i,
+                      heatValue: 0,
+                      liquidations: 0,
+                      liveLiquidations: 0,
+                      bets: 0
+                    }));
+                    
+                    // Contar apuestas por hora
+                    bets.forEach(bet => {
+                      const date = new Date(bet.timestamp);
+                      const hour = date.getHours();
+                      hourData[hour].bets += 1;
+                      
+                      // Contar liquidaciones
+                      if (bet.status === 'LIQUIDATED') {
+                        hourData[hour].liquidations += 1;
+                      }
+                    });
+                    
+                    // Contar liquidaciones en vivo (siempre habilitadas en el perfil)
+                    // Verificamos que liveLiquidations exista y sea un array
+                    if (Array.isArray(liveLiquidations) && liveLiquidations.length > 0) {
+                      // Usamos un try-catch dentro del forEach para evitar errores
+                      liveLiquidations.forEach(liq => {
+                        try {
+                        const date = new Date(liq.timestamp);
+                        const hour = date.getHours();
+                          // Verificamos que hour sea un índice válido
+                          if (hour >= 0 && hour < 24 && hourData[hour]) {
+                            hourData[hour].liveLiquidations += 1;
+                            
+                            // También sumamos a la intensidad del mapa de calor
+                            hourData[hour].heatValue += 10; // Añadimos un valor fijo para que se note
+                          }
+                        } catch (error) {
+                          console.error('Error al procesar liquidación:', error);
+                        }
+                      });
+                    }
+                    
+                    // Normalizar los valores de calor (0-100)
+                    // Usamos un try-catch para evitar errores durante la normalización
+                    try {
+                      const maxBets = Math.max(...hourData.map(d => d.bets || 0), 1);
+                      hourData.forEach(d => {
+                        // Verificamos que d y sus propiedades existan
+                        if (d) {
+                          // Aseguramos que todos los valores sean números válidos
+                          const betsValue = (d.bets || 0) / maxBets * 100;
+                          const liqValue = (d.liveLiquidations || 0) * 5;
+                          // Aseguramos que el valor no exceda 100
+                          d.heatValue = Math.min(betsValue + liqValue, 100);
+                        }
+                      });
+                    } catch (error) {
+                      console.error('Error al normalizar valores de calor:', error);
+                      // Si hay un error, asignamos valores por defecto
+                      hourData.forEach(d => {
+                        if (d) d.heatValue = d.bets > 0 ? 50 : 0;
+                      });
+                    }
+                    
+                    return hourData;
+                  })()} 
+                  barCategoryGap={1}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} stroke="#000000" />
+                  <XAxis 
+                    dataKey="hour" 
+                    tickFormatter={(hour) => `${hour}h`}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#fff', fontSize: 10 }}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    orientation="left"
+                    domain={[0, 100]}
+                    tickFormatter={(value) => `${value}%`}
+                    width={40}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#fff', fontSize: 10 }}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    domain={[0, 'dataMax + 1']}
+                    tickCount={5}
+                    width={40}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#fff', fontSize: 10 }}
+                  />
+                  <Tooltip
+                    cursor={false}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-black/80 p-2 rounded border border-yellow-500/30 shadow">
+                            <p className="font-medium text-white">{data.hour}:00 - {data.hour}:59</p>
+                            <p className="text-xs text-yellow-400">Intensidad: {Math.round(data.heatValue)}%</p>
+                            <p className="text-xs text-red-400">Liquidaciones: {data.liquidations}</p>
+                            <p className="text-xs text-green-400">Liquidaciones en vivo: {data.liveLiquidations}</p>
+                            <p className="text-xs text-white">Total apuestas: {data.bets}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar 
+                    dataKey="heatValue" 
+                    yAxisId="left"
+                    fill="#ef4444"
+                    radius={[4, 4, 0, 0]}
+                    opacity={0.9}
+                  >
+                    {/* Usar colores rojos para las barras */}
+                    <Cell fill="#ef4444" />
+                    <Cell fill="#dc2626" />
+                    <Cell fill="#b91c1c" />
+                    <Cell fill="#991b1b" />
+                    <Cell fill="#7f1d1d" />
+                  </Bar>
+                  <Line
+                    type="monotone"
+                    dataKey="liquidations"
+                    yAxisId="right"
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                    dot={{ fill: '#ffffff', r: 4 }}
+                    activeDot={{ r: 6, fill: '#ffffff', stroke: '#000' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="liveLiquidations"
+                    yAxisId="right"
+                    stroke="#00ff00"
+                    strokeWidth={2}
+                    dot={{ fill: '#00ff00', r: 4 }}
+                    activeDot={{ r: 6, fill: '#00ff00', stroke: '#000' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
           {/* Tarjeta 3: Burbujas de Cambio de Precio de Bitcoin - Implementación Simple */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
             <CardHeader className="items-center pb-4">
@@ -3650,219 +3863,6 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Nuevo gráfico de mapa de calor y liquidaciones */}
-          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
-            <CardHeader className="items-center pb-4">
-              <CardTitle>Mapa de Calor y Liquidaciones</CardTitle>
-              <CardDescription className="text-black">Distribución de apuestas y liquidaciones por hora del día</CardDescription>
-            </CardHeader>
-            <CardContent className="px-2 pt-0 sm:px-6">
-              <ChartContainer
-                config={{
-                  heatValue: { label: "Intensidad", color: "#ef4444" },
-                  liquidations: { label: "Liquidaciones", color: "#ffffff" },
-                  liveLiquidations: { label: "Liquidaciones en vivo", color: "#00ff00" }
-                }}
-                className="aspect-auto h-[200px] w-full"
-              >
-                <BarChart
-                  data={(() => {
-                    // Definir tipo para los datos de hora
-                    type HourDataType = {
-                      hour: number;
-                      heatValue: number;
-                      liquidations: number;
-                      bets: number;
-                      liveLiquidations: number;
-                    };
-                    
-                    // Definimos la interfaz para las liquidaciones
-                    interface LiveLiquidation {
-                      orderId: string;
-                      symbol: string;
-                      side: 'LONG' | 'SHORT';
-                      price: number;
-                      quantity: number;
-                      timestamp: number;
-                      sizeUsd: number;
-                      exchange: string;
-                    }
-                    
-                    // Obtener datos de liquidaciones en vivo directamente sin depender del contexto
-                    // Usamos un try-catch para manejar posibles errores
-                    let liveLiquidations: LiveLiquidation[] = [];
-                    try {
-                      const result = useLiquidations({ 
-                        symbol: 'BTCUSDT', 
-                        minSize: 0, 
-                        maxSize: 500, 
-                        limit: 99, 
-                        smallLimit: 10
-                      });
-                      
-                      // Verificamos que el resultado y las liquidaciones existan
-                      if (result && result.liquidations) {
-                        liveLiquidations = result.liquidations;
-                      }
-                    } catch (error) {
-                      console.error('Error al obtener liquidaciones:', error);
-                      // Si hay un error, usamos un array vacío
-                      liveLiquidations = [];
-                    }
-                    
-                    // Generar datos para el mapa de calor por hora del día
-                    const { bets } = useGame();
-                    const hourData: HourDataType[] = Array(24).fill(0).map((_, i) => ({
-                      hour: i,
-                      heatValue: 0,
-                      liquidations: 0,
-                      liveLiquidations: 0,
-                      bets: 0
-                    }));
-                    
-                    // Contar apuestas por hora
-                    bets.forEach(bet => {
-                      const date = new Date(bet.timestamp);
-                      const hour = date.getHours();
-                      hourData[hour].bets += 1;
-                      
-                      // Contar liquidaciones
-                      if (bet.status === 'LIQUIDATED') {
-                        hourData[hour].liquidations += 1;
-                      }
-                    });
-                    
-                    // Contar liquidaciones en vivo (siempre habilitadas en el perfil)
-                    // Verificamos que liveLiquidations exista y sea un array
-                    if (Array.isArray(liveLiquidations) && liveLiquidations.length > 0) {
-                      // Usamos un try-catch dentro del forEach para evitar errores
-                      liveLiquidations.forEach(liq => {
-                        try {
-                        const date = new Date(liq.timestamp);
-                        const hour = date.getHours();
-                          // Verificamos que hour sea un índice válido
-                          if (hour >= 0 && hour < 24 && hourData[hour]) {
-                            hourData[hour].liveLiquidations += 1;
-                            
-                            // También sumamos a la intensidad del mapa de calor
-                            hourData[hour].heatValue += 10; // Añadimos un valor fijo para que se note
-                          }
-                        } catch (error) {
-                          console.error('Error al procesar liquidación:', error);
-                        }
-                      });
-                    }
-                    
-                    // Normalizar los valores de calor (0-100)
-                    // Usamos un try-catch para evitar errores durante la normalización
-                    try {
-                      const maxBets = Math.max(...hourData.map(d => d.bets || 0), 1);
-                      hourData.forEach(d => {
-                        // Verificamos que d y sus propiedades existan
-                        if (d) {
-                          // Aseguramos que todos los valores sean números válidos
-                          const betsValue = (d.bets || 0) / maxBets * 100;
-                          const liqValue = (d.liveLiquidations || 0) * 5;
-                          // Aseguramos que el valor no exceda 100
-                          d.heatValue = Math.min(betsValue + liqValue, 100);
-                        }
-                      });
-                    } catch (error) {
-                      console.error('Error al normalizar valores de calor:', error);
-                      // Si hay un error, asignamos valores por defecto
-                      hourData.forEach(d => {
-                        if (d) d.heatValue = d.bets > 0 ? 50 : 0;
-                      });
-                    }
-                    
-                    return hourData;
-                  })()} 
-                  barCategoryGap={1}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} stroke="#000000" />
-                  <XAxis 
-                    dataKey="hour" 
-                    tickFormatter={(hour) => `${hour}h`}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#fff', fontSize: 10 }}
-                  />
-                  <YAxis 
-                    yAxisId="left"
-                    orientation="left"
-                    domain={[0, 100]}
-                    tickFormatter={(value) => `${value}%`}
-                    width={40}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#fff', fontSize: 10 }}
-                  />
-                  <YAxis 
-                    yAxisId="right"
-                    orientation="right"
-                    domain={[0, 'dataMax + 1']}
-                    tickCount={5}
-                    width={40}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#fff', fontSize: 10 }}
-                  />
-                  <Tooltip
-                    cursor={false}
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-black/80 p-2 rounded border border-yellow-500/30 shadow">
-                            <p className="font-medium text-white">{data.hour}:00 - {data.hour}:59</p>
-                            <p className="text-xs text-yellow-400">Intensidad: {Math.round(data.heatValue)}%</p>
-                            <p className="text-xs text-red-400">Liquidaciones: {data.liquidations}</p>
-                            <p className="text-xs text-green-400">Liquidaciones en vivo: {data.liveLiquidations}</p>
-                            <p className="text-xs text-white">Total apuestas: {data.bets}</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar 
-                    dataKey="heatValue" 
-                    yAxisId="left"
-                    fill="#ef4444"
-                    radius={[4, 4, 0, 0]}
-                    opacity={0.9}
-                  >
-                    {/* Usar colores rojos para las barras */}
-                    <Cell fill="#ef4444" />
-                    <Cell fill="#dc2626" />
-                    <Cell fill="#b91c1c" />
-                    <Cell fill="#991b1b" />
-                    <Cell fill="#7f1d1d" />
-                  </Bar>
-                  <Line
-                    type="monotone"
-                    dataKey="liquidations"
-                    yAxisId="right"
-                    stroke="#ffffff"
-                    strokeWidth={2}
-                    dot={{ fill: '#ffffff', r: 4 }}
-                    activeDot={{ r: 6, fill: '#ffffff', stroke: '#000' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="liveLiquidations"
-                    yAxisId="right"
-                    stroke="#00ff00"
-                    strokeWidth={2}
-                    dot={{ fill: '#00ff00', r: 4 }}
-                    activeDot={{ r: 6, fill: '#00ff00', stroke: '#000' }}
-                  />
-                  <Legend verticalAlign="bottom" height={36} />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-          
           {/* Botón de Estadísticas Avanzadas */}
           <div className="flex justify-center mt-6">
             <a 
