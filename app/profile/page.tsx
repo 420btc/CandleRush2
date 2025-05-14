@@ -3325,10 +3325,11 @@ export default function ProfilePage() {
               <div className="w-full h-[400px] flex items-center justify-center">
                 {(() => {
                   const { bets } = useGame();
-                  const getBetType = (status: string): 'win' | 'loss' | 'liquidation' => {
+                  const getBetType = (status: string): 'win' | 'loss' | 'liquidation' | 'pending' => {
                     if (status === 'WON') return 'win';
                     if (status === 'LOST') return 'loss';
-                    return 'liquidation';
+                    if (status === 'LIQUIDATED') return 'liquidation';
+                    return 'pending';
                   };
 
                   const formatTime = (timestamp: number) => {
@@ -3338,19 +3339,15 @@ export default function ProfilePage() {
                     });
                   };
 
-                  // Calcular el balance actual
-                  const currentBalance = bets.reduce((total, bet) => {
-                    if (bet.status === 'WON') return total + bet.amount;
-                    if (bet.status === 'LOST') return total - bet.amount;
-                    return total;
-                  }, 0);
+                  // Usar el balance real del usuario en lugar de calcularlo
+                  const currentBalance = userBalance || 0;
 
                   const treeData = {
                     id: 'root',
                     type: 'balance' as const,
                     timestamp: Date.now(),
                     value: currentBalance,
-                    label: `Balance: ${currentBalance}$`,
+                    label: `Balance: ${currentBalance.toLocaleString('es-ES')}$`,
                     info: {
                       prediction: 'Balance Actual',
                       entryPrice: 0,
@@ -3389,8 +3386,12 @@ export default function ProfilePage() {
                             <span className="text-sm">Perdidas</span>
                           </div>
                           <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-gray-500 mr-2"></div>
+                            <div className="w-3 h-3 rounded-full bg-black mr-2"></div>
                             <span className="text-sm">Liquidadas</span>
+                          </div>
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                            <span className="text-sm">Pendientes</span>
                           </div>
                         </div>
                         <div className="text-sm font-medium">
@@ -3406,7 +3407,8 @@ export default function ProfilePage() {
                         nodeColors={{
                           win: '#22c55e',
                           loss: '#ef4444',
-                          liquidation: '#6b7280',
+                          liquidation: '#000000',
+                          pending: '#a855f7',
                           balance: '#3b82f6'
                         }}
                         showTooltip={true}

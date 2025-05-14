@@ -6,7 +6,7 @@ import * as ReactDOM from 'react-dom/client';
 
 export interface Node {
   id: string;
-  type: 'win' | 'loss' | 'liquidation' | 'balance';
+  type: 'win' | 'loss' | 'liquidation' | 'pending' | 'balance';
   timestamp: number;
   value: number;
   label?: string;
@@ -29,6 +29,7 @@ export interface TangledTreeChartProps {
     win: string;
     loss: string;
     liquidation: string;
+    pending: string;
     balance: string;
   };
   showTooltip?: boolean;
@@ -44,7 +45,8 @@ export default function TangledTreeChart({
   nodeColors = {
     win: '#22c55e',
     loss: '#ef4444',
-    liquidation: '#6b7280',
+    liquidation: '#000000',
+    pending: '#a855f7',
     balance: '#3b82f6'
   },
   showTooltip = false,
@@ -64,7 +66,7 @@ export default function TangledTreeChart({
       .attr('height', height)
       .attr('viewBox', `0 0 ${width} ${height}`)
       .append('g')
-      .attr('transform', `translate(${width / 2},${height / 2})`);
+      .attr('transform', `translate(${width / 2 + 1},${height / 2})`);
 
     // Configuración del layout
     const treeLayout = d3.tree<Node>()
@@ -73,6 +75,9 @@ export default function TangledTreeChart({
 
     // Procesar datos
     const root = d3.hierarchy(data);
+    // Ajustar la posición del nodo raíz para que esté exactamente en el centro
+    root.x = 0;
+    root.y = 0;
     const treeData = treeLayout(root);
 
     // Función para obtener el color del nodo
@@ -109,6 +114,11 @@ export default function TangledTreeChart({
       .enter()
       .append('g')
       .attr('transform', d => {
+        // Para el nodo raíz (central), posicionarlo exactamente en el centro
+        if (d.depth === 0) {
+          return `translate(1,0)`;
+        }
+        // Para los demás nodos, usar la posición calculada por el layout
         const radius = d.y;
         const angle = d.x;
         return `translate(${radius * Math.sin(angle)},${-radius * Math.cos(angle)})`;
@@ -119,16 +129,39 @@ export default function TangledTreeChart({
       .attr('r', 6)
       .attr('fill', d => getNodeColor(d.data.type))
       .attr('stroke', '#1f2937')
-      .attr('stroke-width', 1.5);
+      .attr('stroke-width', 1.5)
+      // Ajustar la posición del nodo central específicamente
+      .attr('transform', d => d.depth === 0 ? 'translate(10, 0)' : '');
 
     // Añadir etiquetas a los nodos
     nodes.append('text')
       .attr('dy', -10)
       .attr('text-anchor', 'middle')
       .text(d => d.data.label || `$${d.data.value}`)
-      .style('fill', '#9ca3af')
-      .style('font-size', '10px')
-      .style('font-weight', 'bold');
+      .style('fill', d => d.depth === 0 ? '#ffffff' : '#9ca3af')
+      .style('font-size', d => d.depth === 0 ? '12px' : '10px')
+      .style('font-weight', 'bold')
+      // Añadir un fondo para el texto del balance para que se vea sobre las líneas
+      .each(function(d) {
+        if (d.depth === 0) {
+          const textElement = this;
+          const textBBox = textElement.getBBox();
+          
+          // Insertar un rectángulo detrás del texto
+          const parentNode = d3.select(this.parentElement);
+          parentNode.insert('rect', 'text')
+            .attr('x', textBBox.x - 5)
+            .attr('y', textBBox.y - 2)
+            .attr('width', textBBox.width + 10)
+            .attr('height', textBBox.height + 4)
+            .attr('rx', 4)
+            .attr('fill', '#3b82f6')
+            .attr('opacity', 0.9);
+            
+          // Mover el texto al frente
+          parentNode.append(() => textElement);
+        }
+      });
 
     // Añadir tooltips si están habilitados
     if (showTooltip && tooltipContent) {
