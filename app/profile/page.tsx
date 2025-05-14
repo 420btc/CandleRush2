@@ -3325,6 +3325,17 @@ export default function ProfilePage() {
               <div className="w-full h-[530px] flex items-center justify-center">
                 {(() => {
                   const { bets } = useGame();
+                  // Estado para forzar la actualización del componente cada segundo
+                  const [ticker, setTicker] = useState(0);
+                  
+                  // Efecto para actualizar el componente cada segundo
+                  useEffect(() => {
+                    const interval = setInterval(() => {
+                      setTicker(prev => prev + 1);
+                    }, 1000);
+                    
+                    return () => clearInterval(interval);
+                  }, []);
                   const getBetType = (status: string): 'win' | 'loss' | 'liquidation' | 'pending' => {
                     if (status === 'WON') return 'win';
                     if (status === 'LOST') return 'loss';
@@ -3335,6 +3346,48 @@ export default function ProfilePage() {
                   const formatTime = (timestamp: number) => {
                     const date = new Date(timestamp);
                     return `${date.getHours()}:${date.getMinutes()}`;
+                  };
+                  
+                  // Calcular el tiempo restante para apuestas pendientes (en segundos y minutos)
+                  const calculateRemainingTime = (bet: any) => {
+                    if (bet.status !== 'PENDING') return undefined;
+                    
+                    try {
+                      // Duración de la apuesta en segundos (1 minuto)
+                      const betDurationSeconds = 60;
+                      
+                      // Tiempo de creación de la apuesta
+                      const creationTime = new Date(bet.timestamp).getTime();
+                      
+                      // Tiempo actual
+                      const currentTime = Date.now();
+                      
+                      // Tiempo transcurrido desde la creación (en segundos)
+                      const elapsedSeconds = Math.floor((currentTime - creationTime) / 1000);
+                      
+                      // Tiempo restante (en segundos)
+                      // Si es negativo o cero, la apuesta ya debería haberse resuelto
+                      const remainingSeconds = Math.max(0, betDurationSeconds - elapsedSeconds);
+                      
+                      // Convertir a formato mm:ss
+                      const minutes = Math.floor(remainingSeconds / 60);
+                      const seconds = remainingSeconds % 60;
+                      
+                      return {
+                        total: remainingSeconds,
+                        minutes,
+                        seconds,
+                        formatted: `${minutes}:${seconds.toString().padStart(2, '0')}`
+                      };
+                    } catch (error) {
+                      // En caso de error, devolver un valor por defecto
+                      return {
+                        total: 0,
+                        minutes: 0,
+                        seconds: 0,
+                        formatted: '0:00'
+                      };
+                    }
                   };
                   
                   // Agrupar las apuestas por tipo
@@ -3357,18 +3410,24 @@ export default function ProfilePage() {
                         timestamp: Date.now(),
                         value: bullishBets.reduce((sum, bet) => sum + bet.amount, 0),
                         label: 'Alcistas',
-                        children: bullishBets.map(bet => ({
-                          id: bet.id,
-                          type: getBetType(bet.status),
-                          timestamp: new Date(bet.timestamp).getTime(),
-                          value: bet.amount,
-                          info: {
-                            prediction: bet.prediction,
-                            entryPrice: bet.entryPrice,
-                            status: bet.status,
-                            amount: bet.amount
-                          }
-                        }))
+                        children: bullishBets.map(bet => {
+                          const remainingTime = calculateRemainingTime(bet);
+                          return {
+                            id: bet.id,
+                            type: getBetType(bet.status),
+                            timestamp: new Date(bet.timestamp).getTime(),
+                            value: bet.amount,
+                            // Añadir etiqueta con tiempo restante para apuestas pendientes
+                            label: bet.status === 'PENDING' && remainingTime ? `${remainingTime?.formatted || ''}` : undefined,
+                            info: {
+                              prediction: bet.prediction,
+                              entryPrice: bet.entryPrice,
+                              status: bet.status,
+                              amount: bet.amount,
+                              remainingTime: remainingTime
+                            }
+                          };
+                        })
                       },
                       // Subnodo para apuestas bajistas
                       {
@@ -3377,18 +3436,24 @@ export default function ProfilePage() {
                         timestamp: Date.now(),
                         value: bearishBets.reduce((sum, bet) => sum + bet.amount, 0),
                         label: 'Bajistas',
-                        children: bearishBets.map(bet => ({
-                          id: bet.id,
-                          type: getBetType(bet.status),
-                          timestamp: new Date(bet.timestamp).getTime(),
-                          value: bet.amount,
-                          info: {
-                            prediction: bet.prediction,
-                            entryPrice: bet.entryPrice,
-                            status: bet.status,
-                            amount: bet.amount
-                          }
-                        }))
+                        children: bearishBets.map(bet => {
+                          const remainingTime = calculateRemainingTime(bet);
+                          return {
+                            id: bet.id,
+                            type: getBetType(bet.status),
+                            timestamp: new Date(bet.timestamp).getTime(),
+                            value: bet.amount,
+                            // Añadir etiqueta con tiempo restante para apuestas pendientes
+                            label: bet.status === 'PENDING' && remainingTime ? `${remainingTime?.formatted || ''}` : undefined,
+                            info: {
+                              prediction: bet.prediction,
+                              entryPrice: bet.entryPrice,
+                              status: bet.status,
+                              amount: bet.amount,
+                              remainingTime: remainingTime
+                            }
+                          };
+                        })
                       },
                       // Subnodo para apuestas liquidadas
                       {
@@ -3397,18 +3462,24 @@ export default function ProfilePage() {
                         timestamp: Date.now(),
                         value: liquidatedBets.reduce((sum, bet) => sum + bet.amount, 0),
                         label: 'Liquidadas',
-                        children: liquidatedBets.map(bet => ({
-                          id: bet.id,
-                          type: getBetType(bet.status),
-                          timestamp: new Date(bet.timestamp).getTime(),
-                          value: bet.amount,
-                          info: {
-                            prediction: bet.prediction,
-                            entryPrice: bet.entryPrice,
-                            status: bet.status,
-                            amount: bet.amount
-                          }
-                        }))
+                        children: liquidatedBets.map(bet => {
+                          const remainingTime = calculateRemainingTime(bet);
+                          return {
+                            id: bet.id,
+                            type: getBetType(bet.status),
+                            timestamp: new Date(bet.timestamp).getTime(),
+                            value: bet.amount,
+                            // Añadir etiqueta con tiempo restante para apuestas pendientes
+                            label: bet.status === 'PENDING' && remainingTime ? `${remainingTime?.formatted || ''}` : undefined,
+                            info: {
+                              prediction: bet.prediction,
+                              entryPrice: bet.entryPrice,
+                              status: bet.status,
+                              amount: bet.amount,
+                              remainingTime: remainingTime
+                            }
+                          };
+                        })
                       }
                     ].filter(group => group.children && group.children.length > 0) // Filtrar grupos vacíos
                   };
@@ -3474,11 +3545,16 @@ export default function ProfilePage() {
                                 <p className={`font-semibold ${
                                   node.info.status === 'WON' ? 'text-green-400' :
                                   node.info.status === 'LOST' ? 'text-red-400' :
+                                  node.info.status === 'PENDING' ? 'text-purple-400' :
                                   'text-gray-400'
                                 }`}>
                                   {node.info.status === 'WON' ? 'Ganada' :
                                    node.info.status === 'LOST' ? 'Perdida' :
+                                   node.info.status === 'PENDING' ? 'Pendiente' :
                                    'Liquidada'}
+                                  {node.info.status === 'PENDING' && node.info.remainingTime && 
+                                    ` (${node.info.remainingTime.formatted} restantes)`
+                                  }
                                 </p>
                               </>
                             )}

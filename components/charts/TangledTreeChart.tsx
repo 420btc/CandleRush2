@@ -15,6 +15,12 @@ export interface Node {
     entryPrice?: number;
     status: string;
     amount: number;
+    remainingTime?: {
+      total: number;
+      minutes: number;
+      seconds: number;
+      formatted: string;
+    };
   };
   children?: Node[];
 }
@@ -132,12 +138,16 @@ export default function TangledTreeChart({
 
     // Añadir círculos a los nodos
     nodes.append('circle')
-      .attr('r', 6)
+      .attr('r', d => d.depth === 0 ? 8 : 6) // Nodo central más grande
       .attr('fill', d => getNodeColor(d.data.type))
       .attr('stroke', '#1f2937')
       .attr('stroke-width', 1.5)
       // Ajustar la posición del nodo central específicamente
-      .attr('transform', d => d.depth === 0 ? 'translate(10, 0)' : '');
+      .attr('transform', d => d.depth === 0 ? 'translate(10, 0)' : '')
+      // Añadir una clase para facilitar la selección
+      .attr('class', 'node-circle')
+      // Añadir un área de interacción más grande para los tooltips
+      .style('cursor', 'pointer');
 
     // Añadir etiquetas a los nodos
     nodes.append('text')
@@ -190,14 +200,28 @@ export default function TangledTreeChart({
               root.render(content);
               return div.innerHTML;
             });
+            
+          // Resaltar el nodo activo
+          d3.select(event.currentTarget).select('.node-circle')
+            .transition()
+            .duration(200)
+            .attr('r', d.depth === 0 ? 10 : 8)
+            .attr('stroke-width', 2);
         })
         .on('mousemove', (event) => {
           tooltip
             .style('left', `${event.pageX + 10}px`)
             .style('top', `${event.pageY - 10}px`);
         })
-        .on('mouseout', () => {
+        .on('mouseout', (event, d) => {
           tooltip.style('visibility', 'hidden');
+          
+          // Restaurar el tamaño normal del nodo
+          d3.select(event.currentTarget).select('.node-circle')
+            .transition()
+            .duration(200)
+            .attr('r', d.depth === 0 ? 8 : 6)
+            .attr('stroke-width', 1.5);
         });
     }
 
