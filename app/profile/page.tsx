@@ -3354,92 +3354,296 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Tarjeta 3: Predicciones y Aciertos con Circle Packing */}
+          {/* Tarjeta 3: Burbujas de Cambio de Precio de Bitcoin - Implementación Simple */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
             <CardHeader className="items-center pb-4">
-              <CardTitle>Predicciones y Aciertos</CardTitle>
-              <CardDescription className="text-black">Visualización de tus predicciones alcistas vs bajistas y su tasa de acierto</CardDescription>
+              <CardTitle>Cambio de Precio de Bitcoin</CardTitle>
+              <CardDescription className="text-black">Visualización del cambio de precio por vela (tamaño = magnitud del cambio)</CardDescription>
             </CardHeader>
             <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-              <div className="w-full h-[500px] bg-black/80 rounded-xl overflow-hidden">
+              <div className="w-full h-[500px] bg-yellow-400 rounded-xl overflow-hidden p-4">
+                {/* Implementación simple de burbujas */}
                 {(() => {
-                  const { bets } = useGame();
+                  const { candles } = useGame();
+                  const [bubbleData, setBubbleData] = useState<Array<{
+                    id: number;
+                    time: string;
+                    value: number;
+                    isUp: boolean;
+                    change: number;
+                    price: number;
+                    open: number;
+                    high: number;
+                    low: number;
+                    percentChange: number;
+                    volume: number;
+                  }>>([]);
                   
-                  // Verificar si hay apuestas disponibles
-                  if (!bets || bets.length === 0) {
+                  useEffect(() => {
+                    if (!candles || candles.length === 0) return;
+                    
+                    // Obtener las últimas 10 velas para mostrar datos históricos reales
+                    const recentCandles = [...candles].slice(-10);
+                    
+                    // Procesar datos reales para cada burbuja
+                    const newBubbleData = recentCandles.map(candle => {
+                      // Datos reales de cada vela
+                      const open = candle.open || 0;
+                      const close = candle.close || 0;
+                      const high = candle.high || 0;
+                      const low = candle.low || 0;
+                      const volume = candle.volume || 0;
+                      
+                      // Calcular el cambio de precio real
+                      const change = close - open;
+                      const absChange = Math.abs(change);
+                      const percentChange = (change / open) * 100;
+                      const isUp = change >= 0;
+                      
+                      // Formatear la hora para mostrar en la burbuja
+                      const timestamp = candle.timestamp || Date.now();
+                      const time = new Date(timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+                      
+                      // Devolver objeto con datos completos y reales
+                      return {
+                        id: timestamp,
+                        time,
+                        value: absChange,       // Para el tamaño de la burbuja
+                        isUp,                  // Para el color (verde/rojo)
+                        change,                // Cambio absoluto
+                        percentChange,         // Cambio porcentual
+                        price: close,          // Precio de cierre
+                        open,                  // Precio de apertura
+                        high,                  // Precio máximo
+                        low,                   // Precio mínimo
+                        volume                 // Volumen
+                      };
+                    });
+                    
+                    // Ordenar por timestamp para asegurar que están en orden cronológico
+                    newBubbleData.sort((a, b) => a.id - b.id);
+                    
+                    // Actualizar el estado con los datos reales
+                    setBubbleData(newBubbleData);
+                    
+                    // Crear una nueva burbuja cada minuto con datos reales actualizados
+                    const interval = setInterval(() => {
+                      if (candles && candles.length > 0) {
+                        // Obtener la vela más reciente para datos actualizados
+                        const latestCandle = candles[candles.length - 1];
+                        
+                        // Extraer datos reales
+                        const open = latestCandle.open || 0;
+                        const close = latestCandle.close || 0;
+                        const high = latestCandle.high || 0;
+                        const low = latestCandle.low || 0;
+                        const volume = latestCandle.volume || 0;
+                        
+                        // Calcular cambios reales
+                        const change = close - open;
+                        const absChange = Math.abs(change);
+                        const percentChange = (change / open) * 100;
+                        const isUp = change >= 0;
+                        
+                        // Timestamp y hora actuales
+                        const timestamp = Date.now();
+                        const time = new Date(timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+                        
+                        // Crear nueva burbuja con datos reales actualizados
+                        const newBubble = {
+                          id: timestamp,
+                          time,
+                          value: absChange,
+                          isUp,
+                          change,
+                          percentChange,
+                          price: close,
+                          open,
+                          high,
+                          low,
+                          volume
+                        };
+                        
+                        // Añadir la nueva burbuja y mantener solo las últimas 10
+                        setBubbleData(prev => {
+                          const updated = [...prev, newBubble];
+                          return updated.slice(-10);
+                        });
+                      }
+                    }, 60000);
+                    
+                    // Actualizar la última burbuja cada 5 segundos para reflejar cambios en tiempo real
+                    const updateInterval = setInterval(() => {
+                      if (candles && candles.length > 0) {
+                        // Obtener la vela más reciente con datos actualizados
+                        const latestCandle = candles[candles.length - 1];
+                        
+                        // Extraer datos reales actualizados
+                        const open = latestCandle.open || 0;
+                        const close = latestCandle.close || 0;
+                        const high = latestCandle.high || 0;
+                        const low = latestCandle.low || 0;
+                        const volume = latestCandle.volume || 0;
+                        
+                        // Calcular cambios reales actualizados
+                        const change = close - open;
+                        const absChange = Math.abs(change);
+                        const percentChange = (change / open) * 100;
+                        const isUp = change >= 0;
+                        
+                        // Actualizar solo la última burbuja con datos reales
+                        setBubbleData(prev => {
+                          if (prev.length === 0) return prev;
+                          
+                          const updated = [...prev];
+                          const lastIndex = updated.length - 1;
+                          
+                          // Actualizar con datos reales
+                          updated[lastIndex] = {
+                            ...updated[lastIndex],
+                            value: absChange,
+                            isUp,
+                            change,
+                            percentChange,
+                            price: close,
+                            high,
+                            low,
+                            volume
+                          };
+                          
+                          return updated;
+                        });
+                      }
+                    }, 5000); // Actualizar cada 5 segundos para datos en tiempo real
+                    
+                    return () => {
+                      clearInterval(interval);
+                      clearInterval(updateInterval);
+                    };
+                  }, [candles]);
+                  
+                  // Mostrar mensaje si no hay datos
+                  if (!candles || candles.length === 0 || bubbleData.length === 0) {
                     return (
-                      <div className="w-full h-full flex items-center justify-center text-white font-medium">
-                        No hay datos de apuestas disponibles
+                      <div className="w-full h-full flex items-center justify-center text-black font-bold">
+                        No hay datos de velas disponibles
                       </div>
                     );
                   }
                   
-                  // Calcular estadísticas para el gráfico de Circle Packing
-                  const bullishBets = bets.filter(bet => bet.prediction === 'BULLISH');
-                  const bearishBets = bets.filter(bet => bet.prediction === 'BEARISH');
-                  
-                  const bullishWon = bullishBets.filter(bet => bet.status === 'WON').length;
-                  const bullishLost = bullishBets.filter(bet => bet.status === 'LOST').length;
-                  const bullishPending = bullishBets.filter(bet => bet.status === 'PENDING').length;
-                  const bullishLiquidated = bullishBets.filter(bet => bet.status === 'LIQUIDATED').length;
-                  
-                  const bearishWon = bearishBets.filter(bet => bet.status === 'WON').length;
-                  const bearishLost = bearishBets.filter(bet => bet.status === 'LOST').length;
-                  const bearishPending = bearishBets.filter(bet => bet.status === 'PENDING').length;
-                  const bearishLiquidated = bearishBets.filter(bet => bet.status === 'LIQUIDATED').length;
-                  
-                  // Calcular tasas de acierto
-                  const bullishTotal = bullishWon + bullishLost;
-                  const bearishTotal = bearishWon + bearishLost;
-                  
-                  const bullishWinRate = bullishTotal > 0 ? Math.round((bullishWon / bullishTotal) * 100) : 0;
-                  const bearishWinRate = bearishTotal > 0 ? Math.round((bearishWon / bearishTotal) * 100) : 0;
-                  
-                  // Preparar datos para el Circle Packing
-                  const packData = {
-                    name: "Apuestas",
-                    children: [
-                      {
-                        name: `Alcistas (${bullishWinRate}% acierto)`,
-                        color: "#15803d", // Verde oscuro
-                        children: [
-                          { name: "Ganadas", value: bullishWon, color: "#22c55e" },
-                          { name: "Perdidas", value: bullishLost, color: "#ef4444" },
-                          { name: "Pendientes", value: bullishPending, color: "#a855f7" },
-                          { name: "Liquidadas", value: bullishLiquidated, color: "#000000" }
-                        ]
-                      },
-                      {
-                        name: `Bajistas (${bearishWinRate}% acierto)`,
-                        color: "#b91c1c", // Rojo oscuro
-                        children: [
-                          { name: "Ganadas", value: bearishWon, color: "#22c55e" },
-                          { name: "Perdidas", value: bearishLost, color: "#ef4444" },
-                          { name: "Pendientes", value: bearishPending, color: "#a855f7" },
-                          { name: "Liquidadas", value: bearishLiquidated, color: "#000000" }
-                        ]
-                      }
-                    ]
+                  // Calcular tamaño de burbuja
+                  const getBubbleSize = (value: number) => {
+                    const minSize = 40;
+                    const maxSize = 120;
+                    const scaleFactor = 8000;
+                    const size = minSize + (value * scaleFactor);
+                    return Math.min(size, maxSize); // Limitar tamaño máximo
                   };
                   
-                  // Importar el componente CirclePackingChart
-                  const CirclePackingChart = dynamic(
-                    () => import('../../components/charts/CirclePackingChart'),
-                    { ssr: false }
-                  );
-                  
-                  // Usar un tamaño fijo para el gráfico
-                  const chartWidth = 800;
-                  const chartHeight = 450;
-                  
                   return (
-                    <div className="w-full h-full p-4 flex justify-center">
-                      <CirclePackingChart 
-                        data={packData}
-                        width={chartWidth}
-                        height={chartHeight}
-                      />
-                    </div>
+                    <>
+                      {/* Leyenda */}
+                      <div className="bg-black/50 p-2 rounded-lg inline-block mb-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-black text-xs font-bold">Precio subió</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <span className="text-black text-xs font-bold">Precio bajó</span>
+                        </div>
+                      </div>
+                      
+                      {/* Contenedor de burbujas con fondo amarillo fijo */}
+                      <div className="relative w-full h-[400px] bg-yellow-400 rounded-lg p-4">
+                        {bubbleData.map((bubble, index) => {
+                          // Distribuir horizontalmente por tiempo (más reciente a la derecha)
+                          const xPercent = (index / (bubbleData.length - 1)) * 100;
+                          const xPos = 10 + (xPercent * 0.8); // 10% a 90% del ancho
+                          
+                          // Distribuir verticalmente con algo de variación
+                          const yPos = 30 + (Math.sin(index * 0.8) + 1) * 30;
+                          
+                          // Tamaño basado en el cambio de precio
+                          const size = getBubbleSize(bubble.value);
+                          
+                          return (
+                            <div 
+                              key={bubble.id}
+                              className="absolute rounded-full flex items-center justify-center
+                                      text-white font-bold text-xs cursor-pointer group"
+                              style={{
+                                left: `${xPos}%`,
+                                top: `${yPos}%`,
+                                width: `${size}px`,
+                                height: `${size}px`,
+                                backgroundColor: bubble.isUp ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)',
+                                transform: 'translate(-50%, -50%)',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
+                                zIndex: bubbleData.length - index
+                              }}
+                            >
+                              {/* Tooltip con información real detallada */}
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
+                                          bg-black/90 text-white text-xs rounded-lg p-2 w-48
+                                          opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                                <div className="font-bold text-center mb-1">{bubble.time}</div>
+                                <div className="flex justify-between">
+                                  <span>Cierre:</span>
+                                  <span className="font-mono">${bubble.price.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Apertura:</span>
+                                  <span className="font-mono">${bubble.open.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Máximo:</span>
+                                  <span className="font-mono">${bubble.high.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Mínimo:</span>
+                                  <span className="font-mono">${bubble.low.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Cambio:</span>
+                                  <span className={`font-mono ${bubble.isUp ? 'text-green-500' : 'text-red-500'}`}>
+                                    {bubble.change > 0 ? '+' : ''}{bubble.change.toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Cambio %:</span>
+                                  <span className={`font-mono ${bubble.isUp ? 'text-green-500' : 'text-red-500'}`}>
+                                    {bubble.percentChange > 0 ? '+' : ''}{bubble.percentChange.toFixed(2)}%
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-xs opacity-75 mt-1">
+                                  <span>Vol:</span>
+                                  <span className="font-mono">{(bubble.volume || 0).toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Línea de tiempo */}
+                      <div className="mt-4 bg-black/50 p-2 rounded-lg">
+                        <div className="flex justify-between">
+                          {bubbleData.filter((_, i) => i % 2 === 0).map(bubble => (
+                            <div key={`time-${bubble.id}`} className="text-black text-xs font-bold">
+                              {bubble.time}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
                   );
                 })()}
               </div>
