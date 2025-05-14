@@ -1,23 +1,55 @@
 'use client';
 
 import * as d3 from 'd3';
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
+import * as ReactDOM from 'react-dom/client';
 
-interface Node {
+export interface Node {
   id: string;
-  type: 'win' | 'loss' | 'liquidation';
+  type: 'win' | 'loss' | 'liquidation' | 'balance';
   timestamp: number;
   value: number;
+  label?: string;
+  info?: {
+    prediction: string;
+    entryPrice: number;
+    status: string;
+    amount: number;
+  };
   children?: Node[];
 }
 
-interface TangledTreeChartProps {
+export interface TangledTreeChartProps {
   width: number;
   height: number;
   data: Node;
+  linkColor?: string;
+  linkWidth?: number;
+  nodeColors?: {
+    win: string;
+    loss: string;
+    liquidation: string;
+    balance: string;
+  };
+  showTooltip?: boolean;
+  tooltipContent?: (node: Node) => React.ReactNode;
 }
 
-export default function TangledTreeChart({ width, height, data }: TangledTreeChartProps) {
+export default function TangledTreeChart({ 
+  width, 
+  height, 
+  data, 
+  linkColor = '#374151',
+  linkWidth = 1.5,
+  nodeColors = {
+    win: '#22c55e',
+    loss: '#ef4444',
+    liquidation: '#6b7280',
+    balance: '#3b82f6'
+  },
+  showTooltip = false,
+  tooltipContent
+}: TangledTreeChartProps): React.ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -43,10 +75,8 @@ export default function TangledTreeChart({ width, height, data }: TangledTreeCha
     const root = d3.hierarchy(data);
     const treeData = treeLayout(root);
 
-    // Escala de colores
-    const colorScale = d3.scaleOrdinal<string>()
-      .domain(['win', 'loss', 'liquidation'])
-      .range(['#10b981', '#ef4444', '#f59e0b']);
+    // Función para obtener el color del nodo
+    const getNodeColor = (type: Node['type']) => nodeColors[type];
 
     // Dibujar enlaces
     svg.append('g')
@@ -69,8 +99,8 @@ export default function TangledTreeChart({ width, height, data }: TangledTreeCha
         return `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`;
       })
       .attr('fill', 'none')
-      .attr('stroke', '#374151')
-      .attr('stroke-width', 1.5);
+      .attr('stroke', linkColor)
+      .attr('stroke-width', linkWidth);
 
     // Dibujar nodos
     const nodes = svg.append('g')
@@ -87,7 +117,7 @@ export default function TangledTreeChart({ width, height, data }: TangledTreeCha
     // Añadir círculos a los nodos
     nodes.append('circle')
       .attr('r', 6)
-      .attr('fill', d => colorScale(d.data.type))
+      .attr('fill', d => getNodeColor(d.data.type))
       .attr('stroke', '#1f2937')
       .attr('stroke-width', 1.5);
 
@@ -95,12 +125,48 @@ export default function TangledTreeChart({ width, height, data }: TangledTreeCha
     nodes.append('text')
       .attr('dy', -10)
       .attr('text-anchor', 'middle')
-      .text(d => `$${d.data.value}`)
+      .text(d => d.data.label || `$${d.data.value}`)
       .style('fill', '#9ca3af')
       .style('font-size', '10px')
       .style('font-weight', 'bold');
 
-  }, [data, width, height]);
+    // Añadir tooltips si están habilitados
+    if (showTooltip && tooltipContent) {
+      const tooltip = d3.select('body').append('div')
+        .attr('class', 'tooltip')
+        .style('position', 'absolute')
+        .style('visibility', 'hidden');
+
+      nodes
+        .on('mouseover', (event, d) => {
+          const content = tooltipContent(d.data);
+          tooltip
+            .style('visibility', 'visible')
+            .style('left', `${event.pageX + 10}px`)
+            .style('top', `${event.pageY - 10}px`)
+            .html(() => {
+              const div = document.createElement('div');
+              // @ts-ignore - React 18 createRoot API
+              const root = ReactDOM.createRoot(div);
+              root.render(content);
+              return div.innerHTML;
+            });
+        })
+        .on('mousemove', (event) => {
+          tooltip
+            .style('left', `${event.pageX + 10}px`)
+            .style('top', `${event.pageY - 10}px`);
+        })
+        .on('mouseout', () => {
+          tooltip.style('visibility', 'hidden');
+        });
+    }
+
+    // Cleanup function
+    return () => {
+      d3.selectAll('.tooltip').remove();
+    };
+  }, [data, width, height, linkColor, linkWidth, nodeColors, showTooltip, tooltipContent]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }

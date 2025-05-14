@@ -8,10 +8,14 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useGame } from "@/context/game-context";
 import { Play, Pause } from "lucide-react";
+import type { TangledTreeChartProps } from '@/components/charts/TangledTreeChart';
 
 // Importación dinámica para evitar problemas de SSR
-const TangledTreeChart = dynamic(
-  () => import('@/components/charts/TangledTreeChart'),
+const TangledTreeChart = dynamic<TangledTreeChartProps>(
+  () => import('@/components/charts/TangledTreeChart').then((mod) => {
+    const Component = mod.default;
+    return Component;
+  }),
   { ssr: false }
 );
 

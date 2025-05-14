@@ -1,8 +1,21 @@
 "use client";
 
-// Ya no necesitamos extender Window
-
 import Image from "next/image";
+import dynamic from "next/dynamic";
+
+// Tipos para el TangledTreeChart
+// Importar tipos del componente TangledTreeChart
+import type { Node as TreeNode, TangledTreeChartProps } from '@/components/charts/TangledTreeChart';
+
+// Importación dinámica para evitar problemas de SSR
+const TangledTreeChart = dynamic<TangledTreeChartProps>(
+  () => import('@/components/charts/TangledTreeChart').then((mod) => {
+    const Component = mod.default;
+    return Component;
+  }),
+  { ssr: false }
+);
+
 import { TrendingUp } from "lucide-react"
 import { useLiquidations } from "@/components/game/liquidations";
 import { 
@@ -60,7 +73,6 @@ import {
 import UserStats from "@/components/game/user-stats";
 import BetHistory from "@/components/game/bet-history";
 import { getAutoMixMemory } from "@/utils/autoMixMemory";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useWhaleTrades } from "@/hooks/useWhaleTrades";
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -3299,6 +3311,160 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tarjeta 1: Análisis de Rentabilidad */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Tu Tangled Map</CardTitle>
+              <CardDescription className="text-black">Visualización del árbol de apuestas</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center items-center p-6 bg-yellow-400 rounded-b-xl">
+              <div className="w-full h-[400px] flex items-center justify-center">
+                {(() => {
+                  const { bets } = useGame();
+                  const getBetType = (status: string): 'win' | 'loss' | 'liquidation' => {
+                    if (status === 'WON') return 'win';
+                    if (status === 'LOST') return 'loss';
+                    return 'liquidation';
+                  };
+
+                  const formatTime = (timestamp: number) => {
+                    return new Date(timestamp).toLocaleTimeString('es-ES', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                  };
+
+                  // Calcular el balance actual
+                  const currentBalance = bets.reduce((total, bet) => {
+                    if (bet.status === 'WON') return total + bet.amount;
+                    if (bet.status === 'LOST') return total - bet.amount;
+                    return total;
+                  }, 0);
+
+                  const treeData = {
+                    id: 'root',
+                    type: 'balance' as const,
+                    timestamp: Date.now(),
+                    value: currentBalance,
+                    label: `Balance: ${currentBalance}$`,
+                    info: {
+                      prediction: 'Balance Actual',
+                      entryPrice: 0,
+                      status: 'BALANCE',
+                      amount: currentBalance
+                    },
+                    children: bets
+                      .sort((a, b) => b.timestamp - a.timestamp)
+                      .slice(0, 15)
+                      .map(bet => ({
+                        id: bet.id,
+                        type: getBetType(bet.status),
+                        timestamp: bet.timestamp,
+                        value: bet.amount,
+                        label: `${formatTime(bet.timestamp)} - ${bet.amount}$`,
+                        info: {
+                          prediction: bet.prediction,
+                          entryPrice: bet.entryPrice || 0,
+                          status: bet.status,
+                          amount: bet.amount
+                        },
+                        children: []
+                      }))
+                  };
+                  
+                  return bets.length > 0 ? (
+                    <div className="flex flex-col items-center w-full">
+                      <div className="flex justify-between w-full mb-4">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                            <span className="text-sm">Ganadas</span>
+                          </div>
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                            <span className="text-sm">Perdidas</span>
+                          </div>
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-gray-500 mr-2"></div>
+                            <span className="text-sm">Liquidadas</span>
+                          </div>
+                        </div>
+                        <div className="text-sm font-medium">
+                          Total: {bets.length} apuestas
+                        </div>
+                      </div>
+                      <TangledTreeChart 
+                        width={800} 
+                        height={400} 
+                        data={treeData}
+                        linkColor="#000000"
+                        linkWidth={2}
+                        nodeColors={{
+                          win: '#22c55e',
+                          loss: '#ef4444',
+                          liquidation: '#6b7280',
+                          balance: '#3b82f6'
+                        }}
+                        showTooltip={true}
+                        tooltipContent={(node: TreeNode) => (
+                          <div className="bg-black p-2 rounded-lg border border-yellow-500 text-white text-sm">
+                            <p className="font-bold mb-1">{node.label}</p>
+                            {node.info && (
+                              <>
+                                <p>Predicción: {node.info.prediction}</p>
+                                <p>Entrada: {node.info.entryPrice}$</p>
+                                <p>Monto: {node.info.amount}$</p>
+                                <p className={`font-semibold ${
+                                  node.info.status === 'WON' ? 'text-green-400' :
+                                  node.info.status === 'LOST' ? 'text-red-400' :
+                                  'text-gray-400'
+                                }`}>
+                                  {node.info.status === 'WON' ? 'Ganada' :
+                                   node.info.status === 'LOST' ? 'Perdida' :
+                                   'Liquidada'}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-zinc-600 font-medium">
+                      No hay datos de apuestas disponibles
+                    </div>
+                  );
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tarjeta 2: Distribución de Apuestas */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Distribución de Apuestas</CardTitle>
+              <CardDescription className="text-black">Análisis de la distribución de tus apuestas por tipo y resultado</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center items-center p-6 bg-black/10 rounded-b-xl">
+              <div className="w-full h-[300px] flex items-center justify-center text-zinc-600 font-medium bg-black rounded-xl">
+                Gráfico de distribución (próximamente)
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tarjeta 3: Predicciones y Aciertos */}
+          <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mt-6">
+            <CardHeader className="items-center pb-4">
+              <CardTitle>Predicciones y Aciertos</CardTitle>
+              <CardDescription className="text-black">Tasa de acierto en tus predicciones alcistas vs bajistas</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center items-center p-6 bg-black/10 rounded-b-xl">
+              <div className="w-full h-[300px] flex items-center justify-center text-zinc-600 font-medium bg-black rounded-xl">
+                Gráfico de predicciones (próximamente)
               </div>
             </CardContent>
           </Card>
