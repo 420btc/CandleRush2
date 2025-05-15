@@ -88,6 +88,7 @@ import type { Bet } from "@/types/game";
 import { Book } from "@/components/ui/book";
 import { GrAchievement } from "react-icons/gr";
 import { useAchievements } from "@/hooks/useAchievements";
+import BettingHistoryChart from "@/components/charts/BettingHistoryChart";
 
 // Componente para mostrar el balance actualizado cada minuto
 function BalanceIndicator({ balance }: { balance: number }) {
@@ -763,8 +764,7 @@ function WhaleTradesCard() {
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }: { viewBox?: LabelViewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                                                      return (
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {                                return (
                                     <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
                                       <tspan
                                         x={viewBox?.cx || 0}
@@ -782,9 +782,9 @@ function WhaleTradesCard() {
                                       </tspan>
                                     </text>
                                   );
-                  }
-                }}
-              />
+                }
+              }}
+            />
             </PolarRadiusAxis>
                   <RadialBar
                     background={{ fill: '#000000' }}
@@ -1460,13 +1460,13 @@ export default function ProfilePage() {
                     tickLine={false}
                     tickMargin={10}
                     axisLine={false}
+                    tick={{ fill: '#fff', fontSize: 10 }}
                     tickFormatter={(value) => {
                       return new Date(value).toLocaleDateString("es-ES", {
                         day: "2-digit",
                         month: "2-digit"
                       });
                     }}
-                    tick={{ fill: '#fff', fontSize: 10 }}
                   />
                   <Bar
                     dataKey="longs"
@@ -1677,12 +1677,36 @@ export default function ProfilePage() {
                     
                     // Generar datos aleatorios para el gráfico
                     const newChartData = [
-                      { indicator: "RSI", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
-                      { indicator: "MACD", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
-                      { indicator: "Mayoría", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
-                      { indicator: "Valle", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
-                      { indicator: "Volumen", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
-                      { indicator: "Ballenas", bullish: Math.random() > 0.5 ? 80 : 20, bearish: Math.random() > 0.5 ? 80 : 20 },
+                      { 
+                        indicator: "RSI", 
+                        bullish: Math.random() > 0.5 ? 80 : 20, 
+                        bearish: Math.random() > 0.5 ? 80 : 20 
+                      },
+                      { 
+                        indicator: "MACD", 
+                        bullish: Math.random() > 0.5 ? 80 : 20, 
+                        bearish: Math.random() > 0.5 ? 80 : 20 
+                      },
+                      { 
+                        indicator: "Mayoría", 
+                        bullish: Math.random() > 0.5 ? 80 : 20, 
+                        bearish: Math.random() > 0.5 ? 80 : 20 
+                      },
+                      { 
+                        indicator: "Valle", 
+                        bullish: Math.random() > 0.5 ? 80 : 20, 
+                        bearish: Math.random() > 0.5 ? 80 : 20 
+                      },
+                      { 
+                        indicator: "Volumen", 
+                        bullish: Math.random() > 0.5 ? 80 : 20, 
+                        bearish: Math.random() > 0.5 ? 80 : 20 
+                      },
+                      { 
+                        indicator: "Ballenas", 
+                        bullish: Math.random() > 0.5 ? 80 : 20, 
+                        bearish: Math.random() > 0.5 ? 80 : 20 
+                      },
                     ];
                     
                     // Actualizar el estado con los nuevos datos
@@ -2236,7 +2260,7 @@ export default function ProfilePage() {
                       // Actualizar datos inmediatamente
                       updateCandles();
                       
-                      // Establecer intervalo para actualizaciones al inicio de cada minuto
+                      // Establecer intervalo para actualizar cada minuto exacto
                       intervalId = setInterval(() => {
                         updateCandles();
                       }, 60000); // Actualizar cada minuto exacto
@@ -2361,7 +2385,7 @@ export default function ProfilePage() {
                                     <p className="font-medium text-white">{data.time}</p>
                                     <p className="text-xs">
                                       <span className={`font-bold ${
-                                        data.isUp ? 'text-green-400' : 'text-red-400'
+                                        data.isUp ? 'text-green-500' : 'text-red-500'
                                       }`}>
                                         {data.isUp ? 'Alcista' : 'Bajista'}
                                       </span>
@@ -2484,7 +2508,15 @@ export default function ProfilePage() {
                       if (initialHistory.length > 15) {
                         initialHistory = initialHistory.slice(-15);
                       }
+                      
+                      // Guardar en localStorage
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('balance_history_infinite', JSON.stringify(initialHistory));
+                      }
                     }
+                    
+                    // Actualizar el estado con el historial
+                    setBalanceHistory(initialHistory);
                   } else {
                     // Si no hay historial guardado, inicializar con puntos predeterminados
                     // que tengan algunas variaciones para mostrar una línea interesante
@@ -2792,6 +2824,9 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </div>
+        
+        {/* Gráfico de Historial de Apuestas */}
+        <BettingHistoryChart />
         
         {/* Sección para gráfico horizontal completo */}
         <div className="w-full max-w-5xl mx-auto mt-12">
