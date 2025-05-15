@@ -3116,6 +3116,8 @@ const calculateRemainingTime = (bet: any) => {
                   const bearishBets = recentBets.filter(bet => bet.prediction === 'BEARISH' && bet.status !== 'LIQUIDATED' && bet.status !== 'PENDING');
                   const pendingBets = recentBets.filter(bet => bet.status === 'PENDING');
                   const liquidatedBets = recentBets.filter(bet => bet.status === 'LIQUIDATED');
+                  const wonBets = recentBets.filter(bet => bet.status === 'WON');
+                  const lostBets = recentBets.filter(bet => bet.status === 'LOST');
                   const currentBalance = userBalance || 0;
 
                   const treeData = {
@@ -3139,7 +3141,6 @@ const calculateRemainingTime = (bet: any) => {
                             type: getBetType(bet.status),
                             timestamp: new Date(bet.timestamp).getTime(),
                             value: bet.amount,
-                            // Añadir etiqueta con tiempo restante para apuestas pendientes
                             label: bet.status === 'PENDING' && remainingTime ? `${remainingTime?.formatted || ''}` : undefined,
                             info: {
                               prediction: bet.prediction,
@@ -3165,7 +3166,6 @@ const calculateRemainingTime = (bet: any) => {
                             type: getBetType(bet.status),
                             timestamp: new Date(bet.timestamp).getTime(),
                             value: bet.amount,
-                            // Añadir etiqueta con tiempo restante para apuestas pendientes
                             label: bet.status === 'PENDING' && remainingTime ? `${remainingTime?.formatted || ''}` : undefined,
                             info: {
                               prediction: bet.prediction,
@@ -3173,6 +3173,52 @@ const calculateRemainingTime = (bet: any) => {
                               status: bet.status,
                               amount: bet.amount,
                               remainingTime: remainingTime
+                            }
+                          };
+                        })
+                      },
+                      // Subnodo para apuestas ganadas
+                      {
+                        id: 'won',
+                        type: 'win' as const,
+                        timestamp: Date.now(),
+                        value: wonBets.reduce((sum, bet) => sum + bet.amount, 0),
+                        label: 'Ganadas',
+                        children: wonBets.map(bet => {
+                          return {
+                            id: bet.id,
+                            type: getBetType(bet.status),
+                            timestamp: new Date(bet.timestamp).getTime(),
+                            value: bet.amount,
+                            label: undefined,
+                            info: {
+                              prediction: bet.prediction,
+                              entryPrice: bet.entryPrice,
+                              status: bet.status,
+                              amount: bet.amount,
+                            }
+                          };
+                        })
+                      },
+                      // Subnodo para apuestas perdidas
+                      {
+                        id: 'lost',
+                        type: 'loss' as const,
+                        timestamp: Date.now(),
+                        value: lostBets.reduce((sum, bet) => sum + bet.amount, 0),
+                        label: 'Perdidas',
+                        children: lostBets.map(bet => {
+                          return {
+                            id: bet.id,
+                            type: getBetType(bet.status),
+                            timestamp: new Date(bet.timestamp).getTime(),
+                            value: bet.amount,
+                            label: undefined,
+                            info: {
+                              prediction: bet.prediction,
+                              entryPrice: bet.entryPrice,
+                              status: bet.status,
+                              amount: bet.amount,
                             }
                           };
                         })
@@ -3216,7 +3262,6 @@ const calculateRemainingTime = (bet: any) => {
                             type: getBetType(bet.status),
                             timestamp: new Date(bet.timestamp).getTime(),
                             value: bet.amount,
-                            // Añadir etiqueta con tiempo restante para apuestas pendientes
                             label: bet.status === 'PENDING' && remainingTime ? `${remainingTime?.formatted || ''}` : undefined,
                             info: {
                               prediction: bet.prediction,
