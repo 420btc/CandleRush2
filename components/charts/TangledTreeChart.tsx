@@ -93,7 +93,14 @@ export default function TangledTreeChart({
     const treeData = treeLayout(root);
 
     // Función para obtener el color del nodo
-    const getNodeColor = (type: Node['type']) => nodeColors[type];
+    const getNodeColor = (type: Node['type'], d?: any) => {
+      // Si el nodo es hijo de bullish o bearish, forzar el color
+      if (d && d.parent && d.parent.data && d.parent.data.type) {
+        if (d.parent.data.type === 'bullish') return nodeColors.bullish;
+        if (d.parent.data.type === 'bearish') return nodeColors.bearish;
+      }
+      return nodeColors[type];
+    };
 
     // Dibujar enlaces
     svg.append('g')
@@ -139,7 +146,7 @@ export default function TangledTreeChart({
     // Añadir círculos a los nodos
     nodes.append('circle')
       .attr('r', d => d.depth === 0 ? 8 : 6) // Nodo central más grande
-      .attr('fill', d => getNodeColor(d.data.type))
+      .attr('fill', d => getNodeColor(d.data.type, d))
       .attr('stroke', '#1f2937')
       .attr('stroke-width', 1.5)
       // Ajustar la posición del nodo central específicamente
@@ -154,7 +161,7 @@ export default function TangledTreeChart({
       .attr('dy', -10)
       .attr('text-anchor', 'middle')
       .text(d => d.data.label || `$${d.data.value}`)
-      .style('fill', d => d.depth === 0 ? '#ffffff' : '#9ca3af')
+      .style('fill', d => d.depth === 0 ? '#ffffff' : '#000000')
       .style('font-size', d => d.depth === 0 ? '12px' : '10px')
       .style('font-weight', 'bold')
       // Añadir un fondo para el texto del balance para que se vea sobre las líneas

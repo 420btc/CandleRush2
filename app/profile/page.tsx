@@ -3053,7 +3053,7 @@ export default function ProfilePage() {
               <CardDescription className="text-black">Visualización del árbol de apuestas</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center items-center bg-yellow-400 rounded-b-xl">
-              <div className="w-full h-[590px] flex items-center justify-center">
+              <div className="w-full h-[670px] flex items-center justify-center">
                 {(() => {
                   const { bets } = useGame();
                   // Estado para forzar la actualización del componente cada segundo
@@ -3315,8 +3315,8 @@ const calculateRemainingTime = (bet: any) => {
                         </div>
                       </div>
                       <TangledTreeChart 
-                        width={800} 
-                        height={520} 
+                        width={900} 
+                        height={600} 
                         data={treeData}
                         linkColor="#000000"
                         linkWidth={2}
@@ -3328,7 +3328,9 @@ const calculateRemainingTime = (bet: any) => {
                           balance: '#3b82f6',
                           bullish: '#15803d',  // Verde oscuro
                           bearish: '#b91c1c',  // Rojo oscuro
-                          liquidated: '#000000' // Negro
+                          liquidated: '#000000', // Negro
+                          bullish_child: '#15803d',
+                          bearish_child: '#b91c1c'
                         }}
                         showTooltip={true}
                         tooltipContent={(node: TreeNode) => (
