@@ -210,7 +210,7 @@ El sistema puede conectarse a la API de Binance para:
 El Candle Predictor es el motor de simulación algorítmica de velas japonesas de CandleRush2. Permite generar, en tiempo real y de forma realista, secuencias de velas simuladas que emulan el comportamiento de mercados cripto, integrando lógica de tendencias, rangos, rupturas (breakouts), eventos de whale trades y volatilidad dinámica.
 
 ### Objetivo
-- Ofrecer un entorno de predicción y backtesting donde los usuarios pueden apostar sobre velas futuras, incluso en ausencia de datos reales.
+- Ofrecer un entorno de predicción y backtesting donde los usuarios pueden apostar sobre velas futuras, incluso en ausencia del usuario.
 - Proveer una experiencia inmersiva y educativa, mostrando cómo se forman tendencias, rangos, rupturas y eventos de volatilidad en mercados reales.
 
 ## Arquitectura y Construcción
