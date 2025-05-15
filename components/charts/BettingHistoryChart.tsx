@@ -76,9 +76,17 @@ const BettingHistoryChart: React.FC = () => {
                     let startIndex = i;
                     let scaleFactor = 1;
                     // Revisamos si estamos al final de una racha (últimas 3 apuestas)
-                    const lastThreeBets = bets.slice(Math.max(0, i - 2), i + 1);                        // Para rachas ganadoras (mínimo 3)
-                    if (lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "WON")) {                        // Si encontramos 3 victorias seguidas, buscamos el inicio real de la racha
+                    const lastThreeBets = bets.slice(Math.max(0, i - 2), i + 1);
+                    
+                    // Verificar si hay liquidaciones en las últimas apuestas (esto interrumpe cualquier racha)
+                    const hasLiquidations = lastThreeBets.some(b => b.status === "LIQUIDATED");
+                    
+                    // Para rachas ganadoras (mínimo 3)
+                    // Verificamos que las últimas 3 apuestas sean victorias (sin liquidaciones)
+                    if (!hasLiquidations && lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "WON")) {
+                      // Si encontramos 3 victorias seguidas, buscamos el inicio real de la racha
                       startIndex = i - 2; // Comenzamos desde el inicio de las 3 victorias detectadas
+                      // Retrocedemos hasta encontrar una apuesta que no sea victoria (incluyendo liquidaciones)
                       while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
                         startIndex--;
                       }
@@ -103,9 +111,11 @@ const BettingHistoryChart: React.FC = () => {
                     }
 
                     // Para rachas perdedoras (mínimo 3)
-                    if (!streakType && lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "LOST")) {
+                    // Verificamos que las últimas 3 apuestas sean pérdidas (sin liquidaciones)
+                    if (!streakType && !hasLiquidations && lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "LOST")) {
                       // Si encontramos 3 pérdidas seguidas, buscamos el inicio real de la racha
                       let startIndex = i - 2; // Comenzamos desde el inicio de las 3 pérdidas detectadas
+                      // Retrocedemos hasta encontrar una apuesta que no sea pérdida (incluyendo liquidaciones)
                       while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
                         startIndex--;
                       }
@@ -123,8 +133,11 @@ const BettingHistoryChart: React.FC = () => {
                     // Si no estamos al final pero estamos dentro de una racha existente
                     if (!streakType && i > 0) {
                       // Verificar si estamos en medio de una racha ganadora
-                      if (bets[i].status === "WON" && bets[i-1].status === "WON") {
+                      // La apuesta actual debe ser victoria y la anterior también, sin liquidaciones entre medias
+                      // Verificamos que no haya liquidaciones recientes que interrumpan la racha
+                      if (!hasLiquidations && bets[i].status === "WON" && bets[i-1].status === "WON") {
                         let startIndex = i;
+                        // Buscar hacia atrás hasta encontrar algo que no sea una victoria
                         while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
                           startIndex--;
                         }                        // Solo mostrar si hay al menos 3 en la racha
@@ -145,8 +158,11 @@ const BettingHistoryChart: React.FC = () => {
                         }
                       }
                       // Verificar si estamos en medio de una racha perdedora
-                      else if (bets[i].status === "LOST" && bets[i-1].status === "LOST") {
+                      // La apuesta actual debe ser pérdida y la anterior también, sin liquidaciones entre medias
+                      // Verificamos que no haya liquidaciones recientes que interrumpan la racha
+                      else if (!hasLiquidations && bets[i].status === "LOST" && bets[i-1].status === "LOST") {
                         let startIndex = i;
+                        // Buscar hacia atrás hasta encontrar algo que no sea una pérdida
                         while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
                           startIndex--;
                         }                        // Solo mostrar si hay al menos 3 en la racha

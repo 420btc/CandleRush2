@@ -2850,8 +2850,9 @@ export default function ProfilePage() {
                     );
                   }
                   
-                  // Filtrar solo apuestas finalizadas (ganadas o perdidas)
-                  const finishedBets = bets.filter(bet => bet.status === 'WON' || bet.status === 'LOST');
+                  // Filtrar solo apuestas finalizadas (ganadas, perdidas o liquidadas)
+                  // Incluimos las liquidadas para que interrumpan las rachas
+                  const finishedBets = bets.filter(bet => bet.status === 'WON' || bet.status === 'LOST' || bet.status === 'LIQUIDATED');
                   
                   // Ordenar por timestamp
                   const sortedBets = [...finishedBets].sort((a, b) => {
@@ -2871,6 +2872,17 @@ export default function ProfilePage() {
                   let currentStreakData: StreakData = { type: '', count: 0, amount: 0, timestamp: 0 };
                   
                   for (const bet of sortedBets) {
+                    // Si es una liquidación, interrumpe cualquier racha actual
+                    if (bet.status === 'LIQUIDATED') {
+                      // Si hay una racha en curso, guardarla antes de reiniciar
+                      if (currentStreakData.count > 0) {
+                        streaks.push({...currentStreakData});
+                        currentStreakData = { type: '', count: 0, amount: 0, timestamp: 0 };
+                      }
+                      // No iniciamos una nueva racha con liquidaciones
+                      continue;
+                    }
+                    
                     const betResult = bet.status === 'WON' ? 'win' : 'loss';
                     const betTime = new Date(bet.timestamp).getTime();
                     
