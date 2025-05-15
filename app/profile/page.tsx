@@ -3114,10 +3114,11 @@ export default function ProfilePage() {
                     const betTime = new Date(bet.timestamp).getTime();
                     return betTime >= twoHoursAgo;
                   });
-                  
+
                   // Agrupar las apuestas por tipo
-                  const bullishBets = recentBets.filter(bet => bet.prediction === 'BULLISH' && bet.status !== 'LIQUIDATED');
-                  const bearishBets = recentBets.filter(bet => bet.prediction === 'BEARISH' && bet.status !== 'LIQUIDATED');
+                  const bullishBets = recentBets.filter(bet => bet.prediction === 'BULLISH' && bet.status !== 'LIQUIDATED' && bet.status !== 'PENDING');
+                  const bearishBets = recentBets.filter(bet => bet.prediction === 'BEARISH' && bet.status !== 'LIQUIDATED' && bet.status !== 'PENDING');
+                  const pendingBets = recentBets.filter(bet => bet.status === 'PENDING');
                   const liquidatedBets = recentBets.filter(bet => bet.status === 'LIQUIDATED');
                   const currentBalance = userBalance || 0;
 
@@ -3170,6 +3171,31 @@ export default function ProfilePage() {
                             value: bet.amount,
                             // Añadir etiqueta con tiempo restante para apuestas pendientes
                             label: bet.status === 'PENDING' && remainingTime ? `${remainingTime?.formatted || ''}` : undefined,
+                            info: {
+                              prediction: bet.prediction,
+                              entryPrice: bet.entryPrice,
+                              status: bet.status,
+                              amount: bet.amount,
+                              remainingTime: remainingTime
+                            }
+                          };
+                        })
+                      },
+                      // Subnodo para apuestas pendientes
+                      {
+                        id: 'pending',
+                        type: 'pending' as const,
+                        timestamp: Date.now(),
+                        value: pendingBets.reduce((sum, bet) => sum + bet.amount, 0),
+                        label: 'Pendientes',
+                        children: pendingBets.map(bet => {
+                          const remainingTime = calculateRemainingTime(bet);
+                          return {
+                            id: bet.id,
+                            type: getBetType(bet.status),
+                            timestamp: new Date(bet.timestamp).getTime(),
+                            value: bet.amount,
+                            label: remainingTime ? `${remainingTime.formatted}` : undefined,
                             info: {
                               prediction: bet.prediction,
                               entryPrice: bet.entryPrice,
