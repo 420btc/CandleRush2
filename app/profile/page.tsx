@@ -1282,8 +1282,20 @@ export default function ProfilePage() {
               </div>
             </CardContent>
             <CardFooter className="flex-col gap-2 text-sm">
-              <div className="flex items-center gap-2 font-medium leading-none">
-                Total apuestas: {betCharts.total}
+              <div className="flex flex-col gap-1 font-medium leading-none">
+                <div className="flex items-center gap-2">
+                  Total apuestas: {betCharts.total}
+                </div>
+                <div className="flex items-center gap-4 mt-1">
+                  <span className="flex items-center gap-1 text-green-400">
+                    <img src="/bull.png" alt="Bullish" className="w-5 h-5 inline-block align-middle" />
+                    Alcistas: {betCharts.bullish}
+                  </span>
+                  <span className="flex items-center gap-1 text-red-400">
+                    <img src="/bear.png" alt="Bearish" className="w-5 h-5 inline-block align-middle" />
+                    Bajistas: {betCharts.bearish}
+                  </span>
+                </div>
               </div>
             </CardFooter>
           </Card>
@@ -3222,8 +3234,7 @@ const calculateRemainingTime = (bet: any) => {
                   return bets.length > 0 ? (
                     <div className="flex flex-col items-center w-full">
                       <p className="text-sm text-gray-500 mb-2">
-                        Mostrando apuestas de las últimas 2 horas 
-                        ({recentBets.length} de {bets.length} apuestas)
+                        
                       </p>
                       <div className="flex justify-between w-full mb-8">
                         <div className="flex flex-wrap items-center gap-4">
@@ -3252,8 +3263,10 @@ const calculateRemainingTime = (bet: any) => {
                             <span className="text-sm">Bajistas</span>
                           </div>
                         </div>
-                        <div className="text-sm font-medium">
-                          Total: {bets.length} apuestas
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-green-500 font-semibold">{recentBets.filter(bet => bet.status === 'WON').length} apuestas ganadas</span>
+                          <span className="text-red-500 font-semibold">{recentBets.filter(bet => bet.status === 'LOST').length} apuestas perdidas</span>
+                          <span className="text-black font-bold">{bets.length} apuestas totales</span>
                         </div>
                       </div>
                       <TangledTreeChart 
