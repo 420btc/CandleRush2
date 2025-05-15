@@ -1810,7 +1810,11 @@ useEffect(() => {
   </button>
   <button
     className={`px-4 py-2 rounded-xl border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center font-bold ${autoMix ? 'ring-4 ring-[#FFD600] ring-opacity-60 ring-offset-2 ring-offset-black animate-pulse' : ''} ${(autoBullish || autoBearish) ? 'opacity-50 cursor-not-allowed' : ''}`}
-    onClick={(autoBullish || autoBearish) ? undefined : toggleAutoMix}
+    onClick={(autoBullish || autoBearish) ? undefined : (e) => {
+      e.preventDefault();
+      console.log('Botón AutoMix clickeado, llamando a toggleAutoMix sin parámetros');
+      toggleAutoMix();
+    }}
     title="MIX: Apuesta automática aleatoria. El color indica el modo. Si tus apuestas quedan liquidadas automáticamente, revisa el apalancamiento o tu saldo."
     style={{
       minWidth: 0,

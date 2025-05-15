@@ -435,9 +435,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const targetTimeframe = tf || timeframe;
     if (!currentSymbol || !targetTimeframe) return;
     
+    // Agregar logs para depuración
+    console.log('[AutoMix] Intentando alternar AutoMix', { currentSymbol, targetTimeframe });
+    
     setAutoMixState((prev) => {
       const key = `${currentSymbol}_${targetTimeframe}`;
       const newVal = !prev[key];
+      
+      console.log('[AutoMix] Cambiando estado', { key, prevValue: prev[key], newValue: newVal });
+      
       const newState = {
         ...prev,
         [key]: newVal
@@ -446,6 +452,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       // Guardar en localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('autoMixState', JSON.stringify(newState));
+        
+        // También guardar un flag global para facilitar la detección
+        localStorage.setItem('autoMixActive', String(newVal));
         
         // Actualizar en los datos del usuario si está autenticado
         if (currentUser) {
