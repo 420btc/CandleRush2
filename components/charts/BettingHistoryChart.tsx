@@ -27,6 +27,11 @@ const BettingHistoryChart: React.FC = () => {
   const { bets } = useGame();
   const [pendingBets, setPendingBets] = useState<any[]>([]);
   const [isPendingBetsModalOpen, setIsPendingBetsModalOpen] = useState(false);
+  
+  // Función para cerrar el modal
+  const closePendingBetsModal = () => {
+    setIsPendingBetsModalOpen(false);
+  };
 
   return (
     <div className="w-full max-w-5xl mx-auto mt-12">
@@ -443,6 +448,84 @@ const BettingHistoryChart: React.FC = () => {
           </div>
         )}
       </Card>
+      
+      {/* Modal de apuestas pendientes */}
+      {isPendingBetsModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border-2 border-yellow-500 rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-4 border-b border-yellow-500/30 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-yellow-400">Apuestas Pendientes</h3>
+              <button 
+                onClick={closePendingBetsModal}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              {pendingBets.length > 0 ? (
+                pendingBets.map((bet, index) => (
+                  <div key={index} className="bg-blue-500/20 p-3 rounded-lg border border-blue-500/50">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-blue-300 font-bold">APUESTA PENDIENTE #{index + 1}</div>
+                      <div className="text-white/70 text-sm">
+                        {new Date(bet.timestamp).toLocaleTimeString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                    <div className="text-white text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>Predicción:</span>
+                        <span className={bet.prediction === "BULLISH" ? "text-green-400" : "text-red-400"}>
+                          {bet.prediction === "BULLISH" ? "ALCISTA" : "BAJISTA"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Monto:</span>
+                        <span>{bet.amount} monedas</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Apalancamiento:</span>
+                        <span>{bet.leverage || 1}x</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Par:</span>
+                        <span>{bet.symbol}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Timeframe:</span>
+                        <span>{bet.timeframe}</span>
+                      </div>
+                      {bet.entryPrice && (
+                        <div className="flex justify-between">
+                          <span>Precio de entrada:</span>
+                          <span>${bet.entryPrice}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  No hay apuestas pendientes
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-yellow-500/30 flex justify-end">
+              <button 
+                onClick={closePendingBetsModal}
+                className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-full px-4 py-2 text-sm transition-all duration-200"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
