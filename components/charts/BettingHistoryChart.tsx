@@ -93,18 +93,26 @@ const BettingHistoryChart: React.FC = () => {
                         // Marcar toda la racha desde el inicio hasta la posición actual
                       if (i >= startIndex) {                        // Calculamos la intensidad basada en la longitud de la racha actual
                         const streakLength = i - startIndex + 1;
-                        // Nueva escala de intensidad:
-                        // 1-5: 25%, 5-10: 50%, 10-15: 75%, 15-20: 100%
+                        // Nueva escala de intensidad más detallada:
+                        // 1-2: 10%, 3-4: 20%, 5-6: 35%, 7-8: 50%, 9-10: 65%, 11-13: 80%, 14-16: 90%, 17+: 100%
                         let intensity;
-                          if (streakLength <= 5) {
-                            intensity = 25;
-                          } else if (streakLength <= 10) {
-                            intensity = 50;
-                          } else if (streakLength <= 15) {
-                            intensity = 75;
-                          } else {
-                            intensity = 100;
-                          }
+                        if (streakLength <= 2) {
+                          intensity = 10; // Rachas muy cortas
+                        } else if (streakLength <= 4) {
+                          intensity = 20; // Rachas cortas
+                        } else if (streakLength <= 6) {
+                          intensity = 35; // Rachas moderadas
+                        } else if (streakLength <= 8) {
+                          intensity = 50; // Rachas buenas
+                        } else if (streakLength <= 10) {
+                          intensity = 65; // Rachas muy buenas
+                        } else if (streakLength <= 13) {
+                          intensity = 80; // Rachas excelentes
+                        } else if (streakLength <= 16) {
+                          intensity = 90; // Rachas épicas
+                        } else {
+                          intensity = 100; // Rachas legendarias
+                        }
                         currentStreak = intensity;
                         streakType = 'win';
                       }
@@ -122,10 +130,29 @@ const BettingHistoryChart: React.FC = () => {
                      
                       // Marcar toda la racha desde el inicio hasta la posición actual
                       if (i >= startIndex) {
-                        // Usamos el mismo factor de escala para mantener la proporción
-                        const maxPossibleStreak = bets.length;
-                        const scaleFactor = 100 / Math.max(5, maxPossibleStreak);
-                        currentStreak = (i - startIndex + 1) * scaleFactor;
+                        // Usamos la misma escala detallada para las rachas perdedoras
+                        const streakLength = i - startIndex + 1;
+                        // Nueva escala de intensidad más detallada:
+                        // 1-2: 10%, 3-4: 20%, 5-6: 35%, 7-8: 50%, 9-10: 65%, 11-13: 80%, 14-16: 90%, 17+: 100%
+                        let intensity;
+                        if (streakLength <= 2) {
+                          intensity = 10; // Rachas muy cortas
+                        } else if (streakLength <= 4) {
+                          intensity = 20; // Rachas cortas
+                        } else if (streakLength <= 6) {
+                          intensity = 35; // Rachas moderadas
+                        } else if (streakLength <= 8) {
+                          intensity = 50; // Rachas buenas
+                        } else if (streakLength <= 10) {
+                          intensity = 65; // Rachas muy buenas
+                        } else if (streakLength <= 13) {
+                          intensity = 80; // Rachas excelentes
+                        } else if (streakLength <= 16) {
+                          intensity = 90; // Rachas épicas
+                        } else {
+                          intensity = 100; // Rachas legendarias
+                        }
+                        currentStreak = intensity;
                         streakType = 'lose';
                       }
                     }
@@ -143,15 +170,24 @@ const BettingHistoryChart: React.FC = () => {
                         }                        // Solo mostrar si hay al menos 3 en la racha
                         if ((i - startIndex + 1) >= 3) {
                           const streakLength = i - startIndex + 1;
-                          // Calcular intensidad basada en la longitud de la racha:
-                          // 1-5: 25%, 5-10: 50%, 10-20: 100%
+                          // Usar la misma escala detallada para todas las rachas
                           let intensity;
-                          if (streakLength <= 5) {
-                            intensity = 25;
+                          if (streakLength <= 2) {
+                            intensity = 10; // Rachas muy cortas
+                          } else if (streakLength <= 4) {
+                            intensity = 20; // Rachas cortas
+                          } else if (streakLength <= 6) {
+                            intensity = 35; // Rachas moderadas
+                          } else if (streakLength <= 8) {
+                            intensity = 50; // Rachas buenas
                           } else if (streakLength <= 10) {
-                            intensity = 50;
+                            intensity = 65; // Rachas muy buenas
+                          } else if (streakLength <= 13) {
+                            intensity = 80; // Rachas excelentes
+                          } else if (streakLength <= 16) {
+                            intensity = 90; // Rachas épicas
                           } else {
-                            intensity = 100;
+                            intensity = 100; // Rachas legendarias
                           }
                           currentStreak = intensity;
                           streakType = 'win';
@@ -168,15 +204,24 @@ const BettingHistoryChart: React.FC = () => {
                         }                        // Solo mostrar si hay al menos 3 en la racha
                         if ((i - startIndex + 1) >= 3) {
                           const streakLength = i - startIndex + 1;
-                          // Calcular intensidad basada en la longitud de la racha:
-                          // 1-5: 25%, 5-10: 50%, 10-20: 100%
+                          // Usar la misma escala detallada para todas las rachas
                           let intensity;
-                          if (streakLength <= 5) {
-                            intensity = 25;
+                          if (streakLength <= 2) {
+                            intensity = 10; // Rachas muy cortas
+                          } else if (streakLength <= 4) {
+                            intensity = 20; // Rachas cortas
+                          } else if (streakLength <= 6) {
+                            intensity = 35; // Rachas moderadas
+                          } else if (streakLength <= 8) {
+                            intensity = 50; // Rachas buenas
                           } else if (streakLength <= 10) {
-                            intensity = 50;
+                            intensity = 65; // Rachas muy buenas
+                          } else if (streakLength <= 13) {
+                            intensity = 80; // Rachas excelentes
+                          } else if (streakLength <= 16) {
+                            intensity = 90; // Rachas épicas
                           } else {
-                            intensity = 100;
+                            intensity = 100; // Rachas legendarias
                           }
                           currentStreak = intensity;
                           streakType = 'lose';
@@ -188,30 +233,35 @@ const BettingHistoryChart: React.FC = () => {
                     const betTime = new Date(bet.timestamp).toLocaleTimeString('es-ES', {
                       hour: '2-digit',
                       minute: '2-digit'
-                    });                      return {
-                      ronda: i + 1,
-                      tiempo: betTime,
-                      rachaGanadora: streakType === 'win' ? currentStreak : 0,
-                      rachaPerdedora: streakType === 'lose' ? currentStreak : 0,
-                      ganadas: (won / maxTotal) * 100,
-                      perdidas: (lost / maxTotal) * 100,
-                      liquidadas: (liquidated / maxTotal) * 100,
-                      pendientes: (pending / maxTotal) * 100,
-                      numApuestas: i - startIndex + 1, // Número actual de apuestas en la racha
-                      racha: streakType === 'win' ? 'ganadora' : streakType === 'lose' ? 'perdedora' : null,
-                      startTime: streakType ? new Date(bets[startIndex].timestamp).toLocaleTimeString('es-ES', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : null,
-                      // Datos adicionales para el tooltip
-                      betAmount: bet.amount,
-                      betStatus: bet.status,
-                      betPrediction: bet.prediction,
-                      betLeverage: bet.leverage || 1,
-                      betSymbol: bet.symbol,                      
-                      betTimeframe: bet.timeframe,
-                      scaleFactor: scaleFactor, // Agregar el factor de escala a los datos
-                    };
+                    });
+                      // Guardamos el startIndex actual para usarlo en el cálculo de numApuestas
+                      // Esto asegura que se use el valor correcto para cada tipo de racha
+                      let rachaStartIndex = startIndex;
+                      return {
+                        ronda: i + 1,
+                        tiempo: betTime,
+                        rachaGanadora: streakType === 'win' ? currentStreak : 0,
+                        rachaPerdedora: streakType === 'lose' ? currentStreak : 0,
+                        ganadas: (won / maxTotal) * 100,
+                        perdidas: (lost / maxTotal) * 100,
+                        liquidadas: (liquidated / maxTotal) * 100,
+                        pendientes: (pending / maxTotal) * 100,
+                        numApuestas: streakType ? (i - rachaStartIndex + 1) : 0, // Número actual de apuestas en la racha, solo si hay una racha activa
+                        racha: streakType === 'win' ? 'ganadora' : streakType === 'lose' ? 'perdedora' : null,
+                        startTime: streakType ? new Date(bets[startIndex].timestamp).toLocaleTimeString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : null,
+                        // Datos adicionales para el tooltip
+                        betAmount: bet.amount,
+                        betStatus: bet.status,
+                        betPrediction: bet.prediction,
+                        betLeverage: bet.leverage || 1,
+                        betSymbol: bet.symbol,                      
+                        betTimeframe: bet.timeframe,
+                        scaleFactor: scaleFactor, // Agregar el factor de escala a los datos
+                      };
+
                   });
               })()}
             >              
