@@ -58,6 +58,7 @@ type LabelViewBox = {
   outerRadius?: number;
 };
 import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
+import { getTimeframeInMs } from './getTimeframeInMs';
 import {
   Card,
   CardContent,
@@ -3067,46 +3068,29 @@ export default function ProfilePage() {
                   };
                   
                   // Calcular el tiempo restante para apuestas pendientes (en segundos y minutos)
-                  const calculateRemainingTime = (bet: any) => {
-                    if (bet.status !== 'PENDING') return undefined;
-                    
-                    try {
-                      // Duración de la apuesta en segundos (1 minuto)
-                      const betDurationSeconds = 60;
-                      
-                      // Tiempo de creación de la apuesta
-                      const creationTime = new Date(bet.timestamp).getTime();
-                      
-                      // Tiempo actual
-                      const currentTime = Date.now();
-                      
-                      // Tiempo transcurrido desde la creación (en segundos)
-                      const elapsedSeconds = Math.floor((currentTime - creationTime) / 1000);
-                      
-                      // Tiempo restante (en segundos)
-                      // Si es negativo o cero, la apuesta ya debería haberse resuelto
-                      const remainingSeconds = Math.max(0, betDurationSeconds - elapsedSeconds);
-                      
-                      // Convertir a formato mm:ss
-                      const minutes = Math.floor(remainingSeconds / 60);
-                      const seconds = remainingSeconds % 60;
-                      
-                      return {
-                        total: remainingSeconds,
-                        minutes,
-                        seconds,
-                        formatted: `${minutes}:${seconds.toString().padStart(2, '0')}`
-                      };
-                    } catch (error) {
-                      // En caso de error, devolver un valor por defecto
-                      return {
-                        total: 0,
-                        minutes: 0,
-                        seconds: 0,
-                        formatted: '0:00'
-                      };
-                    }
-                  };
+const calculateRemainingTime = (bet: any) => {
+  if (bet.status !== 'PENDING') return undefined;
+  try {
+    const tfMs = getTimeframeInMs(bet.timeframe);
+    // Si la apuesta acaba de crearse y candleTimestamp está en el pasado, usar fallback para evitar 0:00
+    let resolveTime = bet.candleTimestamp + tfMs;
+    if (resolveTime - Date.now() <= 0 && bet.timestamp) {
+      // Si la vela ya debería haber cerrado pero la apuesta es nueva, usar timestamp de creación
+      resolveTime = new Date(bet.timestamp).getTime() + tfMs;
+    }
+    const remainingMs = Math.max(0, resolveTime - Date.now());
+    const minutes = Math.floor(remainingMs / 60000);
+    const seconds = Math.floor((remainingMs % 60000) / 1000);
+    return {
+      total: Math.floor(remainingMs / 1000),
+      minutes,
+      seconds,
+      formatted: `${minutes}:${seconds.toString().padStart(2, '0')}`
+    };
+  } catch {
+    return { total: 0, minutes: 0, seconds: 0, formatted: '0:00' };
+  }
+};
                   
                   // Filtrar las apuestas de las últimas 2 horas (120 minutos)
                   const twoHoursAgo = Date.now() - (120 * 60 * 1000);
