@@ -2798,8 +2798,8 @@ export default function ProfilePage() {
           {/* Gráfico de Rachas de Trading */}
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl mb-4">
             <CardHeader className="items-center py-2">
-              <CardTitle className="text-lg">Rachas de Trading</CardTitle>
-              <CardDescription className="text-black text-xs">Análisis de tus rachas ganadoras y perdedoras</CardDescription>
+              <CardTitle>Rachas de Trading</CardTitle>
+              <CardDescription className="text-black">Análisis de tus rachas ganadoras y perdedoras</CardDescription>
             </CardHeader>
             <CardContent className="px-3 py-2">
               <div className="w-full bg-black rounded-xl p-3 text-white grid grid-cols-1 md:grid-cols-2 gap-2">
