@@ -105,9 +105,39 @@ const GameContext = createContext<GameContextType | undefined>(undefined)
 
 export function GameProvider({ children }: { children: ReactNode }) {
   // --- PERSISTENCIA POR USUARIO ---
-  const [currentUser, setCurrentUser] = useState<string | null>(typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null);
+  // Estado de usuario y autenticación
+  const [currentUser, setCurrentUser] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('currentUser');
+  });
   
-  // Inicializar el balance con un valor que se actualiza inmediatamente en el useEffect
+  // --- DECLARACIÓN DE ESTADOS ---
+  // Estados principales
+  const [currentSymbol, setCurrentSymbol] = useState<string>("BTCUSDT");
+  const [timeframe, setTimeframe] = useState<string>("1m");
+  const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING");
+  const [nextPhaseTime, setNextPhaseTime] = useState<number | null>(null);
+  const [nextCandleTime, setNextCandleTime] = useState<number | null>(null);
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [currentCandle, setCurrentCandle] = useState<Candle | null>(null);
+  const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, Bet[]>>>({});
+  const [betsHydrated, setBetsHydrated] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [candleSizes, setCandleSizes] = useState<number[]>([]);
+  const [bonusInfo, setBonusInfo] = useState<{ bonus: number; size: number; message: string } | null>(null);
+  const [winStreak, setWinStreak] = useState<number>(0);
+  const [streakMultiplier, setStreakMultiplier] = useState<number>(1);
+  const [notifications, setNotifications] = useState<{ id: string; message: string; type: string }[]>([]);
+  const [pendingResolutions, setPendingResolutions] = useState<PendingResolution[]>([]);
+  const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
+  const [currentCandleBets, setCurrentCandleBets] = useState<number>(0);
+  const [autoBullish, setAutoBullish] = useState<boolean>(false);
+  const [autoBearish, setAutoBearish] = useState<boolean>(false);
+  
+  // Referencias
+  const betsRef = useRef<Bet[]>([]);
+  const autoBetDoneRef = useRef<{ [key: string]: boolean }>({});
+
   const [userBalance, setUserBalance] = useState<number>(() => {
     if (typeof window === 'undefined') return 100;
     
@@ -136,9 +166,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
     
     return 100; // Valor por defecto
   });
+  // Inicializar estados que dependen de la persistencia
   const [achievements, setAchievements] = useState<string[]>([]);
-  const [autoMixMemory, setAutoMixMemory] = useState<any[]>([]); // Ajusta el tipo según tu definición
-  const [betsByPair, setBetsByPair] = useState<Record<string, Record<string, any[]>>>({});
+  const [autoMixMemory, setAutoMixMemory] = useState<any[]>([]);
+  const [autoMixState, setAutoMixState] = useState<Record<string, boolean>>(() => {
+    // Recuperar estado de autoMix de localStorage al iniciar
+    if (typeof window !== 'undefined') {
+      const userData = currentUser ? loadUserData(currentUser) : null;
+      if (userData?.autoMixState) {
+        return userData.autoMixState;
+      }
+      const savedAutoMix = localStorage.getItem('autoMixState');
+      return savedAutoMix ? JSON.parse(savedAutoMix) : {};
+    }
+    return {};
+  });
 
   // --- LIMPIEZA DE ESTADO AL CAMBIAR USUARIO (LOGOUT/LOGIN) ---
   useEffect(() => {
@@ -188,7 +230,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return initialData;
   }
 
-  // --- Restaurar datos al login ---
   useEffect(() => {
     if (currentUser) {
       const data = loadUserData(currentUser);
@@ -241,7 +282,66 @@ export function GameProvider({ children }: { children: ReactNode }) {
       });
     }
   }, [currentUser, userBalance, betsByPair, achievements, autoMixMemory]);
-  // ...existing state...
+  const { toast } = useToast()
+  const { unlockAchievement } = useAchievement()
+
+  // Función para verificar logros
+  const checkAchievements = useCallback((stats: {
+    balance?: number,
+    betsCount?: number,
+    consecutiveWins?: number,
+    winRate?: number,
+    totalVolume?: number,
+    differentPairs?: string[],
+    isFirstBet?: boolean,
+    isFirstWin?: boolean,
+    isFirstDeposit?: boolean,
+    wasLiquidated?: boolean,
+    profitPercentage?: number,
+    isAutomix?: boolean,
+    automixProfits?: number,
+    automixConsecutiveWins?: number,
+    automixVolume?: number,
+    automixTime?: number,
+  }) => {
+    // Logros básicos
+    if (stats.isFirstBet === true) unlockAchievement("first_bet");
+    if (stats.isFirstWin === true) unlockAchievement("first_win");
+    if (stats.isFirstDeposit === true) unlockAchievement("first_deposit");
+    if (stats.balance && stats.balance >= 500) unlockAchievement("balance_500");
+    if (stats.betsCount && stats.betsCount >= 10) unlockAchievement("ten_bets");
+    
+    // Logros intermedios
+    if (stats.consecutiveWins && stats.consecutiveWins >= 3) unlockAchievement("consecutive_win_3");
+    if (stats.balance && stats.balance >= 1000) unlockAchievement("balance_1000");
+    if (stats.betsCount && stats.betsCount >= 50) unlockAchievement("fifty_bets");
+    if (stats.winRate && stats.winRate >= 60) unlockAchievement("win_ratio_60");
+    if (stats.differentPairs && stats.differentPairs.length >= 5) unlockAchievement("crypto_master");
+    
+    // Logros avanzados
+    if (stats.consecutiveWins && stats.consecutiveWins >= 7) unlockAchievement("consecutive_win_7");
+    if (stats.balance && stats.balance >= 5000) unlockAchievement("balance_5000");
+    if (stats.betsCount && stats.betsCount >= 500) unlockAchievement("five_hundred_trades");
+    if (stats.winRate && stats.winRate >= 75) unlockAchievement("win_ratio_75");
+    if (stats.differentPairs && stats.differentPairs.length >= 20) unlockAchievement("twenty_pairs");
+    
+    // Logros expertos
+    if (stats.consecutiveWins && stats.consecutiveWins >= 10) unlockAchievement("consecutive_win_10");
+    if (stats.balance && stats.balance >= 10000) unlockAchievement("balance_10000");
+    if (stats.betsCount && stats.betsCount >= 1000) unlockAchievement("thousand_trades");
+    if (stats.winRate && stats.winRate >= 85) unlockAchievement("win_ratio_85");
+    if (stats.differentPairs && stats.differentPairs.length >= 30) unlockAchievement("thirty_pairs");
+    
+    // Logros AutoMix
+    if (stats.isAutomix === true) unlockAchievement("first_automix");
+    if (stats.automixProfits && stats.automixProfits > 0) unlockAchievement("automix_profit");
+    if (stats.automixConsecutiveWins && stats.automixConsecutiveWins >= 5) unlockAchievement("automix_streak");
+    if (stats.automixVolume && stats.automixVolume >= 5000) unlockAchievement("automix_volume");
+    if (stats.automixTime && stats.automixTime >= 24 * 60 * 60 * 1000) unlockAchievement("automix_24h");
+  }, [unlockAchievement]);
+
+  // Función para agregar monedas
+
   const addCoins = (amount: number) => {
     // Sin límite: el usuario puede tener cualquier cantidad de monedas
     setUserBalance((prev) => {
@@ -276,56 +376,104 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return newBalance;
     });
   }
-  const [candleSizes, setCandleSizes] = useState<number[]>([]);
-  const [bonusInfo, setBonusInfo] = useState<{ bonus: number; size: number; message: string } | null>(null);
-  const [gamePhase, setGamePhase] = useState<GamePhase>("LOADING")
-  const [autoBullish, setAutoBullish] = useState<boolean>(false);
-  const [autoBearish, setAutoBearish] = useState<boolean>(false);
-  const [autoMix, setAutoMix] = useState<boolean>(() => {
-    // Recuperar estado de autoMix de localStorage al iniciar
-    if (typeof window !== 'undefined') {
-      const savedAutoMix = localStorage.getItem('autoMixActive');
-      return savedAutoMix === 'true';
-    }
-    return false;
-  });
 
-  // Actualizar localStorage cuando cambia autoMix
+
+  // Obtener el estado de AutoMix para el par/intervalo actual
+  const autoMix = useMemo(() => {
+    const key = currentSymbol && timeframe ? `${currentSymbol}_${timeframe}` : '';
+    return key ? autoMixState[key] || false : false;
+  }, [autoMixState, currentSymbol, timeframe]);
+  
+  // Obtener todos los timeframes activos para AutoMix
+  const getActiveAutoMixTimeframes = useCallback((symbol: string) => {
+    return Object.entries(autoMixState)
+      .filter(([key, isActive]) => {
+        const [s, t] = key.split('_');
+        return isActive && s === symbol;
+      })
+      .map(([key]) => key.split('_')[1]);
+  }, [autoMixState]);
+
+  // Sincronizar el estado de AutoMix con el Service Worker y almacenamiento
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('autoMixActive', autoMix.toString());
-    }
-  }, [autoMix]);
+    if (typeof window === 'undefined' || !currentSymbol || !('serviceWorker' in navigator)) return;
+    
+    const controller = navigator.serviceWorker.controller;
+    if (!controller) return;
 
-  const toggleAutoMix = () => {
-    setAutoMix((prev) => {
-      const newVal = !prev;
+    // Obtener todos los timeframes activos para el símbolo actual
+    const activeTimeframes = getActiveAutoMixTimeframes(currentSymbol);
+    
+    // Notificar al Service Worker para cada timeframe activo
+    // Desactivar AutoMix para todos los timeframes primero
+    controller.postMessage({
+      type: 'DEACTIVATE_AUTO_MIX',
+      symbol: currentSymbol
+    });
+    
+    // Activar AutoMix solo para los timeframes activos
+    activeTimeframes.forEach(tf => {
+      const key = `${currentSymbol}_${tf}`;
+      const isActive = autoMixState[key] || false;
+      
+      if (isActive) {
+        controller.postMessage({
+          type: 'ACTIVATE_AUTO_MIX',
+          config: {
+            symbol: currentSymbol,
+            timeframe: tf,
+            betAmount: userBalance >= 1 ? 1 : 0,
+            leverage: 1,
+            userBalance
+          }
+        });
+      }
+    });
+  }, [autoMixState, currentSymbol, userBalance, getActiveAutoMixTimeframes]);
+
+  const toggleAutoMix = useCallback((tf?: string) => {
+    const targetTimeframe = tf || timeframe;
+    if (!currentSymbol || !targetTimeframe) return;
+    
+    setAutoMixState((prev) => {
+      const key = `${currentSymbol}_${targetTimeframe}`;
+      const newVal = !prev[key];
+      const newState = {
+        ...prev,
+        [key]: newVal
+      };
+
+      // Guardar en localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('autoMixState', JSON.stringify(newState));
+        
+        // Actualizar en los datos del usuario si está autenticado
+        if (currentUser) {
+          const userData = loadUserData(currentUser);
+          userData.autoMixState = newState;
+          saveUserData(currentUser, userData);
+        }
+      }
+
       if (newVal) {
-        setAutoBullish(false);
-        setAutoBearish(false);
+        // Desactivar AutoBullish y AutoBearish solo si estamos en el timeframe actual
+        if (targetTimeframe === timeframe) {
+          setAutoBullish(false);
+          setAutoBearish(false);
+        }
         
         // Verificar logros de AutoMix al activarlo
         checkAchievements({
           isAutomix: true,
         });
       }
-      return newVal;
-    });
-  };
 
-  const [nextPhaseTime, setNextPhaseTime] = useState<number | null>(null)
-  const [nextCandleTime, setNextCandleTime] = useState<number | null>(null)
-  const [candles, setCandles] = useState<Candle[]>([])
-  const [currentCandle, setCurrentCandle] = useState<Candle | null>(null)
-  const [currentSymbol, setCurrentSymbol] = useState<string>("BTCUSDT")
-  const [timeframe, setTimeframe] = useState<string>("1m")
-  // Estructura: { [symbol]: { [timeframe]: Bet[] } }
-  // (eliminado: declaración duplicada de betsByPair y setBetsByPair, ahora está al inicio de GameProvider)
-  const [betsHydrated, setBetsHydrated] = useState(false);
-  // Usar useRef para mantener una referencia actualizada a las apuestas actuales
-  const betsRef = useRef<Bet[]>([]);
-  // Ref global para controlar apuestas automáticas por vela
-  const autoBetDoneRef = useRef<{ [key: string]: boolean }>({});
+      return newState;
+    });
+  }, [currentSymbol, timeframe, currentUser, checkAchievements]);
+
+  // Estados ya movidos al inicio del componente
+  // Referencias ya declaradas al inicio
   // Calcular bets a partir de betsByPair y mantener la referencia actualizada
   const bets = useMemo(() => {
     const currentBets = betsByPair[currentSymbol]?.[timeframe] || [];
@@ -358,21 +506,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const [isConnected, setIsConnected] = useState<boolean>(false)
-  const [serverTimeOffset, setServerTimeOffset] = useState<number>(0)
-  const [currentCandleBets, setCurrentCandleBets] = useState<number>(0)
-  const [notifications, setNotifications] = useState<{ id: string; message: string; type: string }[]>([])
+  // Estados ya movidos al inicio del componente
+  
   // Tipo para las resoluciones pendientes
   type PendingResolution = {
     candle: Candle;
     time: number;
     isEmergencyResolution?: boolean;
   };
-  
-  const [pendingResolutions, setPendingResolutions] = useState<PendingResolution[]>([])
-  // --- WIN STREAK STATE ---
-  const [winStreak, setWinStreak] = useState<number>(0)
-  const [streakMultiplier, setStreakMultiplier] = useState<number>(1)
 
   // Manejar evento de eliminación de apuesta
   useEffect(() => {
@@ -425,8 +566,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [userBalance]);
 
 
-  const { toast } = useToast()
-  const { unlockAchievement } = useAchievement()
+
 
   // Limpiar notificaciones después de un tiempo
   useEffect(() => {
@@ -844,60 +984,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     [gamePhase, timeframe, serverTimeOffset, toast],
   )
 
-  // Función para verificar logros
-  const checkAchievements = useCallback((stats: {
-    balance?: number,
-    betsCount?: number,
-    consecutiveWins?: number,
-    winRate?: number,
-    totalVolume?: number,
-    differentPairs?: string[],
-    isFirstBet?: boolean,
-    isFirstWin?: boolean,
-    isFirstDeposit?: boolean,
-    wasLiquidated?: boolean,
-    profitPercentage?: number,
-    isAutomix?: boolean,
-    automixProfits?: number,
-    automixConsecutiveWins?: number,
-    automixVolume?: number,
-    automixTime?: number,
-  }) => {
-    // Logros básicos
-    if (stats.isFirstBet === true) unlockAchievement("first_bet");
-    if (stats.isFirstWin === true) unlockAchievement("first_win");
-    if (stats.isFirstDeposit === true) unlockAchievement("first_deposit");
-    if (stats.balance && stats.balance >= 500) unlockAchievement("balance_500");
-    if (stats.betsCount && stats.betsCount >= 10) unlockAchievement("ten_bets");
-    
-    // Logros intermedios
-    if (stats.consecutiveWins && stats.consecutiveWins >= 3) unlockAchievement("consecutive_win_3");
-    if (stats.balance && stats.balance >= 1000) unlockAchievement("balance_1000");
-    if (stats.betsCount && stats.betsCount >= 50) unlockAchievement("fifty_bets");
-    if (stats.winRate && stats.winRate >= 60) unlockAchievement("win_ratio_60");
-    if (stats.differentPairs && stats.differentPairs.length >= 5) unlockAchievement("crypto_master");
-    
-    // Logros avanzados
-    if (stats.consecutiveWins && stats.consecutiveWins >= 7) unlockAchievement("consecutive_win_7");
-    if (stats.balance && stats.balance >= 5000) unlockAchievement("balance_5000");
-    if (stats.betsCount && stats.betsCount >= 500) unlockAchievement("five_hundred_trades");
-    if (stats.winRate && stats.winRate >= 75) unlockAchievement("win_ratio_75");
-    if (stats.differentPairs && stats.differentPairs.length >= 20) unlockAchievement("twenty_pairs");
-    
-    // Logros expertos
-    if (stats.consecutiveWins && stats.consecutiveWins >= 10) unlockAchievement("consecutive_win_10");
-    if (stats.balance && stats.balance >= 10000) unlockAchievement("balance_10000");
-    if (stats.betsCount && stats.betsCount >= 1000) unlockAchievement("thousand_trades");
-    if (stats.winRate && stats.winRate >= 85) unlockAchievement("win_ratio_85");
-    if (stats.differentPairs && stats.differentPairs.length >= 30) unlockAchievement("thirty_pairs");
-    
-    // Logros AutoMix
-    if (stats.isAutomix === true) unlockAchievement("first_automix");
-    if (stats.automixProfits && stats.automixProfits > 0) unlockAchievement("automix_profit");
-    if (stats.automixConsecutiveWins && stats.automixConsecutiveWins >= 5) unlockAchievement("automix_streak");
-    if (stats.automixVolume && stats.automixVolume >= 5000) unlockAchievement("automix_volume");
-    if (stats.automixTime && stats.automixTime >= 24 * 60 * 60 * 1000) unlockAchievement("automix_24h");
-  }, [unlockAchievement]);
+
 
   // Resolver apuestas cuando una vela se cierra
   const resolveBets = useCallback(
@@ -1264,7 +1351,12 @@ const changeSymbol = useCallback(
 
       // Si no hay apuestas activas ni pendientes en el nuevo par/timeframe, desactiva MIX
       const hasActiveBets = betsByPair[symbol]?.[timeframe]?.some(bet => bet.status === "PENDING") ?? false;
-      if (!hasActiveBets) setAutoMix(false);
+      if (!hasActiveBets) {
+        setAutoMixState(prev => ({
+          ...prev,
+          [`${symbol}_${timeframe}`]: false
+        }));
+      }
       setCurrentSymbol(symbol)
       setCandles([])
       setCurrentCandle(null)
@@ -1278,21 +1370,19 @@ const changeSymbol = useCallback(
   // Change timeframe
   const changeTimeframe = useCallback(
     (newTimeframe: string) => {
-      if (newTimeframe === timeframe) return
+      if (newTimeframe === timeframe) return;
 
-
-      // Si no hay apuestas activas ni pendientes en el nuevo timeframe, desactiva MIX
-      const hasActiveBets = betsByPair[currentSymbol]?.[newTimeframe]?.some(bet => bet.status === "PENDING") ?? false;
-      if (!hasActiveBets) setAutoMix(false);
-      setTimeframe(newTimeframe)
-      setCandles([])
-      setCurrentCandle(null)
-      setCurrentCandleBets(0)
-      setPendingResolutions([])
-      // Al cambiar timeframe, siempre reinicia el contador de apuestas de la vela
-      // No tocamos betsByPair, solo cambiamos el timeframe actual
+      // Cambiar el timeframe
+      setTimeframe(newTimeframe);
+      setCandles([]);
+      setCurrentCandle(null);
+      setCurrentCandleBets(0);
+      setPendingResolutions([]);
+      
+      // No es necesario restaurar autoMix aquí, ya que se maneja por par/intervalo
+      // El estado se actualizará automáticamente a través del useMemo que depende de currentSymbol y timeframe
     },
-    [timeframe, currentSymbol, bets, toast],
+    [timeframe],
   )
 
   // Helper function to convert timeframe to milliseconds

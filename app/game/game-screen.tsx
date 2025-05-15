@@ -3,18 +3,21 @@ import { useGame } from "@/context/game-context";
 
 const GameScreen = () => {
   const [serviceWorkerRegistered, setServiceWorkerRegistered] = useState(false);
-  const [autoMix, setAutoMix] = useState(false);
   const [betAmount, setBetAmount] = useState(1);
   const [leverage, setLeverage] = useState(1);
-  const [userBalance, setUserBalance] = useState(100);
-  const [gamePhase, setGamePhase] = useState('BETTING');
-  const [currentCandleBets, setCurrentCandleBets] = useState(0);
   const [lastFlyupAmount, setLastFlyupAmount] = useState(0);
   const [showFlyup, setShowFlyup] = useState(false);
   const betAudioRef = useRef<HTMLAudioElement>(null);
 
-  // Obtener la función placeBet del contexto
-  const { placeBet, gamePhase: gamePhaseContext, currentCandleBets: currentCandleBetsContext, userBalance: userBalanceContext } = useGame();
+  // Obtener estado y funciones del contexto
+  const { 
+    placeBet, 
+    gamePhase: gamePhaseContext, 
+    currentCandleBets: currentCandleBetsContext, 
+    userBalance: userBalanceContext,
+    autoMix,
+    toggleAutoMix
+  } = useGame();
 
   // Registrar Service Worker
   useEffect(() => {
@@ -25,7 +28,7 @@ const GameScreen = () => {
           setServiceWorkerRegistered(true);
           
           // Escuchar mensajes del Service Worker
-          navigator.serviceWorker.addEventListener('message', (event) => {
+          const messageHandler = (event: MessageEvent) => {
             if (event.data.type === 'AUTO_MIX_DECISION') {
               const { direction, timestamp } = event.data.decision;
               console.log('[AutoMix] Recibida decisión del Service Worker:', direction);
@@ -48,7 +51,14 @@ const GameScreen = () => {
                 setShowFlyup(true);
               }
             }
-          });
+          };
+          
+          navigator.serviceWorker.addEventListener('message', messageHandler);
+          
+          // Limpiar el event listener al desmontar
+          return () => {
+            navigator.serviceWorker.removeEventListener('message', messageHandler);
+          };
         })
         .catch((error) => {
           console.error('Error registering AutoMix Service Worker:', error);
@@ -56,83 +66,42 @@ const GameScreen = () => {
     }
   }, [gamePhaseContext, currentCandleBetsContext, userBalanceContext, betAmount, leverage, placeBet]);
 
+  // Sincronizar el estado de AutoMix con el Service Worker
   useEffect(() => {
-    if (!serviceWorkerRegistered) return;
+    if (!serviceWorkerRegistered || !navigator.serviceWorker.controller) return;
 
-    const updateAutoMixConfig = async () => {
-      try {
-        if (autoMix && navigator.serviceWorker.controller) {
-          // Activar AutoMix en el Service Worker
-          navigator.serviceWorker.controller.postMessage({
-            type: 'ACTIVATE_AUTO_MIX',
-            config: {
-              betAmount,
-              leverage,
-              userBalance
-            }
-          });
-          
-          // Guardar configuración en IndexedDB
-          if ('indexedDB' in window) {
-            const request = indexedDB.open('AutoMixDB', 1);
-            const db = await new Promise<IDBDatabase>((resolve, reject) => {
-              request.onerror = () => reject(request.error);
-              request.onsuccess = () => resolve(request.result);
-            });
-            
-            const transaction = db.transaction('automix_store', 'readwrite');
-            const store = transaction.objectStore('automix_store');
-            await new Promise<void>((resolve, reject) => {
-              const req = store.put({
-                isActive: true,
-                betAmount,
-                leverage,
-                userBalance,
-                timestamp: Date.now()
-              }, 'config');
-              req.onsuccess = () => resolve();
-              req.onerror = () => reject(req.error);
-            });
-          }
-        } else if (navigator.serviceWorker.controller) {
-          // Desactivar AutoMix en el Service Worker
-          navigator.serviceWorker.controller.postMessage({
-            type: 'DEACTIVATE_AUTO_MIX'
-          });
-          
-          // Actualizar configuración en IndexedDB
-          if ('indexedDB' in window) {
-            const request = indexedDB.open('AutoMixDB', 1);
-            const db = await new Promise<IDBDatabase>((resolve, reject) => {
-              request.onerror = () => reject(request.error);
-              request.onsuccess = () => resolve(request.result);
-            });
-            
-            const transaction = db.transaction('automix_store', 'readwrite');
-            const store = transaction.objectStore('automix_store');
-            await new Promise<void>((resolve, reject) => {
-              const req = store.put({
-                isActive: false,
-                timestamp: Date.now()
-              }, 'config');
-              req.onsuccess = () => resolve();
-              req.onerror = () => reject(req.error);
-            });
-          }
+    // El estado de AutoMix ahora se maneja en el contexto global
+    // Solo nos aseguramos de que el Service Worker esté al día
+    if (autoMix) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'ACTIVATE_AUTO_MIX',
+        config: {
+          betAmount: userBalanceContext >= 1 ? 1 : 0,
+          leverage: 1,
+          userBalance: userBalanceContext
         }
-      } catch (error) {
-        console.error('Error updating AutoMix configuration:', error);
-      }
-    };
-
-    updateAutoMixConfig();
-  }, [autoMix, serviceWorkerRegistered, betAmount, leverage, userBalance]);
+      });
+    } else {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'DEACTIVATE_AUTO_MIX'
+      });
+    }
+  }, [autoMix, serviceWorkerRegistered, userBalanceContext]);
 
   return (
-    <div>
-      {/* Rest of the component code */}
+    <div className="game-screen">
+      {/* ... existing JSX ... */}
+      <audio ref={betAudioRef} src="/sounds/bet.mp3" preload="auto" />
+      {showFlyup && (
+        <div 
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-green-500 animate-flyup"
+          onAnimationEnd={() => setShowFlyup(false)}
+        >
+          +{lastFlyupAmount}
+        </div>
+      )}
     </div>
   );
 };
 
-export default GameScreen; 
+export default GameScreen;
