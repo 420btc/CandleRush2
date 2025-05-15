@@ -3048,12 +3048,12 @@ export default function ProfilePage() {
           </Card>
           
           <Card className="bg-yellow-400 border-yellow-500 shadow-2xl rounded-xl">
-            <CardHeader className="items-center pb-4">
+            <CardHeader className="items-center">
               <CardTitle>Tu Tangle Map</CardTitle>
               <CardDescription className="text-black">Visualización del árbol de apuestas</CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-center items-center p-6 bg-yellow-400 rounded-b-xl">
-              <div className="w-full h-[530px] flex items-center justify-center">
+            <CardContent className="flex justify-center items-center bg-yellow-400 rounded-b-xl">
+              <div className="w-full h-[590px] flex items-center justify-center">
                 {(() => {
                   const { bets } = useGame();
                   // Estado para forzar la actualización del componente cada segundo
