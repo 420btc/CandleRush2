@@ -122,7 +122,7 @@ const BettingHistoryChart: React.FC = () => {
                     // Verificamos que las últimas 3 apuestas sean pérdidas (sin liquidaciones)
                     if (!streakType && !hasLiquidations && lastThreeBets.length === 3 && lastThreeBets.every(b => b.status === "LOST")) {
                       // Si encontramos 3 pérdidas seguidas, buscamos el inicio real de la racha
-                      let startIndex = i - 2; // Comenzamos desde el inicio de las 3 pérdidas detectadas
+                      startIndex = i - 2; // Comenzamos desde el inicio de las 3 pérdidas detectadas
                       // Retrocedemos hasta encontrar una apuesta que no sea pérdida (incluyendo liquidaciones)
                       while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
                         startIndex--;
@@ -163,7 +163,7 @@ const BettingHistoryChart: React.FC = () => {
                       // La apuesta actual debe ser victoria y la anterior también, sin liquidaciones entre medias
                       // Verificamos que no haya liquidaciones recientes que interrumpan la racha
                       if (!hasLiquidations && bets[i].status === "WON" && bets[i-1].status === "WON") {
-                        let startIndex = i;
+                        startIndex = i;
                         // Buscar hacia atrás hasta encontrar algo que no sea una victoria
                         while (startIndex > 0 && bets[startIndex - 1].status === "WON") {
                           startIndex--;
@@ -197,7 +197,7 @@ const BettingHistoryChart: React.FC = () => {
                       // La apuesta actual debe ser pérdida y la anterior también, sin liquidaciones entre medias
                       // Verificamos que no haya liquidaciones recientes que interrumpan la racha
                       else if (!hasLiquidations && bets[i].status === "LOST" && bets[i-1].status === "LOST") {
-                        let startIndex = i;
+                        startIndex = i;
                         // Buscar hacia atrás hasta encontrar algo que no sea una pérdida
                         while (startIndex > 0 && bets[startIndex - 1].status === "LOST") {
                           startIndex--;
@@ -353,7 +353,7 @@ const BettingHistoryChart: React.FC = () => {
                               {data.numApuestas} apuestas consecutivas
                             </div>
                             <div className="text-white/80 text-xs">
-                              Intensidad: {Math.round(data.rachaGanadora || data.rachaPerdedora)}%
+                              Intensidad: {data.rachaGanadora > 0 ? Math.round(data.rachaGanadora) : Math.round(data.rachaPerdedora)}%
                             </div>
                           </div>
                         )}
