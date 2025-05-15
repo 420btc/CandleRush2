@@ -3329,8 +3329,6 @@ const calculateRemainingTime = (bet: any) => {
                           bullish: '#15803d',  // Verde oscuro
                           bearish: '#b91c1c',  // Rojo oscuro
                           liquidated: '#000000', // Negro
-                          bullish_child: '#15803d',
-                          bearish_child: '#b91c1c'
                         }}
                         showTooltip={true}
                         tooltipContent={(node: TreeNode) => (
