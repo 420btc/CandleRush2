@@ -9,6 +9,15 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Redirect all non-API routes to the static shell
+  rewrites: async () => {
+    return [
+      {
+        source: "/((?!api/).*)",
+        destination: "/static-app-shell",
+      },
+    ];
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
