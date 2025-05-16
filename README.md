@@ -341,7 +341,7 @@ Supón la siguiente serie de resultados:
 | 2  | BULLISH| null  | BEARISH|  -    |  -  |  -    |  -   | BULLISH  | LOSS      |
 | 3  | BULLISH| null  | BEARISH|  -    |  -  |  -    |  -   | BULLISH  | LOSS      |
 | 4  | BEARISH| BEARISH| BEARISH|  -    |  -  |  -    |  -   | BEARISH  | WIN       |
-| 5  | null   | null  | BULLISH|  -    |  -  |  -    |  -   | (aleatorio)| LOSS     |
+| 5  | BEARISH  | BULLISH|  -    |  -  |  -    |  -   | (aleatorio)| LOSS     |
 | 6  | null   | null  | BEARISH|  -    |  -  |  -    |  -   | (aleatorio)| WIN      |
 | ...| ...    | ...   | ...    | ...   | ... | ...   | ...  | ...      | ...       |
 
