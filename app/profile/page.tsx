@@ -2960,17 +2960,45 @@ export default function ProfilePage() {
                       return timestamps;
                     };
                     
+                    // Obtener las apuestas para esta racha
+                    const streakBets = sortedBets
+                      .filter(bet => {
+                        // Mapear 'win' a 'WON' y 'loss' a 'LOST' para la comparación
+                        const statusToMatch = type === 'win' ? 'WON' : 'LOST';
+                        return bet.status === statusToMatch || bet.status === 'LIQUIDATED';
+                      })
+                      .slice(-count); // Usar las últimas 'count' apuestas
+                    
                     const individualTimestamps = calculateIndividualTimestamps(timestamp, count);
                     
                     for (let i = 0; i < count; i++) {
                       const betTime = formatDate(individualTimestamps[i]);
+                      const bet = streakBets[i];
+                      if (!bet) continue; // Si no hay apuesta, saltar
+                      
+                      const isBullish = bet.prediction === 'BULLISH';
+                      const isWin = bet.status === 'WON';
+                      const isLiquidated = bet.status === 'LIQUIDATED';
+                      
+                      // Definir colores y estilos basados en la dirección de la apuesta
+                      const dotColor = isBullish ? 'bg-green-500' : 'bg-red-500';
+                      const dotBorder = isLiquidated ? 'border-2 border-yellow-400' : '';
+                      const dotSize = 'w-1.5 h-1.5';
+                      
+                      // Texto para el tooltip
+                      const resultText = isLiquidated ? 'LIQUIDADA' : (isWin ? 'GANADA' : 'PERDIDA');
+                      const directionText = isBullish ? 'ALCISTA' : 'BAJISTA';
+                      
                       dots.push(
                         <div 
                           key={i} 
-                          className={`w-1.5 h-1.5 rounded-full ${type === 'win' ? 'bg-green-500' : 'bg-red-500'} cursor-pointer relative group`}
+                          className={`${dotSize} rounded-full ${dotColor} ${dotBorder} cursor-pointer relative group`}
                         >
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            {betTime}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                            <div className="font-bold">{betTime}</div>
+                            <div>Dirección: <span className={isBullish ? 'text-green-400' : 'text-red-400'}>{directionText}</span></div>
+                            <div>Resultado: <span className={isWin ? 'text-green-400' : 'text-red-400'}>{resultText}</span></div>
+                            {bet.amount && <div>Monto: ${bet.amount.toFixed(2)}</div>}
                           </div>
                         </div>
                       );
