@@ -2850,9 +2850,9 @@ export default function ProfilePage() {
                     );
                   }
                   
-                  // Filtrar solo apuestas finalizadas (ganadas, perdidas o liquidadas)
-                  // Incluimos las liquidadas para que interrumpan las rachas
-                  const finishedBets = bets.filter(bet => bet.status === 'WON' || bet.status === 'LOST' || bet.status === 'LIQUIDATED');
+                  // Filtrar solo apuestas finalizadas (ganadas o perdidas)
+                  // Las apuestas liquidadas se tratan como pérdidas y rompen las rachas
+                  const finishedBets = bets.filter(bet => bet.status === 'WON' || bet.status === 'LOST');
                   
                   // Ordenar por timestamp
                   const sortedBets = [...finishedBets].sort((a, b) => {
@@ -2872,14 +2872,24 @@ export default function ProfilePage() {
                   let currentStreakData: StreakData = { type: '', count: 0, amount: 0, timestamp: 0 };
                   
                   for (const bet of sortedBets) {
-                    // Si es una liquidación, interrumpe cualquier racha actual
-                    if (bet.status === 'LIQUIDATED') {
-                      // Si hay una racha en curso, guardarla antes de reiniciar
-                      if (currentStreakData.count > 0) {
-                        streaks.push({...currentStreakData});
-                        currentStreakData = { type: '', count: 0, amount: 0, timestamp: 0 };
+                    // Si es una pérdida (ya no manejamos LIQUIDATED aquí, se filtra al inicio)
+                    if (bet.status === 'LOST') {
+                      // Si la racha actual es de pérdidas, la continuamos
+                      if (currentStreakData.type === 'loss') {
+                        currentStreakData.count++;
+                        currentStreakData.amount -= bet.amount;
+                      } else {
+                        // Si había una racha de victorias, la guardamos y empezamos una de pérdidas
+                        if (currentStreakData.count > 0) {
+                          streaks.push({...currentStreakData});
+                        }
+                        currentStreakData = { 
+                          type: 'loss', 
+                          count: 1, 
+                          amount: -bet.amount,
+                          timestamp: new Date(bet.timestamp).getTime()
+                        };
                       }
-                      // No iniciamos una nueva racha con liquidaciones
                       continue;
                     }
                     
@@ -2960,13 +2970,10 @@ export default function ProfilePage() {
                       return timestamps;
                     };
                     
-                    // Obtener las apuestas para esta racha
+                    // Obtener las apuestas para esta racha (solo WON o LOST, sin LIQUIDATED)
+                    const statusToMatch = type === 'win' ? 'WON' : 'LOST';
                     const streakBets = sortedBets
-                      .filter(bet => {
-                        // Mapear 'win' a 'WON' y 'loss' a 'LOST' para la comparación
-                        const statusToMatch = type === 'win' ? 'WON' : 'LOST';
-                        return bet.status === statusToMatch || bet.status === 'LIQUIDATED';
-                      })
+                      .filter(bet => bet.status === statusToMatch)
                       .slice(-count); // Usar las últimas 'count' apuestas
                     
                     const individualTimestamps = calculateIndividualTimestamps(timestamp, count);
