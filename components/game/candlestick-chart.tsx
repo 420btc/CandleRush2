@@ -1599,12 +1599,61 @@ if (!currentCandle || !isInitialized) return
     const deltaY = e.deltaY;
     const allCandles = [...candles];
     if (currentCandle) allCandles.push(currentCandle);
+    if (allCandles.length === 0) return;
+    
+    // Obtener dimensiones actuales
+    const { width, height } = dimensions;
     const minScale = 0.5;
     const maxScale = Math.max(5, Math.min(24, 60 / (allCandles.length || 1)));
-    setViewState((prev: ViewState) => ({
-      ...prev,
-      scale: Math.min(maxScale, Math.max(minScale, prev.scale * (1 - deltaY / 1000))),
-    }));
+    
+    // Calcular el rango de tiempo total
+    const firstCandle = allCandles[0];
+    const lastCandle = allCandles[allCandles.length - 1];
+    const totalTimeRange = lastCandle.timestamp - firstCandle.timestamp;
+    
+    // Calcular la posición del mouse en el gráfico
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // Calcular el factor de zoom basado en la dirección del scroll
+    const zoomFactor = deltaY > 0 ? 0.9 : 1.1; // Zoom out con scroll down, in con scroll up
+    
+    setViewState((prev: ViewState) => {
+      // Calcular la nueva escala con límites
+      const newScale = Math.min(maxScale, Math.max(minScale, prev.scale * zoomFactor));
+      
+      // Calcular la posición del ratón en el espacio del gráfico
+      const mouseTime = firstCandle.timestamp + (mouseX + prev.offsetX) / prev.scale * totalTimeRange / width;
+      
+      // Calcular el nuevo desplazamiento para mantener la posición del ratón fija
+      const newOffsetX = (mouseTime - firstCandle.timestamp) * newScale * (width / totalTimeRange) - mouseX;
+      
+      // Asegurarse de no desplazarse más allá de los límites
+      const maxOffsetX = Math.max(0, totalTimeRange * newScale * (width / totalTimeRange) - width);
+      const clampedOffsetX = Math.min(Math.max(0, newOffsetX), maxOffsetX);
+      
+      // Asegurar que la última vela siempre sea visible
+      const lastCandleX = (lastCandle.timestamp - firstCandle.timestamp) * newScale * (width / totalTimeRange) - clampedOffsetX;
+      const padding = 20; // Espacio de relleno para la última vela
+      
+      let finalOffsetX = clampedOffsetX;
+      if (lastCandleX > width - padding) {
+        // Si la última vela está demasiado a la derecha, ajustar el desplazamiento
+        finalOffsetX = (lastCandle.timestamp - firstCandle.timestamp) * newScale * (width / totalTimeRange) - (width - padding);
+      }
+      
+      // Asegurar que el desplazamiento no sea negativo
+      finalOffsetX = Math.max(0, finalOffsetX);
+      
+      return {
+        ...prev,
+        scale: newScale,
+        offsetX: finalOffsetX,
+      };
+    });
   };
 
   const handleTouchStart = (e: TouchEvent) => {

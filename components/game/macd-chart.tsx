@@ -57,11 +57,13 @@ export default function MacdChart({ candles, viewState, startIndex: externalStar
   const { macd: macdSlice, signal: signalSlice, histogram: histSlice } = useMemo(() => calculateMACD(closesSlice), [closesSlice]);
 
   const barsToShow = closesSlice.length;
-  const maxAbs = Math.max(
-    ...macdSlice.map(Math.abs),
-    ...signalSlice.map(Math.abs),
-    ...histSlice.map(Math.abs)
-  ) || 1;
+  // Ensure we have valid values for maxAbs calculation
+  const allValues = [
+    ...macdSlice.filter(v => !isNaN(v)).map(Math.abs),
+    ...signalSlice.filter(v => !isNaN(v)).map(Math.abs),
+    ...histSlice.filter(v => !isNaN(v)).map(Math.abs)
+  ];
+  const maxAbs = allValues.length > 0 ? Math.max(0.0001, ...allValues) : 1;
   // Para las líneas: sin estiramiento vertical
 const points = (arr: number[]) =>
   arr.map((y, i) => [
