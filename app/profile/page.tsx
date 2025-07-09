@@ -3166,11 +3166,42 @@ const calculateRemainingTime = (bet: any) => {
   if (bet.status !== 'PENDING') return undefined;
   try {
     const tfMs = getTimeframeInMs(bet.timeframe);
-    // Si la apuesta acaba de crearse y candleTimestamp está en el pasado, usar fallback para evitar 0:00
-    let resolveTime = bet.candleTimestamp + tfMs;
+    // CORRECCIÓN: Usar la lógica simplificada sin importación dinámica
+    // Normalizar timestamp al inicio del intervalo del timeframe
+    const normalizeTimestamp = (timestamp: number, timeframe: string): number => {
+      const date = new Date(timestamp);
+      const value = Number.parseInt(timeframe.slice(0, -1));
+      const unit = timeframe.slice(-1);
+      
+      switch (unit) {
+        case "m": {
+          const minutes = date.getMinutes();
+          const normalizedMinutes = Math.floor(minutes / value) * value;
+          date.setMinutes(normalizedMinutes, 0, 0);
+          return date.getTime();
+        }
+        case "h": {
+          const hours = date.getHours();
+          const normalizedHours = Math.floor(hours / value) * value;
+          date.setHours(normalizedHours, 0, 0, 0);
+          return date.getTime();
+        }
+        case "d": {
+          date.setHours(0, 0, 0, 0);
+          return date.getTime();
+        }
+        default:
+          date.setSeconds(0, 0);
+          return date.getTime();
+      }
+    };
+    
+    const normalizedTimestamp = normalizeTimestamp(bet.candleTimestamp, bet.timeframe);
+    let resolveTime = normalizedTimestamp + tfMs;
     if (resolveTime - Date.now() <= 0 && bet.timestamp) {
-      // Si la vela ya debería haber cerrado pero la apuesta es nueva, usar timestamp de creación
-      resolveTime = new Date(bet.timestamp).getTime() + tfMs;
+      // Fallback: usar timestamp de la apuesta normalizado
+      const fallbackNormalized = normalizeTimestamp(bet.timestamp, bet.timeframe);
+      resolveTime = fallbackNormalized + tfMs;
     }
     const remainingMs = Math.max(0, resolveTime - Date.now());
     const minutes = Math.floor(remainingMs / 60000);

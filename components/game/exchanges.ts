@@ -30,12 +30,18 @@ export function useBybitLiquidations({ symbol = 'BTCUSDT', minSize = 0, maxSize 
         console.log('Connected to Bybit!');
         setIsConnected(true);
         retryCount = 0;
-        const subscribeMsg = {
-          op: 'subscribe',
-          args: ['liquidation.BTCUSDT']
-        };
-        console.log('Sending subscription:', subscribeMsg);
-        ws.send(JSON.stringify(subscribeMsg));
+        
+        // Esperar un momento antes de enviar la suscripción para asegurar que la conexión esté lista
+        setTimeout(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            const subscribeMsg = {
+              op: 'subscribe',
+              args: ['liquidation.BTCUSDT']
+            };
+            console.log('Sending subscription:', subscribeMsg);
+            ws.send(JSON.stringify(subscribeMsg));
+          }
+        }, 100); // Esperar 100ms
       };
 
       ws.onmessage = (ev) => {
@@ -217,13 +223,17 @@ export function useHuobiLiquidations({ symbol = 'BTCUSDT', minSize = 0, maxSize 
           };
         }, 30000); // Cada 30 segundos
 
-        // Suscripción inicial
-        const subscribeMsg = {
-          "sub": `market.btcusdt.liquidation`,
-          "id": "id1"
-        };
-        console.log('Sending subscription:', subscribeMsg);
-        ws.send(JSON.stringify(subscribeMsg));
+        // Suscripción inicial con delay para asegurar conexión
+        setTimeout(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            const subscribeMsg = {
+              "sub": `market.btcusdt.liquidation`,
+              "id": "id1"
+            };
+            console.log('Sending subscription:', subscribeMsg);
+            ws.send(JSON.stringify(subscribeMsg));
+          }
+        }, 100);
       };
 
       ws.onclose = (event: CloseEvent) => {
@@ -273,15 +283,21 @@ export function useKuCoinLiquidations({ symbol = 'BTCUSDT', minSize = 0, maxSize
         console.log('Connected to KuCoin!');
         setIsConnected(true);
         retryCount = 0;
-        const subscribeMsg = {
-          "id": Date.now().toString(),
-          "type": "subscribe",
-          "topic": `/contractMarket/liquidation:${symbol}`,
-          "privateChannel": false,
-          "response": true
-        };
-        console.log('Sending subscription:', subscribeMsg);
-        ws.send(JSON.stringify(subscribeMsg));
+        
+        // Esperar un momento antes de enviar la suscripción
+        setTimeout(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            const subscribeMsg = {
+              "id": Date.now().toString(),
+              "type": "subscribe",
+              "topic": `/contractMarket/liquidation:${symbol}`,
+              "privateChannel": false,
+              "response": true
+            };
+            console.log('Sending subscription:', subscribeMsg);
+            ws.send(JSON.stringify(subscribeMsg));
+          }
+        }, 100);
       };
 
       ws.onmessage = (ev) => {

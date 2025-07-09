@@ -8,6 +8,7 @@ import { fetchHistoricalCandles, setupWebSocket } from "@/lib/binance-api"
 import { useToast } from "@/hooks/use-toast"
 import { useAchievement } from "@/context/achievement-context"
 import { usePriceAlerts } from "@/hooks/usePriceAlerts"
+import { normalizeTimestampToTimeframe, shouldResolveBet } from "@/utils/timeframe-utils"
 
 // Generate simulated candle data for testing when real data isn't available
 function generateSimulatedCandles(count: number, basePrice = 30000): Candle[] {
@@ -1055,8 +1056,11 @@ if (message) {
              // En resoluciones de emergencia, solo verificamos que el candleTimestamp coincida
              if (bet.candleTimestamp !== candle.timestamp) return bet;
            } else {
-             // En resoluciones normales, verificamos símbolo, timeframe y candleTimestamp
-             if (bet.symbol !== currentSymbol || bet.timeframe !== timeframe || bet.candleTimestamp !== candle.timestamp) return bet;
+             // En resoluciones normales, verificamos símbolo, timeframe y si la apuesta debe resolverse
+             if (bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet;
+             
+             // CORRECCIÓN: Usar la nueva lógica de resolución basada en timeframes normalizados
+             if (!shouldResolveBet(bet.candleTimestamp, candle.timestamp, timeframe)) return bet;
            }
 
            // Lógica de liquidación automática para apuestas con leverage
@@ -1261,7 +1265,9 @@ if (amount <= 0 || amount > userBalance) {
       }
 
       // Ajustar el timestamp de la apuesta para que siempre caiga dentro de la vela actual
-      const candleTimestamp = currentCandle ? currentCandle.timestamp : Date.now();
+      // CORRECCIÓN: Normalizar el timestamp según el timeframe para resolver correctamente
+      const rawTimestamp = currentCandle ? currentCandle.timestamp : Date.now();
+      const candleTimestamp = normalizeTimestampToTimeframe(rawTimestamp, timeframe);
       // Calcular entryPrice y liquidationPrice según leverage y porcentaje apostado
       const entryPrice = currentCandle ? currentCandle.close : 0;
       let liquidationPrice: number | undefined = undefined;

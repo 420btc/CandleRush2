@@ -13,6 +13,7 @@ import { BarChart3 } from 'lucide-react';
 import { generateAutoDrawCandles } from '@/utils/autoDraw';
 import useBinanceWhaleTrades from './whale-trades-live';
 import { detectMarketStructure } from '@/utils/market-structure';
+import { shouldResolveBet } from '@/utils/timeframe-utils';
 
 interface CandlestickChartProps {
   showCrossCircles?: boolean;
@@ -100,7 +101,7 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   };
 
     // --- Resolución de apuestas pendientes: declaración única ---
-  const eligiblePending = !!currentCandle && (betsByPair?.[currentSymbol]?.[timeframe] || []).some((bet: any) => bet.status === "PENDING" && bet.candleTimestamp + getTimeframeInMs(timeframe) <= currentCandle.timestamp);
+  const eligiblePending = !!currentCandle && (betsByPair?.[currentSymbol]?.[timeframe] || []).some((bet: any) => bet.status === "PENDING" && shouldResolveBet(bet.candleTimestamp, currentCandle.timestamp, timeframe));
 
   function resolveEligiblePendingBets() {
   if (!currentSymbol || !timeframe || !currentCandle) return;
@@ -108,7 +109,7 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   const now = currentCandle.timestamp;
   const pairBets = betsByPair?.[currentSymbol]?.[timeframe] || [];
   const updatedBets = pairBets.map((bet: any) => {
-    if (bet.status !== "PENDING" || bet.candleTimestamp + tfMs > now) return bet;
+    if (bet.status !== "PENDING" || !shouldResolveBet(bet.candleTimestamp, now, timeframe)) return bet;
     // Determinar resultado real de la vela
     // Si el close > open: bullish (WON si prediction === 'BULLISH')
     // Si el close < open: bearish (WON si prediction === 'BEARISH')
