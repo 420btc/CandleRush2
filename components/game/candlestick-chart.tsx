@@ -590,44 +590,60 @@ useEffect(() => {
   // Función para enfocar y hacer zoom en la última vela
   const handleFocusLastCandle = useCallback(() => {
     if (!canvasRef.current || !canvasRef.current.parentElement) {
-      alert('No se puede enfocar: canvas no disponible');
       console.log('[Zoom Última Vela] canvasRef o parentElement no está definido');
       return;
     }
-    const { width, height } = canvasRef.current.parentElement.getBoundingClientRect();
+    
+    const { width, height } = dimensions;
     const allCandles = [...candles];
     if (currentCandle) allCandles.push(currentCandle);
     if (allCandles.length === 0) {
-      alert('No hay velas para enfocar');
       console.log('[Zoom Última Vela] No hay velas para enfocar');
       return;
     }
-    // --- Cálculo robusto para centrar la última vela en el centro del canvas ---
+    
+    // --- Cálculo mejorado para centrar la última vela ---
     const last = allCandles[allCandles.length - 1];
-    const targetScale = 10;
+    const targetScale = 6; // Escala más moderada
+    
+    // Calcular rango de precios
     let minPrice = Math.min(...allCandles.map(c => c.low));
     let maxPrice = Math.max(...allCandles.map(c => c.high));
-    const pricePadding = (maxPrice - minPrice) * 0.50;
+    const pricePadding = (maxPrice - minPrice) * 0.1; // Menos padding
     minPrice -= pricePadding;
     maxPrice += pricePadding;
     const priceRange = maxPrice - minPrice;
+    
+    // Calcular rango de tiempo
     const timeRange = allCandles[allCandles.length - 1].timestamp - allCandles[0].timestamp;
     const safeTimeRange = timeRange === 0 ? 1 : timeRange;
-    const xScale = (width / safeTimeRange) * targetScale;
-    const yScale = (height / priceRange) * targetScale * (verticalScale ?? 1);
-    const lastX = (last.timestamp - allCandles[0].timestamp) * xScale;
-    const lastY = height - ((last.close - minPrice) * yScale);
+    
+    // Calcular posición normalizada de la última vela (0-1)
+    const normalizedX = (last.timestamp - allCandles[0].timestamp) / safeTimeRange;
+    const normalizedY = (last.close - minPrice) / priceRange;
+    
+    // Calcular posición en pantalla con la nueva escala
+    const scaledWidth = width * targetScale;
+    const scaledHeight = height * targetScale * (verticalScale ?? 1);
+    
+    const lastScreenX = normalizedX * scaledWidth;
+    const lastScreenY = normalizedY * scaledHeight;
+    
+    // Centrar la última vela en la pantalla
     const centerX = width / 2;
     const centerY = height / 2;
-    const targetOffsetX = lastX - centerX;
-    const targetOffsetY = lastY - centerY;
-    // Log de depuración
+    
+    const targetOffsetX = lastScreenX - centerX;
+    const targetOffsetY = scaledHeight - lastScreenY - centerY;
+    
     console.log('[Zoom Última Vela] Enfocando última vela:', {
-      width, height, last, targetScale, minPrice, maxPrice, priceRange, safeTimeRange, xScale, yScale, lastX, lastY, centerX, centerY, targetOffsetX, targetOffsetY
+      width, height, last, targetScale, minPrice, maxPrice, priceRange, safeTimeRange, 
+      normalizedX, normalizedY, lastScreenX, lastScreenY, centerX, centerY, targetOffsetX, targetOffsetY
     });
+    
     // --- Animación suave ---
     const start = performance.now();
-    const duration = 1100;
+    const duration = 800;
     const initial = { ...viewState };
     const end = {
       offsetX: targetOffsetX,
@@ -637,9 +653,11 @@ useEffect(() => {
       startY: null,
       isDragging: false,
     };
+    
     function animate(now: number) {
       const elapsed = Math.min(1, (now - start) / duration);
-      const t = elapsed < 0.5 ? 2 * elapsed * elapsed : -1 + (4 - 2 * elapsed) * elapsed;
+      const t = 1 - Math.pow(1 - elapsed, 3); // Ease out cubic
+      
       setViewState({
         offsetX: initial.offsetX + (end.offsetX - initial.offsetX) * t,
         offsetY: initial.offsetY + (end.offsetY - initial.offsetY) * t,
@@ -648,12 +666,14 @@ useEffect(() => {
         startY: null,
         isDragging: false,
       });
+      
       if (elapsed < 1) {
         requestAnimationFrame(animate);
       } else {
         setViewState(end);
       }
     }
+    
     requestAnimationFrame(animate);
   }, [dimensions.width, dimensions.height, candles, currentCandle, viewState, verticalScale]);
 
@@ -1572,17 +1592,37 @@ if (!currentCandle || !isInitialized) return
     const deltaX = e.clientX - viewState.startX;
     const deltaY = e.clientY - viewState.startY;
 
-    // Calcular límites de pan
+    // Calcular límites de pan basados en el contenido actual
     const allCandles = [...candles];
     if (currentCandle) allCandles.push(currentCandle);
-    const timeRange = allCandles.length > 1 ? allCandles[allCandles.length - 1].timestamp - allCandles[0].timestamp : 1;
-    const minOffsetX = -dimensions.width / 2;
-    const maxOffsetX = Math.max(0, timeRange * viewState.scale - timeRange);
+    
+    if (allCandles.length === 0) return;
+    
+    const { width, height } = dimensions;
+    const timeRange = allCandles.length > 1 ? 
+      allCandles[allCandles.length - 1].timestamp - allCandles[0].timestamp : 1;
+    const priceRange = (() => {
+      let min = Number.MAX_VALUE;
+      let max = Number.MIN_VALUE;
+      allCandles.forEach(c => {
+        min = Math.min(min, c.low);
+        max = Math.max(max, c.high);
+      });
+      return max - min || 1;
+    })();
+
+    // Límites para X (tiempo)
+    const maxOffsetX = Math.max(0, timeRange * viewState.scale - width);
+    const minOffsetX = Math.min(0, -width * 0.1); // Permitir un poco de scroll hacia la izquierda
+    
+    // Límites para Y (precio)
+    const maxOffsetY = Math.max(0, priceRange * viewState.scale - height);
+    const minOffsetY = Math.min(0, -height * 0.1); // Permitir un poco de scroll hacia arriba
 
     setViewState((prev: ViewState) => ({
       ...prev,
-      offsetX: Math.min(Math.max(prev.offsetX - deltaX, minOffsetX), maxOffsetX),
-      offsetY: Math.max(0, prev.offsetY + deltaY),
+      offsetX: Math.max(minOffsetX, Math.min(maxOffsetX, prev.offsetX - deltaX)),
+      offsetY: Math.max(minOffsetY, Math.min(maxOffsetY, prev.offsetY + deltaY)), // Invertido: + en lugar de -
       startX: e.clientX,
       startY: e.clientY,
     }));
@@ -1607,11 +1647,6 @@ if (!currentCandle || !isInitialized) return
     const minScale = 0.5;
     const maxScale = Math.max(5, Math.min(24, 60 / (allCandles.length || 1)));
     
-    // Calcular el rango de tiempo total
-    const firstCandle = allCandles[0];
-    const lastCandle = allCandles[allCandles.length - 1];
-    const totalTimeRange = lastCandle.timestamp - firstCandle.timestamp;
-    
     // Calcular la posición del mouse en el gráfico
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -1620,39 +1655,51 @@ if (!currentCandle || !isInitialized) return
     const mouseY = e.clientY - rect.top;
     
     // Calcular el factor de zoom basado en la dirección del scroll
-    const zoomFactor = deltaY > 0 ? 0.9 : 1.1; // Zoom out con scroll down, in con scroll up
+    const zoomFactor = deltaY > 0 ? 0.85 : 1.2; // Zoom más suave
     
     setViewState((prev: ViewState) => {
       // Calcular la nueva escala con límites
       const newScale = Math.min(maxScale, Math.max(minScale, prev.scale * zoomFactor));
+      const scaleRatio = newScale / prev.scale;
       
-      // Calcular la posición del ratón en el espacio del gráfico
-      const mouseTime = firstCandle.timestamp + (mouseX + prev.offsetX) / prev.scale * totalTimeRange / width;
+      // Calcular el punto de zoom en coordenadas del mundo
+      const worldX = (mouseX + prev.offsetX) / prev.scale;
+      const worldY = (mouseY + prev.offsetY) / prev.scale;
       
-      // Calcular el nuevo desplazamiento para mantener la posición del ratón fija
-      const newOffsetX = (mouseTime - firstCandle.timestamp) * newScale * (width / totalTimeRange) - mouseX;
+      // Calcular nuevos offsets para mantener el punto del mouse fijo
+      const newOffsetX = worldX * newScale - mouseX;
+      const newOffsetY = worldY * newScale - mouseY;
       
-      // Asegurarse de no desplazarse más allá de los límites
-      const maxOffsetX = Math.max(0, totalTimeRange * newScale * (width / totalTimeRange) - width);
-      const clampedOffsetX = Math.min(Math.max(0, newOffsetX), maxOffsetX);
+      // Calcular límites basados en el contenido
+      const timeRange = allCandles.length > 1 ? 
+        allCandles[allCandles.length - 1].timestamp - allCandles[0].timestamp : 1;
+      const priceRange = (() => {
+        let min = Number.MAX_VALUE;
+        let max = Number.MIN_VALUE;
+        allCandles.forEach(c => {
+          min = Math.min(min, c.low);
+          max = Math.max(max, c.high);
+        });
+        return max - min || 1;
+      })();
       
-      // Asegurar que la última vela siempre sea visible
-      const lastCandleX = (lastCandle.timestamp - firstCandle.timestamp) * newScale * (width / totalTimeRange) - clampedOffsetX;
-      const padding = 20; // Espacio de relleno para la última vela
+      // Límites para X (tiempo)
+      const maxOffsetX = Math.max(0, timeRange * newScale - width);
+      const minOffsetX = Math.min(0, -width * 0.1); // Permitir un poco de scroll hacia la izquierda
       
-      let finalOffsetX = clampedOffsetX;
-      if (lastCandleX > width - padding) {
-        // Si la última vela está demasiado a la derecha, ajustar el desplazamiento
-        finalOffsetX = (lastCandle.timestamp - firstCandle.timestamp) * newScale * (width / totalTimeRange) - (width - padding);
-      }
+      // Límites para Y (precio)
+      const maxOffsetY = Math.max(0, priceRange * newScale - height);
+      const minOffsetY = Math.min(0, -height * 0.1); // Permitir un poco de scroll hacia arriba
       
-      // Asegurar que el desplazamiento no sea negativo
-      finalOffsetX = Math.max(0, finalOffsetX);
+      // Aplicar límites
+      const clampedOffsetX = Math.max(minOffsetX, Math.min(maxOffsetX, newOffsetX));
+      const clampedOffsetY = Math.max(minOffsetY, Math.min(maxOffsetY, newOffsetY));
       
       return {
         ...prev,
         scale: newScale,
-        offsetX: finalOffsetX,
+        offsetX: clampedOffsetX,
+        offsetY: clampedOffsetY,
       };
     });
   };
@@ -1672,17 +1719,37 @@ if (!currentCandle || !isInitialized) return
     const deltaX = e.touches[0].clientX - viewState.startX;
     const deltaY = e.touches[0].clientY - viewState.startY;
 
-    // Calcular límites de pan
+    // Calcular límites de pan basados en el contenido actual
     const allCandles = [...candles];
     if (currentCandle) allCandles.push(currentCandle);
-    const timeRange = allCandles.length > 1 ? allCandles[allCandles.length - 1].timestamp - allCandles[0].timestamp : 1;
-    const minOffsetX = -dimensions.width / 2;
-    const maxOffsetX = Math.max(0, timeRange * viewState.scale - timeRange);
+    
+    if (allCandles.length === 0) return;
+    
+    const { width, height } = dimensions;
+    const timeRange = allCandles.length > 1 ? 
+      allCandles[allCandles.length - 1].timestamp - allCandles[0].timestamp : 1;
+    const priceRange = (() => {
+      let min = Number.MAX_VALUE;
+      let max = Number.MIN_VALUE;
+      allCandles.forEach(c => {
+        min = Math.min(min, c.low);
+        max = Math.max(max, c.high);
+      });
+      return max - min || 1;
+    })();
+
+    // Límites para X (tiempo)
+    const maxOffsetX = Math.max(0, timeRange * viewState.scale - width);
+    const minOffsetX = Math.min(0, -width * 0.1); // Permitir un poco de scroll hacia la izquierda
+    
+    // Límites para Y (precio)
+    const maxOffsetY = Math.max(0, priceRange * viewState.scale - height);
+    const minOffsetY = Math.min(0, -height * 0.1); // Permitir un poco de scroll hacia arriba
 
     setViewState((prev: ViewState) => ({
       ...prev,
-      offsetX: Math.min(Math.max(prev.offsetX - deltaX, minOffsetX), maxOffsetX),
-      offsetY: Math.max(0, prev.offsetY + deltaY),
+      offsetX: Math.max(minOffsetX, Math.min(maxOffsetX, prev.offsetX - deltaX)),
+      offsetY: Math.max(minOffsetY, Math.min(maxOffsetY, prev.offsetY + deltaY)), // Invertido: + en lugar de -
       startX: e.touches[0].clientX,
       startY: e.touches[0].clientY,
     }));
@@ -2084,6 +2151,27 @@ const handleZoomOut = () => {
           >
             <circle cx="12" cy="12" r="9" />
             <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+        </button>
+        <button
+          onClick={handleFocusLastCandle}
+          className="bg-[#FFD600] hover:bg-[#FFE066] text-white p-2 rounded-full"
+          aria-label="Centrar en última vela"
+          title="Centrar en última vela"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#111"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
           </svg>
         </button>
       </div>
