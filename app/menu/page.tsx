@@ -2,6 +2,7 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { useWindowWidth } from "@/hooks/use-window-width";
+import { useVisitCounter } from "@/hooks/useVisitCounter";
 import { Button } from '@/components/ui/button';
 import { BitcoinSparkles } from "@/components/ui/bitcoin-sparkles";
 import { TextParticle } from "@/components/ui/text-particle";
@@ -23,6 +24,7 @@ interface MenuItem {
 export default function MenuPage() {
   const [showSplash, setShowSplash] = useState(false);
   const [showFooter, setShowFooter] = useState(false);
+  const { visitCount, isLoading } = useVisitCounter();
 
   const menuItems: MenuItem[] = [
     {
@@ -259,6 +261,33 @@ export default function MenuPage() {
             ))}
           </div>
         </div>
+        {/* Contador de visitas */}
+        <div className="fixed bottom-4 right-4 z-40 bg-black/80 backdrop-blur-sm border border-yellow-400/30 rounded-lg px-3 py-2 text-yellow-400 text-xs font-medium shadow-lg">
+          <div className="flex items-center gap-2">
+            <svg 
+              width="12" 
+              height="12" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className="text-yellow-400"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>
+              {isLoading ? (
+                <span className="animate-pulse">...</span>
+              ) : (
+                visitCount.toLocaleString()
+              )}
+            </span>
+          </div>
+        </div>
+
         <footer className={`w-full fixed bottom-0 left-0 bg-black text-yellow-500 text-xs opacity-70 select-none py-2 text-center z-50 shadow-lg border-t border-yellow-400 ${showFooter ? '' : 'hidden'}`}>
           v1.0.3 &copy; CandleRush 2025 &middot; <a href="https://x.com/CarlosFreire0" target="_blank" rel="noopener noreferrer" className="text-yellow-400 font-semibold hover:text-yellow-300 transition-colors">By Carlos Freire</a>
         </footer>
