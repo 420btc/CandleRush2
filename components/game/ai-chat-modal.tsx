@@ -311,11 +311,11 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
         style={{
           top: '20px',
           right: '20px',
-          width: '400px',
+          width: '500px', // Aumentado de 400px a 500px
           height: '600px',
-          minWidth: '300px',
+          minWidth: '400px', // Aumentado de 300px a 400px
           minHeight: '400px',
-          maxWidth: '80vw',
+          maxWidth: '90vw', // Aumentado de 80vw a 90vw
           maxHeight: '80vh',
           resize: 'both'
         }}
@@ -420,13 +420,14 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
                   }`}
                 >
                   <div
-                    className={`inline-block max-w-[85%] p-2 rounded-lg text-xs ${
+                    className={`inline-block max-w-[95%] p-2 rounded-lg text-xs break-words ${
                       message.role === 'user'
                         ? 'bg-yellow-600 text-white'
                         : 'bg-gray-700 text-gray-100'
                     }`}
+                    style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                   >
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    <div className="whitespace-pre-wrap break-words">{message.content}</div>
                     <div className="text-xs opacity-70 mt-1">
                       {new Date(message.timestamp).toLocaleTimeString()}
                     </div>

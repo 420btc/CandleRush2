@@ -645,7 +645,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!betsHydrated || !currentCandle) return;
     // Solo verificar si hay apuestas pendientes que necesiten resolución inmediata
     if (currentCandle.isClosed) {
-      const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
+    const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
       const hasPending = tfBets.some(bet => bet.status === "PENDING");
       if (hasPending) {
         console.log('[RESOLVER] Detectadas apuestas pendientes con vela cerrada, resolviendo inmediatamente');

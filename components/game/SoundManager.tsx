@@ -228,13 +228,13 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
       </button>
       {/* Control de volumen de música */}
       <div className="flex flex-col items-center gap-0.5">
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={musicVolume}
-          onChange={e => setMusicVolume(Number(e.target.value))}
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={musicVolume}
+        onChange={e => setMusicVolume(Number(e.target.value))}
           className="w-16 h-1 rounded-md appearance-none cursor-pointer custom-slider"
           style={{
             background: muted 
@@ -243,9 +243,9 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
             outline: 'none',
             boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.1)'
           }}
-          disabled={muted}
-          data-component-name="SoundManager"
-        />
+        disabled={muted}
+        data-component-name="SoundManager"
+      />
         <span 
           className="text-xs font-bold transition-colors duration-200"
           style={{ 

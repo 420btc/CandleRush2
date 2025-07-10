@@ -34,12 +34,12 @@ export function useBybitLiquidations({ symbol = 'BTCUSDT', minSize = 0, maxSize 
         // Esperar un momento antes de enviar la suscripción para asegurar que la conexión esté lista
         setTimeout(() => {
           if (ws && ws.readyState === WebSocket.OPEN) {
-            const subscribeMsg = {
-              op: 'subscribe',
-              args: ['liquidation.BTCUSDT']
-            };
-            console.log('Sending subscription:', subscribeMsg);
-            ws.send(JSON.stringify(subscribeMsg));
+        const subscribeMsg = {
+          op: 'subscribe',
+          args: ['liquidation.BTCUSDT']
+        };
+        console.log('Sending subscription:', subscribeMsg);
+        ws.send(JSON.stringify(subscribeMsg));
           }
         }, 100); // Esperar 100ms
       };
@@ -226,12 +226,12 @@ export function useHuobiLiquidations({ symbol = 'BTCUSDT', minSize = 0, maxSize 
         // Suscripción inicial con delay para asegurar conexión
         setTimeout(() => {
           if (ws && ws.readyState === WebSocket.OPEN) {
-            const subscribeMsg = {
-              "sub": `market.btcusdt.liquidation`,
-              "id": "id1"
-            };
-            console.log('Sending subscription:', subscribeMsg);
-            ws.send(JSON.stringify(subscribeMsg));
+        const subscribeMsg = {
+          "sub": `market.btcusdt.liquidation`,
+          "id": "id1"
+        };
+        console.log('Sending subscription:', subscribeMsg);
+        ws.send(JSON.stringify(subscribeMsg));
           }
         }, 100);
       };
@@ -287,15 +287,15 @@ export function useKuCoinLiquidations({ symbol = 'BTCUSDT', minSize = 0, maxSize
         // Esperar un momento antes de enviar la suscripción
         setTimeout(() => {
           if (ws && ws.readyState === WebSocket.OPEN) {
-            const subscribeMsg = {
-              "id": Date.now().toString(),
-              "type": "subscribe",
-              "topic": `/contractMarket/liquidation:${symbol}`,
-              "privateChannel": false,
-              "response": true
-            };
-            console.log('Sending subscription:', subscribeMsg);
-            ws.send(JSON.stringify(subscribeMsg));
+        const subscribeMsg = {
+          "id": Date.now().toString(),
+          "type": "subscribe",
+          "topic": `/contractMarket/liquidation:${symbol}`,
+          "privateChannel": false,
+          "response": true
+        };
+        console.log('Sending subscription:', subscribeMsg);
+        ws.send(JSON.stringify(subscribeMsg));
           }
         }, 100);
       };
