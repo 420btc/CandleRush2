@@ -180,15 +180,34 @@ export default function BetHistory() {
                         disabled={bet.status === 'PENDING'}
                         onClick={() => {
                           if (bet.status !== 'PENDING') {
+                            // Buscar la vela correspondiente usando múltiples criterios
+                            const resolvedCandle = (() => {
+                              // 1. Primero intentar por resolvedAt si existe
+                              if (bet.resolvedAt) {
+                                const byResolved = candles.find(c => Math.abs(c.timestamp - bet.resolvedAt!) < 2 * 60 * 1000);
+                                if (byResolved) return byResolved;
+                              }
+                              
+                              // 2. Luego intentar por candleTimestamp si existe
+                              if (bet.candleTimestamp) {
+                                const byCandleTimestamp = candles.find(c => Math.abs(c.timestamp - bet.candleTimestamp!) < 2 * 60 * 1000);
+                                if (byCandleTimestamp) return byCandleTimestamp;
+                              }
+                              
+                              // 3. Finalmente por timestamp de la apuesta
+                              const byTimestamp = candles.find(c => Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000);
+                              if (byTimestamp) return byTimestamp;
+                              
+                              // 4. Fallback a la última vela
+                              return candles[candles.length - 1];
+                            })();
+
                             setSelectedResult({
                               won: bet.status === "WON",
                               amount: bet.amount,
                               bet,
-                              candle: candles.find(c => bet.resolvedAt ? Math.abs(c.timestamp - bet.resolvedAt) < 2 * 60 * 1000 : Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1],
-                              diff: (() => {
-                                const candle = candles.find(c => bet.resolvedAt ? Math.abs(c.timestamp - bet.resolvedAt) < 2 * 60 * 1000 : Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
-                                return candle ? candle.close - candle.open : 0;
-                              })()
+                              candle: resolvedCandle,
+                              diff: resolvedCandle ? resolvedCandle.close - resolvedCandle.open : 0
                             });
                             setModalOpen(true);
                           }

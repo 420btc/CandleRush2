@@ -265,9 +265,25 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
 
   if (!result) return null;
   const { bet, candle } = result;
+  // Usar el precio de entrada real de la apuesta, no el precio de apertura de la vela
   const openPrice = bet.entryPrice ?? candle.open;
   const closePrice = candle.close;
+  // La diferencia debe ser entre el precio de cierre y el precio de entrada real
   const diff = closePrice - openPrice;
+  
+  // Debug para verificar los datos
+  console.log('[BET RESULT MODAL] Datos recibidos:', {
+    betId: bet.id,
+    entryPrice: bet.entryPrice,
+    candleOpen: candle.open,
+    candleClose: candle.close,
+    openPrice,
+    closePrice,
+    diff,
+    timestamp: bet.timestamp,
+    candleTimestamp: bet.candleTimestamp,
+    resolvedAt: bet.resolvedAt
+  });
   const wasLiquidated = bet.status === 'LIQUIDATED' || bet.wasLiquidated;
   const won = bet.status === 'WON';
   return (
