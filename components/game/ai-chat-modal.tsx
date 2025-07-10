@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -244,26 +243,26 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
       // Obtener el prompt del sistema de forma asíncrona
       const systemPrompt = await getSystemPrompt();
       
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Usar nuestra API route en lugar de llamar directamente a OpenAI
+      const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: selectedModel,
+          apiKey: apiKey,
           messages: [
             { role: 'system', content: systemPrompt },
             ...messages.map(msg => ({ role: msg.role, content: msg.content })),
             { role: 'user', content: inputMessage }
-          ],
-          max_tokens: 1000,
-          temperature: 0.7
+          ]
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || `Error ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -300,152 +299,187 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
     setMessages([]);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-yellow-400">🤖</span>
-              Chat con AutoMix IA
-              <span className="text-xs text-gray-400">({selectedModel})</span>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                ⚙️
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearChat}
-              >
-                🗑️
-              </Button>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        {showSettings && (
-          <div className="border rounded-lg p-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                OpenAI API Key:
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-..."
-                  className="flex-1"
-                />
-                <Button onClick={saveApiKey}>Guardar</Button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Modelo:
-              </label>
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="gpt-4o-mini">GPT-4o Mini (Recomendado)</option>
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-              </select>
-            </div>
+    <div 
+      className="fixed inset-0 z-50 pointer-events-none"
+      style={{ zIndex: 9999 }}
+    >
+      <div 
+        className="absolute bg-black/90 border border-yellow-400/50 rounded-lg shadow-2xl pointer-events-auto resize overflow-hidden"
+        style={{
+          top: '20px',
+          right: '20px',
+          width: '400px',
+          height: '600px',
+          minWidth: '300px',
+          minHeight: '400px',
+          maxWidth: '80vw',
+          maxHeight: '80vh',
+          resize: 'both'
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 border-b border-yellow-400/30 bg-black/50">
+          <div className="flex items-center gap-2">
+            <span className="text-yellow-400">🤖</span>
+            <span className="text-white font-semibold">AutoMix IA</span>
+            <span className="text-xs text-gray-400">({selectedModel})</span>
           </div>
-        )}
-
-        <ScrollArea className="flex-1 p-4 border rounded-lg">
-          {messages.length === 0 && (
-            <div className="text-center text-gray-500 mt-8">
-              <span className="text-4xl mb-4 block">🤖</span>
-              <p className="text-lg font-semibold">¡Hola! Soy AutoMix</p>
-              <p className="text-sm mt-2">
-                Pregúntame sobre estrategias de trading, análisis técnico, o cualquier decisión de apuestas.
-                Tengo acceso completo a los datos del juego y puedo explicarte mis algoritmos.
-              </p>
-              {!apiKey && (
-                <p className="text-yellow-600 mt-4 text-sm">
-                  ⚠️ Configura tu API Key de OpenAI en ajustes para comenzar
-                </p>
-              )}
-            </div>
-          )}
-          
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`mb-4 ${
-                message.role === 'user' ? 'text-right' : 'text-left'
-              }`}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+              className="h-6 w-6 p-0"
             >
-              <div
-                className={`inline-block max-w-[80%] p-3 rounded-lg ${
-                  message.role === 'user'
-                    ? 'bg-yellow-600 text-white'
-                    : 'bg-gray-100 text-gray-900'
-                }`}
-              >
-                <div className="whitespace-pre-wrap">{message.content}</div>
-                <div className="text-xs opacity-70 mt-1">
-                  {new Date(message.timestamp).toLocaleTimeString()}
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {isLoading && (
-            <div className="text-left mb-4">
-              <div className="inline-block bg-gray-100 text-gray-900 p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full"></div>
-                  AutoMix está analizando...
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </ScrollArea>
-
-        <div className="flex gap-2">
-          <Textarea
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Pregúntale a AutoMix sobre trading, análisis técnico, o estrategias..."
-            className="flex-1 min-h-[60px] max-h-[120px]"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            disabled={!apiKey}
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!inputMessage.trim() || isLoading || !apiKey}
-            className="self-end"
-          >
-            {isLoading ? '⏳' : '📤'}
-          </Button>
+              ⚙️
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearChat}
+              className="h-6 w-6 p-0"
+            >
+              🗑️
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              className="h-6 w-6 p-0 text-red-400"
+            >
+              ✕
+            </Button>
+          </div>
         </div>
 
-        {!apiKey && (
-          <p className="text-xs text-yellow-600 text-center">
-            Necesitas configurar tu API Key de OpenAI para usar el chat
-          </p>
-        )}
-      </DialogContent>
-    </Dialog>
+        {/* Content */}
+        <div className="flex flex-col h-full">
+          {showSettings && (
+            <div className="border-b border-yellow-400/30 p-3 space-y-3 bg-black/30">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-white">
+                  OpenAI API Key:
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="sk-..."
+                    className="flex-1 text-xs"
+                  />
+                  <Button onClick={saveApiKey} size="sm">Guardar</Button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-white">
+                  Modelo:
+                </label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full p-2 border rounded-md text-xs bg-black text-white"
+                >
+                  <option value="gpt-4o-mini">GPT-4o Mini (Recomendado)</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          <ScrollArea className="flex-1 p-3">
+            {messages.length === 0 && (
+              <div className="text-center text-gray-300 mt-4">
+                <span className="text-2xl mb-2 block">🤖</span>
+                <p className="text-sm font-semibold">¡Hola! Soy AutoMix</p>
+                <p className="text-xs mt-2">
+                  Pregúntame sobre estrategias de trading, análisis técnico, o cualquier decisión de apuestas.
+                </p>
+                {!apiKey && (
+                  <div className="text-yellow-400 mt-3 text-xs space-y-1">
+                    <p>⚠️ Configura tu API Key de OpenAI en ajustes</p>
+                    <p className="text-gray-500">
+                      Obtén una en: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">platform.openai.com</a>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`mb-3 ${
+                  message.role === 'user' ? 'text-right' : 'text-left'
+                }`}
+              >
+                <div
+                  className={`inline-block max-w-[85%] p-2 rounded-lg text-xs ${
+                    message.role === 'user'
+                      ? 'bg-yellow-600 text-white'
+                      : 'bg-gray-700 text-gray-100'
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+                  <div className="text-xs opacity-70 mt-1">
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {isLoading && (
+              <div className="text-left mb-3">
+                <div className="inline-block bg-gray-700 text-gray-100 p-2 rounded-lg text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full"></div>
+                    AutoMix está analizando...
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </ScrollArea>
+
+          <div className="p-3 border-t border-yellow-400/30 space-y-2">
+            <div className="flex gap-2">
+              <Textarea
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Pregúntale a AutoMix..."
+                className="flex-1 min-h-[40px] max-h-[80px] text-xs resize-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                disabled={!apiKey}
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={!inputMessage.trim() || isLoading || !apiKey}
+                className="self-end h-[40px] w-[40px] p-0"
+                size="sm"
+              >
+                {isLoading ? '⏳' : '📤'}
+              </Button>
+            </div>
+
+            {!apiKey && (
+              <div className="text-xs text-yellow-400 text-center">
+                <p>Haz clic en ⚙️ para configurar tu API key</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 } 

@@ -100,6 +100,7 @@ interface GameContextType {
   setAutoMixMemory: (m: any[]) => void;
   saveUserData: (username: string, data: any) => void;
   loadUserData: (username: string) => any;
+  lastBetAnimation: { amount: number; timestamp: number } | null;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
@@ -134,6 +135,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentCandleBets, setCurrentCandleBets] = useState<number>(0);
   const [autoBullish, setAutoBullish] = useState<boolean>(false);
   const [autoBearish, setAutoBearish] = useState<boolean>(false);
+  const [lastBetAnimation, setLastBetAnimation] = useState<{ amount: number; timestamp: number } | null>(null);
   
   // Referencias
   const betsRef = useRef<Bet[]>([]);
@@ -1335,6 +1337,11 @@ if (amount <= 0 || amount > userBalance) {
         title: `Apuesta ${prediction === "BULLISH" ? "alcista" : "bajista"} realizada`,
         description: `Has apostado $${amount.toFixed(2)} en ${currentSymbol} (${timeframe})`,
       })
+
+      // Activar animación de cantidad apostada
+      const isAutomatic = options?.esAutomatica === 'Sí';
+      setLastBetAnimation({ amount, timestamp: Date.now() });
+
       return newBet;
     },
     [gamePhase, userBalance, currentSymbol, timeframe, bets.length, currentCandleBets, toast, unlockAchievement],
@@ -1686,6 +1693,7 @@ const changeSymbol = useCallback(
         setAutoMixMemory,
         saveUserData,
         loadUserData,
+        lastBetAnimation,
       }}
     >
       {children}

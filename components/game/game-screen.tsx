@@ -588,7 +588,8 @@ export default function GameScreen() {
     autoMix,
     toggleAutoBullish,
     toggleAutoBearish,
-    toggleAutoMix
+    toggleAutoMix,
+    lastBetAnimation
   } = useGame();
   const { user } = useAuth();
   const { achievements, unlockedAchievements } = useAchievement();
@@ -993,6 +994,14 @@ useEffect(() => {
 
   const [showFlyup, setShowFlyup] = useState(false);
   const [lastFlyupAmount, setLastFlyupAmount] = useState(0);
+
+  // Efecto para manejar animación de apuestas automáticas
+  useEffect(() => {
+    if (lastBetAnimation) {
+      setLastFlyupAmount(lastBetAnimation.amount);
+      setShowFlyup(true);
+    }
+  }, [lastBetAnimation]);
 
   const betAudioRef = useRef<HTMLAudioElement | null>(null);
   // Ref para sonido de interacción (pulsar)
