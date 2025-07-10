@@ -150,6 +150,7 @@ import DollarDiffCounter from "@/components/game/dollar-diff-counter";
 
 import SoundManager from "@/components/game/SoundManager";
 import ProgressBar from "@/components/game/progress-bar";
+import { AIChatModal } from "@/components/game/ai-chat-modal";
 
 // Componente auxiliar para mostrar el precio de BTC con color dinámico
 function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null, isMobile: boolean, open: number | null }) {
@@ -394,6 +395,7 @@ export default function GameScreen() {
 
   // ...otros estados
   const [showBlockInfoModal, setShowBlockInfoModal] = useState(false);
+  const [showAIChatModal, setShowAIChatModal] = useState(false);
 
   // Estilos globales para móvil y prevención de scroll horizontal
   const mobileStyles = (
@@ -1009,7 +1011,7 @@ useEffect(() => {
   useEffect(() => {
     if (unlockedAchievements.length > 0) {
       const latestAchievement = unlockedAchievements[unlockedAchievements.length - 1]
-      setShowAchievement(latestAchievement)
+      setShowAchievement(latestAchievement.id)
 
       const timer = setTimeout(() => {
         setShowAchievement(null)
@@ -1891,7 +1893,15 @@ useEffect(() => {
     <Wallet className="h-5 w-5 text-white" />
     <span className="text-white">Estadísticas</span>
   </span>
-  <div className="ml-auto">
+  <div className="ml-auto flex items-center gap-2">
+    <button
+      onClick={() => setShowAIChatModal(true)}
+      className="px-2 py-1 rounded-md bg-yellow-600 hover:bg-yellow-500 text-black font-bold transition-colors shadow-md border border-yellow-400 text-xs"
+      title="Chat con AutoMix IA"
+      aria-label="Abrir chat con AutoMix IA"
+    >
+      🤖 CHAT AI
+    </button>
     <SoundManager muted={muted} onToggleMute={() => setMuted(m => !m)} triggerLose={triggerLose} triggerWin={triggerWin} />
   </div>
 </CardTitle>
@@ -1994,6 +2004,12 @@ useEffect(() => {
   )
 ) }
         </div>
+        
+        {/* Modal del Chat IA */}
+        <AIChatModal 
+          isOpen={showAIChatModal} 
+          onClose={() => setShowAIChatModal(false)} 
+        />
       </div>
     </>
   )

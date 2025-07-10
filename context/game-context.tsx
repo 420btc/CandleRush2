@@ -638,22 +638,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [pendingResolutions]);
 
   
-  // --- SOLUCIÓN: Al hidratar apuestas y vela actual, si hay apuestas PENDING para la vela actual y no hay resolución pendiente, programar la resolución ---
+  // --- SIMPLIFICADO: Solo resolver apuestas huérfanas, las normales se resuelven inmediatamente ---
   useEffect(() => {
     if (!betsHydrated || !currentCandle) return;
-    // Solo programar resolución si la vela está cerrada
-    if (!currentCandle.isClosed) return;
-    const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
-    const hasPending = tfBets.some(bet => bet.status === "PENDING" && bet.timestamp === currentCandle.timestamp);
-    const alreadyPending = pendingResolutions.some(item => item.candle.timestamp === currentCandle.timestamp);
-    if (hasPending && !alreadyPending) {
-      // Programar la resolución para el cierre real de la vela
-      const candleDuration = getTimeframeInMs(timeframe);
-      const resolutionTime = currentCandle.timestamp + candleDuration;
-      console.log('[RESOLVER] Programando resolución por cierre de vela', {candle: currentCandle, resolutionTime});
-      setPendingResolutions(prev => [...prev, { candle: currentCandle, time: resolutionTime }]);
+    // Solo verificar si hay apuestas pendientes que necesiten resolución inmediata
+    if (currentCandle.isClosed) {
+      const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
+      const hasPending = tfBets.some(bet => bet.status === "PENDING");
+      if (hasPending) {
+        console.log('[RESOLVER] Detectadas apuestas pendientes con vela cerrada, resolviendo inmediatamente');
+        resolveBets(currentCandle, false);
+      }
     }
-  }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol, pendingResolutions]);
+  }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol]);
   
   // --- NUEVO: Detector de apuestas huérfanas o pendientes por demasiado tiempo ---
   useEffect(() => {
@@ -943,12 +940,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
           return arr;
         });
 
-        // Programar la resolución de apuestas para cuando se cierre la vela
-        const candleDuration = getTimeframeInMs(timeframe)
-        const resolutionTime = candle.timestamp + candleDuration;
-
-        // Añadir a la lista de resoluciones pendientes
-        setPendingResolutions((prev) => [...prev, { candle, time: resolutionTime }])
+        // Resolver apuestas inmediatamente cuando se cierra la vela
+        console.log('[RESOLVER] Vela cerrada, resolviendo apuestas inmediatamente', { candle, timeframe });
+        resolveBets(candle, false);
 
         // Añadir la vela cerrada al historial
         setCandles((prev) => [...prev, candle])
@@ -957,6 +951,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setCurrentCandleBets(0)
 
         // Iniciar estrictamente la fase de apuestas por 10s al abrir nueva vela
+        const candleDuration = getTimeframeInMs(timeframe);
         const nextCandleTime = candle.timestamp + candleDuration;
         setNextCandleTime(nextCandleTime);
         setGamePhase("BETTING");
@@ -1056,11 +1051,12 @@ if (message) {
              // En resoluciones de emergencia, solo verificamos que el candleTimestamp coincida
              if (bet.candleTimestamp !== candle.timestamp) return bet;
            } else {
-             // En resoluciones normales, verificamos símbolo, timeframe y si la apuesta debe resolverse
+             // En resoluciones normales, verificamos símbolo, timeframe
              if (bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet;
              
-             // CORRECCIÓN: Usar la nueva lógica de resolución basada en timeframes normalizados
-             if (!shouldResolveBet(bet.candleTimestamp, candle.timestamp, timeframe)) return bet;
+             // SIMPLIFICADO: Resolver todas las apuestas PENDING del símbolo y timeframe actual
+             // cuando se llama a resolveBets (que se llama cuando se cierra una vela)
+             // No necesitamos verificaciones adicionales de timestamp aquí
            }
 
            // Lógica de liquidación automática para apuestas con leverage
