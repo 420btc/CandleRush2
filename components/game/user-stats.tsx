@@ -237,7 +237,7 @@ export default function UserStats() {
   };
 
   return (
-    <div className="space-y-2.5 text-white p-0 m-0">
+    <div className="space-y-2 text-white p-0 m-0">
       <style jsx>{`
         @media (max-width: 768px) {
           .stats-container {

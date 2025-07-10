@@ -57,7 +57,7 @@ export default function WhaleTradesLive() {
             </span>
           </div>
         </div>
-        <ul className="space-y-0.5" style={{ maxHeight: '168px', minHeight: '168px', overflowY: 'auto' }}>
+        <ul className="space-y-0.5" style={{ maxHeight: '140px', overflowY: 'auto' }}>
           {events.length === 0 && <li className="text-zinc-500 italic">No whale trades or liquidations</li>}
           {events.map((event) => (
             <li key={event.id || event.orderId}

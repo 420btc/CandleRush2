@@ -769,7 +769,7 @@ useEffect(() => {
   
 
   // Estado para apalancamiento
-// --- Lógica de apuesta automática MIX ---
+// --- Notificación de AutoMix activo ---
 useEffect(() => {
   // Comprobar si viene de vuelta del perfil con autoMix activado
   if (autoMix) {
@@ -791,84 +791,11 @@ useEffect(() => {
       localStorage.setItem('lastLocation', '/game');
     }
   }
-  
-  // Siempre una apuesta por vela, dirección 100% aleatoria
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  if (
-    autoMix &&
-    gamePhase === 'BETTING' &&
-    currentCandleBets < 1 &&
-    userBalance >= 1 &&
-    betAmount >= 1 &&
-    currentCandle &&
-    candles.length > 0
-  ) {
-    // Dirección 100% aleatoria, nunca sesgada
-    const direction: 'BULLISH' | 'BEARISH' = Math.random() < 0.5 ? 'BULLISH' : 'BEARISH';
-    // Retardo aleatorio para realismo
-    const delay = Math.random() * 2000 + 250;
-    timeoutId = setTimeout(() => {
-      // Verifica que siga en fase de apuestas y no has apostado aún
-      if (
-        autoMix &&
-        gamePhase === 'BETTING' &&
-        currentCandleBets < 1 &&
-        userBalance >= 1 &&
-        betAmount >= 1
-      ) {
-        if (betAudioRef.current) {
-          betAudioRef.current.currentTime = 0;
-          betAudioRef.current.play();
-        }
-        console.log('[AUTO MIX][DEBUG] Lanzando apuesta MIX con flags correctos', { direction, betAmount, leverage, esAutomatica: 'Sí', autoType: 'MIX' });
-        placeBet(direction, betAmount, leverage, { esAutomatica: 'Sí', autoType: 'MIX' });
-      }
-    }, delay);
-  }
-  return () => {
-    if (timeoutId) clearTimeout(timeoutId);
-  };
-  // eslint-disable-next-line
-}, [autoMix, gamePhase, currentCandle?.timestamp, userBalance, betAmount, currentCandleBets, candles.length]);
+}, [autoMix, toast]);
 
-// --- Lógica de apuesta automática AUTO (bullish/bearish) ---
-useEffect(() => {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  if (
-    (autoBullish || autoBearish) &&
-    gamePhase === 'BETTING' &&
-    currentCandleBets < 1 &&
-    userBalance >= 1 &&
-    betAmount >= 1 &&
-    currentCandle &&
-    candles.length > 0
-  ) {
-    const direction: 'BULLISH' | 'BEARISH' = autoBullish ? 'BULLISH' : 'BEARISH';
-    const delay = Math.random() * 2000 + 250;
-    timeoutId = setTimeout(() => {
-      if (
-        (autoBullish || autoBearish) &&
-        gamePhase === 'BETTING' &&
-        currentCandleBets < 1 &&
-        userBalance >= 1 &&
-        betAmount >= 1
-      ) {
-        if (betAudioRef.current) {
-          betAudioRef.current.currentTime = 0;
-          betAudioRef.current.play();
-        }
-        console.log('[AUTO MIX][DEBUG] Lanzando apuesta MIX con flags correctos', { direction, betAmount, leverage, esAutomatica: 'Sí', autoType: 'MIX' });
-        placeBet(direction, betAmount, leverage, { esAutomatica: 'Sí', autoType: 'MIX' });
-setLastFlyupAmount(betAmount);
-setShowFlyup(true);
-      }
-    }, delay);
-  }
-  return () => {
-    if (timeoutId) clearTimeout(timeoutId);
-  };
-  // eslint-disable-next-line
-}, [autoBullish, autoBearish, gamePhase, currentCandle?.timestamp, userBalance, betAmount, currentCandleBets, candles.length]);
+// NOTA: La lógica de apuestas automáticas (AutoMix, AutoBullish, AutoBearish) 
+// se maneja completamente en game-context.tsx para evitar duplicaciones.
+// Este componente solo maneja la UI y las apuestas manuales.
 
   // Default leverage is now 2000x
 const [leverage, setLeverage] = useState(() => {
@@ -1305,7 +1232,7 @@ useEffect(() => {
       target="_blank"
       rel="noopener noreferrer"
       className="absolute left-8 text-xs font-semibold select-none"
-      style={{ color: '#FFD600', textShadow: '0 0 8px #FFD60088', letterSpacing: '0.06em', lineHeight: '1', top: '3.37em', cursor: 'pointer', textDecoration: 'none' }}
+      style={{ color: '#FFD600', textShadow: '0 0 8px #FFD60088', letterSpacing: '0.06em', lineHeight: '1', top: '2.8em', cursor: 'pointer', textDecoration: 'none' }}
       onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
       onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
       aria-label="Twitter de Carlos Freire"
@@ -1887,7 +1814,7 @@ useEffect(() => {
 
             <div className="flex flex-col h-full min-h-0 flex-1 lg:h-full m-0 p-0 gap-0">
               <Card className="bg-black border-[#FFD600]" style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
-                <CardHeader>
+                <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 justify-between w-full">
   <span className="flex items-center gap-2">
     <Wallet className="h-5 w-5 text-white" />
@@ -1896,7 +1823,18 @@ useEffect(() => {
   <div className="ml-auto flex items-center gap-2">
     <button
       onClick={() => setShowAIChatModal(true)}
-      className="px-2 py-1 rounded-md bg-yellow-600 hover:bg-yellow-500 text-black font-bold transition-colors shadow-md border border-yellow-400 text-xs"
+      className="flex items-center justify-center gap-2 rounded-md shadow-lg border border-[#FFD600]/30 font-bold transition-all duration-200 transform hover:scale-105"
+      style={{
+        minWidth:'unset',
+        minHeight:'unset',
+        background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.95) 0%, rgba(255, 165, 0, 0.95) 100%)',
+        backdropFilter: 'blur(6px)',
+        padding: '6px 8px',
+        boxShadow: '0 0 12px rgba(255, 214, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        height: '32px',
+        color: '#000',
+        fontSize: '10px'
+      }}
       title="Chat con AutoMix IA"
       aria-label="Abrir chat con AutoMix IA"
     >
@@ -1906,9 +1844,13 @@ useEffect(() => {
   </div>
 </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <WhaleTradesLive />
-                  <UserStats />
+                <CardContent className="p-2 h-full flex flex-col gap-2">
+                  <div className="flex-shrink-0" style={{ maxHeight: '180px' }}>
+                    <WhaleTradesLive />
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    <UserStats />
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1946,7 +1888,7 @@ useEffect(() => {
   </button>
 </div>
 </CardHeader>
-<CardContent className="flex-1 min-h-0 h-full p-0">
+<CardContent className="flex-1 min-h-0 h-full p-2">
   <BetHistory />
 </CardContent>
               </Card>

@@ -2,6 +2,48 @@
 import { useEffect, useRef, useState } from "react";
 import PiFileAudioBold from "@/components/icons/PiFileAudioBold";
 
+// Estilos CSS para el slider personalizado
+const sliderStyles = `
+  .custom-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFD600 0%, #FFA500 100%);
+    border: 1px solid #FFD600;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(255, 214, 0, 0.4), 0 0 6px rgba(255, 214, 0, 0.2);
+    transition: all 0.2s ease;
+  }
+  
+  .custom-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(255, 214, 0, 0.6), 0 0 10px rgba(255, 214, 0, 0.3);
+  }
+  
+  .custom-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFD600 0%, #FFA500 100%);
+    border: 1px solid #FFD600;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(255, 214, 0, 0.4);
+  }
+  
+  .custom-slider:disabled::-webkit-slider-thumb {
+    background: #666;
+    border-color: #888;
+    box-shadow: none;
+  }
+  
+  .custom-slider:disabled::-moz-range-thumb {
+    background: #666;
+    border-color: #888;
+    box-shadow: none;
+  }
+`;
+
 interface SoundManagerProps {
   muted: boolean;
   onToggleMute: () => void;
@@ -11,6 +53,16 @@ interface SoundManagerProps {
 
 
 export default function SoundManager({ muted, onToggleMute, triggerLose, triggerWin }: SoundManagerProps) {
+  // Inyectar estilos CSS una sola vez
+  useEffect(() => {
+    if (!document.getElementById('sound-manager-styles')) {
+      const style = document.createElement('style');
+      style.id = 'sound-manager-styles';
+      style.innerHTML = sliderStyles;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   // Estado para detectar si el usuario ya interactuó
   const [hasInteracted, setHasInteracted] = useState(false);
   useEffect(() => {
@@ -132,27 +184,79 @@ export default function SoundManager({ muted, onToggleMute, triggerLose, trigger
 
   // Botón para mutear/desmutear y slider de volumen
   return (
-    <div className="flex flex-row items-center gap-1 bg-black/80 p-2 rounded-lg shadow-lg" style={{minWidth:'unset',minHeight:'unset'}} data-component-name="SoundManager">
+    <div 
+      className="flex flex-row items-center gap-2 rounded-md shadow-lg border border-[#FFD600]/30" 
+      style={{
+        minWidth:'unset',
+        minHeight:'unset',
+        background: 'linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(40,40,40,0.95) 100%)',
+        backdropFilter: 'blur(6px)',
+        padding: '6px 8px',
+        boxShadow: '0 0 12px rgba(255, 214, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        height: '32px'
+      }} 
+      data-component-name="SoundManager"
+    >
       <button
         onClick={onToggleMute}
-        className="flex items-center justify-center rounded p-1 border-2 border-[#FFD600] bg-transparent text-[#FFD600] hover:bg-[#FFD600] hover:text-black transition-all"
-        style={{width:28,height:28,minWidth:28,minHeight:28,padding:0}}
+        className="flex items-center justify-center rounded-md transition-all duration-200 transform hover:scale-105"
+        style={{
+          width: 20,
+          height: 20,
+          minWidth: 20,
+          minHeight: 20,
+          padding: 0,
+          background: muted 
+            ? 'linear-gradient(135deg, #666 0%, #444 100%)' 
+            : 'linear-gradient(135deg, #FFD600 0%, #FFA500 100%)',
+          border: `1px solid ${muted ? '#888' : '#FFD600'}`,
+          boxShadow: muted 
+            ? '0 1px 4px rgba(0,0,0,0.3)' 
+            : '0 1px 6px rgba(255, 214, 0, 0.4), 0 0 10px rgba(255, 214, 0, 0.2)',
+        }}
         aria-label={muted ? "Activar sonido" : "Desactivar sonido"}
       >
-        <PiFileAudioBold className="h-5 w-5" style={{ display: 'block', margin: 'auto', color: muted ? '#888' : '#FFD600' }} />
+        <PiFileAudioBold 
+          className="h-3 w-3 transition-colors duration-200" 
+          style={{ 
+            display: 'block', 
+            margin: 'auto', 
+            color: muted ? '#ccc' : '#000',
+            filter: muted ? 'none' : 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))'
+          }} 
+        />
       </button>
       {/* Control de volumen de música */}
-      <input
-        type="range"
-        min={0}
-        max={1}
-        step={0.01}
-        value={musicVolume}
-        onChange={e => setMusicVolume(Number(e.target.value))}
-        className="w-20 accent-yellow-400"
-        disabled={muted}
-        data-component-name="SoundManager"
-      />
+      <div className="flex flex-col items-center gap-0.5">
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={musicVolume}
+          onChange={e => setMusicVolume(Number(e.target.value))}
+          className="w-16 h-1 rounded-md appearance-none cursor-pointer custom-slider"
+          style={{
+            background: muted 
+              ? 'linear-gradient(to right, #444 0%, #666 100%)' 
+              : `linear-gradient(to right, #FFD600 0%, #FFD600 ${musicVolume * 100}%, #333 ${musicVolume * 100}%, #333 100%)`,
+            outline: 'none',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.1)'
+          }}
+          disabled={muted}
+          data-component-name="SoundManager"
+        />
+        <span 
+          className="text-xs font-bold transition-colors duration-200"
+          style={{ 
+            color: muted ? '#888' : '#FFD600',
+            textShadow: muted ? 'none' : '0 1px 1px rgba(0,0,0,0.5)',
+            fontSize: '10px'
+          }}
+        >
+          {Math.round(musicVolume * 100)}%
+        </span>
+      </div>
     </div>
   );
 }

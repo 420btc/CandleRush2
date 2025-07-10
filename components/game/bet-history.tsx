@@ -81,8 +81,8 @@ export default function BetHistory() {
           <Achievements />
         </div>
       ) : (
-        <ScrollArea className="h-full flex-1 min-h-0 w-full pb-4">
-          <div className="space-y-0">
+        <ScrollArea className="h-full flex-1 min-h-0 w-full">
+          <div className="space-y-0 pb-4">
             {bets.slice().reverse().map((bet) => {
               // --- LIVE PnL (solo si la apuesta está pendiente) ---
               // --- LIVE PnL limpio y robusto ---
@@ -100,12 +100,12 @@ export default function BetHistory() {
               }
               return (
                 <AnimatedBorder key={bet.id} isActive={bet.status === "PENDING"}>
-                  <div className={`py-1 min-h-[48px] rounded-xl border border-yellow-400 flex flex-row items-center max-w-[355px] mx-auto text-xs gap-1 ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
+                  <div className={`py-1 min-h-[48px] rounded-xl border border-yellow-400 flex flex-row items-center w-full mx-auto text-xs gap-1 ${bet.prediction === "BULLISH" ? "bg-green-900/80" : "bg-red-900/80"}`}>
                     {/* Icono y dirección */}
                     <div className="flex flex-col items-center justify-center min-w-[28px]">
                       {/* Botón de eliminar */}
                       <button
-                        className="absolute right-1.5 top-1 p-0.25 rounded-full bg-black/50 hover:bg-black/70 transition"
+                        className="absolute right-1 top-1 p-1 rounded-full bg-black/70 hover:bg-black/90 transition z-10"
                         onClick={() => deleteBet(bet.id)}
                         aria-label="Eliminar apuesta"
                       >
@@ -119,7 +119,7 @@ export default function BetHistory() {
                       <span className={`text-[10px] font-bold mt-0.5 ${bet.prediction === "BULLISH" ? "text-green-400" : "text-red-400"}`}>{bet.prediction === "BULLISH" ? "BULL" : "BEAR"}</span>
                     </div>
                     {/* Info principal */}
-                    <div className="flex flex-col items-start justify-center min-w-[70px] max-w-[110px] truncate">
+                    <div className="flex flex-col items-start justify-center min-w-[60px] max-w-[90px] truncate">
                       <span className="text-[12px] font-semibold text-white truncate">
                         {bet.prediction === "BULLISH" ? "Bull" : "Bear"} {bet.timeframe?.replace("m", "min")}
                       </span>
@@ -127,7 +127,7 @@ export default function BetHistory() {
                       <span className="text-[10px] text-yellow-200 mt-0.5 truncate">O: {bet.entryPrice ? bet.entryPrice.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span>
                     </div>
                     {/* Monto y PnL */}
-                    <div className="flex flex-col items-center justify-center min-w-[60px]">
+                    <div className="flex flex-col items-center justify-center min-w-[70px] max-w-[90px] flex-shrink-0">
                       <span className="font-extrabold text-yellow-300 text-base md:text-lg text-center leading-tight drop-shadow-sm" style={{letterSpacing: '0.01em'}}>
                         ${bet.amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
@@ -142,7 +142,7 @@ export default function BetHistory() {
                       )}
                     </div>
                     {/* Status + leverage badge always together */}
-                    <div className="flex items-center justify-center gap-1 w-full">
+                    <div className="flex items-center justify-center gap-1 flex-1 min-w-[80px] max-w-[120px]">
                       {bet.status === "PENDING" && (
                         <>
                           <Clock className="h-5 w-5 text-yellow-400 animate-pulse" />
@@ -174,7 +174,7 @@ export default function BetHistory() {
                       )}
                     </div>
                     {/* Eye button at the end, always compact */}
-                    <div className="flex items-center justify-center min-w-[32px]">
+                    <div className="flex items-center justify-center min-w-[40px] flex-shrink-0">
                       <button
                         className={`text-yellow-400 transition ${bet.status === 'PENDING' ? 'opacity-40 cursor-not-allowed' : ''}`}
                         disabled={bet.status === 'PENDING'}
