@@ -352,6 +352,7 @@ export default function GameScreen() {
   useEffect(() => {
     if (session?.user?.email) {
       const email = session.user.email;
+      const userName = session.user.name || "Usuario Google"; // Solo usar nombre, nunca email
       type UsersMap = { [email: string]: { password: string; google?: boolean } };
       let users: UsersMap = {};
       try {
@@ -361,8 +362,8 @@ export default function GameScreen() {
         users[email] = { password: '', google: true };
         localStorage.setItem("users", JSON.stringify(users));
       }
-      localStorage.setItem('currentUser', email);
-      setLocalUser(email);
+      localStorage.setItem('currentUser', userName); // Guardar nombre en lugar de email
+      setLocalUser(userName);
       // Recargar la página tras login Google para sincronizar UI/localStorage SOLO una vez (usando localStorage como bandera persistente)
       if (!localStorage.getItem('googleLoginReloaded')) {
         localStorage.setItem('googleLoginReloaded', '1');
@@ -375,10 +376,10 @@ export default function GameScreen() {
     }
   }, [session]);
 
-  // Mostrar nombre/email o Invitado
+  // Mostrar nombre de usuario o Invitado
   let displayName = "Invitado";
-  if (session?.user?.email) {
-    displayName = session.user.name || session.user.email;
+  if (session?.user) {
+    displayName = session.user.name || "Usuario Google";
   } else if (localUser) {
     displayName = localUser;
   }
@@ -489,7 +490,7 @@ export default function GameScreen() {
   const [showCrossCircles, setShowCrossCircles] = React.useState(true);
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const { currentUser, setCurrentUser, userBalance } = useGame();
-  const [showUserModal, setShowUserModal] = useState(false);
+
   // Estado para guardar la fecha del último día en que se mostró el modal
   const [lastDailyCloseModalDate, setLastDailyCloseModalDate] = useState<string | null>(null);
   // Estado para el reloj del sistema y el contador de cierre diario
@@ -1288,8 +1289,8 @@ useEffect(() => {
       <RouletteButton onClick={() => setRouletteOpen(true)} />
     </div>
   </div>
-  {/* Nav a la derecha */}
-  <div className="flex items-center gap-2 ml-auto" style={{ marginTop: '-2px' }}>
+  {/* Nav a la derecha - MOVIDO ARRIBA para evitar conflicto con usuario */}
+  <div className="absolute top-0 right-0 flex items-center gap-2" style={{ marginTop: '8px', marginRight: '120px' }}>
     <button
       className="font-semibold px-1.5 py-0.5 rounded-md transition border border-blue-400 bg-blue-900/70 text-blue-200 shadow-blue-400 shadow-sm hover:bg-blue-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
       style={{
@@ -1335,59 +1336,7 @@ useEffect(() => {
   </div>
 </div>
   <div className="flex items-center gap-2">
-    {/* BOTÓN USUARIO/MODAL LOGIN */}
-{currentUser ? (
-  <>
-    <button
-      className="text-sm font-bold text-[#FFD600] hover:underline hover:text-yellow-300 transition px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
-      style={{ background: 'rgba(255, 214, 0, 0.08)' }}
-      title="Cuenta"
-      data-component-name="GameScreen"
-      onClick={() => setShowUserModal(true)}
-    >
-      {currentUser}
-    </button>
-    <span className="font-bold text-[#FFD600]">${userBalance?.toFixed(2) ?? '0.00'}</span>
-  </>
-) : (
-  <>
 
-  </>
-)}
-{/* MODAL LOGIN/LOGOUT */}
-{showUserModal && (
-  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div className="bg-zinc-900 p-0.5 rounded border border-zinc-700 shadow-sm flex flex-col items-center w-auto" style={{borderWidth:'0.5px', lineHeight:1.05, borderColor:'#3f3f46'}} >
-      <button
-        className="absolute top-2 right-2 text-white text-xl font-bold"
-        onClick={() => setShowUserModal(false)}
-      >×</button>
-      {currentUser ? (
-        <div className="flex flex-col items-center gap-[1px] w-auto">
-          <span className="text-base font-bold text-yellow-300 leading-tight">{currentUser}</span>
-          {currentUser.startsWith('invitado-') || currentUser.startsWith('guest-') ? (
-            <div className="bg-yellow-100 text-yellow-800 rounded px-0.5 py-0 text-[10px] font-semibold text-center mb-0 border border-yellow-300 shadow-sm leading-tight" style={{borderWidth:'0.5px', lineHeight:1.05}} >
-              Tus datos (apuestas, saldo, logros) se guardarán solo durante <b>48 horas</b>.<br/>
-              Después de ese tiempo, se borrarán automáticamente.
-            </div>
-          ) : null}
-          <button
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-0 px-1 rounded shadow-sm text-[10px] leading-tight min-h-0 h-auto"
-            onClick={() => {
-              setCurrentUser(null);
-              localStorage.removeItem('currentUser');
-              localStorage.removeItem('googleLoginReloaded'); // Limpia la bandera al hacer logout
-              setShowUserModal(false);
-              window.location.reload();
-            }}
-          >Cerrar sesión</button>
-        </div>
-      ) : (
-        <Login />
-      )}
-    </div>
-  </div>
-)}
     <a
                 href="https://btcer.fun"
                 target="_blank"
@@ -1906,7 +1855,7 @@ useEffect(() => {
         </div>
 
         {/* AchievementNotification eliminado para evitar doble modal de logro al ganar. */}
-        <div className="fixed top-[36px] right-2 z-50 flex items-center gap-1 px-2 py-0.5 rounded-lg border-none shadow-none backdrop-blur-md min-h-0" style={{background: 'rgba(24,24,24,0.18)', border: 'none', boxShadow: 'none', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)', minHeight: 0}}>
+        <div className="fixed top-[26px] right-2 z-50 flex items-center gap-1 px-2 py-0.5 rounded-lg border-none shadow-none backdrop-blur-md min-h-0" style={{background: 'rgba(24,24,24,0.18)', border: 'none', boxShadow: 'none', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)', minHeight: 0}}>
           <span className="text-white font-semibold drop-shadow-lg text-xs" style={{ letterSpacing: 0.3 }}>Usuario:</span>
           <span className="text-yellow-100 font-bold text-xs" style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
           {session?.user ? (

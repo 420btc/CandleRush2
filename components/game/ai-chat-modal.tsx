@@ -356,9 +356,9 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
         </div>
 
         {/* Content */}
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col" style={{ height: 'calc(100% - 60px)' }}>
           {showSettings && (
-            <div className="border-b border-yellow-400/30 p-3 space-y-3 bg-black/30">
+            <div className="border-b border-yellow-400/30 p-3 space-y-3 bg-black/30 flex-shrink-0">
               <div>
                 <label className="block text-sm font-medium mb-2 text-white">
                   OpenAI API Key:
@@ -392,68 +392,70 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
             </div>
           )}
 
-          <ScrollArea className="flex-1 p-3">
-            {messages.length === 0 && (
-              <div className="text-center text-gray-300 mt-4">
-                <span className="text-2xl mb-2 block">🤖</span>
-                <p className="text-sm font-semibold">¡Hola! Soy AutoMix</p>
-                <p className="text-xs mt-2">
-                  Pregúntame sobre estrategias de trading, análisis técnico, o cualquier decisión de apuestas.
-                </p>
-                {!apiKey && (
-                  <div className="text-yellow-400 mt-3 text-xs space-y-1">
-                    <p>⚠️ Configura tu API Key de OpenAI en ajustes</p>
-                    <p className="text-gray-500">
-                      Obtén una en: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">platform.openai.com</a>
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`mb-3 ${
-                  message.role === 'user' ? 'text-right' : 'text-left'
-                }`}
-              >
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ScrollArea className="h-full p-3">
+              {messages.length === 0 && (
+                <div className="text-center text-gray-300 mt-4">
+                  <span className="text-2xl mb-2 block">🤖</span>
+                  <p className="text-sm font-semibold">¡Hola! Soy AutoMix</p>
+                  <p className="text-xs mt-2">
+                    Pregúntame sobre estrategias de trading, análisis técnico, o cualquier decisión de apuestas.
+                  </p>
+                  {!apiKey && (
+                    <div className="text-yellow-400 mt-3 text-xs space-y-1">
+                      <p>⚠️ Configura tu API Key de OpenAI en ajustes</p>
+                      <p className="text-gray-500">
+                        Obtén una en: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">platform.openai.com</a>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {messages.map((message) => (
                 <div
-                  className={`inline-block max-w-[85%] p-2 rounded-lg text-xs ${
-                    message.role === 'user'
-                      ? 'bg-yellow-600 text-white'
-                      : 'bg-gray-700 text-gray-100'
+                  key={message.id}
+                  className={`mb-3 ${
+                    message.role === 'user' ? 'text-right' : 'text-left'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                  <div className="text-xs opacity-70 mt-1">
-                    {new Date(message.timestamp).toLocaleTimeString()}
+                  <div
+                    className={`inline-block max-w-[85%] p-2 rounded-lg text-xs ${
+                      message.role === 'user'
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-gray-700 text-gray-100'
+                    }`}
+                  >
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    <div className="text-xs opacity-70 mt-1">
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            
-            {isLoading && (
-              <div className="text-left mb-3">
-                <div className="inline-block bg-gray-700 text-gray-100 p-2 rounded-lg text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full"></div>
-                    AutoMix está analizando...
+              ))}
+              
+              {isLoading && (
+                <div className="text-left mb-3">
+                  <div className="inline-block bg-gray-700 text-gray-100 p-2 rounded-lg text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full"></div>
+                      AutoMix está analizando...
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </ScrollArea>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </ScrollArea>
+          </div>
 
-          <div className="p-3 border-t border-yellow-400/30 space-y-2">
+          <div className="p-3 border-t border-yellow-400/30 space-y-2 flex-shrink-0 bg-black/50">
             <div className="flex gap-2">
               <Textarea
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Pregúntale a AutoMix..."
-                className="flex-1 min-h-[40px] max-h-[80px] text-xs resize-none"
+                className="flex-1 min-h-[40px] max-h-[80px] text-xs resize-none bg-gray-800 border-gray-600 text-white"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -465,7 +467,7 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
               <Button
                 onClick={sendMessage}
                 disabled={!inputMessage.trim() || isLoading || !apiKey}
-                className="self-end h-[40px] w-[40px] p-0"
+                className="self-end h-[40px] w-[40px] p-0 bg-yellow-600 hover:bg-yellow-500"
                 size="sm"
               >
                 {isLoading ? '⏳' : '📤'}
