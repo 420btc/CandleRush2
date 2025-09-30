@@ -24,16 +24,152 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [autoMonitoring, setAutoMonitoring] = useState(false);
+  const [monitoringInterval, setMonitoringInterval] = useState<NodeJS.Timeout | null>(null);
+  const [lastAnalysisTime, setLastAnalysisTime] = useState<number>(0);
+  const [previousGameState, setPreviousGameState] = useState<any>(null);
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const gameContext = useGame();
+  const { currentUser } = gameContext;
 
   // Auto-scroll al final de los mensajes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Inicializar análisis automático cuando se abre el chat vacío
+  useEffect(() => {
+    if (isOpen && messages.length === 0 && !autoMonitoring) {
+      console.log('🚀 Iniciando monitoreo automático...');
+      startAutoMonitoring();
+    }
+  }, [isOpen]); // Solo depende de isOpen para evitar re-ejecuciones
+
+  // Limpiar interval al cerrar
+  useEffect(() => {
+    return () => {
+      if (monitoringInterval) {
+        console.log('🛑 Limpiando interval de monitoreo');
+        clearInterval(monitoringInterval);
+        setMonitoringInterval(null);
+        setAutoMonitoring(false);
+      }
+    };
+  }, []);
+
+  // Limpiar interval cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen && monitoringInterval) {
+      console.log('🔴 Modal cerrado - deteniendo monitoreo');
+      clearInterval(monitoringInterval);
+      setMonitoringInterval(null);
+      setAutoMonitoring(false);
+    }
+  }, [isOpen]);
+
+  // Función para enviar análisis automático usando OpenAI
+  const sendAutoAnalysis = async (isInitial: boolean = false) => {
+    console.log('📤 Enviando análisis automático a OpenAI - Inicial:', isInitial);
+    
+    // Forzar actualización del contexto del juego obteniendo datos frescos
+    const gameData = createGameContext();
+    
+    try {
+      const systemPrompt = await getSystemPrompt();
+      
+      // Log para verificar que los datos se están actualizando
+      console.log('🔄 Datos actualizados - Precio:', gameData.currentPrice, 'Posiciones:', gameData.openPositions.length);
+      
+      // Crear mensaje personalizado para el análisis automático
+      const autoPrompt = isInitial 
+        ? `Hola ${currentUser || 'trader'}! Acabo de conectarme al AutoMix. Dame un análisis completo del mercado actual de ${gameData.currentSymbol} en ${gameData.timeframe}. Incluye precio actual, tendencias, patrones de velas, indicadores técnicos y cualquier insight importante. Hazlo personal y directo, como si fueras mi asistente personal de trading.`
+        : `${currentUser || 'Trader'}, dame una actualización completa del mercado ${gameData.currentSymbol} ${gameData.timeframe}. Analiza los últimos movimientos, patrones, indicadores y dame tu perspectiva sobre las próximas velas. Sé específico y personal en tu análisis.`;
+
+      console.log('🤖 Enviando prompt a OpenAI...');
+      
+      // Usar nuestra API route para enviar a OpenAI
+      const response = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: autoPrompt }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error en la API: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices?.[0]?.message?.content || 'Lo siento, no pude procesar el análisis automático.';
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: aiResponse,
+        timestamp: Date.now()
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+      setLastAnalysisTime(Date.now());
+      setPreviousGameState(gameData);
+      
+      console.log('✅ Análisis automático de OpenAI recibido y enviado');
+    } catch (error) {
+      console.error('❌ Error en análisis automático:', error);
+      // No agregar mensaje de fallback, solo loggear el error
+    }
+  };
+
+  // Iniciar monitoreo automático
+  const startAutoMonitoring = () => {
+    console.log('🔄 Iniciando startAutoMonitoring...');
+    
+    if (monitoringInterval) {
+      console.log('⚠️ Limpiando interval existente');
+      clearInterval(monitoringInterval);
+    }
+
+    // Enviar análisis inicial inmediatamente
+    console.log('📊 Enviando análisis inicial');
+    sendAutoAnalysis(true);
+    
+    setAutoMonitoring(true);
+    
+    // Configurar interval para envío cada 15 segundos
+    console.log('⏰ Configurando interval de 15 segundos');
+    const interval = setInterval(() => {
+      console.log('🔄 Ejecutando análisis automático programado');
+      sendAutoAnalysis(false);
+    }, 15000);
+    
+    setMonitoringInterval(interval);
+    console.log('✅ Monitoreo automático configurado correctamente');
+  };
+
+  // Pausar/reanudar monitoreo
+  const toggleAutoMonitoring = () => {
+    console.log('🔄 Toggle monitoreo - Estado actual:', autoMonitoring);
+    
+    if (autoMonitoring && monitoringInterval) {
+      console.log('⏸️ Pausando monitoreo automático');
+      clearInterval(monitoringInterval);
+      setMonitoringInterval(null);
+      setAutoMonitoring(false);
+    } else {
+      console.log('▶️ Reanudando monitoreo automático');
+      startAutoMonitoring();
+    }
+  };
 
   // Crear el contexto del juego para la IA
   const createGameContext = () => {
@@ -98,7 +234,7 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
     // Análisis de volatilidad reciente
     const recentPrices = recentCandles.slice(-10).map(c => c.close);
-    const avgPrice = recentPrices.reduce((sum, price) => sum + price, 0) / recentPrices.length;
+    const avgPrice = recentPrices.length > 0 ? recentPrices.reduce((sum, price) => sum + price, 0) / recentPrices.length : 0;
     const volatility = recentPrices.length > 1 ? 
       Math.sqrt(recentPrices.reduce((sum, price) => sum + Math.pow(price - avgPrice, 2), 0) / recentPrices.length) : 0;
 
@@ -134,12 +270,12 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       },
       openPositions,
       marketAnalysis: {
-        volatility: volatility.toFixed(4),
-        avgPrice: avgPrice.toFixed(4),
+        volatility: (volatility || 0).toFixed(4),
+        avgPrice: (avgPrice || 0).toFixed(4),
         priceChange24h: recentCandles.length >= 2 ? 
           (((currentPrice - recentCandles[0].close) / recentCandles[0].close) * 100).toFixed(2) : '0',
-        highestPrice: Math.max(...recentPrices).toFixed(4),
-        lowestPrice: Math.min(...recentPrices).toFixed(4)
+        highestPrice: recentPrices.length > 0 ? Math.max(...recentPrices).toFixed(4) : '0',
+        lowestPrice: recentPrices.length > 0 ? Math.min(...recentPrices).toFixed(4) : '0'
       },
       recentBets: currentPairBets.slice(-10).map(bet => ({
         prediction: bet.prediction,
@@ -168,7 +304,11 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
   // Prompt del sistema para la IA
   const getSystemPrompt = async () => {
+    // Obtener datos frescos del contexto del juego en cada llamada
     const gameData = createGameContext();
+    
+    // Log para verificar actualización de datos
+    console.log('📊 Generando prompt con datos actualizados - Balance:', gameData.userBalance, 'Precio:', gameData.currentPrice);
     
     // Obtener contexto detallado de la API
     try {
@@ -181,21 +321,45 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       if (response.ok) {
         const detailedContext = await response.json();
         
-        return `Eres AutoMix, la IA de trading del juego CandleRush 2. Sé directo, técnico y conciso.
+        return `Eres AutoMix, la IA personal de trading de ${currentUser || 'este trader'}. Habla directamente con él/ella de forma personal y cercana, como su asistente experto en trading.
 
-=== ESTADO ACTUAL ===
-${detailedContext.gameInfo.currentSymbol} | ${detailedContext.gameInfo.timeframe} | $${detailedContext.gameInfo.currentPrice} | ${detailedContext.gameInfo.gamePhase}
-Balance: $${detailedContext.gameInfo.userBalance} | Próxima vela: ${gameData.timeUntilNextCandle}s
+=== INFORMACIÓN PERSONAL ===
+Usuario: ${currentUser || 'Trader'}
+Balance actual: $${detailedContext.gameInfo.userBalance}
+Rendimiento total: ${parseFloat(gameData.betsStats.netProfit) > 0 ? '+' : ''}$${gameData.betsStats.netProfit}
+Tasa de éxito: ${gameData.betsStats.winRate} (${gameData.betsStats.won}W/${gameData.betsStats.lost}L)
+Posiciones activas: ${gameData.openPositions.length}
 
-=== POSICIONES ACTIVAS ===
+=== MERCADO ACTUAL ===
+${detailedContext.gameInfo.currentSymbol} | ${detailedContext.gameInfo.timeframe} | $${detailedContext.gameInfo.currentPrice}
+Próxima vela en: ${gameData.timeUntilNextCandle}s
+Volatilidad: ${gameData.marketAnalysis.volatility}% | Cambio 24h: ${gameData.marketAnalysis.priceChange24h}%
+
+=== ANÁLISIS DE VELAS (Últimas 10) ===
+${gameData.recentCandles.slice(-10).map((c, i) => {
+  const candleType = parseFloat(c.close) > parseFloat(c.open) ? '🟢' : '🔴';
+  const bodySize = Math.abs(parseFloat(c.close) - parseFloat(c.open));
+  const wickSize = parseFloat(c.high) - Math.max(parseFloat(c.close), parseFloat(c.open)) + 
+                   Math.min(parseFloat(c.close), parseFloat(c.open)) - parseFloat(c.low);
+  const pattern = bodySize > wickSize * 2 ? 'Fuerte' : bodySize < wickSize ? 'Doji/Indecisión' : 'Normal';
+  return `Vela ${i+1}: ${candleType} ${c.open}→${c.close} (${c.change}%) [${pattern}]`;
+}).join('\n')}
+
+=== POSICIONES DE ${currentUser || 'USUARIO'} ===
 ${gameData.openPositions.length > 0 ? 
-  gameData.openPositions.map(pos => 
-    `${pos.prediction} $${pos.amount} ${pos.leverage}x | PnL: ${pos.currentPnL}% | Liq: $${pos.liquidationPrice || 'N/A'} | ${pos.timeRemaining}s`
-  ).join('\n') : 
-  'Sin posiciones abiertas'
+  gameData.openPositions.map(pos => {
+    const currentPrice = parseFloat(detailedContext.gameInfo.currentPrice);
+    const liquidationPrice = parseFloat(String(pos.liquidationPrice || '0'));
+    const riskLevel = liquidationPrice > 0 ? 
+      Math.abs((currentPrice - liquidationPrice) / currentPrice * 100) : 100;
+    const riskEmoji = riskLevel < 5 ? '🔴' : riskLevel < 15 ? '🟠' : riskLevel < 30 ? '🟡' : '🟢';
+    const timeRemaining = typeof pos.timeRemaining === 'number' ? pos.timeRemaining : parseInt(pos.timeRemaining || '0');
+    return `${pos.prediction} $${pos.amount} ${pos.leverage}x | PnL: ${pos.currentPnL}% | Liq: $${pos.liquidationPrice || 'N/A'} ${riskEmoji} | ${Math.floor(timeRemaining/60)}min remaining`;
+  }).join('\n') : 
+  `Sin posiciones - ${currentUser || 'Tienes'} $${gameData.userBalance} disponibles para operar`
 }
 
-=== ANÁLISIS TÉCNICO ACTUAL ===
+=== INDICADORES TÉCNICOS ===
 RSI (33p): ${(() => {
   const recentCandles = gameData.recentCandles.slice(-34);
   if (recentCandles.length < 34) return 'N/A';
@@ -209,14 +373,13 @@ RSI (33p): ${(() => {
   const avgLoss = losses / 33;
   const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
   const rsi = 100 - (100 / (1 + rs));
-  return rsi.toFixed(1);
+  return `${rsi.toFixed(1)} ${rsi > 70 ? '(Sobrecompra)' : rsi < 30 ? '(Sobreventa)' : '(Neutral)'}`;
 })()}
 
 MACD: ${(() => {
   const closes = gameData.recentCandles.slice(-26).map(c => parseFloat(c.close));
   if (closes.length < 26) return 'N/A';
   
-  // EMA 12 y 26
   const calcEMA = (data: number[], period: number) => {
     const k = 2 / (period + 1);
     let ema = data[0];
@@ -233,81 +396,106 @@ MACD: ${(() => {
   return `${macdLine > 0 ? 'BULLISH' : 'BEARISH'} (${macdLine.toFixed(4)})`;
 })()}
 
-Volatilidad: ${gameData.marketAnalysis.volatility} | Cambio 24h: ${gameData.marketAnalysis.priceChange24h}%
-Rango: $${gameData.marketAnalysis.lowestPrice} - $${gameData.marketAnalysis.highestPrice}
-
-=== RENDIMIENTO ===
-W/L: ${gameData.betsStats.won}/${gameData.betsStats.lost}/${gameData.betsStats.liquidated} | WR: ${gameData.betsStats.winRate}
-P&L: $${gameData.betsStats.netProfit} | ROI: ${gameData.betsStats.profitability}%
-
-=== ÚLTIMAS 5 VELAS ===
-${gameData.recentCandles.slice(-5).map(c => `${c.timestamp}: ${c.open}→${c.close} (${c.change}%)`).join('\n')}
-
-=== MEMORIA AUTOMIX (Últimas 3) ===
-${gameData.autoMixMemory.slice(-3).map(entry => 
-  `${entry.timestamp}: ${entry.direction} → ${entry.result || 'PENDING'} | RSI:${entry.rsiSignal} MACD:${entry.macdSignal} Valle:${entry.valleyVote}`
+=== HISTORIAL RECIENTE DE ${currentUser || 'USUARIO'} ===
+${gameData.recentBets.slice(-5).map(bet => 
+  `${bet.prediction} $${bet.amount} ${bet.leverage}x → ${bet.status} ${bet.status === 'WON' ? '+$' + bet.winnings : bet.status === 'LOST' ? '-$' + bet.amount : 'PENDING'}`
 ).join('\n')}
 
-=== INSTRUCCIONES ===
-- Respuestas máximo 3-4 líneas
-- Enfócate en datos técnicos específicos
-- Menciona niveles de liquidación si hay riesgo
-- Usa terminología de trading profesional
-- Analiza patrones MACD, RSI, y estructura de velas
-- Comenta sobre gestión de riesgo cuando sea relevante
-- Si preguntan por estrategia, explica la lógica de los indicadores
+=== MEMORIA AUTOMIX ===
+${gameData.autoMixMemory.slice(-3).map(entry => 
+  `${entry.timestamp}: ${entry.direction} → ${entry.result || 'PENDING'} | Señales: RSI:${entry.rsiSignal} MACD:${entry.macdSignal}`
+).join('\n')}
 
+=== INSTRUCCIONES PARA AUTOMIX ===
+- Habla directamente con ${currentUser || 'el usuario'} de forma personal y cercana
+- Usa su nombre cuando sea apropiado
+- Analiza específicamente SUS posiciones y SU rendimiento
+- Comenta sobre SUS patrones de trading y decisiones
+- Da consejos personalizados basados en SU historial
+- Menciona riesgos específicos de SUS posiciones actuales
+- Sé conciso pero completo (máximo 4-5 líneas por respuesta)
+- Usa terminología técnica pero explicada de forma accesible
+- Siempre enfatiza la gestión de riesgo personalizada
+- Haz referencia a las velas específicas y patrones que está viendo
 
-- Responde como AutoMix, la IA experta en trading del juego
-- Usa los datos actuales para análisis precisos y contextualizados
-- Analiza las posiciones abiertas y su riesgo de liquidación
-- Comenta sobre la volatilidad y tendencias del mercado
-- Explica las decisiones de trading de forma educativa
-- Puedes hacer recomendaciones, pero siempre con disclaimers sobre riesgos
-- Mantén un tono profesional pero amigable
-- Si preguntan sobre estrategias específicas, explica la lógica completa
-- Haz referencias a tu "experiencia" analizando patrones de mercado
-- Puedes mencionar cómo funciona tu algoritmo interno de decisiones
-- Siempre enfatiza la gestión de riesgo y el apalancamiento responsable
-- Comenta sobre el rendimiento histórico y las estadísticas actuales
-- Alerta sobre posiciones cercanas a liquidación si las hay
-
-IMPORTANTE: Eres parte integral del juego CandleRush 2. Tu objetivo es educar y ayudar al usuario a entender mejor el trading automatizado y las decisiones basadas en análisis técnico.`;
+PERSONALIDAD: Eres su asistente personal de trading, conoces su estilo, sus éxitos y errores. Eres directo, técnico pero amigable, y siempre enfocado en ayudarle a mejorar sus resultados.`;
       }
     } catch (error) {
       console.error('Error fetching detailed context:', error);
     }
     
-    // Fallback al prompt básico si falla la API
-    return `Eres AutoMix, la IA de trading avanzada del juego CandleRush 2. Tu personalidad es la de un trader experimentado, analítico pero accesible, con un toque de humor ocasional.
+    // Fallback mejorado y personalizado
+    return `Eres AutoMix, la IA personal de trading de ${currentUser || 'este trader'}. Habla directamente con él/ella de forma personal y cercana.
 
-CONTEXTO ACTUAL DEL JUEGO:
-- Símbolo: ${gameData.currentSymbol}
-- Timeframe: ${gameData.timeframe}
-- Precio actual: $${gameData.currentPrice}
-- Fase del juego: ${gameData.gamePhase}
-- Balance del usuario: $${gameData.userBalance}
+=== INFORMACIÓN PERSONAL ===
+Usuario: ${currentUser || 'Trader'}
+Balance: $${gameData.userBalance}
+Símbolo actual: ${gameData.currentSymbol} ${gameData.timeframe}
+Precio: $${gameData.currentPrice}
+Rendimiento: ${parseFloat(gameData.betsStats.netProfit) > 0 ? '+' : ''}$${gameData.betsStats.netProfit} | WR: ${gameData.betsStats.winRate}
 
-ESTADÍSTICAS DE APUESTAS:
-- Total: ${gameData.betsStats.total}
-- Ganadas: ${gameData.betsStats.won}
-- Perdidas: ${gameData.betsStats.lost}
-- Pendientes: ${gameData.betsStats.pending}
-- Tasa de éxito: ${gameData.betsStats.winRate}
+=== POSICIONES ACTUALES ===
+${gameData.openPositions.length > 0 ? 
+  gameData.openPositions.map(pos => {
+    const timeRemaining = typeof pos.timeRemaining === 'number' ? pos.timeRemaining : parseInt(pos.timeRemaining || '0');
+    return `${pos.prediction} $${pos.amount} ${pos.leverage}x | PnL: ${pos.currentPnL}% | ${Math.floor(timeRemaining/60)}min`;
+  }).join('\n') : 
+  'Sin posiciones activas'
+}
 
-TU CONOCIMIENTO INCLUYE:
-1. Análisis MACD (EMA 12/26, línea de señal)
-2. RSI (33 períodos)
-3. Detección de valles alcistas/bajistas
-4. Análisis de tendencia de volumen
-5. Señales de mayoría (65 velas)
-6. Golden Cross/Death Cross
-7. Niveles de Fibonacci
-8. Análisis ADX para fuerza de tendencia
-9. Whale trades y order blocks
-10. Memoria de patrones ganadores/perdedores
+=== ÚLTIMAS VELAS ===
+${gameData.recentCandles.slice(-5).map((c, i) => 
+  `${i+1}: ${parseFloat(c.close) > parseFloat(c.open) ? '🟢' : '🔴'} ${c.open}→${c.close} (${c.change}%)`
+).join('\n')}
 
-Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a entender mejor el trading y las decisiones automatizadas.`;
+INSTRUCCIONES:
+- Habla directamente con ${currentUser || 'el usuario'} de forma personal
+- Analiza SUS posiciones específicas y SU rendimiento
+- Da consejos personalizados basados en SU situación actual
+- Sé conciso pero técnico (máximo 4 líneas)
+- Enfócate en gestión de riesgo personalizada
+- Usa las velas y datos específicos que está viendo ahora
+
+Eres su asistente personal de trading, conoces su estilo y siempre buscas ayudarle a mejorar.`;
+  };
+
+  // Función para procesar y resaltar precios en el contenido
+  const processMessageContent = (content: string) => {
+    // Regex para detectar precios en formato $X.XX, $X,XXX.XX, etc.
+    const priceRegex = /\*\*\$([0-9,]+\.?[0-9]*)\*\*|\$([0-9,]+\.?[0-9]*)/g;
+    
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = priceRegex.exec(content)) !== null) {
+      // Agregar texto antes del precio
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: content.slice(lastIndex, match.index)
+        });
+      }
+      
+      // Agregar el precio resaltado
+      const price = match[1] || match[2]; // Capturar el precio sin los asteriscos
+      parts.push({
+        type: 'price',
+        content: `$${price}`
+      });
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Agregar texto restante
+    if (lastIndex < content.length) {
+      parts.push({
+        type: 'text',
+        content: content.slice(lastIndex)
+      });
+    }
+    
+    return parts.length > 0 ? parts : [{ type: 'text', content }];
   };
 
   const sendMessage = async () => {
@@ -325,8 +513,27 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
     setIsLoading(true);
 
     try {
-      // Obtener el prompt del sistema de forma asíncrona
+      // Obtener datos frescos del juego para cada mensaje manual
+      console.log('💬 Enviando mensaje manual - obteniendo datos actualizados...');
+      
+      // Obtener el prompt del sistema de forma asíncrona con datos frescos
       const systemPrompt = await getSystemPrompt();
+      console.log('🔍 System prompt generado:', systemPrompt.substring(0, 200) + '...');
+      
+      const requestBody = {
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages.map(msg => ({ role: msg.role, content: msg.content })),
+          { role: 'user', content: inputMessage }
+        ]
+      };
+      
+      console.log('🔍 Enviando a API:', {
+        model: requestBody.model,
+        messagesCount: requestBody.messages.length,
+        lastUserMessage: inputMessage
+      });
       
       // Usar nuestra API route en lugar de llamar directamente a OpenAI
       const response = await fetch('/api/ai-chat', {
@@ -334,14 +541,7 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages.map(msg => ({ role: msg.role, content: msg.content })),
-            { role: 'user', content: inputMessage }
-          ]
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -350,8 +550,8 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
       }
 
       const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content || 'Lo siento, no pude procesar tu mensaje.';
-
+      const aiResponse = data.choices?.[0]?.message?.content || 'Lo siento, no pude procesar el análisis automático.';
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -360,6 +560,9 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
       };
 
       setMessages(prev => [...prev, aiMessage]);
+      setLastAnalysisTime(Date.now());
+      
+      console.log('✅ Análisis automático de OpenAI recibido y enviado');
     } catch (error) {
       console.error('Error calling OpenAI API:', error);
       const errorMessage: Message = {
@@ -468,28 +671,41 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
                 </div>
               )}
               
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`mb-3 ${
-                    message.role === 'user' ? 'text-right' : 'text-left'
-                  }`}
-                >
+              {messages.map((message, index) => {
+                return (
+                <div key={message.id} className={`mb-3 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                   <div
-                    className={`inline-block max-w-[95%] p-2 rounded-lg text-xs break-words ${
+                    className={`inline-block p-2 rounded-lg text-xs max-w-[80%] ${
                       message.role === 'user'
-                        ? 'bg-yellow-600 text-white'
+                        ? 'bg-yellow-400 text-black'
                         : 'bg-gray-700 text-gray-100'
                     }`}
-                    style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                   >
-                    <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                    <div className="whitespace-pre-wrap break-words">
+                      {message.role === 'assistant' ? (
+                        // Procesar contenido de IA para resaltar precios
+                        processMessageContent(message.content || '[Contenido vacío]').map((part, partIndex) => (
+                          <span key={partIndex}>
+                            {part.type === 'price' ? (
+                              <span className="bg-yellow-400/20 text-yellow-300 px-1 py-0.5 rounded font-bold shadow-lg border border-yellow-400/30">
+                                {part.content}
+                              </span>
+                            ) : (
+                              part.content
+                            )}
+                          </span>
+                        ))
+                      ) : (
+                        // Contenido normal para mensajes del usuario
+                        message.content || '[Contenido vacío]'
+                      )}
+                    </div>
                     <div className="text-xs opacity-70 mt-1">
                       {new Date(message.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
               
               {isLoading && (
                 <div className="text-left mb-3">
@@ -507,6 +723,27 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
           </div>
 
           <div className="p-3 border-t border-yellow-400/30 space-y-2 flex-shrink-0 bg-black/50">
+            <div className="flex gap-2 items-center mb-2">
+              <Button
+                onClick={toggleAutoMonitoring}
+                className={`text-xs px-3 py-1 h-7 ${
+                  autoMonitoring 
+                    ? 'bg-red-600 hover:bg-red-500 text-white' 
+                    : 'bg-green-600 hover:bg-green-500 text-white'
+                }`}
+                size="sm"
+              >
+                {autoMonitoring ? '⏸️ Pausar' : '▶️ Reanudar'} AutoMix
+              </Button>
+              <div className="text-xs text-gray-400 flex items-center gap-1">
+                {autoMonitoring && (
+                  <>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    Monitoreando cada 10s
+                  </>
+                )}
+              </div>
+            </div>
             <div className="flex gap-2">
               <Textarea
                 value={inputMessage}
