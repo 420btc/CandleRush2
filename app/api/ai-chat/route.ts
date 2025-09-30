@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, model, apiKey } = await request.json();
+    const { messages, model } = await request.json();
+    
+    const apiKey = process.env.OPENAI_API_KEY;
     
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'API key is required' },
-        { status: 400 }
+        { error: 'OpenAI API key not configured on server' },
+        { status: 500 }
       );
     }
 
@@ -56,4 +58,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

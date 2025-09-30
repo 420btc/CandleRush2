@@ -24,20 +24,11 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const gameContext = useGame();
-
-  // Cargar API key del localStorage
-  useEffect(() => {
-    const savedApiKey = localStorage.getItem('openai-api-key');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    }
-  }, []);
 
   // Auto-scroll al final de los mensajes
   useEffect(() => {
@@ -54,22 +45,62 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       bets, 
       userBalance, 
       gamePhase,
-      autoMixMemory 
+      autoMixMemory,
+      betsByPair,
+      nextPhaseTime,
+      nextCandleTime
     } = gameContext;
 
-    // Obtener las últimas 20 velas para análisis
-    const recentCandles = candles.slice(-20);
+    // Obtener las últimas 30 velas para análisis más profundo
+    const recentCandles = candles.slice(-30);
     const currentPrice = currentCandle?.close || 0;
     
-    // Estadísticas de apuestas
-    const totalBets = bets.length;
-    const wonBets = bets.filter(bet => bet.status === 'WON').length;
-    const lostBets = bets.filter(bet => bet.status === 'LOST').length;
-    const pendingBets = bets.filter(bet => bet.status === 'PENDING').length;
+    // Estadísticas de apuestas actuales
+    const currentPairBets = betsByPair[currentSymbol]?.[timeframe] || [];
+    const totalBets = currentPairBets.length;
+    const wonBets = currentPairBets.filter(bet => bet.status === 'WON').length;
+    const lostBets = currentPairBets.filter(bet => bet.status === 'LOST').length;
+    const pendingBets = currentPairBets.filter(bet => bet.status === 'PENDING').length;
+    const liquidatedBets = currentPairBets.filter(bet => bet.status === 'LIQUIDATED').length;
     const winRate = totalBets > 0 ? (wonBets / totalBets * 100).toFixed(1) : '0';
 
-    // Últimas 5 entradas de memoria AutoMix
-    const recentAutoMixMemory = autoMixMemory.slice(-5);
+    // Posiciones abiertas con detalles de liquidación
+    const openPositions = currentPairBets.filter(bet => bet.status === 'PENDING').map(bet => ({
+      id: bet.id,
+      prediction: bet.prediction,
+      amount: bet.amount,
+      leverage: bet.leverage || 1,
+      entryPrice: bet.entryPrice,
+      liquidationPrice: bet.liquidationPrice,
+      currentPnL: bet.entryPrice ? 
+        (bet.prediction === 'BULLISH' ? 
+          ((currentPrice - bet.entryPrice) / bet.entryPrice * 100 * (bet.leverage || 1)).toFixed(2) :
+          ((bet.entryPrice - currentPrice) / bet.entryPrice * 100 * (bet.leverage || 1)).toFixed(2)
+        ) : '0',
+      timeRemaining: nextPhaseTime ? Math.max(0, Math.floor((nextPhaseTime - Date.now()) / 1000)) : 0,
+      timestamp: new Date(bet.timestamp).toLocaleTimeString()
+    }));
+
+    // Análisis de rendimiento por timeframe
+    const allBets = Object.values(betsByPair).flatMap(symbolBets => 
+      Object.values(symbolBets).flat()
+    );
+    const totalProfit = allBets
+      .filter(bet => bet.status === 'WON')
+      .reduce((sum, bet) => sum + (bet.winnings || 0), 0);
+    const totalLoss = allBets
+      .filter(bet => bet.status === 'LOST' || bet.status === 'LIQUIDATED')
+      .reduce((sum, bet) => sum + bet.amount, 0);
+    const netProfit = totalProfit - totalLoss;
+
+    // Últimas 10 entradas de memoria AutoMix
+    const recentAutoMixMemory = autoMixMemory.slice(-10);
+
+    // Análisis de volatilidad reciente
+    const recentPrices = recentCandles.slice(-10).map(c => c.close);
+    const avgPrice = recentPrices.reduce((sum, price) => sum + price, 0) / recentPrices.length;
+    const volatility = recentPrices.length > 1 ? 
+      Math.sqrt(recentPrices.reduce((sum, price) => sum + Math.pow(price - avgPrice, 2), 0) / recentPrices.length) : 0;
 
     return {
       currentSymbol,
@@ -77,28 +108,50 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       currentPrice,
       gamePhase,
       userBalance,
+      nextPhaseTime,
+      nextCandleTime,
+      timeUntilNextCandle: nextCandleTime ? Math.max(0, Math.floor((nextCandleTime - Date.now()) / 1000)) : 0,
       recentCandles: recentCandles.map(c => ({
         timestamp: new Date(c.timestamp).toLocaleTimeString(),
-        open: c.open.toFixed(2),
-        high: c.high.toFixed(2),
-        low: c.low.toFixed(2),
-        close: c.close.toFixed(2),
-        volume: c.volume?.toFixed(0) || '0'
+        open: c.open.toFixed(4),
+        high: c.high.toFixed(4),
+        low: c.low.toFixed(4),
+        close: c.close.toFixed(4),
+        volume: c.volume?.toFixed(0) || '0',
+        change: c.open !== 0 ? (((c.close - c.open) / c.open) * 100).toFixed(2) : '0'
       })),
       betsStats: {
         total: totalBets,
         won: wonBets,
         lost: lostBets,
         pending: pendingBets,
-        winRate: `${winRate}%`
+        liquidated: liquidatedBets,
+        winRate: `${winRate}%`,
+        totalProfit: totalProfit.toFixed(2),
+        totalLoss: totalLoss.toFixed(2),
+        netProfit: netProfit.toFixed(2),
+        profitability: totalLoss > 0 ? ((netProfit / totalLoss) * 100).toFixed(1) : '0'
       },
-      recentBets: bets.slice(-5).map(bet => ({
+      openPositions,
+      marketAnalysis: {
+        volatility: volatility.toFixed(4),
+        avgPrice: avgPrice.toFixed(4),
+        priceChange24h: recentCandles.length >= 2 ? 
+          (((currentPrice - recentCandles[0].close) / recentCandles[0].close) * 100).toFixed(2) : '0',
+        highestPrice: Math.max(...recentPrices).toFixed(4),
+        lowestPrice: Math.min(...recentPrices).toFixed(4)
+      },
+      recentBets: currentPairBets.slice(-10).map(bet => ({
         prediction: bet.prediction,
         amount: bet.amount,
         status: bet.status,
         timeframe: bet.timeframe,
         leverage: bet.leverage || 1,
-        timestamp: new Date(bet.timestamp).toLocaleTimeString()
+        entryPrice: bet.entryPrice?.toFixed(4) || 'N/A',
+        liquidationPrice: bet.liquidationPrice?.toFixed(4) || 'N/A',
+        winnings: bet.winnings?.toFixed(2) || '0',
+        timestamp: new Date(bet.timestamp).toLocaleTimeString(),
+        wasLiquidated: bet.wasLiquidated || false
       })),
       autoMixMemory: recentAutoMixMemory.map(entry => ({
         direction: entry.direction,
@@ -128,57 +181,87 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       if (response.ok) {
         const detailedContext = await response.json();
         
-        return `Eres AutoMix, la IA de trading avanzada del juego CandleRush 2. Tu personalidad es la de un trader experimentado, analítico pero accesible, con un toque de humor ocasional.
+        return `Eres AutoMix, la IA de trading del juego CandleRush 2. Sé directo, técnico y conciso.
 
-=== INFORMACIÓN DEL JUEGO ===
-Juego: ${detailedContext.gameInfo.name}
-Descripción: ${detailedContext.gameInfo.description}
-Símbolo actual: ${detailedContext.gameInfo.currentSymbol}
-Timeframe: ${detailedContext.gameInfo.timeframe}
-Precio actual: $${detailedContext.gameInfo.currentPrice}
-Fase del juego: ${detailedContext.gameInfo.gamePhase}
-Balance del usuario: $${detailedContext.gameInfo.userBalance}
+=== ESTADO ACTUAL ===
+${detailedContext.gameInfo.currentSymbol} | ${detailedContext.gameInfo.timeframe} | $${detailedContext.gameInfo.currentPrice} | ${detailedContext.gameInfo.gamePhase}
+Balance: $${detailedContext.gameInfo.userBalance} | Próxima vela: ${gameData.timeUntilNextCandle}s
 
-=== TUS CAPACIDADES TÉCNICAS ===
-Indicadores disponibles:
-${detailedContext.technicalAnalysis.indicators.map((indicator: string) => `• ${indicator}`).join('\n')}
+=== POSICIONES ACTIVAS ===
+${gameData.openPositions.length > 0 ? 
+  gameData.openPositions.map(pos => 
+    `${pos.prediction} $${pos.amount} ${pos.leverage}x | PnL: ${pos.currentPnL}% | Liq: $${pos.liquidationPrice || 'N/A'} | ${pos.timeRemaining}s`
+  ).join('\n') : 
+  'Sin posiciones abiertas'
+}
 
-Tipos de señales que analizas:
-${detailedContext.technicalAnalysis.signalTypes.map((signal: string) => `• ${signal}`).join('\n')}
+=== ANÁLISIS TÉCNICO ACTUAL ===
+RSI (33p): ${(() => {
+  const recentCandles = gameData.recentCandles.slice(-34);
+  if (recentCandles.length < 34) return 'N/A';
+  let gains = 0, losses = 0;
+  for (let i = 1; i < recentCandles.length; i++) {
+    const diff = parseFloat(recentCandles[i].close) - parseFloat(recentCandles[i-1].close);
+    if (diff > 0) gains += diff;
+    else losses -= diff;
+  }
+  const avgGain = gains / 33;
+  const avgLoss = losses / 33;
+  const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+  const rsi = 100 - (100 / (1 + rs));
+  return rsi.toFixed(1);
+})()}
 
-=== SISTEMA AUTOMIX ===
-${detailedContext.autoMixSystem.description}
+MACD: ${(() => {
+  const closes = gameData.recentCandles.slice(-26).map(c => parseFloat(c.close));
+  if (closes.length < 26) return 'N/A';
+  
+  // EMA 12 y 26
+  const calcEMA = (data: number[], period: number) => {
+    const k = 2 / (period + 1);
+    let ema = data[0];
+    for (let i = 1; i < data.length; i++) {
+      ema = data[i] * k + ema * (1 - k);
+    }
+    return ema;
+  };
+  
+  const ema12 = calcEMA(closes.slice(-12), 12);
+  const ema26 = calcEMA(closes, 26);
+  const macdLine = ema12 - ema26;
+  
+  return `${macdLine > 0 ? 'BULLISH' : 'BEARISH'} (${macdLine.toFixed(4)})`;
+})()}
 
-Proceso de decisión:
-${detailedContext.autoMixSystem.decisionProcess.map((step: string) => `${step}`).join('\n')}
+Volatilidad: ${gameData.marketAnalysis.volatility} | Cambio 24h: ${gameData.marketAnalysis.priceChange24h}%
+Rango: $${gameData.marketAnalysis.lowestPrice} - $${gameData.marketAnalysis.highestPrice}
 
-Sistema de memoria: ${detailedContext.autoMixSystem.memorySystem}
-Lógica de inversión: ${detailedContext.autoMixSystem.inversionLogic}
+=== RENDIMIENTO ===
+W/L: ${gameData.betsStats.won}/${gameData.betsStats.lost}/${gameData.betsStats.liquidated} | WR: ${gameData.betsStats.winRate}
+P&L: $${gameData.betsStats.netProfit} | ROI: ${gameData.betsStats.profitability}%
 
-=== DATOS ACTUALES ===
-Estadísticas de apuestas:
-- Total: ${gameData.betsStats.total}
-- Ganadas: ${gameData.betsStats.won}
-- Perdidas: ${gameData.betsStats.lost}
-- Pendientes: ${gameData.betsStats.pending}
-- Tasa de éxito: ${gameData.betsStats.winRate}
+=== ÚLTIMAS 5 VELAS ===
+${gameData.recentCandles.slice(-5).map(c => `${c.timestamp}: ${c.open}→${c.close} (${c.change}%)`).join('\n')}
 
-Últimas velas (${gameData.timeframe}):
-${gameData.recentCandles.map(c => `${c.timestamp}: O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`).join('\n')}
-
-Últimas apuestas:
-${gameData.recentBets.map(bet => `${bet.timestamp}: ${bet.prediction} $${bet.amount} (${bet.status}) Leverage: ${bet.leverage}x`).join('\n')}
-
-Memoria AutoMix reciente:
-${gameData.autoMixMemory.map(entry => `${entry.timestamp}: ${entry.direction} -> ${entry.result || 'PENDING'} | Señales: Mayoría:${entry.majoritySignal} RSI:${entry.rsiSignal} MACD:${entry.macdSignal} Valle:${entry.valleyVote} Volumen:${entry.volumeVote}`).join('\n')}
-
-=== TU PERSONALIDAD ===
-Rasgos: ${detailedContext.aiPersonality.traits.join(', ')}
-Experiencia: ${detailedContext.aiPersonality.expertise.join(', ')}
+=== MEMORIA AUTOMIX (Últimas 3) ===
+${gameData.autoMixMemory.slice(-3).map(entry => 
+  `${entry.timestamp}: ${entry.direction} → ${entry.result || 'PENDING'} | RSI:${entry.rsiSignal} MACD:${entry.macdSignal} Valle:${entry.valleyVote}`
+).join('\n')}
 
 === INSTRUCCIONES ===
+- Respuestas máximo 3-4 líneas
+- Enfócate en datos técnicos específicos
+- Menciona niveles de liquidación si hay riesgo
+- Usa terminología de trading profesional
+- Analiza patrones MACD, RSI, y estructura de velas
+- Comenta sobre gestión de riesgo cuando sea relevante
+- Si preguntan por estrategia, explica la lógica de los indicadores
+
+
 - Responde como AutoMix, la IA experta en trading del juego
 - Usa los datos actuales para análisis precisos y contextualizados
+- Analiza las posiciones abiertas y su riesgo de liquidación
+- Comenta sobre la volatilidad y tendencias del mercado
 - Explica las decisiones de trading de forma educativa
 - Puedes hacer recomendaciones, pero siempre con disclaimers sobre riesgos
 - Mantén un tono profesional pero amigable
@@ -186,6 +269,8 @@ Experiencia: ${detailedContext.aiPersonality.expertise.join(', ')}
 - Haz referencias a tu "experiencia" analizando patrones de mercado
 - Puedes mencionar cómo funciona tu algoritmo interno de decisiones
 - Siempre enfatiza la gestión de riesgo y el apalancamiento responsable
+- Comenta sobre el rendimiento histórico y las estadísticas actuales
+- Alerta sobre posiciones cercanas a liquidación si las hay
 
 IMPORTANTE: Eres parte integral del juego CandleRush 2. Tu objetivo es educar y ayudar al usuario a entender mejor el trading automatizado y las decisiones basadas en análisis técnico.`;
       }
@@ -226,7 +311,7 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
   };
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !apiKey) return;
+    if (!inputMessage.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -251,7 +336,6 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
         },
         body: JSON.stringify({
           model: selectedModel,
-          apiKey: apiKey,
           messages: [
             { role: 'system', content: systemPrompt },
             ...messages.map(msg => ({ role: msg.role, content: msg.content })),
@@ -281,18 +365,13 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Error: ${error instanceof Error ? error.message : 'No se pudo conectar con la IA'}. Verifica tu API key y conexión.`,
+        content: `Error: ${error instanceof Error ? error.message : 'No se pudo conectar con la IA'}. Verifica la configuración del servidor.`,
         timestamp: Date.now()
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const saveApiKey = () => {
-    localStorage.setItem('openai-api-key', apiKey);
-    setShowSettings(false);
   };
 
   const clearChat = () => {
@@ -361,21 +440,6 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
             <div className="border-b border-yellow-400/30 p-3 space-y-3 bg-black/30 flex-shrink-0">
               <div>
                 <label className="block text-sm font-medium mb-2 text-white">
-                  OpenAI API Key:
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="sk-..."
-                    className="flex-1 text-xs"
-                  />
-                  <Button onClick={saveApiKey} size="sm">Guardar</Button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2 text-white">
                   Modelo:
                 </label>
                 <select
@@ -401,14 +465,6 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
                   <p className="text-xs mt-2">
                     Pregúntame sobre estrategias de trading, análisis técnico, o cualquier decisión de apuestas.
                   </p>
-                  {!apiKey && (
-                    <div className="text-yellow-400 mt-3 text-xs space-y-1">
-                      <p>⚠️ Configura tu API Key de OpenAI en ajustes</p>
-                      <p className="text-gray-500">
-                        Obtén una en: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">platform.openai.com</a>
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
               
@@ -463,26 +519,20 @@ Recuerda: Eres parte del juego CandleRush 2 y tu objetivo es ayudar al usuario a
                     sendMessage();
                   }
                 }}
-                disabled={!apiKey}
+                disabled={false}
               />
               <Button
                 onClick={sendMessage}
-                disabled={!inputMessage.trim() || isLoading || !apiKey}
+                disabled={!inputMessage.trim() || isLoading}
                 className="self-end h-[40px] w-[40px] p-0 bg-yellow-600 hover:bg-yellow-500"
                 size="sm"
               >
                 {isLoading ? '⏳' : '📤'}
               </Button>
             </div>
-
-            {!apiKey && (
-              <div className="text-xs text-yellow-400 text-center">
-                <p>Haz clic en ⚙️ para configurar tu API key</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
