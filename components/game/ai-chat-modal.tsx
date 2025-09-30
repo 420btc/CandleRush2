@@ -75,18 +75,26 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     console.log('📤 Enviando análisis automático a OpenAI - Inicial:', isInitial);
     
     // Forzar actualización del contexto del juego obteniendo datos frescos
-    const gameData = createGameContext();
+    const gameData = await createGameContext(); // Ahora es async
     
     try {
       const systemPrompt = await getSystemPrompt();
       
-      // Log para verificar que los datos se están actualizando
-      console.log('🔄 Datos actualizados - Precio:', gameData.currentPrice, 'Posiciones:', gameData.openPositions.length);
+      // Log DETALLADO para verificar que los datos se están actualizando
+      console.log('🔄 DATOS ENVIADOS A LA IA:', {
+        precio: gameData.currentPrice,
+        timestamp: new Date().toLocaleTimeString(),
+        posiciones: gameData.openPositions.length,
+        balance: gameData.userBalance,
+        simbolo: gameData.currentSymbol,
+        timeframe: gameData.timeframe,
+        ultimaVela: gameData.recentCandles[gameData.recentCandles.length - 1]
+      });
       
       // Crear mensaje personalizado para el análisis automático
       const autoPrompt = isInitial 
-        ? `Hola ${currentUser || 'trader'}! Acabo de conectarme al AutoMix. Dame un análisis completo del mercado actual de ${gameData.currentSymbol} en ${gameData.timeframe}. Incluye precio actual, tendencias, patrones de velas, indicadores técnicos y cualquier insight importante. Hazlo personal y directo, como si fueras mi asistente personal de trading.`
-        : `${currentUser || 'Trader'}, dame una actualización completa del mercado ${gameData.currentSymbol} ${gameData.timeframe}. Analiza los últimos movimientos, patrones, indicadores y dame tu perspectiva sobre las próximas velas. Sé específico y personal en tu análisis.`;
+        ? `[${Date.now()}] Hola ${currentUser || 'trader'}! Acabo de conectarme al AutoMix. Dame un análisis completo del mercado actual de ${gameData.currentSymbol} en ${gameData.timeframe}. Incluye precio actual, tendencias, patrones de velas, indicadores técnicos y cualquier insight importante. Hazlo personal y directo, como si fueras mi asistente personal de trading.`
+        : `[${Date.now()}] ${currentUser || 'Trader'}, dame una actualización completa del mercado ${gameData.currentSymbol} ${gameData.timeframe}. Analiza los últimos movimientos, patrones, indicadores y dame tu perspectiva sobre las próximas velas. Sé específico y personal en tu análisis.`;
 
       console.log('🤖 Enviando prompt a OpenAI...');
       
@@ -171,8 +179,22 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     }
   };
 
-  // Crear el contexto del juego para la IA
-  const createGameContext = () => {
+  // Función para obtener precio actual en tiempo real directamente de Binance
+  const getCurrentRealPrice = async () => {
+    try {
+      const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+      const data = await response.json();
+      const realPrice = parseFloat(data.price);
+      console.log('💰 Precio REAL obtenido de Binance API:', realPrice);
+      return realPrice;
+    } catch (error) {
+      console.error('❌ Error obteniendo precio real:', error);
+      return null;
+    }
+  };
+
+  // Crear el contexto del juego para la IA usando DATOS REALES
+  const createGameContext = async () => {
     const { 
       candles, 
       currentCandle, 
@@ -184,15 +206,62 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       autoMixMemory,
       betsByPair,
       nextPhaseTime,
-      nextCandleTime
+      nextCandleTime,
+      isConnected
     } = gameContext;
 
-    // Obtener las últimas 30 velas para análisis más profundo
-    const recentCandles = candles.slice(-30);
-    const currentPrice = currentCandle?.close || 0;
+    // OBTENER PRECIO REAL ACTUAL directamente de Binance API
+    const realTimePrice = await getCurrentRealPrice();
+    
+    // Usar DATOS REALES del WebSocket/Binance - NO simulaciones
+    const recentCandles = [...candles.slice(-30)]; // Datos reales del chart
+    // PRIORIDAD: 1) Precio real de API, 2) currentCandle.close, 3) fallback 0
+    const currentPrice = realTimePrice || currentCandle?.close || 0;
+    const currentTimestamp = Date.now();
+    
+    console.log('🔄 PRECIO EN TIEMPO REAL OBTENIDO:', {
+      precioAPI: realTimePrice,
+      precioVela: currentCandle?.close,
+      precioFinal: currentPrice,
+      esConexionReal: isConnected,
+      timestamp: new Date(currentTimestamp).toLocaleTimeString()
+    });
     
     // Estadísticas de apuestas actuales
     const currentPairBets = betsByPair[currentSymbol]?.[timeframe] || [];
+    
+    // BUSCAR TAMBIÉN EN TODAS LAS APUESTAS (no solo por par/timeframe)
+    const allBetsFlat = Object.values(betsByPair).flatMap(symbolBets => 
+      Object.values(symbolBets).flat()
+    );
+    
+    // LOGS DETALLADOS para debug de posiciones
+    console.log('🎯 DEBUG POSICIONES:', {
+      currentSymbol,
+      timeframe,
+      totalBetsByPair: Object.keys(betsByPair).length,
+      currentPairBets: currentPairBets.length,
+      allBetsFlat: allBetsFlat.length,
+      betsByPairStructure: Object.keys(betsByPair),
+      pendingBets: currentPairBets.filter(bet => bet.status === 'PENDING').length,
+      allPendingBets: allBetsFlat.filter(bet => bet.status === 'PENDING').length,
+      wonBets: allBetsFlat.filter(bet => bet.status === 'WON').length,
+      allBets: currentPairBets.map(bet => ({
+        id: bet.id,
+        status: bet.status,
+        prediction: bet.prediction,
+        amount: bet.amount
+      })),
+      allBetsAnyStatus: allBetsFlat.map(bet => ({
+        id: bet.id,
+        status: bet.status,
+        prediction: bet.prediction,
+        amount: bet.amount,
+        symbol: bet.symbol,
+        timeframe: bet.timeframe
+      }))
+    });
+    
     const totalBets = currentPairBets.length;
     const wonBets = currentPairBets.filter(bet => bet.status === 'WON').length;
     const lostBets = currentPairBets.filter(bet => bet.status === 'LOST').length;
@@ -200,22 +269,43 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     const liquidatedBets = currentPairBets.filter(bet => bet.status === 'LIQUIDATED').length;
     const winRate = totalBets > 0 ? (wonBets / totalBets * 100).toFixed(1) : '0';
 
-    // Posiciones abiertas con detalles de liquidación
-    const openPositions = currentPairBets.filter(bet => bet.status === 'PENDING').map(bet => ({
-      id: bet.id,
+    // Posiciones abiertas con detalles de liquidación - INCLUIR TODAS LAS APUESTAS ACTIVAS
+    const openPositions = allBetsFlat.filter(bet => 
+      bet.status === 'PENDING' || bet.status === 'WON' || bet.status === 'LOST'
+    ).slice(-5).map(bet => ({ // Solo las últimas 5 posiciones más recientes
+      id: bet.id, // ID real sin modificaciones
       prediction: bet.prediction,
       amount: bet.amount,
       leverage: bet.leverage || 1,
       entryPrice: bet.entryPrice,
       liquidationPrice: bet.liquidationPrice,
+      status: bet.status, // Incluir status para debug
+      symbol: bet.symbol || currentSymbol, // Incluir símbolo
+      timeframe: bet.timeframe || timeframe, // Incluir timeframe
+      timestamp: bet.timestamp, // Timestamp original para ordenar
       currentPnL: bet.entryPrice ? 
         (bet.prediction === 'BULLISH' ? 
           ((currentPrice - bet.entryPrice) / bet.entryPrice * 100 * (bet.leverage || 1)).toFixed(2) :
           ((bet.entryPrice - currentPrice) / bet.entryPrice * 100 * (bet.leverage || 1)).toFixed(2)
         ) : '0',
-      timeRemaining: nextPhaseTime ? Math.max(0, Math.floor((nextPhaseTime - Date.now()) / 1000)) : 0,
-      timestamp: new Date(bet.timestamp).toLocaleTimeString()
-    }));
+      timeRemaining: nextPhaseTime ? Math.max(0, Math.floor((nextPhaseTime - Date.now()) / 1000)) : 0, // Tiempo real
+      timestampFormatted: new Date(bet.timestamp).toLocaleTimeString() // Timestamp formateado
+    })).sort((a, b) => b.timestamp - a.timestamp); // Ordenar por timestamp descendente (más reciente primero)
+
+    // LOG ADICIONAL para verificar posiciones procesadas
+    console.log('📊 POSICIONES PROCESADAS (ÚLTIMAS 5 ORDENADAS):', {
+      openPositionsCount: openPositions.length,
+      openPositions: openPositions.map((pos, index) => ({
+        orden: index + 1,
+        prediction: pos.prediction,
+        amount: pos.amount,
+        status: pos.status,
+        symbol: pos.symbol,
+        timeframe: pos.timeframe,
+        timestamp: pos.timestampFormatted,
+        pnl: pos.currentPnL
+      }))
+    });
 
     // Análisis de rendimiento por timeframe
     const allBets = Object.values(betsByPair).flatMap(symbolBets => 
@@ -241,7 +331,7 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     return {
       currentSymbol,
       timeframe,
-      currentPrice,
+      currentPrice, // Usar precio real sin modificaciones
       gamePhase,
       userBalance,
       nextPhaseTime,
@@ -249,7 +339,7 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       timeUntilNextCandle: nextCandleTime ? Math.max(0, Math.floor((nextCandleTime - Date.now()) / 1000)) : 0,
       recentCandles: recentCandles.map(c => ({
         timestamp: new Date(c.timestamp).toLocaleTimeString(),
-        open: c.open.toFixed(4),
+        open: c.open.toFixed(4), // Datos reales sin variaciones
         high: c.high.toFixed(4),
         low: c.low.toFixed(4),
         close: c.close.toFixed(4),
@@ -304,11 +394,23 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
   // Prompt del sistema para la IA
   const getSystemPrompt = async () => {
-    // Obtener datos frescos del contexto del juego en cada llamada
-    const gameData = createGameContext();
+    // FORZAR datos completamente frescos en cada llamada - NO CACHE
+    const gameData = await createGameContext(); // Ahora es async
+    
+    // Obtener currentCandle directamente del contexto para precio en tiempo real
+    const { currentCandle } = gameContext;
+    
+    // Timestamp único para evitar cache
+    const uniqueId = Date.now() + Math.random();
     
     // Log para verificar actualización de datos
-    console.log('📊 Generando prompt con datos actualizados - Balance:', gameData.userBalance, 'Precio:', gameData.currentPrice);
+    console.log('📊 GENERANDO PROMPT FRESCO - ID:', uniqueId, {
+      precio: gameData.currentPrice,
+      precioVelaActual: currentCandle?.close,
+      balance: gameData.userBalance,
+      posiciones: gameData.openPositions.length,
+      timestamp: new Date().toLocaleTimeString()
+    });
     
     // Obtener contexto detallado de la API
     try {
@@ -323,19 +425,20 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
         
         return `Eres AutoMix, la IA personal de trading de ${currentUser || 'este trader'}. Habla directamente con él/ella de forma personal y cercana, como su asistente experto en trading.
 
-=== INFORMACIÓN PERSONAL ===
+=== INFORMACIÓN PERSONAL [${uniqueId}] ===
 Usuario: ${currentUser || 'Trader'}
 Balance actual: $${detailedContext.gameInfo.userBalance}
 Rendimiento total: ${parseFloat(gameData.betsStats.netProfit) > 0 ? '+' : ''}$${gameData.betsStats.netProfit}
 Tasa de éxito: ${gameData.betsStats.winRate} (${gameData.betsStats.won}W/${gameData.betsStats.lost}L)
 Posiciones activas: ${gameData.openPositions.length}
 
-=== MERCADO ACTUAL ===
-${detailedContext.gameInfo.currentSymbol} | ${detailedContext.gameInfo.timeframe} | $${detailedContext.gameInfo.currentPrice}
+=== MERCADO ACTUAL [${new Date().toLocaleTimeString()}] ===
+${detailedContext.gameInfo.currentSymbol} | ${detailedContext.gameInfo.timeframe} | $${gameData.currentPrice.toFixed(2)}
+Precio REAL de Binance API: $${gameData.currentPrice.toFixed(2)} (Actualizado: ${new Date().toLocaleTimeString()})
 Próxima vela en: ${gameData.timeUntilNextCandle}s
 Volatilidad: ${gameData.marketAnalysis.volatility}% | Cambio 24h: ${gameData.marketAnalysis.priceChange24h}%
 
-=== ANÁLISIS DE VELAS (Últimas 10) ===
+=== ANÁLISIS DE VELAS (Últimas 10) [ACTUALIZADO: ${new Date().toLocaleTimeString()}] ===
 ${gameData.recentCandles.slice(-10).map((c, i) => {
   const candleType = parseFloat(c.close) > parseFloat(c.open) ? '🟢' : '🔴';
   const bodySize = Math.abs(parseFloat(c.close) - parseFloat(c.open));
@@ -353,8 +456,13 @@ ${gameData.openPositions.length > 0 ?
     const riskLevel = liquidationPrice > 0 ? 
       Math.abs((currentPrice - liquidationPrice) / currentPrice * 100) : 100;
     const riskEmoji = riskLevel < 5 ? '🔴' : riskLevel < 15 ? '🟠' : riskLevel < 30 ? '🟡' : '🟢';
+    
+    // INDICADOR DE POSICIÓN CORRECTO: Verde para BULLISH, Rojo para BEARISH
+    const positionEmoji = pos.prediction === 'BULLISH' ? '🟢' : '🔴';
+    const positionText = pos.prediction === 'BULLISH' ? 'BULL' : 'BEAR';
+    
     const timeRemaining = typeof pos.timeRemaining === 'number' ? pos.timeRemaining : parseInt(pos.timeRemaining || '0');
-    return `${pos.prediction} $${pos.amount} ${pos.leverage}x | PnL: ${pos.currentPnL}% | Liq: $${pos.liquidationPrice || 'N/A'} ${riskEmoji} | ${Math.floor(timeRemaining/60)}min remaining`;
+    return `${positionEmoji} ${positionText} $${pos.amount} ${pos.leverage}x | PnL: ${pos.currentPnL}% | Status: ${pos.status} | ${pos.timestampFormatted}`;
   }).join('\n') : 
   `Sin posiciones - ${currentUser || 'Tienes'} $${gameData.userBalance} disponibles para operar`
 }

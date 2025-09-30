@@ -35,12 +35,46 @@ export async function POST(request: NextRequest) {
           ...msg,
           content: msg.content + `
 
-FORMATO DE RESPUESTA OBLIGATORIO:
-- MÁXIMO 2 párrafos cortos
-- MÁXIMO 400 caracteres total (para lectura en 7-8 segundos)
-- Resalta precios con formato: **$PRECIO** para destacar visualmente
-- Sé conciso pero informativo
-- Enfócate en lo más importante para el trader`
+FORMATO DE RESPUESTA OBLIGATORIO - MODO VISUAL:
+📊 Responde SIEMPRE en formato de lista con emojis
+🎯 MÁXIMO 300 caracteres total
+📝 Estructura JSON visual:
+
+🔥 MERCADO: [emoji] $PRECIO [tendencia]
+📈 POSICIÓN: [emoji correcto] [estado] [PnL]
+⚡ SEÑALES: [emoji] [indicador] [emoji] [indicador]
+🎲 PRÓXIMO: [emoji] [predicción corta]
+💡 CONSEJO: [emoji] [acción recomendada]
+
+IMPORTANTE - LÓGICA DEL JUEGO:
+- BULLISH gana si vela cierra ARRIBA del precio de apertura (close > open)
+- BEARISH gana si vela cierra ABAJO del precio de apertura (close < open)
+- Si apostaste BEARISH y el precio actual está bajando = BUENAS NOTICIAS (vas ganando)
+- Si apostaste BULLISH y el precio actual está subiendo = BUENAS NOTICIAS (vas ganando)
+- PnL se calcula: (precio_actual - precio_entrada) * leverage * dirección_apuesta
+- NO recomiendes reducir riesgo si la posición va ganando
+
+INDICADORES DE POSICIÓN CORRECTOS - MUY IMPORTANTE:
+- BULLISH/BULL = SIEMPRE 🟢 (bola verde) - SIN EXCEPCIÓN
+- BEARISH/BEAR = SIEMPRE 🔴 (bola roja) - SIN EXCEPCIÓN
+- El color del emoji NO depende de si está ganando o perdiendo
+- El color del emoji SOLO indica el tipo de posición (BULL=verde, BEAR=rojo)
+- Si está perdiendo, usa texto como "¡Perdiendo!" pero mantén el color correcto
+
+EJEMPLOS CORRECTOS:
+- Posición BULL ganando: 🟢 BULL $10 +5.2% ¡Ganando!
+- Posición BULL perdiendo: 🟢 BULL $10 -3.1% ¡Perdiendo!
+- Posición BEAR ganando: 🔴 BEAR $20 +2.8% ¡Ganando!
+- Posición BEAR perdiendo: 🔴 BEAR $20 -1.5% ¡Perdiendo!
+
+Ejemplo:
+🔥 MERCADO: 📈 $43,250 +0.8%
+📈 POSICIÓN: 🟢 BULL $50 -2.1% ¡Perdiendo!
+⚡ SEÑALES: 🔴 RSI:72 🟡 MACD:neutro
+🎲 PRÓXIMO: ⬇️ Sigue bajando
+💡 CONSEJO: 🚀 Mantén posición
+
+SIN texto adicional, SOLO la estructura con emojis.`
         };
       }
       return msg;
@@ -49,7 +83,7 @@ FORMATO DE RESPUESTA OBLIGATORIO:
     const requestBody = {
       model: model || 'gpt-4o-mini',
       messages: modifiedMessages,
-      max_tokens: 200, // Reducido para respuestas más cortas
+      max_tokens: 150, // Reducido para respuestas más cortas
       temperature: 0.7
     };
     
