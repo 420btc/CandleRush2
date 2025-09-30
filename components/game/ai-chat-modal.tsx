@@ -92,9 +92,10 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       });
       
       // Crear mensaje personalizado para el análisis automático
+      const randomSeed = Math.random().toString(36).substring(7);
       const autoPrompt = isInitial 
-        ? `[${Date.now()}] Hola ${currentUser || 'trader'}! Acabo de conectarme al AutoMix. Dame un análisis completo del mercado actual de ${gameData.currentSymbol} en ${gameData.timeframe}. Incluye precio actual, tendencias, patrones de velas, indicadores técnicos y cualquier insight importante. Hazlo personal y directo, como si fueras mi asistente personal de trading.`
-        : `[${Date.now()}] ${currentUser || 'Trader'}, dame una actualización completa del mercado ${gameData.currentSymbol} ${gameData.timeframe}. Analiza los últimos movimientos, patrones, indicadores y dame tu perspectiva sobre las próximas velas. Sé específico y personal en tu análisis.`;
+        ? `[${Date.now()}-${randomSeed}] Hola ${currentUser || 'trader'}! Acabo de conectarme al AutoMix. Dame un análisis completo del mercado actual de ${gameData.currentSymbol} en ${gameData.timeframe}. Incluye precio actual, tendencias, patrones de velas, indicadores técnicos y cualquier insight importante. Hazlo personal y directo, como si fueras mi asistente personal de trading. VARÍA tu estilo de respuesta cada vez.`
+        : `[${Date.now()}-${randomSeed}] ${currentUser || 'Trader'}, dame una actualización completa del mercado ${gameData.currentSymbol} ${gameData.timeframe}. Analiza los últimos movimientos, patrones, indicadores y dame tu perspectiva sobre las próximas velas. Sé específico y personal en tu análisis. USA un enfoque diferente esta vez.`;
 
       console.log('🤖 Enviando prompt a OpenAI...');
       
@@ -219,6 +220,48 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     const currentPrice = realTimePrice || currentCandle?.close || 0;
     const currentTimestamp = Date.now();
     
+    // Obtener la última decisión de AutoMix para análisis profundo
+    const getLastAutoMixDecision = () => {
+      try {
+        const autoMixMemory = gameContext.autoMixMemory || [];
+        const lastDecision = autoMixMemory[autoMixMemory.length - 1];
+        
+        if (lastDecision) {
+          return {
+            timestamp: new Date(lastDecision.timestamp).toLocaleTimeString(),
+            direction: lastDecision.direction,
+            result: lastDecision.result,
+            signals: {
+              majority: lastDecision.majoritySignal,
+              rsi: lastDecision.rsiSignal,
+              macd: lastDecision.macdSignal,
+              valley: lastDecision.valleyVote,
+              volume: lastDecision.volumeVote,
+              whale: lastDecision.whaleVote,
+              adx: lastDecision.adxMemoryVote,
+              cross: lastDecision.crossSignal,
+              ema: lastDecision.emaPositionVote,
+              fibonacci: lastDecision.fibonacciVote,
+              trend: lastDecision.trendVote
+            },
+            votes: {
+              bullish: lastDecision.bullishVotes || 0,
+              bearish: lastDecision.bearishVotes || 0,
+              total: lastDecision.totalVotes || 0
+            },
+            wasInverted: lastDecision.directionAntesDeInvertir !== lastDecision.direction,
+            consecutiveBets: lastDecision.consecutiveBets || 1
+          };
+        }
+        return null;
+      } catch (error) {
+        console.error('Error obteniendo última decisión AutoMix:', error);
+        return null;
+      }
+    };
+
+    const lastAutoMixDecision = getLastAutoMixDecision();
+    
     console.log('🔄 PRECIO EN TIEMPO REAL OBTENIDO:', {
       precioAPI: realTimePrice,
       precioVela: currentCandle?.close,
@@ -226,6 +269,8 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       esConexionReal: isConnected,
       timestamp: new Date(currentTimestamp).toLocaleTimeString()
     });
+    
+    console.log('🤖 ÚLTIMA DECISIÓN AUTOMIX:', lastAutoMixDecision);
     
     // Estadísticas de apuestas actuales
     const currentPairBets = betsByPair[currentSymbol]?.[timeframe] || [];
@@ -388,7 +433,8 @@ export function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
         valleyVote: entry.valleyVote,
         volumeVote: entry.volumeVote,
         timestamp: new Date(entry.timestamp).toLocaleTimeString()
-      }))
+      })),
+      lastAutoMixDecision // Agregar la última decisión detallada
     };
   };
 
@@ -513,6 +559,24 @@ ${gameData.recentBets.slice(-5).map(bet =>
 ${gameData.autoMixMemory.slice(-3).map(entry => 
   `${entry.timestamp}: ${entry.direction} → ${entry.result || 'PENDING'} | Señales: RSI:${entry.rsiSignal} MACD:${entry.macdSignal}`
 ).join('\n')}
+
+=== ÚLTIMA DECISIÓN AUTOMIX DETALLADA ===
+${gameData.lastAutoMixDecision ? `
+Decisión: ${gameData.lastAutoMixDecision.direction} (${gameData.lastAutoMixDecision.timestamp})
+Resultado: ${gameData.lastAutoMixDecision.result || 'PENDING'}
+Votos: ${gameData.lastAutoMixDecision.votes.bullish} BULL vs ${gameData.lastAutoMixDecision.votes.bearish} BEAR
+Señales Clave:
+- Mayoría: ${gameData.lastAutoMixDecision.signals.majority || 'N/A'}
+- RSI: ${gameData.lastAutoMixDecision.signals.rsi || 'N/A'}
+- MACD: ${gameData.lastAutoMixDecision.signals.macd || 'N/A'}
+- Valle: ${gameData.lastAutoMixDecision.signals.valley || 'N/A'}
+- Volumen: ${gameData.lastAutoMixDecision.signals.volume || 'N/A'}
+- Whale: ${gameData.lastAutoMixDecision.signals.whale || 'N/A'}
+- Fibonacci: ${gameData.lastAutoMixDecision.signals.fibonacci?.vote || 'N/A'}
+- Tendencia: ${gameData.lastAutoMixDecision.signals.trend || 'N/A'}
+${gameData.lastAutoMixDecision.wasInverted ? '⚠️ DECISIÓN INVERTIDA por historial negativo' : '✅ Decisión directa'}
+Apuestas consecutivas: ${gameData.lastAutoMixDecision.consecutiveBets}
+` : 'Sin decisiones AutoMix recientes'}
 
 === INSTRUCCIONES PARA AUTOMIX ===
 - Habla directamente con ${currentUser || 'el usuario'} de forma personal y cercana

@@ -46,6 +46,13 @@ FORMATO DE RESPUESTA OBLIGATORIO - MODO VISUAL:
 🎲 PRÓXIMO: [emoji] [predicción corta]
 💡 CONSEJO: [emoji] [acción recomendada]
 
+VARIACIÓN OBLIGATORIA:
+- CAMBIA los emojis en cada respuesta (usa 📊📈⚡🎯🔥💰🚀⭐🎲💡🔍⚠️)
+- VARÍA las palabras (subida/alza/rally, bajada/caída/corrección)
+- ALTERNA el enfoque (técnico/emocional/estratégico)
+- USA sinónimos diferentes cada vez
+- NUNCA repitas la misma estructura exacta
+
 IMPORTANTE - LÓGICA DEL JUEGO:
 - BULLISH gana si vela cierra ARRIBA del precio de apertura (close > open)
 - BEARISH gana si vela cierra ABAJO del precio de apertura (close < open)
@@ -73,8 +80,9 @@ Ejemplo:
 ⚡ SEÑALES: 🔴 RSI:72 🟡 MACD:neutro
 🎲 PRÓXIMO: ⬇️ Sigue bajando
 💡 CONSEJO: 🚀 Mantén posición
+🤖 AUTOMIX: 8 señales BEAR vs 4 BULL → Decidió BEAR por mayoría
 
-SIN texto adicional, SOLO la estructura con emojis.`
+PUEDES agregar explicaciones breves sobre AutoMix y sus decisiones después de la estructura principal.`
         };
       }
       return msg;
@@ -83,8 +91,10 @@ SIN texto adicional, SOLO la estructura con emojis.`
     const requestBody = {
       model: model || 'gpt-4o-mini',
       messages: modifiedMessages,
-      max_tokens: 150, // Reducido para respuestas más cortas
-      temperature: 0.7
+      max_tokens: 250, // Reducido para respuestas más cortas
+      temperature: 0.9, // Aumentar creatividad para respuestas más variadas
+      presence_penalty: 0.6, // Penalizar repetición de contenido
+      frequency_penalty: 0.8 // Penalizar repetición de palabras
     };
     
     console.log('🔍 Enviando a OpenAI:', {
