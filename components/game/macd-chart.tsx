@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import type { Candle } from "@/types/game";
 import { calculateADX } from "@/utils/adx";
+import { useDevice } from "@/context/device-mode-context";
 
 // Utilidad para calcular el MACD
 function calculateMACD(closes: number[], fast = 12, slow = 26, signal = 9) {
@@ -35,12 +36,14 @@ interface MacdChartProps {
 }
 
 export default function MacdChart({ candles, viewState, startIndex: externalStartIndex, candlesToShow: externalCandlesToShow, height = 180, showCrossCircles = true }: MacdChartProps & { height?: number, showCrossCircles?: boolean }) {
+  const { isMobile } = useDevice();
+  
   // Extraer precios de cierre
   const closes = useMemo(() => candles.map(c => c.close), [candles]);
   const { macd, signal, histogram } = useMemo(() => calculateMACD(closes), [closes]);
 
-  // Renderizado simple SVG
-  const chartWidth = 1200;
+  // Renderizado simple SVG - ajustar ancho para móvil
+  const chartWidth = isMobile ? 800 : 1200;
   const chartHeight = height;
 
   // Sincronizar pan/zoom con el gráfico principal
@@ -149,23 +152,24 @@ const histPoints = histSlice;
           // RSI
           const rsiVal = rsiValues.length > 0 ? rsiValues[rsiValues.length-1].toFixed(2) : '--';
           let y = chartHeight - 38;
-          const dy = 12;
+          const dy = isMobile ? 10 : 12;
+          const fontSize = isMobile ? "8" : "10";
           return (
             <g fontFamily="inherit">
-              <text x="2" y={y} fill="#a259ff" fontSize="10" fontWeight="bold">
+              <text x="2" y={y} fill="#a259ff" fontSize={fontSize} fontWeight="bold">
                 MACD: <tspan fill="#fff" fontWeight="normal">{macdVal}</tspan>
               </text>
-              <text x="2" y={y+=dy} fill="#FFD600" fontSize="10" fontWeight="bold">
+              <text x="2" y={y+=dy} fill="#FFD600" fontSize={fontSize} fontWeight="bold">
                 Signal: <tspan fill="#fff" fontWeight="normal">{signalVal}</tspan>
               </text>
-              <text x="2" y={y+=dy} fontSize="10" fontWeight="bold">
+              <text x="2" y={y+=dy} fontSize={fontSize} fontWeight="bold">
                 <tspan fill="#22c55e">A</tspan>
                 <tspan fill="#ef4444">D</tspan>
                 <tspan fill="#22c55e">X</tspan>
                 <tspan fill="#fff">: </tspan>
                 <tspan fill="#fff" fontWeight="normal">{adxVal}</tspan>
               </text>
-              <text x="2" y={y+=dy} fill="#2196f3" fontSize="10" fontWeight="bold">
+              <text x="2" y={y+=dy} fill="#2196f3" fontSize={fontSize} fontWeight="bold">
                 RSI: <tspan fill="#fff" fontWeight="normal">{rsiVal}</tspan>
               </text>
             </g>
@@ -288,7 +292,7 @@ const histPoints = histSlice;
            const yCurr = chartHeight / 2 - (currMacd / maxAbs) * (chartHeight / 2 - 10);
            const x = xPrev + t * (xCurr - xPrev);
            const y = yPrev + t * (yCurr - yPrev);
-           const r = 6;
+           const r = isMobile ? 4 : 6;
            // SVG: dos semicircunferencias con path
            return (
              <g key={i+"-cross"}>
@@ -296,13 +300,13 @@ const histPoints = histSlice;
                  d={`M ${x - r},${y} a${r},${r} 0 1,1 ${2*r},0`}
                  fill="none"
                  stroke="#a259ff"
-                 strokeWidth={2}
+                 strokeWidth={isMobile ? 1.5 : 2}
                />
                <path
                  d={`M ${x + r},${y} a${r},${r} 0 1,1 -${2*r},0`}
                  fill="none"
                  stroke="#FFD600"
-                 strokeWidth={2}
+                 strokeWidth={isMobile ? 1.5 : 2}
                />
              </g>
            );

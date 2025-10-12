@@ -132,6 +132,7 @@ import CountdownFlipTimer from "@/components/game/CountdownFlipTimer"
 import BetHistory from "@/components/game/bet-history"
 import WhaleTradesLive from "@/components/game/whale-trades-live";
 import UserStats from "@/components/game/user-stats"
+import MobileStats from "@/components/game/mobile-stats"
 // import AchievementNotification from "@/components/game/achievement-notification";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -248,13 +249,12 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
   if (priceStr === '--' || openStr === '--') {
     return (
       <span
-        className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
+        className={`font-extrabold ${isMobile ? 'text-xl' : 'text-2xl sm:text-[4rem] md:text-[5rem]'} ${isMobile ? 'ml-0' : 'ml-2'}`}
         style={{
           color: "white",
-          minWidth: '230px',
-          textAlign: 'right',
+          minWidth: isMobile ? '150px' : '230px',
+          textAlign: isMobile ? 'center' : 'right',
           display: 'inline-block',
-          fontSize: isMobile ? '2rem' : undefined
         }}
       >
         {priceStr}
@@ -263,7 +263,14 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
   }
 
   return (
-    <span style={{ position: 'relative', display: 'inline-block', minWidth: '230px', textAlign: 'right', fontSize: isMobile ? '2rem' : undefined, whiteSpace: 'nowrap', lineHeight: 1.12 }}>
+    <span style={{ 
+      position: 'relative', 
+      display: 'inline-block', 
+      minWidth: isMobile ? '150px' : '230px', 
+      textAlign: isMobile ? 'center' : 'right', 
+      whiteSpace: 'nowrap', 
+      lineHeight: 1.12 
+    }}>
       {/* Glow background */}
       <span
         aria-hidden="true"
@@ -275,7 +282,7 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
           width: '90%',
           height: '75%',
           borderRadius: '30%',
-          filter: 'blur(22px)',
+          filter: isMobile ? 'blur(8px)' : 'blur(22px)',
           opacity: color === 'white' ? 0.33 : 0.38,
           background: color === 'white' ? '#fff' : color === upColor ? '#00FF85' : color === downColor ? '#FF2222' : '#888',
           zIndex: 0,
@@ -284,7 +291,7 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
       />
       {/* Price text */}
       <span
-        className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold ml-2"
+        className={`font-extrabold ${isMobile ? 'text-xl' : 'text-2xl sm:text-[4rem] md:text-[5rem]'} ${isMobile ? 'ml-0' : 'ml-2'}`}
         style={{
           color: 'white',
           position: 'relative',
@@ -1207,8 +1214,8 @@ useEffect(() => {
             isMobile
               ? {
                   width: '100vw',
-                  height: '100dvh', // Usa 100dvh para evitar problemas con barras del navegador móvil
-                  minHeight: 0,
+                  height: '200vh', // Aumentado a 200vh para dar más espacio en móvil
+                  minHeight: '200vh',
                   margin: 0,
                   overflow: 'auto',
                 }
@@ -1232,17 +1239,40 @@ useEffect(() => {
         {/* SoundManager flotante */}
         <div className="fixed bottom-1 right-4 z-50">
         </div>
-           <header className="flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full" style={{ background: 'none' }}>
-  <div className="flex items-center w-full justify-between relative">
+           <header className={`flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full ${isMobile ? 'mobile-header' : ''}`} style={{ 
+             background: 'none',
+             height: isMobile ? '120px' : 'auto',
+             position: 'relative'
+           }}>
+  <div className={`flex items-center w-full justify-between relative ${isMobile ? 'mobile-header-content' : ''}`}>
   {/* Título a la izquierda */}
-  <div className="flex items-center relative">
-    <h1 className="text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8" data-component-name="GameScreen" style={{ transform: 'scale(1.7)', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', textShadow: '0 0 12px #FFD60088' }}>Candle Rush 2</h1>
+  <div className={`flex items-center relative ${isMobile ? 'mobile-title' : ''}`}>
+    <h1 className={`text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8 ${isMobile ? 'mobile-title-text' : ''}`} data-component-name="GameScreen" style={{ 
+      transform: isMobile ? 'scale(1.2)' : 'scale(1.7)', 
+      lineHeight: '1', 
+      whiteSpace: 'nowrap', 
+      overflow: 'hidden', 
+      textOverflow: 'ellipsis', 
+      maxWidth: '100%', 
+      textShadow: '0 0 12px #FFD60088',
+      marginLeft: isMobile ? '4px' : undefined
+    }}>Candle Rush 2</h1>
     <a
       href="https://x.com/CarlosFreire0"
       target="_blank"
       rel="noopener noreferrer"
-      className="absolute left-8 text-xs font-semibold select-none"
-      style={{ color: '#FFD600', textShadow: '0 0 8px #FFD60088', letterSpacing: '0.06em', lineHeight: '1', top: '2.8em', cursor: 'pointer', textDecoration: 'none' }}
+      className={`absolute left-8 text-xs font-semibold select-none ${isMobile ? 'mobile-author' : ''}`}
+      style={{ 
+        color: '#FFD600', 
+        textShadow: '0 0 8px #FFD60088', 
+        letterSpacing: '0.06em', 
+        lineHeight: '1', 
+        top: isMobile ? '1.8em' : '2.8em', 
+        cursor: 'pointer', 
+        textDecoration: 'none',
+        left: isMobile ? '4px' : undefined,
+        fontSize: isMobile ? '0.6rem' : undefined
+      }}
       onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
       onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
       aria-label="Twitter de Carlos Freire"
@@ -1252,87 +1282,182 @@ useEffect(() => {
   </div>
   {/* Nav centrado absolutamente */}
   {/* Relojes centrados y botón ruleta a la derecha de los relojes */}
-  <div className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3 flex flex-row items-center gap-4 z-10">
+  <div className={`${isMobile ? 'mobile-clocks-container' : 'absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3'} flex ${isMobile ? 'flex-col' : 'flex-row'} items-center gap-4 z-10`} style={isMobile ? {
+    position: 'absolute',
+    top: '45%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    gap: '6px',
+    width: '95%',
+    maxWidth: '320px'
+  } : {}}>
   {/* Nuevo botón al principio del grupo de relojes */}
   <button
     onClick={() => setShowBlockInfoModal(true)}
-    className="mr-4 flex items-center justify-center rounded-full border-2 border-yellow-400 bg-black hover:bg-yellow-400/20 transition p-1 shadow focus:outline-none focus:ring-2 focus:ring-yellow-500"
-    style={{ width: 32, height: 32, minWidth: 32, minHeight: 32 }}
+    className={`${isMobile ? 'mobile-block-button' : 'mr-4'} flex items-center justify-center rounded-full border-2 border-yellow-400 bg-black hover:bg-yellow-400/20 transition p-1 shadow focus:outline-none focus:ring-2 focus:ring-yellow-500`}
+    style={{ 
+      width: isMobile ? 20 : 32, 
+      height: isMobile ? 20 : 32, 
+      minWidth: isMobile ? 20 : 32, 
+      minHeight: isMobile ? 20 : 32,
+      marginRight: isMobile ? 0 : undefined
+    }}
     title="Últimos bloques Bitcoin"
     aria-label="Últimos bloques Bitcoin"
     tabIndex={0}
   >
     {/* Icono de estrella */}
-    <GiMiner className="w-6 h-6 text-yellow-400" />
+    <GiMiner className={`${isMobile ? 'w-3 h-3' : 'w-6 h-6'} text-yellow-400`} />
   </button>
-  <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
-    <span className="text-xs font-semibold text-[#FFD600] mb-0.5" style={{letterSpacing: '0.01em'}}>Hora local</span>
-    <span className="text-3xl sm:text-4xl font-extrabold text-[#FFD600] select-none leading-tight" style={{ minWidth: '180px', width: '180px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>{systemTime}</span>
+  
+  {/* Contenedor de relojes optimizado para móvil */}
+  <div className={`${isMobile ? 'mobile-clocks-grid' : 'flex flex-row items-center gap-4'}`} style={isMobile ? {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '3px',
+    width: '100%',
+    maxWidth: '260px'
+  } : {}}>
+    <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
+      <span className={`text-xs font-semibold text-[#FFD600] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
+        letterSpacing: '0.01em',
+        fontSize: isMobile ? '0.5rem' : undefined
+      }}>Hora local</span>
+      <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold text-[#FFD600] select-none leading-tight`} style={{ 
+        minWidth: isMobile ? 'auto' : '180px', 
+        width: isMobile ? 'auto' : '180px', 
+        display: 'inline-block', 
+        letterSpacing: '0.02em', 
+        textShadow: '0 0 12px #FFD60088', 
+        textAlign: 'center', 
+        fontSize: isMobile ? '0.75rem' : '2rem', 
+        fontVariantNumeric: 'tabular-nums' 
+      }}>{systemTime}</span>
+    </div>
+    
+    <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
+      <span className={`text-xs font-semibold text-[#ef4444] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
+        letterSpacing: '0.01em', 
+        textShadow: '0 0 12px #FFD60088',
+        fontSize: isMobile ? '0.5rem' : undefined
+      }}>Hora Shanghai</span>
+      <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold select-none leading-tight`} style={{ 
+        minWidth: isMobile ? 'auto' : '180px', 
+        width: isMobile ? 'auto' : '180px', 
+        display: 'inline-block', 
+        letterSpacing: '0.02em', 
+        color: '#ef4444', 
+        textShadow: '0 0 12px #FFD60088', 
+        textAlign: 'center', 
+        fontSize: isMobile ? '0.75rem' : '2rem', 
+        fontVariantNumeric: 'tabular-nums' 
+      }}>{shanghaiTime}</span>
+    </div>
+    
+    <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
+      <span className={`text-xs font-semibold text-[#60aaff] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
+        letterSpacing: '0.01em', 
+        textShadow: '0 0 12px #FFD60088',
+        fontSize: isMobile ? '0.6rem' : undefined
+      }}>Hora Chicago</span>
+      <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold select-none leading-tight`} style={{ 
+        minWidth: isMobile ? 'auto' : '180px', 
+        width: isMobile ? 'auto' : '180px', 
+        display: 'inline-block', 
+        letterSpacing: '0.02em', 
+        color: '#60aaff', 
+        textShadow: '0 0 12px #FFD60088', 
+        textAlign: 'center', 
+        fontSize: isMobile ? '0.9rem' : '2rem', 
+        fontVariantNumeric: 'tabular-nums' 
+      }}>{chicagoTime}</span>
+    </div>
+    
+    <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
+      <span className={`text-xs font-semibold text-[#a259ff] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
+        letterSpacing: '0.01em',
+        fontSize: isMobile ? '0.6rem' : undefined
+      }}>Cierre diario</span>
+      <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold text-[#a259ff] select-none leading-tight`} style={{ 
+        minWidth: isMobile ? 'auto' : '180px', 
+        width: isMobile ? 'auto' : '180px', 
+        display: 'inline-block', 
+        letterSpacing: '0.02em', 
+        textShadow: '0 0 12px #FFD60088', 
+        textAlign: 'center', 
+        fontSize: isMobile ? '0.9rem' : '2rem', 
+        fontVariantNumeric: 'tabular-nums' 
+      }}>{dailyCloseCountdown}</span>
+    </div>
   </div>
-    <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
-      <span className="text-xs font-semibold text-[#ef4444] mb-0.5" style={{letterSpacing: '0.01em', textShadow: '0 0 12px #FFD60088'}}>Hora Shanghai</span>
-  <span className="text-3xl sm:text-4xl font-extrabold select-none leading-tight" style={{ minWidth: '180px', width: '180px', display: 'inline-block', letterSpacing: '0.02em', color: '#ef4444', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>{shanghaiTime}</span>
-    </div>
-    <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
-      <span className="text-xs font-semibold text-[#60aaff] mb-0.5" style={{letterSpacing: '0.01em', textShadow: '0 0 12px #FFD60088'}}>Hora Chicago</span>
-  <span className="text-3xl sm:text-4xl font-extrabold select-none leading-tight" style={{ minWidth: '180px', width: '180px', display: 'inline-block', letterSpacing: '0.02em', color: '#60aaff', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>{chicagoTime}</span>
-    </div>
-    <div className="flex flex-col items-center" style={{ minWidth: '110px' }}>
-      <span className="text-xs font-semibold text-[#a259ff] mb-0.5" style={{letterSpacing: '0.01em'}}>Cierre diario</span>
-      <span className="text-3xl sm:text-4xl font-extrabold text-[#a259ff] select-none leading-tight" style={{ minWidth: '180px', width: '180px', display: 'inline-block', letterSpacing: '0.02em', textShadow: '0 0 12px #FFD60088', textAlign: 'center', fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>{dailyCloseCountdown}</span>
-    </div>
-    {/* Botón ruleta */}
-    <div className="ml-4 flex items-center">
-
-      {/* Modal info bloques Bitcoin */}
-      <BlockInfoModal open={showBlockInfoModal} onClose={() => setShowBlockInfoModal(false)} />
-      <RouletteButton onClick={() => setRouletteOpen(true)} />
-    </div>
+  
+  {/* Botón ruleta */}
+  <div className={`${isMobile ? 'mobile-roulette' : 'ml-4'} flex items-center`} style={isMobile ? {
+    position: 'absolute',
+    top: '10px',
+    right: '10px'
+  } : {}}>
+    {/* Modal info bloques Bitcoin */}
+    <BlockInfoModal open={showBlockInfoModal} onClose={() => setShowBlockInfoModal(false)} />
+    <RouletteButton onClick={() => setRouletteOpen(true)} />
   </div>
+  </div>
+  
   {/* Nav a la derecha - MOVIDO ARRIBA para evitar conflicto con usuario */}
-  <div className="absolute top-0 right-0 flex items-center gap-2" style={{ marginTop: '8px', marginRight: '120px' }}>
+  <div className={`${isMobile ? 'mobile-nav' : 'absolute top-0 right-0'} flex items-center gap-2`} style={isMobile ? {
+    position: 'absolute',
+    bottom: '8px',
+    right: '8px',
+    flexDirection: 'row',
+    gap: '3px'
+  } : { 
+    marginTop: '8px', 
+    marginRight: '120px' 
+  }}>
     <button
-      className="font-semibold px-1.5 py-0.5 rounded-md transition border border-blue-400 bg-blue-900/70 text-blue-200 shadow-blue-400 shadow-sm hover:bg-blue-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+      className={`font-semibold px-1.5 py-0.5 rounded-md transition border border-blue-400 bg-blue-900/70 text-blue-200 shadow-blue-400 shadow-sm hover:bg-blue-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 ${isMobile ? 'text-xs' : 'text-sm'}`}
       style={{
         textShadow: '0 0 4px #60A5FA',
         boxShadow: '0 0 6px #60A5FA44, 0 0 2px #60A5FA22',
         borderColor: '#60A5FA',
         borderWidth: '1px',
-        padding: '2px 10px',
-        fontSize: '0.98em',
+        padding: isMobile ? '1px 4px' : '2px 10px',
+        fontSize: isMobile ? '0.6em' : '0.98em',
       }}
       onClick={() => window.location.href = '/menu'}
     >
       Menú
     </button>
     <button
-      className="font-semibold px-1.5 py-0.5 rounded-md transition border border-[#FFD600] bg-yellow-400 text-black shadow-yellow-400 shadow-sm hover:bg-yellow-300 hover:text-black focus:outline-none focus:ring-2 focus:ring-yellow-300 text-sm"
+      className={`font-semibold px-1.5 py-0.5 rounded-md transition border border-[#FFD600] bg-yellow-400 text-black shadow-yellow-400 shadow-sm hover:bg-yellow-300 hover:text-black focus:outline-none focus:ring-2 focus:ring-yellow-300 ${isMobile ? 'text-xs' : 'text-sm'}`}
       style={{
         textShadow: '0 0 8px #FFD600, 0 0 2px #FFD600',
         boxShadow: '0 0 6px #FFD600, 0 0 1px #FFD600',
         borderColor: '#FFD600',
         borderWidth: '0.5px',
-        padding: '2px 8px',
-        fontSize: '0.95em',
+        padding: isMobile ? '1px 4px' : '2px 8px',
+        fontSize: isMobile ? '0.6em' : '0.95em',
       }}
       onClick={() => window.location.href = '/profile'}
     >
       Perfil
     </button>
-    <button
-      className="font-semibold px-1.5 py-0.5 rounded-md transition border border-green-400 bg-green-900/70 text-green-200 shadow-green-400 shadow-sm hover:bg-green-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
-      style={{
-        textShadow: '0 0 4px #4ADE80',
-        boxShadow: '0 0 6px #4ADE8044, 0 0 2px #4ADE8022',
-        borderColor: '#4ADE80',
-        borderWidth: '1px',
-        padding: '2px 10px',
-        fontSize: '0.98em',
-      }}
-      onClick={() => window.location.href = '/how-to-play'}
-    >
-      Cómo jugar
-    </button>
+    {!isMobile && (
+      <button
+        className="font-semibold px-1.5 py-0.5 rounded-md transition border border-green-400 bg-green-900/70 text-green-200 shadow-green-400 shadow-sm hover:bg-green-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
+        style={{
+          textShadow: '0 0 4px #4ADE80',
+          boxShadow: '0 0 6px #4ADE8044, 0 0 2px #4ADE8022',
+          borderColor: '#4ADE80',
+          borderWidth: '1px',
+          padding: '2px 10px',
+          fontSize: '0.98em',
+        }}
+        onClick={() => window.location.href = '/how-to-play'}
+      >
+        Cómo jugar
+      </button>
+    )}
   </div>
 </div>
   <div className="flex items-center gap-2">
@@ -1350,18 +1475,18 @@ useEffect(() => {
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-3 flex-grow h-full min-h-[0] lg:h-[calc(100vh-120px)] header-container">
+          <div className={`${isMobile ? 'flex flex-col' : 'grid grid-cols-1 lg:grid-cols-5'} gap-2 sm:gap-3 flex-grow h-full min-h-[0] ${isMobile ? 'h-auto' : 'lg:h-[calc(100vh-120px)]'} header-container`}>
             {mobileStyles}
             {/* Ajuste de altura para móvil */}
             <style jsx>{`
               @media (max-width: 768px) {
                 .grid {
-                  height: 100vh;
+                  height: auto;
                   padding-bottom: env(safe-area-inset-bottom);
                 }
               }
             `}</style>
-            <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:h-full header-content">
+            <div className={`${isMobile ? 'order-1' : 'lg:col-span-4'} flex flex-col gap-4 h-full ${isMobile ? 'h-auto' : 'lg:h-full'} header-content`}>
               {/* Tarjeta principal con gráfico y controles */}
               <Card className="bg-black" style={{ 
                 width: isMobile ? '100%' : 'calc(101% + 26px)',
@@ -1381,15 +1506,15 @@ useEffect(() => {
                     <CardTitle className="flex flex-col w-full">
                       <div className="flex flex-row items-start justify-between w-full gap-6">
                         {/* Precio BTC grande a la izquierda */}
-                        <div className="flex items-center gap-4">
+                        <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-4`}>
                           <BarChart3 className="h-5 w-5" />
                           {/* Precio BTC grande con color dinámico según cambio cada 5s */}
 {["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol) ? (
-  <span className="text-2xl sm:text-[4rem] md:text-[5rem] font-extrabold text-white ml-2" style={{
-    minWidth: '230px',
-    textAlign: 'right',
+  <span className={`${isMobile ? 'text-2xl' : 'text-2xl sm:text-[4rem] md:text-[5rem]'} font-extrabold text-white ${isMobile ? 'ml-0' : 'ml-2'}`} style={{
+    minWidth: isMobile ? 'auto' : '230px',
+    textAlign: isMobile ? 'left' : 'right',
     display: 'inline-block',
-    fontSize: isMobile ? '2rem' : undefined
+    fontSize: isMobile ? '1.8rem' : undefined
   }}>
     {stockLoading ? 'Cargando...' : (stockPrice !== null ? stockPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--')}
   </span>
@@ -1405,15 +1530,15 @@ useEffect(() => {
   <AaplMarketStatus />
 )}
 {/* Dollar difference counter below price */}
-<div className="flex items-center ml-130 sm:ml-[231px] w-full sm:w-auto justify-center sm:justify-start">
+<div className={`flex items-center ${isMobile ? 'ml-0 mt-0.5 justify-center' : 'ml-130 sm:ml-[231px]'} w-full sm:w-auto justify-center sm:justify-start`}>
   <DollarDiffCounter currentCandle={currentCandle} realtimePrice={currentCandle?.close ?? null} />
 </div>
-                          <span className="text-xl text-[#FFD600] ml-2">({timeframe})</span>
+                          <span className={`${isMobile ? 'text-base' : 'text-xl'} text-[#FFD600] ${isMobile ? 'ml-0' : 'ml-2'}`}>({timeframe})</span>
 {/* Reloj grande en amarillo */}
 
                         </div>
                         {/* Estado de apuestas a la derecha */}
-                        <div className="flex flex-col items-end justify-center text-right min-w-[220px]">
+                        <div className={`flex flex-col items-end justify-center text-right ${isMobile ? 'min-w-[180px]' : 'min-w-[220px]'}`}>
 
                           {/* Solo en desktop: mantener arriba */}
 <span style={{ position: 'relative', display: 'inline-block' }}>
@@ -1437,21 +1562,25 @@ useEffect(() => {
   />
   {/* Text label */}
   <span
-    className="hidden sm:inline text-4xl font-extrabold uppercase tracking-wide drop-shadow-lg mb-1"
+    className={`${isMobile ? 'text-lg' : 'hidden sm:inline text-4xl'} font-extrabold uppercase tracking-wide drop-shadow-lg mb-1`}
     style={{ color: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222', position: 'relative', zIndex: 1 }}
   >
-    {gamePhase === 'BETTING' ? 'Apuestas Abiertas ✅' : 'Apuestas Cerradas'}
+    {gamePhase === 'BETTING' ? (isMobile ? 'Abierto ✅' : 'Apuestas Abiertas ✅') : (isMobile ? 'Cerrado' : 'Apuestas Cerradas')}
   </span>
 </span>
 <button
-  className="hidden sm:inline mt-0 mb-1 self-end rounded-full p-[0.2rem] bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black"
-  style={{ fontSize: 0, outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none', transform: 'scale(0.8)' }}
+  className={`${isMobile ? 'inline' : 'hidden sm:inline'} mt-0 mb-1 self-end rounded-full p-[0.2rem] bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black`}
+  style={{ 
+    fontSize: 0, 
+    outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none', 
+    transform: isMobile ? 'scale(0.6)' : 'scale(0.8)' 
+  }}
   onClick={() => setShowVolumeProfile(v => !v)}
   title="Mostrar/ocultar perfil de volumen"
   type="button"
   aria-label="Mostrar/ocultar perfil de volumen"
 >
-  <BarChart3 className="w-4 h-4" />
+  <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
 </button>
                         </div>
                       </div>
@@ -1481,7 +1610,7 @@ useEffect(() => {
     <CountdownFlipTimer
   ms={gamePhase === 'BETTING' ? timeLeft : timeUntilNextCandle}
   color={color}
-  className={isMobile ? 'text-[2rem]' : ''}
+  className={isMobile ? 'text-[2.5rem]' : ''}
 />
   );
 })()}
@@ -1494,15 +1623,23 @@ useEffect(() => {
                 <CardContent>
                   <div style={{ 
                     position: 'relative',
-                    minHeight: isMobile ? '80vh' : 430,
-                    height: isMobile ? '80vh' : 'auto'
+                    minHeight: isMobile ? '70vh' : 430,
+                    height: isMobile ? '70vh' : 'auto'
                   }}>
   {/* Fondo portada detrás del chart con opacidad y blur */}
   <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
-  <CardContent className="relative p-0 bg-black rounded-b-xl overflow-hidden" style={{ minHeight: 430, width: 'calc(100% + 16px)', maxWidth: 'none', position: 'relative', padding: 0, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 }}>
+  <CardContent className="relative p-0 bg-black rounded-b-xl overflow-hidden" style={{ 
+    minHeight: isMobile ? '70vh' : 430, 
+    width: 'calc(100% + 16px)', 
+    maxWidth: 'none', 
+    position: 'relative', 
+    padding: 0, 
+    borderBottomLeftRadius: 8, 
+    borderBottomRightRadius: 8 
+  }}>
     <div className="relative" style={{ 
       width: '100%', 
-      height: isMobile ? '80vh' : 430,
+      height: isMobile ? '70vh' : 430,
       minWidth: 0
     }}>
       <CandlestickChart
@@ -1520,7 +1657,7 @@ useEffect(() => {
         <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', width: 16, background: 'black', pointerEvents: 'none', zIndex: 21 }}>
           <VolumeProfile
             candles={candles}
-            chartHeight={420}
+            chartHeight={isMobile ? window.innerHeight * 0.7 : 420}
             barWidth={16}
             priceMin={verticalScale ? verticalScale : 0}
             priceMax={verticalScale ? verticalScale : 1}
@@ -1528,7 +1665,7 @@ useEffect(() => {
         </div>
       )}
     </div>
-    <div className="relative w-full h-[180px] mt-2">
+    <div className={`relative w-full ${isMobile ? 'h-[120px]' : 'h-[180px]'} mt-2`}>
       <MacdChart
         candles={allCandles}
         viewState={{
@@ -1537,37 +1674,37 @@ useEffect(() => {
         }}
         startIndex={startIndex}
         candlesToShow={candlesToShow}
-        height={isMobile ? 80 : 180}
+        height={isMobile ? 120 : 180}
       />
     </div>
   </CardContent>
 </div>
 
                   {/* Controles justo debajo del gráfico */}
-                  <div className="mt-2 bg-black/50 rounded-lg p-2" style={{borderRadius: '0 0 10px 10px'}}>
+                  <div className={`${isMobile ? 'mt-1' : 'mt-2'} bg-black/50 rounded-lg ${isMobile ? 'p-1' : 'p-2'}`} style={{borderRadius: '0 0 10px 10px'}}>
                     <div className="flex flex-col md:flex-row gap-2 items-center justify-between">
                       {/* Bloque de información de fase eliminado (ahora está arriba) */}
 
                       {/* Selector de monto y botones de apuesta */}
                       <div className="flex flex-col items-center gap-4 w-full">
                         {/* Joystick-style console: all controls grouped */}
-<div className="w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-[3px] border-[#FFD600] rounded-lg shadow-lg p-1 sm:p-2 gap-1 sm:gap-2 mt-0 overflow-x-auto z-20" data-component-name="GameScreen">
+<div className={`w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-[3px] border-[#FFD600] rounded-lg shadow-lg ${isMobile ? 'p-1' : 'p-1 sm:p-2'} gap-1 sm:gap-2 mt-0 overflow-x-auto z-20`} data-component-name="GameScreen">
   {/* SOLO EN MOVIL: Estado de apuestas y botón volumen */}
-  <div className="w-full flex sm:hidden flex-row justify-between items-center mb-2">
-    <span className={`text-xs font-extrabold uppercase tracking-wide drop-shadow-lg ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
+  <div className={`w-full flex sm:hidden flex-row justify-between items-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
+    <span className={`${isMobile ? 'text-xs' : 'text-xs'} font-extrabold uppercase tracking-wide drop-shadow-lg ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
     <button
-      className="rounded-full p-0.5 bg-yellow-400 hover:bg-yellow-300 shadow border-2 border-yellow-300 transition text-black ml-2"
+      className={`rounded-full ${isMobile ? 'p-0.5' : 'p-0.5'} bg-yellow-400 hover:bg-yellow-300 shadow border-2 border-yellow-300 transition text-black ml-2`}
       style={{ fontSize: 0, outline: showVolumeProfile ? '2px solid #FFD600' : 'none' }}
       onClick={() => setShowVolumeProfile(v => !v)}
       title="Mostrar/ocultar perfil de volumen"
       type="button"
       aria-label="Mostrar/ocultar perfil de volumen"
     >
-      <BarChart3 className="w-4 h-4" />
+      <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
     </button>
   </div>
                           {/* Symbol and Interval selectors */}
-                          <div className="flex w-full justify-center items-center gap-4 py-1 flex-wrap">
+                          <div className={`flex w-full justify-center items-center ${isMobile ? 'gap-2' : 'gap-4'} py-1 flex-wrap`}>
                             <GameControls
                               onSymbolChange={changeSymbol}
                               onTimeframeChange={changeTimeframe}
@@ -1580,18 +1717,18 @@ useEffect(() => {
                           {/* Bet amount controls */}
                           <div className="flex flex-col items-center w-full gap-2">
 
-                            <div className="flex justify-between w-full text-[#FFD600] text-xs font-bold controls-container">
+                            <div className={`flex justify-between w-full text-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} font-bold controls-container`}>
                               <span>Mín: 1</span>
-                              <span>Apostar: <span className="text-white text-lg">{betAmount}</span></span>
+                              <span>Apostar: <span className={`text-white ${isMobile ? 'text-base' : 'text-lg'}`}>{betAmount}</span></span>
                               <span>Máx: {Math.floor(userBalance)}</span>
                             </div>
-                            <div className="flex gap-2 w-full justify-center controls-container controls-row">
+                            <div className={`flex ${isMobile ? 'gap-1' : 'gap-2'} w-full justify-center controls-container controls-row`}>
                               {/* Selector de apalancamiento */}
-                              <div className="flex flex-col items-center mx-2 controls-select">
-                                <label htmlFor="leverage" className="text-[#FFD600] text-xs font-bold mb-1">Apalancamiento</label>
+                              <div className={`flex flex-col items-center ${isMobile ? 'mx-1' : 'mx-2'} controls-select`}>
+                                <label htmlFor="leverage" className={`text-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} font-bold mb-1`}>Apalancamiento</label>
                                 <select
   id="leverage"
-  className="rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-sm sm:text-lg px-1 py-1 sm:px-2 sm:py-1 focus:ring-[#FFD600] focus:border-[#FFD600] outline-none min-w-[40px] sm:min-w-[70px]"
+  className={`rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold ${isMobile ? 'text-sm' : 'text-sm sm:text-lg'} ${isMobile ? 'px-1 py-1' : 'px-1 py-1 sm:px-2 sm:py-1'} focus:ring-[#FFD600] focus:border-[#FFD600] outline-none ${isMobile ? 'min-w-[60px]' : 'min-w-[40px] sm:min-w-[70px]'}`}
   value={leverage}
   onChange={e => { playPulsar(); setLeverage(Number(e.target.value)); }}
 >
@@ -1608,7 +1745,7 @@ useEffect(() => {
                               </div>
 
                               <button
-                                className="controls-button bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
+                                className={`controls-button bg-[#FFD600] text-black font-bold ${isMobile ? 'px-2 py-1' : 'px-3 py-1'} rounded-full shadow hover:bg-yellow-400 transition`}
                                 onClick={() => { playPulsar(); setBetAmount((prev) => Math.max(1, Math.floor(prev - 1))); }}
                                 disabled={betAmount <= 1}
                               >
@@ -1637,14 +1774,14 @@ useEffect(() => {
         pattern="[0-9]*"
       />
                               <button
-                                className="bg-[#FFD600] text-black font-bold px-3 py-1 rounded-full shadow hover:bg-yellow-400 transition"
+                                className={`bg-[#FFD600] text-black font-bold ${isMobile ? 'px-2 py-1' : 'px-3 py-1'} rounded-full shadow hover:bg-yellow-400 transition`}
                                 onClick={() => { playPulsar(); setBetAmount((prev) => Math.min(Math.floor(userBalance), Math.floor(prev + 1))); }}
                                 disabled={betAmount >= Math.floor(userBalance)}
                               >
                                 +1
                               </button>
                               <button
-                                className="controls-button bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition text-sm sm:text-base min-w-[40px] sm:min-w-[80px]"
+                                className={`controls-button bg-[#FFD600] text-black font-bold ${isMobile ? 'px-1 py-1' : 'px-2 py-1'} rounded-full shadow hover:bg-yellow-400 transition ${isMobile ? 'text-xs' : 'text-sm sm:text-base'} ${isMobile ? 'min-w-[50px]' : 'min-w-[40px] sm:min-w-[80px]'}`}
                                 style={{ border: '2px solid #FFD600', marginRight: 6 }}
                                 onClick={() => setBetAmount(Math.max(1, Math.floor(userBalance / 2)))}
                                 disabled={userBalance < 2}
@@ -1653,7 +1790,7 @@ useEffect(() => {
                                 50/50
                               </button>
 <button
-  className="bg-[#FFD600] text-black font-bold px-2 py-1 rounded-full shadow hover:bg-yellow-400 transition text-sm sm:text-base min-w-[20px] sm:min-w-[40px] border-1 border-yellow-400"
+  className={`bg-[#FFD600] text-black font-bold ${isMobile ? 'px-1 py-1' : 'px-2 py-1'} rounded-full shadow hover:bg-yellow-400 transition ${isMobile ? 'text-xs' : 'text-sm sm:text-base'} ${isMobile ? 'min-w-[45px]' : 'min-w-[20px] sm:min-w-[40px]'} border-1 border-yellow-400`}
   style={{ marginRight: 6 }}
   onClick={() => setBetAmount(Math.floor(userBalance))}
   disabled={userBalance < 1}
@@ -1664,10 +1801,12 @@ useEffect(() => {
                             </div>
                             {/* Precio de liquidación estimado */}
                             {leverage && currentCandle && (
-                              <div className="flex items-center justify-center gap-2 w-full mt-1">
-                                <span className="text-sm text-yellow-400 font-bold">Precio de liquidación:</span>
-                                <span className="text-sm text-green-400 font-bold">Long: ${Number(currentCandle.close * (1 - (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)}</span>
-                                <span className="text-sm text-red-400 font-bold">Short: ${Number(currentCandle.close * (1 + (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)}</span>
+                              <div className={`flex items-center justify-center ${isMobile ? 'gap-1' : 'gap-2'} w-full mt-1 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+                                <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-yellow-400 font-bold`}>Precio de liquidación:</span>
+                                <div className={`flex ${isMobile ? 'gap-2' : 'gap-2'}`}>
+                                  <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-green-400 font-bold`}>Long: ${Number(currentCandle.close * (1 - (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)}</span>
+                                  <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-red-400 font-bold`}>Short: ${Number(currentCandle.close * (1 + (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)}</span>
+                                </div>
                               </div>
                             )}
 
@@ -1678,16 +1817,16 @@ useEffect(() => {
                               step={0.01}
                               value={betAmount}
                               onChange={e => setBetAmount(Number(e.target.value))}
-                              className="controls-container w-full h-2 bg-[#FFD600]/30 rounded-lg appearance-none cursor-pointer accent-[#FFD600] mt-2"
+                              className={`controls-container w-full ${isMobile ? 'h-1' : 'h-2'} bg-[#FFD600]/30 rounded-lg appearance-none cursor-pointer accent-[#FFD600] mt-2`}
                               disabled={userBalance < 1 || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1}
                             />
                           </div>
                           {/* Betting buttons */}
-                          <div className="bet-buttons-container flex flex-col gap-2 justify-center w-full mt-2">
+                          <div className={`bet-buttons-container flex flex-col ${isMobile ? 'gap-1' : 'gap-2'} justify-center w-full mt-2`}>
                             {/* Auto betting buttons - Perfectamente centrados con los botones de abajo */}
-                            <div className="grid grid-cols-3 gap-3 w-full" style={{ maxWidth: '420px', margin: '0 auto' }}>
+                            <div className={`grid grid-cols-3 ${isMobile ? 'gap-1' : 'gap-3'} w-full`} style={{ maxWidth: '420px', margin: '0 auto' }}>
   <button
-    className={`px-3 py-1 rounded-xl ${autoBullish ? 'bg-green-500' : 'bg-green-600/40'} hover:bg-green-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
+    className={`${isMobile ? 'px-1 py-1' : 'px-3 py-1'} rounded-xl ${autoBullish ? 'bg-green-500' : 'bg-green-600/40'} hover:bg-green-500 text-white font-bold border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
     onClick={autoMix ? undefined : toggleAutoBullish}
     title="Apuestas automáticas BULL"
     style={{ minWidth: 0 }}
@@ -1696,7 +1835,7 @@ useEffect(() => {
     <span className="font-bold text-[#FFD600]">Automático</span>
   </button>
   <button
-    className={`px-4 py-2 rounded-xl border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center font-bold ${autoMix ? 'ring-4 ring-[#FFD600] ring-opacity-60 ring-offset-2 ring-offset-black animate-pulse' : ''} ${(autoBullish || autoBearish) ? 'opacity-50 cursor-not-allowed' : ''}`}
+    className={`${isMobile ? 'px-2 py-1' : 'px-4 py-2'} rounded-xl border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center font-bold ${autoMix ? 'ring-4 ring-[#FFD600] ring-opacity-60 ring-offset-2 ring-offset-black animate-pulse' : ''} ${(autoBullish || autoBearish) ? 'opacity-50 cursor-not-allowed' : ''}`}
     onClick={(autoBullish || autoBearish) ? undefined : (e) => {
       e.preventDefault();
       console.log('Botón AutoMix clickeado, llamando a toggleAutoMix sin parámetros');
@@ -1719,15 +1858,15 @@ useEffect(() => {
     position: 'relative',
     zIndex: 2,
     fontWeight: 900,
-    fontSize: '1.08em',
+    fontSize: isMobile ? '0.8em' : '1.08em',
     letterSpacing: '0.04em',
     color: '#FFD600',
     textShadow: '0 0 2px #000, 0 0 4px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000',
   }}
->AUTO MIX 🤖</span>
+>{isMobile ? 'AUTO MIX' : 'AUTO MIX 🤖'}</span>
   </button>
   <button
-    className={`px-3 py-1 rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] text-xs shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
+    className={`${isMobile ? 'px-1 py-1' : 'px-3 py-1'} rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
     onClick={autoMix ? undefined : toggleAutoBearish}
     title="Apuestas automáticas BEAR"
     style={{ minWidth: 0 }}
@@ -1738,26 +1877,29 @@ useEffect(() => {
 </div>
                             
                             {/* Regular betting buttons - Usando el mismo grid que los botones automáticos */}
-                            <div className="grid grid-cols-2 gap-4 w-full" style={{ maxWidth: '420px', margin: '0 auto' }}>
+                            <div className={`grid grid-cols-2 ${isMobile ? 'gap-2' : 'gap-4'} w-full`} style={{ maxWidth: '420px', margin: '0 auto' }}>
                               <button
-  className={`px-4 py-2 sm:px-8 sm:py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] text-lg sm:text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''} ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
+  className={`${isMobile ? 'px-2 py-2' : 'px-4 py-2 sm:px-8 sm:py-4'} rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] ${isMobile ? 'text-base' : 'text-lg sm:text-2xl'} shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''} ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
   onClick={autoMix ? undefined : () => handleBullishBet()}
   disabled={autoMix || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
  >
-                                <img src="/bull.png" alt="Bullish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
+                                <img src="/bull.png" alt="Bullish" style={{ width: isMobile ? 24 : 32, height: isMobile ? 24 : 32, objectFit: 'contain', marginRight: 6 }} />
                                 <span className="font-black tracking-widest text-white">BULL</span>
                               </button>
                               <button
-  className={`px-4 py-2 sm:px-8 sm:py-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] text-lg sm:text-2xl shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''} ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
+  className={`${isMobile ? 'px-2 py-2' : 'px-4 py-2 sm:px-8 sm:py-4'} rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] ${isMobile ? 'text-base' : 'text-lg sm:text-2xl'} shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''} ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
   onClick={autoMix ? undefined : () => handleBearishBet()}
   disabled={autoMix || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
  >
-                                <img src="/bear.png" alt="Bearish" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: 6 }} />
+                                <img src="/bear.png" alt="Bearish" style={{ width: isMobile ? 24 : 32, height: isMobile ? 24 : 32, objectFit: 'contain', marginRight: 6 }} />
                                 <span className="font-black tracking-widest text-white">BEAR</span>
                               </button>
                             </div>
                           </div>
                         </div>
+
+                        {/* Mobile Stats - Solo para móvil */}
+                        {isMobile && <MobileStats />}
 
                       </div>
                     </div>
@@ -1770,7 +1912,7 @@ useEffect(() => {
 
             </div>
 
-            <div className="flex flex-col h-full min-h-0 flex-1 lg:h-full m-0 p-0 gap-0">
+            <div className={`${isMobile ? 'order-2 mt-4' : 'lg:col-span-1'} flex flex-col h-full min-h-0 flex-1 ${isMobile ? 'h-auto' : 'lg:h-full'} m-0 p-0 gap-0`}>
               <Card className="bg-black border-[#FFD600]" style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 justify-between w-full">

@@ -1510,8 +1510,8 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
         ctx.restore();
       }
     }
-    // Dibujar SIEMPRE los círculos de cruces de EMAs (en reales y simuladas)
-    if (showCrossCircles === true) {
+    // Dibujar círculos de cruces de EMAs solo en desktop (ocultar en móvil)
+    if (showCrossCircles === true && !isMobile) {
       drawEMACrossCircles(ema10, ema55, '#a259f7', '#FFD600');
       drawEMACrossCircles(ema55, ema200, '#FFD600', '#2196f3');
       drawEMACrossCircles(ema200, ema365, '#2196f3', '#22c55e');

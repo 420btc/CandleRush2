@@ -1,6 +1,7 @@
 "use client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { useDevice } from "@/context/device-mode-context";
 
 interface BetResultModalProps {
   open: boolean;
@@ -75,6 +76,8 @@ const LABELS: Record<string, string> = {
 };
 
 function BetSignalsBreakdown({ bet }: { bet: Bet }) {
+  const { isMobile } = useDevice();
+  
   // Buscar la entrada de memoria de AutoMix para este timestamp
   const autoMixMem = React.useMemo(() => getAutoMixMemory(), []);
   const trendMem = React.useMemo(() => getTrendMemory(), []);
@@ -115,9 +118,9 @@ function BetSignalsBreakdown({ bet }: { bet: Bet }) {
   // Mostrar mensaje especial si la apuesta fue aleatoria
   if (entry?.wasRandom) {
     return (
-      <div className="mt-1 rounded-lg border-2 border-yellow-400 bg-black/90 p-3 text-left shadow-md">
-        <div className="font-bold text-yellow-300 text-xs mb-1 leading-tight">AutoMix: Decisión aleatoria</div>
-        <div className="text-white text-sm">
+      <div className={`mt-1 rounded-lg border-2 border-yellow-400 bg-black/90 ${isMobile ? 'p-2' : 'p-3'} text-left shadow-md`}>
+        <div className={`font-bold text-yellow-300 ${isMobile ? 'text-[10px]' : 'text-xs'} mb-1 leading-tight`}>AutoMix: Decisión aleatoria</div>
+        <div className={`text-white ${isMobile ? 'text-xs' : 'text-sm'}`}>
           Esta apuesta fue tomada de forma <b>aleatoria</b> (modo suerte, 5%), por lo que no hay desglose de votos de señales.<br />
           <span className="text-yellow-400">La decisión fue tomada al azar para simular el factor de suerte.</span>
         </div>
@@ -167,10 +170,10 @@ function BetSignalsBreakdown({ bet }: { bet: Bet }) {
   const pctBear = totalVotes > 0 ? (bearishVotes / totalVotes * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="mt-1 rounded-lg border-2 border-yellow-400 bg-black/90 p-1 text-left shadow-md">
-      <div className="font-bold text-yellow-300 text-xs mb-0.5 leading-tight">Desglose de señales/votos</div>
-      <div className="flex flex-wrap gap-1 mb-0.5">
-        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">
+    <div className={`mt-1 rounded-lg border-2 border-yellow-400 bg-black/90 ${isMobile ? 'p-1' : 'p-1'} text-left shadow-md`}>
+      <div className={`font-bold text-yellow-300 ${isMobile ? 'text-[10px]' : 'text-xs'} ${isMobile ? 'mb-0.5' : 'mb-0.5'} leading-tight`}>Desglose de señales/votos</div>
+      <div className={`flex flex-wrap ${isMobile ? 'gap-0.5' : 'gap-1'} ${isMobile ? 'mb-0.5' : 'mb-0.5'}`}>
+        <span className={`bg-yellow-400 rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} text-black ${isMobile ? 'text-[9px]' : 'text-[11px]'} font-mono border border-yellow-400`}>
           Dirección: <b>{entry?.direction ?? bet.prediction ?? 'Sin dato'}</b>
           {(() => {
             if (entry?.emaPositionVote === 'BULLISH') return ' (EMA 55/200: BULLISH)';
@@ -180,23 +183,23 @@ function BetSignalsBreakdown({ bet }: { bet: Bet }) {
             return '';
           })()}
         </span>
-        <span className="bg-yellow-400 rounded px-1 py-0.5 text-black text-[11px] font-mono border border-yellow-400">
+        <span className={`bg-yellow-400 rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} text-black ${isMobile ? 'text-[9px]' : 'text-[11px]'} font-mono border border-yellow-400`}>
           {entry?.crossSignal === 'GOLDEN_CROSS' && 'Golden Cross: Se produjo un cruce alcista'}
           {entry?.crossSignal === 'DEATH_CROSS' && 'Death Cross: Se produjo un cruce bajista'}
           {entry && 'crossSignal' in entry && entry.crossSignal === null && 'No hubo Golden Cross ni Death Cross en este momento (se comprobó, pero no ocurrió ningún cruce).'}
           {(!entry || !('crossSignal' in entry)) && 'No se pudo comprobar el cruce para esta apuesta (dato no disponible).'}
         </span>
       </div>
-      <div className={`grid gap-2 mt-2`}>
-        <div className={`col-span-4 md:col-span-8 bg-black/80 text-yellow-200 rounded px-2 py-1 text-[14px] font-bold flex items-center justify-center border-2 border-yellow-400 shadow-lg mb-2`}>
-          <span className="text-lg">🔝 Mayoría de votos: <b>{mainMajority === 'EMPATE' ? 'Empate' : (mainMajority ?? 'Sin dato')}</b> <span className="text-xs">({pctBull}% Bullish / {pctBear}% Bearish)</span></span>
-          <span className="block text-[10px] text-white font-light mt-0.5">Nota: Todas las señales valen 1 voto</span>
+      <div className={`grid gap-2 ${isMobile ? 'mt-1' : 'mt-2'}`}>
+        <div className={`col-span-4 md:col-span-8 bg-black/80 text-yellow-200 rounded ${isMobile ? 'px-1 py-0.5' : 'px-2 py-1'} ${isMobile ? 'text-xs' : 'text-[14px]'} font-bold flex items-center justify-center border-2 border-yellow-400 shadow-lg ${isMobile ? 'mb-1' : 'mb-2'}`}>
+          <span className={`${isMobile ? 'text-sm' : 'text-lg'}`}>🔝 Mayoría de votos: <b>{mainMajority === 'EMPATE' ? 'Empate' : (mainMajority ?? 'Sin dato')}</b> <span className={`${isMobile ? 'text-[9px]' : 'text-xs'}`}>({pctBull}% Bullish / {pctBear}% Bearish)</span></span>
+          <span className={`block ${isMobile ? 'text-[8px]' : 'text-[10px]'} text-white font-light ${isMobile ? 'mt-0' : 'mt-0.5'}`}>Nota: Todas las señales valen 1 voto</span>
         </div>
-        <div className="col-span-4 md:col-span-8 flex flex-row gap-2 justify-center mb-2">
-          <span className="bg-green-900/70 text-yellow-300 rounded px-2 py-0.5 text-xs font-mono">Bullish: {bullishVotes}</span>
-          <span className="bg-red-900/70 text-yellow-300 rounded px-2 py-0.5 text-xs font-mono">Bearish: {bearishVotes}</span>
-          <span className="bg-neutral-800/80 text-neutral-300 rounded px-2 py-0.5 text-xs font-mono">Total: {signalsPresent}/{totalSignals}</span>
-          <span className="text-[10px] text-neutral-300 font-mono ml-2 align-middle">
+        <div className={`col-span-4 md:col-span-8 flex flex-row ${isMobile ? 'gap-1' : 'gap-2'} justify-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
+          <span className={`bg-green-900/70 text-yellow-300 rounded ${isMobile ? 'px-1 py-0.5' : 'px-2 py-0.5'} ${isMobile ? 'text-[10px]' : 'text-xs'} font-mono`}>Bullish: {bullishVotes}</span>
+          <span className={`bg-red-900/70 text-yellow-300 rounded ${isMobile ? 'px-1 py-0.5' : 'px-2 py-0.5'} ${isMobile ? 'text-[10px]' : 'text-xs'} font-mono`}>Bearish: {bearishVotes}</span>
+          <span className={`bg-neutral-800/80 text-neutral-300 rounded ${isMobile ? 'px-1 py-0.5' : 'px-2 py-0.5'} ${isMobile ? 'text-[10px]' : 'text-xs'} font-mono`}>Total: {signalsPresent}/{totalSignals}</span>
+          <span className={`${isMobile ? 'text-[8px]' : 'text-[10px]'} text-neutral-300 font-mono ${isMobile ? 'ml-1' : 'ml-2'} align-middle`}>
             RSI:{rsiEntry?.rsiSignal === 'BULLISH' ? '+1' : rsiEntry?.rsiSignal === 'BEARISH' ? '-1' : 'Sin dato'},
             Fib:{fibonacciEntry?.fibVote === 'BULLISH' ? '+1' : fibonacciEntry?.fibVote === 'BEARISH' ? '-1' : 'Sin dato'},
             Mayoría:{entry?.majoritySignal === 'BULLISH' ? '+1' : entry?.majoritySignal === 'BEARISH' ? '-1' : 'Sin dato'},
@@ -214,26 +217,26 @@ function BetSignalsBreakdown({ bet }: { bet: Bet }) {
             : (rsiEntry?.rsi !== undefined && rsiEntry.rsi >= 40 && rsiEntry.rsi <= 60)
               ? 'bg-blue-900/70' // zona neutra (RSI entre 40-60)
               : 'bg-neutral-800/80'
-        } text-yellow-300 rounded px-1 py-0.5 text-[11px] leading-tight`}>
+        } text-yellow-300 rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} ${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-tight`}>
           <b>RSI:</b> <span className="font-mono">{rsiEntry?.rsiSignal === 'BULLISH' ? 'BULLISH' : rsiEntry?.rsiSignal === 'BEARISH' ? 'BEARISH' : (rsiEntry?.rsi !== undefined && rsiEntry.rsi >= 40 && rsiEntry.rsi <= 60) ? 'Zona neutra' : 'Sin dato'} ({rsiEntry?.rsi !== undefined ? rsiEntry.rsi.toFixed(2) : 'Sin dato'})</span>
         </div>
-        <div className={`${entry?.macdSignal === 'BULLISH' ? 'bg-green-900/70' : entry?.macdSignal === 'BEARISH' ? 'bg-red-900/70' : 'bg-black/60'} rounded px-1 py-0.5 text-yellow-300 text-[11px] leading-tight`}>
+        <div className={`${entry?.macdSignal === 'BULLISH' ? 'bg-green-900/70' : entry?.macdSignal === 'BEARISH' ? 'bg-red-900/70' : 'bg-black/60'} rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} text-yellow-300 ${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-tight`}>
           <b>MACD:</b> <span className="font-mono">{entry?.macdSignal ? entry.macdSignal : 'Sin dato'} ({entry?.macd !== undefined ? entry.macd.toFixed(2) : 'Sin dato'})</span>
         </div>
-        <div className={`${fibonacciEntry?.fibVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : fibonacciEntry?.fibVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+        <div className={`${fibonacciEntry?.fibVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : fibonacciEntry?.fibVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} ${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-tight`}>
           <b>Fibonacci:</b> <span className="font-mono">{fibonacciEntry?.fibVote ?? 'Sin dato'}{fibonacciEntry?.level ? ` (${fibonacciEntry.level})` : ''} {fibonacciEntry?.price !== undefined ? `@${fibonacciEntry.price.toFixed(2)}` : ''}</span>
         </div>
-        <div className={`${valleyEntry?.valleyVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : valleyEntry?.valleyVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+        <div className={`${valleyEntry?.valleyVote === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : valleyEntry?.valleyVote === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} ${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-tight`}>
           <b>Valle:</b> <span className="font-mono">{valleyEntry?.valleyVote ?? 'Sin dato'}</span>
         </div>
-        <div className={`${trendEntry?.trend === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : trendEntry?.trend === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+        <div className={`${trendEntry?.trend === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : trendEntry?.trend === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} ${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-tight`}>
           <b>Tend. Velas:</b> <span className="font-mono">{trendEntry?.trend ?? 'Sin dato'}</span>
         </div>
-        <div className={`${(volumeEntry?.vote === 'BULLISH' || (!volumeEntry && entry?.direction === 'BULLISH')) ? 'bg-green-900/70 text-yellow-300' : (volumeEntry?.vote === 'BEARISH' || (!volumeEntry && entry?.direction === 'BEARISH')) ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+        <div className={`${(volumeEntry?.vote === 'BULLISH' || (!volumeEntry && entry?.direction === 'BULLISH')) ? 'bg-green-900/70 text-yellow-300' : (volumeEntry?.vote === 'BEARISH' || (!volumeEntry && entry?.direction === 'BEARISH')) ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} ${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-tight`}>
           <b>Tend. Volumen:</b> <span className="font-mono">{volumeEntry ? (volumeEntry.vote ?? entry?.direction ?? 'Sin dato') : (entry?.direction ?? 'Sin dato')}</span>
-          <span className="ml-2 text-xs">{volumeEntry ? `Vol1: ${volumeEntry.avgVol1?.toFixed(2)}, Vol2: ${volumeEntry.avgVol2?.toFixed(2)}, ${volumeEntry.volumeTrend === 'UP' ? '▲' : '▼'} (${volumeEntry.majority})` : ''}</span>
+          <span className={`${isMobile ? 'ml-1 text-[8px]' : 'ml-2 text-xs'}`}>{volumeEntry ? `Vol1: ${volumeEntry.avgVol1?.toFixed(2)}, Vol2: ${volumeEntry.avgVol2?.toFixed(2)}, ${volumeEntry.volumeTrend === 'UP' ? '▲' : '▼'} (${volumeEntry.majority})` : ''}</span>
         </div>
-        <div className={`${entry?.majoritySignal === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : entry?.majoritySignal === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded px-1 py-0.5 text-[11px] leading-tight`}>
+        <div className={`${entry?.majoritySignal === 'BULLISH' ? 'bg-green-900/70 text-yellow-300' : entry?.majoritySignal === 'BEARISH' ? 'bg-red-900/70 text-yellow-300' : 'bg-neutral-800/80 text-neutral-300'} rounded ${isMobile ? 'px-1 py-0.5' : 'px-1 py-0.5'} ${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-tight`}>
           <b>Mayoría:</b> <span className="font-mono">{entry?.majoritySignal ?? 'Sin dato'}</span>
         </div>
       </div>
@@ -242,6 +245,7 @@ function BetSignalsBreakdown({ bet }: { bet: Bet }) {
 }
 
 export default function BetResultModal({ open, onOpenChange, result }: BetResultModalProps) {
+  const { isMobile } = useDevice();
   const liquidatedAudioRef = useRef<HTMLAudioElement | null>(null);
   const [played, setPlayed] = React.useState(false);
   useEffect(() => {
@@ -290,68 +294,68 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
     <>
       <audio ref={liquidatedAudioRef} src="/liquidated.mp3" preload="auto" style={{ display: 'none' }} />
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="text-center max-w-lg p-8 rounded-2xl border-4 shadow-2xl border-yellow-400 bg-black">
+      <DialogContent className={`text-center ${isMobile ? 'max-w-sm p-4 max-h-[50vh] overflow-y-auto' : 'max-w-lg p-8'} rounded-2xl border-4 shadow-2xl border-yellow-400 bg-black`}>
         <DialogHeader>
-          <DialogTitle className="text-3xl font-extrabold mb-1 flex items-center justify-center gap-2"
+          <DialogTitle className={`${isMobile ? 'text-xl' : 'text-3xl'} font-extrabold mb-1 flex items-center justify-center gap-2`}
             style={{letterSpacing:'-1px'}}>
             {wasLiquidated ? (
               <>
-                <ArrowDownCircle className="inline h-8 w-8 text-yellow-400 mr-1" />
+                <ArrowDownCircle className={`inline ${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-yellow-400 mr-1`} />
                 <span className="flex items-center gap-1">
                   <span className="text-white">LIQUIDADO</span>
-                  <span className="text-2xl text-white">💀</span>
+                  <span className={`${isMobile ? 'text-lg' : 'text-2xl'} text-white`}>💀</span>
                 </span>
               </>
             ) : won ? (
               <>
-                <ArrowUpCircle className="inline h-8 w-8 text-green-400 mr-1" />
+                <ArrowUpCircle className={`inline ${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-green-400 mr-1`} />
                 <span className="text-white">¡Ganaste!</span>
               </>
             ) : (
               <>
-                <ArrowDownCircle className="inline h-8 w-8 text-red-400 mr-1" />
+                <ArrowDownCircle className={`inline ${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-red-400 mr-1`} />
                 <span className="text-white">Perdiste</span>
               </>
             )}
           </DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-1 gap-4 mt-4">
-          <div className="rounded-xl p-4 border text-lg font-bold border-yellow-400 bg-black"
+        <div className={`grid grid-cols-1 ${isMobile ? 'gap-2 mt-2' : 'gap-4 mt-4'}`}>
+          <div className={`rounded-xl ${isMobile ? 'p-2' : 'p-4'} border ${isMobile ? 'text-base' : 'text-lg'} font-bold border-yellow-400 bg-black`}
             style={{color: '#FFD600'}}>{wasLiquidated ? (
               <>
-                Ganancia: <span className="font-mono text-2xl ml-2 text-yellow-400">0 $</span>
+                Ganancia: <span className={`font-mono ${isMobile ? 'text-lg' : 'text-2xl'} ml-2 text-yellow-400`}>0 $</span>
                 {bet.liquidationFee && bet.liquidationFee > 0 && (
-                  <div className="mt-2 text-lg font-bold text-red-500 bg-yellow-900/70 rounded-lg px-3 py-2 border border-yellow-400 animate-pulse">
+                  <div className={`mt-2 ${isMobile ? 'text-sm' : 'text-lg'} font-bold text-red-500 bg-yellow-900/70 rounded-lg ${isMobile ? 'px-2 py-1' : 'px-3 py-2'} border border-yellow-400 animate-pulse`}>
                     Penalización por liquidación: <span className="text-yellow-300">-{bet.liquidationFee.toFixed(2)} $</span>
                   </div>
                 )}
               </>
             ) : (
               <>
-                Ganancia: <span className={`font-mono text-2xl ml-2 ${won ? 'text-green-400' : 'text-red-400'}`}>{(bet.winnings ?? 0) > 0 ? `+${(bet.winnings ?? 0).toFixed(2)}` : (bet.winnings ?? 0).toFixed(2)} $</span>
+                Ganancia: <span className={`font-mono ${isMobile ? 'text-lg' : 'text-2xl'} ml-2 ${won ? 'text-green-400' : 'text-red-400'}`}>{(bet.winnings ?? 0) > 0 ? `+${(bet.winnings ?? 0).toFixed(2)}` : (bet.winnings ?? 0).toFixed(2)} $</span>
               </>
             )}
           </div>
-          <div className="flex items-center gap-3 justify-center text-xl font-bold mt-2">
-            {bet.prediction === "BULLISH" ? <ArrowUpCircle className="h-7 w-7 text-green-400" /> : <ArrowDownCircle className="h-7 w-7 text-red-400" />}
+          <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-3'} justify-center ${isMobile ? 'text-lg' : 'text-xl'} font-bold ${isMobile ? 'mt-1' : 'mt-2'}`}>
+            {bet.prediction === "BULLISH" ? <ArrowUpCircle className={`${isMobile ? 'h-5 w-5' : 'h-7 w-7'} text-green-400`} /> : <ArrowDownCircle className={`${isMobile ? 'h-5 w-5' : 'h-7 w-7'} text-red-400`} />}
             <span className={bet.prediction === "BULLISH" ? "text-green-300" : "text-red-300"}>{bet.prediction === "BULLISH" ? "Alcista" : "Bajista"}</span>
-            <span className="text-yellow-400 ml-2">{bet.symbol} <span className="text-white">({bet.timeframe})</span></span>
+            <span className={`text-yellow-400 ${isMobile ? 'ml-1' : 'ml-2'}`}>{bet.symbol} <span className="text-white">({bet.timeframe})</span></span>
           </div>
-          <div className="text-2xl font-extrabold text-white mt-2 mb-2" style={{letterSpacing:'0.03em'}}>
+          <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-extrabold text-white ${isMobile ? 'mt-1 mb-1' : 'mt-2 mb-2'}`} style={{letterSpacing:'0.03em'}}>
             {new Date(bet.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' })}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full mt-6 text-base">
-            <div className="rounded-xl p-4 min-w-[90px] border-2 border-yellow-400 bg-black flex flex-col items-center">
+          <div className={`grid grid-cols-1 sm:grid-cols-3 ${isMobile ? 'gap-3' : 'gap-6'} w-full ${isMobile ? 'mt-3' : 'mt-6'} ${isMobile ? 'text-sm' : 'text-base'}`}>
+            <div className={`rounded-xl ${isMobile ? 'p-2' : 'p-4'} ${isMobile ? 'min-w-[70px]' : 'min-w-[90px]'} border-2 border-yellow-400 bg-black flex flex-col items-center`}>
               <div className="text-yellow-400 mb-1">Apertura</div>
-              <div className="font-mono text-xl text-white break-words">{openPrice.toFixed(2)}</div>
+              <div className={`font-mono ${isMobile ? 'text-base' : 'text-xl'} text-white break-words`}>{openPrice.toFixed(2)}</div>
             </div>
-            <div className="rounded-xl p-4 min-w-[90px] border-2 border-yellow-400 bg-black flex flex-col items-center">
+            <div className={`rounded-xl ${isMobile ? 'p-2' : 'p-4'} ${isMobile ? 'min-w-[70px]' : 'min-w-[90px]'} border-2 border-yellow-400 bg-black flex flex-col items-center`}>
               <div className="text-yellow-400 mb-1">Cierre</div>
-              <div className="font-mono text-xl text-white break-words">{closePrice.toFixed(2)}</div>
+              <div className={`font-mono ${isMobile ? 'text-base' : 'text-xl'} text-white break-words`}>{closePrice.toFixed(2)}</div>
             </div>
-            <div className="rounded-xl p-4 min-w-[90px] border-2 border-yellow-400 bg-black flex flex-col items-center">
+            <div className={`rounded-xl ${isMobile ? 'p-2' : 'p-4'} ${isMobile ? 'min-w-[70px]' : 'min-w-[90px]'} border-2 border-yellow-400 bg-black flex flex-col items-center`}>
               <div className="text-yellow-400 mb-1">Diferencia</div>
-              <div className={`font-mono text-xl break-words ${diff > 0 ? "text-green-400" : diff < 0 ? "text-red-400" : "text-white"}`}>{diff > 0 ? "+" : ""}${diff.toFixed(2)}</div>
+              <div className={`font-mono ${isMobile ? 'text-base' : 'text-xl'} break-words ${diff > 0 ? "text-green-400" : diff < 0 ? "text-red-400" : "text-white"}`}>{diff > 0 ? "+" : ""}${diff.toFixed(2)}</div>
             </div>
           </div>
           {/* Desglose de señales/votos (fusionado, visible para cualquier apuesta si hay datos) */}
