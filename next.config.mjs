@@ -36,6 +36,7 @@ const nextConfig = {
       },
     ];
   },
+  turbopack: {}, // Agregado para silenciar error de build en Next.js 16+
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
