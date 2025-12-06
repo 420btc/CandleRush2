@@ -1171,7 +1171,8 @@ if (currentCandle && Date.now() >= currentCandle.timestamp) {
     });
 
     // Draw candles with offset
-    const candleWidth = Math.min(Math.max((dimensions.width / (allCandles.length / viewState.scale)) * 1, 2), 15)
+    // Aumentado el ancho máximo de la vela de 15 a 150 para permitir zoom extremo
+    const candleWidth = Math.min(Math.max((dimensions.width / (allCandles.length / viewState.scale)) * 0.9, 1), 300)
 
     // Crear un mapa de apuestas por timestamp para acceso rápido
     const betsByTimestamp = new Map()
@@ -1645,7 +1646,7 @@ if (!currentCandle || !isInitialized) return
     // Obtener dimensiones actuales
     const { width, height } = dimensions;
     const minScale = 0.5;
-    const maxScale = Math.max(5, Math.min(24, 60 / (allCandles.length || 1)));
+    const maxScale = 150; // Aumentado drásticamente el límite de zoom para ver velas gigantes
     
     // Calcular la posición del mouse en el gráfico
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -1804,18 +1805,18 @@ if (!currentCandle || !isInitialized) return
     const allCandles = [...candles];
     if (currentCandle) allCandles.push(currentCandle);
     const minScale = 1;
-    const maxScale = Math.max(10, Math.min(24, 60 / (allCandles.length || 1)));
+    const maxScale = 150;
     setViewState((prev: ViewState) => ({
       ...prev,
       scale: Math.min(maxScale, prev.scale * 1.5),
     }));
   };
 
-const handleZoomOut = () => {
+  const handleZoomOut = () => {
     const allCandles = [...candles];
     if (currentCandle) allCandles.push(currentCandle);
     const minScale = 1;
-    const maxScale = Math.max(10, Math.min(24, 60 / (allCandles.length || 1)));
+    const maxScale = 150;
     setViewState((prev: ViewState) => ({
       ...prev,
       scale: Math.max(minScale, prev.scale / 1.2),

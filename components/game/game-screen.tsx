@@ -1015,8 +1015,17 @@ useEffect(() => {
   // Ref para sonido de interacción (pulsar)
   const pulsarAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const handleBullishBet = () => {
+  const handleBullishBet = async () => {
+    console.log('[DEBUG APUESTA] Iniciando apuesta BULLISH', {
+      gamePhase,
+      betAmount,
+      userBalance,
+      currentCandle,
+      timestamp: Date.now()
+    });
+    
     if (gamePhase !== "BETTING") {
+      console.log('[DEBUG APUESTA] Error: No es fase de apuestas', { gamePhase });
       toast({
         title: "No puedes apostar ahora",
         description: "Espera a la fase de apuestas",
@@ -1025,6 +1034,7 @@ useEffect(() => {
       return;
     }
     if (betAmount < 1 || betAmount > userBalance) {
+      console.log('[DEBUG APUESTA] Error: Monto inválido', { betAmount, userBalance });
       toast({
         title: "Monto inválido",
         description: `Debes apostar entre 1 y tu saldo disponible`,
@@ -1032,18 +1042,42 @@ useEffect(() => {
       });
       return;
     }
+    
+    console.log('[DEBUG APUESTA] Validaciones pasadas, llamando placeBet...');
+    
     // Sonido de apostar
     if (betAudioRef.current) {
       betAudioRef.current.currentTime = 0;
       betAudioRef.current.play();
     }
-    placeBet("BULLISH", betAmount, leverage, { esAutomatica: 'No' });
-    setLastFlyupAmount(betAmount);
-    setShowFlyup(true);
+    
+    try {
+      const bet = await placeBet("BULLISH", betAmount, leverage, { esAutomatica: 'No' });
+      console.log('[DEBUG APUESTA] Resultado de placeBet:', bet);
+      
+      if (bet) {
+        console.log('[DEBUG APUESTA] Apuesta exitosa, mostrando animación');
+        setLastFlyupAmount(betAmount);
+        setShowFlyup(true);
+      } else {
+        console.log('[DEBUG APUESTA] Error: placeBet retornó null/undefined');
+      }
+    } catch (error) {
+      console.error('[DEBUG APUESTA] Error en placeBet:', error);
+    }
   }
 
-  const handleBearishBet = () => {
+  const handleBearishBet = async () => {
+    console.log('[DEBUG APUESTA] Iniciando apuesta BEARISH', {
+      gamePhase,
+      betAmount,
+      userBalance,
+      currentCandle,
+      timestamp: Date.now()
+    });
+    
     if (gamePhase !== "BETTING") {
+      console.log('[DEBUG APUESTA] Error: No es fase de apuestas', { gamePhase });
       toast({
         title: "No puedes apostar ahora",
         description: "Espera a la fase de apuestas",
@@ -1052,6 +1086,7 @@ useEffect(() => {
       return;
     }
     if (betAmount < 1 || betAmount > userBalance) {
+      console.log('[DEBUG APUESTA] Error: Monto inválido', { betAmount, userBalance });
       toast({
         title: "Monto inválido",
         description: `Debes apostar entre 1 y tu saldo disponible`,
@@ -1059,14 +1094,29 @@ useEffect(() => {
       });
       return;
     }
+    
+    console.log('[DEBUG APUESTA] Validaciones pasadas, llamando placeBet...');
+    
     // Sonido de apostar
     if (betAudioRef.current) {
       betAudioRef.current.currentTime = 0;
       betAudioRef.current.play();
     }
-    placeBet("BEARISH", betAmount, leverage, { esAutomatica: 'No' });
-    setLastFlyupAmount(betAmount);
-    setShowFlyup(true);
+    
+    try {
+      const bet = await placeBet("BEARISH", betAmount, leverage, { esAutomatica: 'No' });
+      console.log('[DEBUG APUESTA] Resultado de placeBet:', bet);
+      
+      if (bet) {
+        console.log('[DEBUG APUESTA] Apuesta exitosa, mostrando animación');
+        setLastFlyupAmount(betAmount);
+        setShowFlyup(true);
+      } else {
+        console.log('[DEBUG APUESTA] Error: placeBet retornó null/undefined');
+      }
+    } catch (error) {
+      console.error('[DEBUG APUESTA] Error en placeBet:', error);
+    }
   }
 
   // Determinar si estamos en los primeros 10 segundos de una vela

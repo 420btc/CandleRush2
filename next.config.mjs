@@ -9,6 +9,24 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Configuración para Service Workers
+  headers: async () => {
+    return [
+      {
+        source: '/automix-worker.js',
+        headers: [
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
   // Redirect all non-API routes to the static shell
   rewrites: async () => {
     return [

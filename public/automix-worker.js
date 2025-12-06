@@ -1,6 +1,17 @@
 // AutoMix Service Worker
-importScripts('/utils/macd-decision.js');
-importScripts('/utils/autoMixMemory.js');
+console.log('[AutoMix Worker] Service Worker iniciando...');
+
+try {
+  console.log('[AutoMix Worker] Importando macd-decision.js...');
+  importScripts('/utils/macd-decision.js');
+  console.log('[AutoMix Worker] macd-decision.js importado correctamente');
+  
+  console.log('[AutoMix Worker] Importando autoMixMemory.js...');
+  importScripts('/utils/autoMixMemory.js');
+  console.log('[AutoMix Worker] autoMixMemory.js importado correctamente');
+} catch (error) {
+  console.error('[AutoMix Worker] Error importando scripts:', error);
+}
 
 const CACHE_NAME = 'automix-cache-v1';
 const AUTO_MIX_INTERVAL = 60000; // 1 minuto
@@ -13,12 +24,17 @@ let lastProcessedCandleTimestamp = 0;
 
 // Initialize WebSocket connection
 function initWebSocket() {
-  if (ws) return;
+  console.log('[AutoMix Worker] initWebSocket llamado');
+  if (ws) {
+    console.log('[AutoMix Worker] WebSocket ya existe, no creando nuevo');
+    return;
+  }
   
+  console.log('[AutoMix Worker] Creando nueva conexión WebSocket...');
   ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
   
   ws.onopen = () => {
-    console.log('[AutoMix Worker] WebSocket connected');
+    console.log('[AutoMix Worker] WebSocket conectado exitosamente');
   };
   
   ws.onmessage = (event) => {
@@ -35,18 +51,33 @@ function initWebSocket() {
           isFinal: data.k.x
         };
         
+        console.log('[AutoMix Worker] Vela recibida:', { timestamp: candle.timestamp, close: candle.close, isFinal: candle.isFinal });
+        
         lastCandles.push(candle);
         // Keep only last 100 candles
         if (lastCandles.length > 100) {
           lastCandles.shift();
         }
         
+        console.log('[AutoMix Worker] Total velas almacenadas:', lastCandles.length);
+        
         // If candle is final and AutoMix is active, make decision
         if (candle.isFinal && isAutoMixActive) {
+          console.log('[AutoMix Worker] Vela final detectada, AutoMix activo:', { timestamp: candle.timestamp, lastProcessed: lastProcessedCandleTimestamp });
           // Add this check to ensure only one decision per final candle
           if (candle.timestamp !== lastProcessedCandleTimestamp) {
+            console.log('[AutoMix Worker] Nueva vela final, procesando decisión...');
             lastProcessedCandleTimestamp = candle.timestamp;
             makeAutoMixDecision();
+          } else {
+            console.log('[AutoMix Worker] Vela ya procesada, saltando...');
+          }
+        } else {
+          if (!candle.isFinal) {
+            console.log('[AutoMix Worker] Vela no es final, saltando decisión');
+          }
+          if (!isAutoMixActive) {
+            console.log('[AutoMix Worker] AutoMix no activo, saltando decisión');
           }
         }
       }
@@ -68,64 +99,92 @@ function initWebSocket() {
 
 // Make AutoMix decision
 async function makeAutoMixDecision() {
-  try {
-    // Get stored configuration
-    const config = await getAutoMixConfig();
-    if (!config || !config.isActive) return;
+  console.log('[AutoMix Worker] Iniciando decisión AutoMix...');
+  
+  if (lastCandles.length < 66) {
+    console.log('[AutoMix Worker] No hay suficientes velas, usando decisión aleatoria');
+    const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
     
-    // Get stored memory
-    const memory = await getAutoMixMemory();
-    
-    // Make decision based on candles
-    const direction = decideMixDirection(lastCandles);
-    
-    // Store decision in memory
-    const decision = {
-      timestamp: Date.now(),
-      direction,
-      candles: lastCandles.slice(-10), // Store last 10 candles for reference
-    };
-    
-    memory.push(decision);
-    
-    // Keep only last 1000 decisions
-    if (memory.length > 1000) {
-      memory.shift();
-    }
-    
-    // Store updated memory
-    await saveAutoMixMemory(memory);
-    
-    // Notify main thread
+    // Send decision to main thread
     self.clients.matchAll().then(clients => {
       clients.forEach(client => {
         client.postMessage({
           type: 'AUTO_MIX_DECISION',
-          decision
+          decision: {
+            direction,
+            timestamp: Date.now(),
+            reason: 'random'
+          }
+        });
+      });
+    });
+    return;
+  }
+
+  try {
+    // Get configuration and memory
+    const config = await getAutoMixConfig();
+    const memory = await getAutoMixMemory();
+    
+    console.log('[AutoMix Worker] Config:', config);
+    console.log('[AutoMix Worker] Memory entries:', memory.length);
+
+    // Make decision using MACD
+    const direction = decideMixDirection(lastCandles);
+    console.log('[AutoMix Worker] Decisión MACD:', direction);
+
+    // Store decision in memory
+    const newEntry = {
+      timestamp: Date.now(),
+      direction,
+      result: null // Will be updated when bet resolves
+    };
+    
+    const updatedMemory = [...memory, newEntry];
+    await saveAutoMixMemory(updatedMemory);
+
+    // Send decision to main thread
+    self.clients.matchAll().then(clients => {
+      console.log('[AutoMix Worker] Enviando decisión a', clients.length, 'clientes');
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'AUTO_MIX_DECISION',
+          decision: {
+            direction,
+            timestamp: Date.now(),
+            reason: 'macd'
+          }
         });
       });
     });
     
   } catch (error) {
-    console.error('[AutoMix Worker] Error making decision:', error);
+    console.error('[AutoMix Worker] Error en makeAutoMixDecision:', error);
   }
 }
 
 // Install event
 self.addEventListener('install', (event) => {
+  console.log('[AutoMix Worker] Evento install ejecutado');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      console.log('[AutoMix Worker] Cache abierto, agregando archivos...');
       return cache.addAll([
         '/automix-worker.js',
         '/utils/macd-decision.js',
         '/utils/autoMixMemory.js'
       ]);
+    }).then(() => {
+      console.log('[AutoMix Worker] Archivos agregados al cache correctamente');
+    }).catch((error) => {
+      console.error('[AutoMix Worker] Error en install:', error);
     })
   );
 });
 
 // Activate event
 self.addEventListener('activate', (event) => {
+  console.log('[AutoMix Worker] Evento activate ejecutado');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -135,16 +194,29 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      console.log('[AutoMix Worker] Cache limpiado, tomando control de clientes');
+      return self.clients.claim();
     })
   );
 });
 
-// Message event
+// Handle skip waiting message
 self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[AutoMix Worker] Recibido SKIP_WAITING, activando...');
+    self.skipWaiting();
+    return;
+  }
+  
+  console.log('[AutoMix Worker] Mensaje recibido:', event.data);
+  
   if (event.data.type === 'ACTIVATE_AUTO_MIX') {
+    console.log('[AutoMix Worker] Activando AutoMix...');
     isAutoMixActive = true;
     initWebSocket();
   } else if (event.data.type === 'DEACTIVATE_AUTO_MIX') {
+    console.log('[AutoMix Worker] Desactivando AutoMix...');
     isAutoMixActive = false;
     if (ws) {
       ws.close();
