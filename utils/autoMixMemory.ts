@@ -47,6 +47,9 @@ export type AutoMixMemoryEntry = {
   rsi: number;
   macd: number;
   macdSignalLine: number;
+  macdHistogram?: number; // Nuevo: valor del histograma
+  macdValleyType?: "RED" | "GREEN" | null; // Nuevo: tipo de valle
+  valleyId?: number; // Nuevo: ID del valle (timestamp de inicio)
   volumeVote: "BULLISH" | "BEARISH" | null;
   whaleVote?: "BULLISH" | "BEARISH" | null;
   adxMemoryVote?: "BULLISH" | "BEARISH" | null;
@@ -83,6 +86,8 @@ export type AutoMixMemoryEntry = {
     rsiValue?: number;
     macdValue?: number;
     macdSignalLineValue?: number;
+    macdHistogramValue?: number; // Nuevo
+    macdValleyTypeValue?: "RED" | "GREEN" | null; // Nuevo
     timeframe?: string;
   };
 

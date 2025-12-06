@@ -275,9 +275,36 @@ let crossVote: "BULLISH" | "BEARISH" | null = null;
     }
   }
   const signalLineArr = calcEMA(macdLineArr.filter(x => x !== undefined), 9);
-  // Usar el último valor válido para comparar
+  
+  // Valores actuales
   const macdLine = macdLineArr[macdLineArr.length - 1];
   const signalLine = signalLineArr[signalLineArr.length - 1];
+  
+  // --- NUEVO: Histograma y Detección de Valle ---
+  const macdHistogram = macdLine - signalLine;
+  const macdValleyType: "RED" | "GREEN" = macdHistogram >= 0 ? "GREEN" : "RED";
+  
+  // Detectar ID del Valle (Timestamp de inicio del valle actual)
+  // Retrocedemos para encontrar cuándo cambió el signo del histograma
+  let valleyId = candles[candles.length - 1].timestamp; // Por defecto, la vela actual
+  const subset66 = candles.slice(-66);
+  
+  for (let i = macdLineArr.length - 2; i >= 0; i--) {
+     // Calculamos el histograma histórico en ese punto
+     // Nota: signalLineArr tiene la misma longitud, podemos acceder directo
+     const histAtI = macdLineArr[i] - signalLineArr[i];
+     const typeAtI = histAtI >= 0 ? "GREEN" : "RED";
+     
+     if (typeAtI !== macdValleyType) {
+        // Cambio de signo detectado entre i y el final
+        // El valle actual empezó en i + 1
+        if (subset66[i + 1]) {
+            valleyId = subset66[i + 1].timestamp;
+        }
+        break;
+     }
+  }
+
   let macdSignal: "BULLISH" | "BEARISH" | null = null;
   if (macdLine > signalLine) macdSignal = "BULLISH";
   else if (macdLine < signalLine) macdSignal = "BEARISH";
@@ -556,7 +583,51 @@ try {
   } catch {}
   
   // Si no hay racha ganadora, proceder con la inversión
-  const finalDirection = shouldInvert ? (direction === "BULLISH" ? "BEARISH" : "BULLISH") : direction;
+  let calculatedDirection = shouldInvert ? (direction === "BULLISH" ? "BEARISH" : "BULLISH") : direction;
+
+  // --- LÓGICA DE MEMORIA DE VALLE (AutoMix Learning) ---
+  try {
+    const memory = getAutoMixMemory();
+    // 1. Comprobar apuestas anteriores en ESTE MISMO valle
+    const sameValleyBets = memory.filter(e => e.valleyId === valleyId);
+    
+    if (sameValleyBets.length > 0) {
+       const lastBet = sameValleyBets[sameValleyBets.length - 1];
+       // Si la última apuesta en este valle falló
+       if (lastBet.result === "LOSS" || lastBet.result === "LIQ") {
+          // Si íbamos a apostar lo mismo que falló, invertimos para corregir
+          if (calculatedDirection === lastBet.direction) {
+              calculatedDirection = calculatedDirection === "BULLISH" ? "BEARISH" : "BULLISH";
+          }
+       } else if (lastBet.result === "WIN") {
+          // Si ganamos, intentamos mantener la dirección que funcionó (momentum del valle)
+          calculatedDirection = lastBet.direction;
+       }
+    } else {
+       // 2. Si es un NUEVO valle, consultar historial de valles similares (Machine Learning básico)
+       // Buscamos valles del mismo tipo (ROJO/VERDE)
+       const similarValleys = memory.filter(e => e.macdValleyType === macdValleyType && e.valleyId !== valleyId);
+       const recentSimilar = similarValleys.slice(-20); // Últimos 20 casos
+       
+       if (recentSimilar.length >= 5) {
+          // Filtramos las que coincidieron con nuestra dirección actual propuesta
+          const similarMoves = recentSimilar.filter(e => e.direction === calculatedDirection);
+          if (similarMoves.length >= 3) {
+              const wins = similarMoves.filter(e => e.result === "WIN").length;
+              const winRate = wins / similarMoves.length;
+              
+              // Si esta dirección en este tipo de valle suele perder (<40%), invertimos
+              if (winRate < 0.4) {
+                  calculatedDirection = calculatedDirection === "BULLISH" ? "BEARISH" : "BULLISH";
+              }
+          }
+       }
+    }
+  } catch (e) {
+    console.error("Error en lógica de valle:", e);
+  }
+
+  const finalDirection = calculatedDirection;
 
   try {
     // Crear una estructura de datos consistente para todos los votos
@@ -580,6 +651,9 @@ try {
       rsi,
       macd: macdLine,
       macdSignalLine: signalLine,
+      macdHistogram,
+      macdValleyType,
+      valleyId,
       // Metadatos
       wasRandom: false,
       bullishVotes,
@@ -694,6 +768,8 @@ try {
         rsiValue: rsi,
         macdValue: macdLine,
         macdSignalLineValue: signalLine,
+        macdHistogramValue: macdHistogram,
+        macdValleyTypeValue: macdValleyType,
         timeframe,
       },
     };
