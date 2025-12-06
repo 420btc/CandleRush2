@@ -269,8 +269,8 @@ export default function BetResultModal({ open, onOpenChange, result }: BetResult
 
   if (!result) return null;
   const { bet, candle } = result;
-  // Usar el precio de entrada real de la apuesta, no el precio de apertura de la vela
-  const openPrice = bet.entryPrice ?? candle.open;
+  // Usar el precio de entrada real de la apuesta. Si no existe, usar candle.open como fallback.
+  const openPrice = (bet.entryPrice !== undefined && bet.entryPrice !== null) ? bet.entryPrice : candle.open;
   const closePrice = candle.close;
   // La diferencia debe ser entre el precio de cierre y el precio de entrada real
   const diff = closePrice - openPrice;

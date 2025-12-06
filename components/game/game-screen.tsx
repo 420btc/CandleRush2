@@ -883,8 +883,11 @@ useEffect(() => {
       lastResolved &&
       lastResolved.timestamp !== lastNotifiedBetTimestamp // Solo si es nueva
     ) {
-      // Buscar la vela correspondiente
-      const resolvedCandle = candles.find(c => Math.abs(c.timestamp - lastResolved.timestamp) < 2 * 60 * 1000) || candles[candles.length - 1];
+      // Buscar la vela correspondiente usando candleTimestamp si está disponible
+      const targetTimestamp = lastResolved.candleTimestamp ?? lastResolved.timestamp;
+      // Buscar la vela exacta o muy cercana (dentro del mismo minuto/timeframe)
+      const resolvedCandle = candles.find(c => Math.abs(c.timestamp - targetTimestamp) < 60000); 
+
       if (resolvedCandle) {
         const diff = resolvedCandle.close - resolvedCandle.open;
         const isLost = lastResolved.status === "LOST";

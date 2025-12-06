@@ -131,15 +131,7 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
     setBetsByPair(updatedByPair);
   }
   // Mostrar toast/modal solo una vez cuando se resuelven nuevas apuestas
-  const newlyResolvedBets = updatedBets.filter((b: any) => 
-    (b.status === 'WON' || b.status === 'LOST') && 
-    // Solo mostrar para apuestas recién resueltas (en los últimos 5 segundos)
-    b.resolvedAt && (Date.now() - b.resolvedAt < 5000)
-  );
-  
-  if (newlyResolvedBets.length > 0 && typeof window !== 'undefined' && (window as any).showBetResultModal) {
-    (window as any).showBetResultModal(newlyResolvedBets);
-  }
+  // La lógica de visualización del modal se maneja en game-screen.tsx escuchando cambios en bets
 }
 
   // --- Botón para resolver apuestas pendientes ---
