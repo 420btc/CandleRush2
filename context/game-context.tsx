@@ -112,7 +112,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('currentUser');
   });
-  
+
   // --- DECLARACIÓN DE ESTADOS ---
   // Estados principales
   const [currentSymbol, setCurrentSymbol] = useState<string>("BTCUSDT");
@@ -136,21 +136,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [autoBullish, setAutoBullish] = useState<boolean>(false);
   const [autoBearish, setAutoBearish] = useState<boolean>(false);
   const [lastBetAnimation, setLastBetAnimation] = useState<{ amount: number; timestamp: number } | null>(null);
-  
+
   // Referencias
   const betsRef = useRef<Bet[]>([]);
   const autoBetDoneRef = useRef<{ [key: string]: boolean }>({});
 
   const [userBalance, setUserBalance] = useState<number>(() => {
     if (typeof window === 'undefined') return 100;
-    
+
     // Intentar obtener el balance del localStorage directamente
     const directBalance = localStorage.getItem("userBalance");
     if (directBalance) {
       const parsed = parseFloat(directBalance);
       if (!isNaN(parsed)) return parsed;
     }
-    
+
     // Si no hay balance directo, intentar obtenerlo de userData
     const username = localStorage.getItem('currentUser');
     if (username) {
@@ -166,7 +166,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         console.error('Error loading user balance:', e);
       }
     }
-    
+
     return 100; // Valor por defecto
   });
   // Inicializar estados que dependen de la persistencia
@@ -236,11 +236,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (currentUser) {
       const data = loadUserData(currentUser);
-      
+
       // Comparar con el balance en localStorage y usar el más alto
       const directBalance = localStorage.getItem("userBalance");
       let balanceToUse = data.balance ?? 100;
-      
+
       if (directBalance) {
         const parsedDirectBalance = parseFloat(directBalance);
         if (!isNaN(parsedDirectBalance) && parsedDirectBalance > balanceToUse) {
@@ -250,7 +250,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           saveUserData(currentUser, data);
         }
       }
-      
+
       setUserBalance(balanceToUse);
       // Corrige betsByPair: añade candleTimestamp si falta
       const migratedBetsByPair = {} as typeof data.betsByPair;
@@ -313,28 +313,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (stats.isFirstDeposit === true) unlockAchievement("first_deposit");
     if (stats.balance && stats.balance >= 500) unlockAchievement("balance_500");
     if (stats.betsCount && stats.betsCount >= 10) unlockAchievement("ten_bets");
-    
+
     // Logros intermedios
     if (stats.consecutiveWins && stats.consecutiveWins >= 3) unlockAchievement("consecutive_win_3");
     if (stats.balance && stats.balance >= 1000) unlockAchievement("balance_1000");
     if (stats.betsCount && stats.betsCount >= 50) unlockAchievement("fifty_bets");
     if (stats.winRate && stats.winRate >= 60) unlockAchievement("win_ratio_60");
     if (stats.differentPairs && stats.differentPairs.length >= 5) unlockAchievement("crypto_master");
-    
+
     // Logros avanzados
     if (stats.consecutiveWins && stats.consecutiveWins >= 7) unlockAchievement("consecutive_win_7");
     if (stats.balance && stats.balance >= 5000) unlockAchievement("balance_5000");
     if (stats.betsCount && stats.betsCount >= 500) unlockAchievement("five_hundred_trades");
     if (stats.winRate && stats.winRate >= 75) unlockAchievement("win_ratio_75");
     if (stats.differentPairs && stats.differentPairs.length >= 20) unlockAchievement("twenty_pairs");
-    
+
     // Logros expertos
     if (stats.consecutiveWins && stats.consecutiveWins >= 10) unlockAchievement("consecutive_win_10");
     if (stats.balance && stats.balance >= 10000) unlockAchievement("balance_10000");
     if (stats.betsCount && stats.betsCount >= 1000) unlockAchievement("thousand_trades");
     if (stats.winRate && stats.winRate >= 85) unlockAchievement("win_ratio_85");
     if (stats.differentPairs && stats.differentPairs.length >= 30) unlockAchievement("thirty_pairs");
-    
+
     // Logros AutoMix
     if (stats.isAutomix === true) unlockAchievement("first_automix");
     if (stats.automixProfits && stats.automixProfits > 0) unlockAchievement("automix_profit");
@@ -349,17 +349,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // Sin límite: el usuario puede tener cualquier cantidad de monedas
     setUserBalance((prev) => {
       const newBalance = prev + amount;
-      
+
       // Guardar en ambos sistemas de almacenamiento para mantener la coherencia
       localStorage.setItem("userBalance", String(newBalance));
-      
+
       // Guardar inmediatamente en el sistema de userData para evitar pérdida de datos al recargar
       if (currentUser) {
         try {
           const userData = loadUserData(currentUser);
           userData.balance = newBalance;
           saveUserData(currentUser, userData);
-          
+
           // Disparar un evento personalizado para notificar a otras partes de la aplicación
           if (typeof window !== 'undefined') {
             const event = new CustomEvent('userBalanceChanged', { detail: { balance: newBalance } });
@@ -369,13 +369,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
           console.error('Error saving user balance:', e);
         }
       }
-      
+
       // Verificar logros relacionados con el balance
       checkAchievements({
         balance: newBalance,
         isFirstDeposit: amount > 0 && prev === 100, // Si es el primer depósito (balance inicial = 100)
       });
-      
+
       return newBalance;
     });
   }
@@ -386,7 +386,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const key = currentSymbol && timeframe ? `${currentSymbol}_${timeframe}` : '';
     return key ? autoMixState[key] || false : false;
   }, [autoMixState, currentSymbol, timeframe]);
-  
+
   // Obtener todos los timeframes activos para AutoMix
   const getActiveAutoMixTimeframes = useCallback((symbol: string) => {
     return Object.entries(autoMixState)
@@ -400,25 +400,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Sincronizar el estado de AutoMix con el Service Worker y almacenamiento
   useEffect(() => {
     if (typeof window === 'undefined' || !currentSymbol || !('serviceWorker' in navigator)) return;
-    
+
     const controller = navigator.serviceWorker.controller;
     if (!controller) return;
 
     // Obtener todos los timeframes activos para el símbolo actual
     const activeTimeframes = getActiveAutoMixTimeframes(currentSymbol);
-    
+
     // Notificar al Service Worker para cada timeframe activo
     // Desactivar AutoMix para todos los timeframes primero
     controller.postMessage({
       type: 'DEACTIVATE_AUTO_MIX',
       symbol: currentSymbol
     });
-    
+
     // Activar AutoMix solo para los timeframes activos
     activeTimeframes.forEach(tf => {
       const key = `${currentSymbol}_${tf}`;
       const isActive = autoMixState[key] || false;
-      
+
       if (isActive) {
         controller.postMessage({
           type: 'ACTIVATE_AUTO_MIX',
@@ -437,16 +437,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const toggleAutoMix = useCallback((tf?: string) => {
     const targetTimeframe = tf || timeframe;
     if (!currentSymbol || !targetTimeframe) return;
-    
+
     // Agregar logs para depuración
     console.log('[AutoMix] Intentando alternar AutoMix', { currentSymbol, targetTimeframe });
-    
+
     setAutoMixState((prev) => {
       const key = `${currentSymbol}_${targetTimeframe}`;
       const newVal = !prev[key];
-      
+
       console.log('[AutoMix] Cambiando estado', { key, prevValue: prev[key], newValue: newVal });
-      
+
       const newState = {
         ...prev,
         [key]: newVal
@@ -455,10 +455,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       // Guardar en localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('autoMixState', JSON.stringify(newState));
-        
+
         // También guardar un flag global para facilitar la detección
         localStorage.setItem('autoMixActive', String(newVal));
-        
+
         // Actualizar en los datos del usuario si está autenticado
         if (currentUser) {
           const userData = loadUserData(currentUser);
@@ -473,7 +473,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           setAutoBullish(false);
           setAutoBearish(false);
         }
-        
+
         // Verificar logros de AutoMix al activarlo
         checkAchievements({
           isAutomix: true,
@@ -492,7 +492,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     betsRef.current = currentBets;
     return currentBets;
   }, [betsByPair, currentSymbol, timeframe]);
-// --- FIN PERSISTENCIA ---
+  // --- FIN PERSISTENCIA ---
 
   // Función para limpiar todas las apuestas
   const clearBets = () => {
@@ -519,7 +519,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   // Estados ya movidos al inicio del componente
-  
+
   // Tipo para las resoluciones pendientes
   type PendingResolution = {
     candle: Candle;
@@ -615,14 +615,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
           } else {
             console.log('[RESOLVER] Resolviendo apuestas por cierre de vela', item.candle);
           }
-          
+
           // Resolver las apuestas con la vela proporcionada
           resolveBets(item.candle, item.isEmergencyResolution);
         });
 
         // Eliminar solo las resoluciones procesadas
         setPendingResolutions((prev) => prev.filter((item) => !resolutionsToProcess.some((r) => r.time === item.time)));
-        
+
         // Notificar al usuario si se resolvieron apuestas de emergencia
         const emergencyResolutions = resolutionsToProcess.filter(item => item.isEmergencyResolution);
         if (emergencyResolutions.length > 0) {
@@ -639,13 +639,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(checkInterval);
   }, [pendingResolutions]);
 
-  
+
   // --- SIMPLIFICADO: Solo resolver apuestas huérfanas, las normales se resuelven inmediatamente ---
   useEffect(() => {
     if (!betsHydrated || !currentCandle) return;
     // Solo verificar si hay apuestas pendientes que necesiten resolución inmediata
     if (currentCandle.isClosed) {
-    const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
+      const tfBets = betsByPair[currentSymbol]?.[timeframe] || [];
       const hasPending = tfBets.some(bet => bet.status === "PENDING");
       if (hasPending) {
         console.log('[RESOLVER] Detectadas apuestas pendientes con vela cerrada, resolviendo inmediatamente');
@@ -653,34 +653,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [betsHydrated, betsByPair, currentCandle, timeframe, currentSymbol]);
-  
+
   // --- NUEVO: Detector de apuestas huérfanas o pendientes por demasiado tiempo ---
   useEffect(() => {
     if (!betsHydrated) return;
-    
+
     // Verificar cada 30 segundos por apuestas pendientes por más de 2 minutos
     const orphanCheckInterval = setInterval(() => {
       const now = Date.now();
       const twoMinutesAgo = now - (2 * 60 * 1000); // 2 minutos en milisegundos
       let orphanBetsFound = false;
-      
+
       // Buscar en todos los pares y timeframes por apuestas huérfanas
       Object.keys(betsByPair).forEach(symbol => {
         Object.keys(betsByPair[symbol] || {}).forEach(tf => {
           const bets = betsByPair[symbol][tf] || [];
-          
+
           // Buscar apuestas pendientes antiguas
-          const orphanBets = bets.filter(bet => 
-            bet.status === "PENDING" && 
-            bet.timestamp < twoMinutesAgo && 
+          const orphanBets = bets.filter(bet =>
+            bet.status === "PENDING" &&
+            bet.timestamp < twoMinutesAgo &&
             // Asegurarse de que no haya una resolución pendiente para esta apuesta
             !pendingResolutions.some(res => res.candle.timestamp === bet.candleTimestamp)
           );
-          
+
           if (orphanBets.length > 0) {
             orphanBetsFound = true;
             console.log(`[RESOLVER] Encontradas ${orphanBets.length} apuestas huérfanas en ${symbol}/${tf}:`, orphanBets);
-            
+
             // Para cada apuesta huérfana, crear una resolución de emergencia
             orphanBets.forEach(bet => {
               // Crear una vela simulada basada en la información disponible
@@ -694,7 +694,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
                 isClosed: true,
                 isError: true  // Marcar como error para saber que es una resolución de emergencia
               };
-              
+
               // Si tenemos información sobre la predicción, simular un cierre desfavorable
               // para evitar ganancias injustificadas en resoluciones de emergencia
               if (bet.prediction === "BULLISH") {
@@ -702,16 +702,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
               } else if (bet.prediction === "BEARISH") {
                 simulatedCandle.close = simulatedCandle.open * 1.002;  // Cierre ligeramente alcista
               }
-              
+
               // Programar la resolución inmediata
               console.log('[RESOLVER] Programando resolución de emergencia para apuesta huérfana:', {
                 bet,
                 simulatedCandle,
                 resolutionTime: now
               });
-              
-              setPendingResolutions(prev => [...prev, { 
-                candle: simulatedCandle, 
+
+              setPendingResolutions(prev => [...prev, {
+                candle: simulatedCandle,
                 time: now,
                 isEmergencyResolution: true
               }]);
@@ -719,7 +719,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           }
         });
       });
-      
+
       if (orphanBetsFound) {
         toast({
           title: "Resolviendo apuestas pendientes",
@@ -728,7 +728,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         });
       }
     }, 30000);  // Verificar cada 30 segundos
-    
+
     return () => clearInterval(orphanCheckInterval);
   }, [betsHydrated, betsByPair, pendingResolutions, toast]);
 
@@ -1009,32 +1009,32 @@ export function GameProvider({ children }: { children: ReactNode }) {
       let last10 = candleSizes;
       let message = "";
       if (last10.length > 1 && size > last10[last10.length - 2]) message = "¡Vela más grande en 1 minuto!";
-if (last10.length >= 5 && size > Math.max(...last10.slice(-5))) message = "¡Vela más grande en 5 minutos!";
-if (last10.length === 10 && size > Math.max(...last10)) message = "¡Vela más grande en 10 minutos!";
-// --- FIN BONUS Y MENSAJE DE RÉCORDS ---
+      if (last10.length >= 5 && size > Math.max(...last10.slice(-5))) message = "¡Vela más grande en 5 minutos!";
+      if (last10.length === 10 && size > Math.max(...last10)) message = "¡Vela más grande en 10 minutos!";
+      // --- FIN BONUS Y MENSAJE DE RÉCORDS ---
 
-// Toast récord solo 6 veces al día por usuario
-if (message) {
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const key = `record_toast_count_${today}`;
-    let count = 0;
-    try {
-      count = parseInt(localStorage.getItem(key) || '0', 10) || 0;
-    } catch {}
-    if (count < 6) {
-      toast({
-        title: message,
-        description: '',
-        variant: 'default',
-        duration: 6000,
-      });
-      try {
-        localStorage.setItem(key, String(count + 1));
-      } catch {}
-    }
-  } catch {}
-}
+      // Toast récord solo 6 veces al día por usuario
+      if (message) {
+        try {
+          const today = new Date().toISOString().slice(0, 10);
+          const key = `record_toast_count_${today}`;
+          let count = 0;
+          try {
+            count = parseInt(localStorage.getItem(key) || '0', 10) || 0;
+          } catch { }
+          if (count < 6) {
+            toast({
+              title: message,
+              description: '',
+              variant: 'default',
+              duration: 6000,
+            });
+            try {
+              localStorage.setItem(key, String(count + 1));
+            } catch { }
+          }
+        } catch { }
+      }
 
       const isBullish = candle.close > candle.open
       let totalWinnings = 0
@@ -1045,141 +1045,148 @@ if (message) {
       setBetsByPair((prev) => {
         const symbolBets = { ...(prev[currentSymbol] || {}) };
         let tfBets = (symbolBets[timeframe] || []).map((bet) => {
-           // Para resoluciones de emergencia, resolver cualquier apuesta PENDING con el mismo candleTimestamp
-           // Para resoluciones normales, solo resolver apuestas del símbolo y timeframe actuales
-           if (bet.status !== "PENDING") return bet;
-           
-           if (isEmergencyResolution) {
-             // En resoluciones de emergencia, solo verificamos que el candleTimestamp coincida
-             if (bet.candleTimestamp !== candle.timestamp) return bet;
-           } else {
-             // En resoluciones normales, verificamos símbolo, timeframe
-             if (bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet;
-             
-             // SIMPLIFICADO: Resolver todas las apuestas PENDING del símbolo y timeframe actual
-             // cuando se llama a resolveBets (que se llama cuando se cierra una vela)
-             // No necesitamos verificaciones adicionales de timestamp aquí
-           }
+          // Para resoluciones de emergencia, resolver cualquier apuesta PENDING con el mismo candleTimestamp
+          // Para resoluciones normales, solo resolver apuestas del símbolo y timeframe actuales
+          if (bet.status !== "PENDING") return bet;
 
-           // Lógica de liquidación automática para apuestas con leverage
-           let wasLiquidated = false;
-           let liquidationTouched = false;
-           if (bet.leverage && bet.liquidationPrice && bet.entryPrice) {
-             if (bet.prediction === "BULLISH") {
-               // Liquidación si el mínimo de la vela toca o baja del liquidationPrice
-               if (candle.low <= bet.liquidationPrice) liquidationTouched = true;
-             } else {
-               // Liquidación si el máximo de la vela toca o sube del liquidationPrice
-               if (candle.high >= bet.liquidationPrice) liquidationTouched = true;
-             }
-           }
-           if (liquidationTouched) {
-              lostCount++;
-              wasLiquidated = true;
-              // --- NUEVO: comisión por liquidación ---
-              const liquidationFeePct = 0.10; // 10% de comisión
-              const liquidationFee = bet.amount * liquidationFeePct;
-              setUserBalance(prev => Math.max(0, prev - liquidationFee));
-              return {
-                ...bet,
-                status: 'LIQUIDATED' as const,
-                wasLiquidated: true,
-                resolvedAt: Date.now(),
-                winnings: 0,
-                bonus: 0,
-                multiplier: 1,
-                liquidationFee,
-              } as Bet;
+          if (isEmergencyResolution) {
+            // En resoluciones de emergencia, solo verificamos que el candleTimestamp coincida
+            if (bet.candleTimestamp !== candle.timestamp) return bet;
+          } else {
+            // En resoluciones normales, verificamos símbolo, timeframe
+            if (bet.symbol !== currentSymbol || bet.timeframe !== timeframe) return bet;
+
+            // SIMPLIFICADO: Resolver todas las apuestas PENDING del símbolo y timeframe actual
+            // cuando se llama a resolveBets (que se llama cuando se cierra una vela)
+            // No necesitamos verificaciones adicionales de timestamp aquí
+          }
+
+          // Lógica de liquidación automática para apuestas con leverage
+          let wasLiquidated = false;
+          let liquidationTouched = false;
+          if (bet.leverage && bet.liquidationPrice && bet.entryPrice) {
+            if (bet.prediction === "BULLISH") {
+              // Liquidación si el mínimo de la vela toca o baja del liquidationPrice
+              if (candle.low <= bet.liquidationPrice) liquidationTouched = true;
+            } else {
+              // Liquidación si el máximo de la vela toca o sube del liquidationPrice
+              if (candle.high >= bet.liquidationPrice) liquidationTouched = true;
             }
+          }
+          if (liquidationTouched) {
+            lostCount++;
+            wasLiquidated = true;
+            // --- NUEVO: comisión por liquidación ---
+            const liquidationFeePct = 0.10; // 10% de comisión
+            const liquidationFee = bet.amount * liquidationFeePct;
+            setUserBalance(prev => Math.max(0, prev - liquidationFee));
+            return {
+              ...bet,
+              status: 'LIQUIDATED' as const,
+              wasLiquidated: true,
+              resolvedAt: Date.now(),
+              winnings: 0,
+              bonus: 0,
+              multiplier: 1,
+              liquidationFee,
+            } as Bet;
+          }
 
-           // Si no fue liquidada, evaluar si ganó o perdió
-           const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish);
-           let winnings = 0;
-           let bonus = 0;
-           // --- WIN STREAK MULTIPLIER LOGIC ---
-           let multiplier = 1;
-           if (wonCount >= 9) multiplier = 3;
-           else if (wonCount >= 6) multiplier = 2;
-           else if (wonCount >= 3) multiplier = 1.5;
-           // Bonificación escalonada por tamaño de vela
-           if (size > 600) bonus = bet.amount * 3.0;
-           else if (size > 400) bonus = bet.amount * 2.0;
-           else if (size > 250) bonus = bet.amount * 1.5;
-           else if (size > 150) bonus = bet.amount * 1.0;
-           else if (size > 75) bonus = bet.amount * 0.5;
-           else if (size > 25) bonus = bet.amount * 0.25;
-           else if (size > 0) bonus = bet.amount * 0.10;
-           if (won) {
-             // --- NUEVO CÁLCULO: Payout explosivo con apalancamiento ---
-             let winningsRaw = 0;
-             if (bet.leverage && bet.leverage > 1 && bet.entryPrice) {
-                // priceChangePct: variación relativa del precio
-                const priceChangePct = ((candle.close - bet.entryPrice) / bet.entryPrice) * (bet.prediction === "BULLISH" ? 1 : -1);
-                winningsRaw = bet.amount + bet.amount * priceChangePct * bet.leverage;
-                // Si la pérdida es igual o mayor al 100%, liquidar
-                if (winningsRaw <= 0) {
-                  winningsRaw = 0;
-                }
-              } else {
-                winningsRaw = bet.amount;
+          // Si no fue liquidada, evaluar si ganó o perdió
+          const won = (bet.prediction === "BULLISH" && isBullish) || (bet.prediction === "BEARISH" && !isBullish);
+          let winnings = 0;
+          let bonus = 0;
+          // --- WIN STREAK MULTIPLIER LOGIC ---
+          let multiplier = 1;
+          if (wonCount >= 9) multiplier = 3;
+          else if (wonCount >= 6) multiplier = 2;
+          else if (wonCount >= 3) multiplier = 1.5;
+          // Bonificación escalonada por tamaño de vela
+          if (size > 600) bonus = bet.amount * 3.0;
+          else if (size > 400) bonus = bet.amount * 2.0;
+          else if (size > 250) bonus = bet.amount * 1.5;
+          else if (size > 150) bonus = bet.amount * 1.0;
+          else if (size > 75) bonus = bet.amount * 0.5;
+          else if (size > 25) bonus = bet.amount * 0.25;
+          else if (size > 0) bonus = bet.amount * 0.10;
+          if (won) {
+            // --- NUEVO CÁLCULO: Payout explosivo con apalancamiento ---
+            let winningsRaw = 0;
+            if (bet.leverage && bet.leverage > 1 && bet.entryPrice) {
+              // priceChangePct: variación relativa del precio
+              const priceChangePct = ((candle.close - bet.entryPrice) / bet.entryPrice) * (bet.prediction === "BULLISH" ? 1 : -1);
+
+              // FACTOR DE DIVERSIÓN: Multiplicador x5 para que las ganancias sean más emocionantes
+              // Sin esto, movimientos pequeños del 0.01% incluso a 1000x dan poco dinero.
+              const PROFIT_BOOST_FACTOR = 5.0;
+
+              const rawProfit = bet.amount * priceChangePct * bet.leverage * PROFIT_BOOST_FACTOR;
+              winningsRaw = bet.amount + rawProfit;
+
+              // Si la pérdida es igual o mayor al 100%, liquidar
+              if (winningsRaw <= 0) {
+                winningsRaw = 0;
               }
-             // Si quieres mantener un pequeño efecto de variación de precio, puedes sumar un extra:
-             // winningsRaw += bet.amount * priceChangePct * (bet.leverage || 1);
-             // Solo ganas si la predicción fue correcta
-             winnings = won ? winningsRaw : 0;
-             // Aplica bonus y multiplicador de racha solo si ganaste
-             if (won) winnings = winnings * multiplier + bonus;
-             // --- Eliminado límite de ganancia: ahora puedes ganar cualquier cantidad ---
-             totalWinnings += winnings; // Se suma sin límite
-             wonCount++;
-             lastResultWon = true;
-           } else {
-             winnings = 0;
-             bonus = 0;
-             totalWinnings += winnings;
-             lostCount++;
-             lastResultWon = false;
-           }
-           // Detectar jackpot: 10+ racha o 3+ apuestas ganadas en una ronda
-           if (wonCount >= 10 || (wonCount >= 3 && wonCount === bets.filter(b => b.status === 'PENDING').length)) {
-             setBonusInfo({
-               bonus: winnings,
-               size,
-               message: wonCount >= 10 ? '¡JACKPOT! 10+ apuestas en racha' : '¡Racha especial! 3+ apuestas ganadas en una ronda',
-             });
-           }
+            } else {
+              winningsRaw = bet.amount;
+            }
+            // Si quieres mantener un pequeño efecto de variación de precio, puedes sumar un extra:
+            // winningsRaw += bet.amount * priceChangePct * (bet.leverage || 1);
+            // Solo ganas si la predicción fue correcta
+            winnings = won ? winningsRaw : 0;
+            // Aplica bonus y multiplicador de racha solo si ganaste
+            if (won) winnings = winnings * multiplier + bonus;
+            // --- Eliminado límite de ganancia: ahora puedes ganar cualquier cantidad ---
+            totalWinnings += winnings; // Se suma sin límite
+            wonCount++;
+            lastResultWon = true;
+          } else {
+            winnings = 0;
+            bonus = 0;
+            totalWinnings += winnings;
+            lostCount++;
+            lastResultWon = false;
+          }
+          // Detectar jackpot: 10+ racha o 3+ apuestas ganadas en una ronda
+          if (wonCount >= 10 || (wonCount >= 3 && wonCount === bets.filter(b => b.status === 'PENDING').length)) {
+            setBonusInfo({
+              bonus: winnings,
+              size,
+              message: wonCount >= 10 ? '¡JACKPOT! 10+ apuestas en racha' : '¡Racha especial! 3+ apuestas ganadas en una ronda',
+            });
+          }
 
-           // Después de resolver cada apuesta, verificar logros
-           if (bet.status === "PENDING") {
-             const stats = {
-               balance: userBalance,
-               betsCount: Object.values(prev).reduce((total, timeBets) => 
-                 total + Object.values(timeBets).reduce((sum, bets) => sum + bets.length, 0), 0),
-               isFirstBet: Object.values(prev).every(timeBets => 
-                 Object.values(timeBets).every(bets => bets.length === 0)),
-               isFirstWin: won && Object.values(prev).every(timeBets => 
-                 Object.values(timeBets).every(bets => !bets.some(b => b.status === "WON"))),
-               consecutiveWins: wonCount,
-               winRate: (wonCount / (wonCount + lostCount)) * 100,
-               differentPairs: [...new Set(Object.keys(prev))],
-               wasLiquidated: liquidationTouched,
-               isAutomix: bet.autoType === "MIX",
-               automixProfits: won && bet.autoType === "MIX" ? winnings : 0,
-             };
-             checkAchievements(stats);
-           }
+          // Después de resolver cada apuesta, verificar logros
+          if (bet.status === "PENDING") {
+            const stats = {
+              balance: userBalance,
+              betsCount: Object.values(prev).reduce((total, timeBets) =>
+                total + Object.values(timeBets).reduce((sum, bets) => sum + bets.length, 0), 0),
+              isFirstBet: Object.values(prev).every(timeBets =>
+                Object.values(timeBets).every(bets => bets.length === 0)),
+              isFirstWin: won && Object.values(prev).every(timeBets =>
+                Object.values(timeBets).every(bets => !bets.some(b => b.status === "WON"))),
+              consecutiveWins: wonCount,
+              winRate: (wonCount / (wonCount + lostCount)) * 100,
+              differentPairs: [...new Set(Object.keys(prev))],
+              wasLiquidated: liquidationTouched,
+              isAutomix: bet.autoType === "MIX",
+              automixProfits: won && bet.autoType === "MIX" ? winnings : 0,
+            };
+            checkAchievements(stats);
+          }
 
-           return {
-             ...bet,
-             status: won ? "WON" : "LOST",
-             wasLiquidated: false,
-             resolvedAt: Date.now(),
-             winnings,
-             bonus,
-             multiplier: won ? multiplier : 1,
-             emergencyResolved: isEmergencyResolution || false,
-           } as Bet;
-         });
+          return {
+            ...bet,
+            status: won ? "WON" : "LOST",
+            wasLiquidated: false,
+            resolvedAt: Date.now(),
+            winnings,
+            bonus,
+            multiplier: won ? multiplier : 1,
+            emergencyResolved: isEmergencyResolution || false,
+          } as Bet;
+        });
 
         // Actualizar balance después de procesar todas las apuestas
         if (totalWinnings > 0) {
@@ -1251,9 +1258,9 @@ if (message) {
       }
 
       // Obtener apuestas actuales del par/timeframe
-const pairBets = bets;
+      const pairBets = bets;
 
-if (amount <= 0 || amount > userBalance) {
+      if (amount <= 0 || amount > userBalance) {
         toast({
           title: "Cantidad inválida",
           description: "No tienes suficiente saldo",
@@ -1269,7 +1276,7 @@ if (amount <= 0 || amount > userBalance) {
       // Calcular entryPrice y liquidationPrice según leverage y porcentaje apostado
       const entryPrice = currentCandle ? currentCandle.close : 0;
       let liquidationPrice: number | undefined = undefined;
-      
+
       // Asegurarse de que siempre se calcule el precio de liquidación cuando hay apalancamiento
       if (leverage > 1 && entryPrice > 0) {
         // Efecto super fuerte: si apuestas más del 30% del balance, la liquidación se acerca mucho
@@ -1286,13 +1293,13 @@ if (amount <= 0 || amount > userBalance) {
         } else {
           liquidationPrice = entryPrice * (1 + dynamicDistance);
         }
-        
+
         // Registro de depuración para verificar el cálculo del precio de liquidación
-        console.log('Creando apuesta con liquidación:', { 
-          prediction, 
-          entryPrice, 
-          liquidationPrice, 
-          leverage, 
+        console.log('Creando apuesta con liquidación:', {
+          prediction,
+          entryPrice,
+          liquidationPrice,
+          leverage,
           dynamicDistance,
           isAuto: autoBullish || autoBearish
         });
@@ -1317,11 +1324,11 @@ if (amount <= 0 || amount > userBalance) {
       console.log('[BET] Intentando apostar', { prediction, amount, gamePhase, currentCandleBets, candleTimestamp, currentCandle });
 
       setBetsByPair((prev) => {
-  const symbolBets = { ...(prev[currentSymbol] || {}) };
-  const tfBets = [...(symbolBets[timeframe] || []), newBet];
-  symbolBets[timeframe] = tfBets;
-  return { ...prev, [currentSymbol]: symbolBets };
-})
+        const symbolBets = { ...(prev[currentSymbol] || {}) };
+        const tfBets = [...(symbolBets[timeframe] || []), newBet];
+        symbolBets[timeframe] = tfBets;
+        return { ...prev, [currentSymbol]: symbolBets };
+      })
       setUserBalance((prev) => prev - amount)
 
       // Incrementar contador de apuestas para la vela actual
@@ -1349,20 +1356,20 @@ if (amount <= 0 || amount > userBalance) {
 
   // Change symbol
   // Al cerrar sesión, limpiar usuario activo, pero NO borrar datos persistentes
-useEffect(() => {
-  window.addEventListener("logout", () => {
-    setCurrentUser(null);
-    setBetsByPair({});
-    setUserBalance(100);
-    setAchievements([]);
-    setAutoMixMemory([]);
-    localStorage.removeItem("currentUser");
-    // NO borres userData_{username}
-  });
-  return () => window.removeEventListener("logout", () => {});
-}, []);
+  useEffect(() => {
+    window.addEventListener("logout", () => {
+      setCurrentUser(null);
+      setBetsByPair({});
+      setUserBalance(100);
+      setAchievements([]);
+      setAutoMixMemory([]);
+      localStorage.removeItem("currentUser");
+      // NO borres userData_{username}
+    });
+    return () => window.removeEventListener("logout", () => { });
+  }, []);
 
-const changeSymbol = useCallback(
+  const changeSymbol = useCallback(
     (symbol: string) => {
       if (symbol === currentSymbol) return
 
@@ -1396,7 +1403,7 @@ const changeSymbol = useCallback(
       setCurrentCandle(null);
       setCurrentCandleBets(0);
       setPendingResolutions([]);
-      
+
       // No es necesario restaurar autoMix aquí, ya que se maneja por par/intervalo
       // El estado se actualizará automáticamente a través del useMemo que depende de currentSymbol y timeframe
     },
@@ -1441,7 +1448,7 @@ const changeSymbol = useCallback(
       return newValue;
     });
   }, []);
-  
+
   // Automatic betting system
   // --- HISTORIAL PARA MIX ---
   const mixHistoryRef = useRef<string[]>([]);
@@ -1456,8 +1463,8 @@ const changeSymbol = useCallback(
 
     // **NUEVA VERIFICACIÓN:** No crear apuesta automática si ya existe una apuesta PENDING para la vela actual
     const currentCandleTimestamp = currentCandle.timestamp;
-    const hasPendingBetForCurrentCandle = bets.some(bet => 
-      bet.status === "PENDING" && 
+    const hasPendingBetForCurrentCandle = bets.some(bet =>
+      bet.status === "PENDING" &&
       bet.candleTimestamp === currentCandleTimestamp
     );
 
@@ -1489,117 +1496,117 @@ const changeSymbol = useCallback(
           const parsed = parseFloat(stored);
           if (!isNaN(parsed) && parsed > 0) userAmount = parsed;
         }
-      } catch {}
+      } catch { }
       // Usar siempre el monto configurado por el usuario, solo limitar por saldo disponible
       Promise.all([
-  import("@/utils/macd-decision"),
-  import("@/utils/autoMixMemory")
-]).then(([macdMod, memMod]) => {
-  const { decideMixDirection } = macdMod;
-  const { shouldInvertDecision } = memMod;
-  // Obtener señales detalladas
-  const candlesSlice = candles.slice();
-  const last65 = candlesSlice.slice(-66, -1);
-  const bullishCount = last65.filter(c => c.close > c.open).length;
-  const bearishCount = last65.length - bullishCount;
-  let majoritySignal: "BULLISH" | "BEARISH" | null = null;
-  if (bullishCount > bearishCount) majoritySignal = "BULLISH";
-  else if (bearishCount > bullishCount) majoritySignal = "BEARISH";
-  // RSI
-  function calcRSI(candles: any[], period = 14): number {
-    if (candles.length < period + 1) return 50;
-    let gains = 0, losses = 0;
-    for (let i = candles.length - period; i < candles.length; i++) {
-      const diff = candles[i].close - candles[i - 1].close;
-      if (diff > 0) gains += diff;
-      else losses -= diff;
-    }
-    if (gains + losses === 0) return 50;
-    const avgGain = gains / period;
-    const avgLoss = losses / period;
-    if (avgLoss === 0) return 100;
-    const rs = avgGain / avgLoss;
-    return 100 - (100 / (1 + rs));
-  }
-  const rsi = calcRSI(candlesSlice);
-  let rsiSignal: "BULLISH" | "BEARISH" | null = null;
-  if (rsi > 70) rsiSignal = "BEARISH";
-  else if (rsi < 30) rsiSignal = "BULLISH";
-  // MACD
-  function calcEMA(values: number[], period: number): number[] {
-    const k = 2 / (period + 1);
-    let emaArr: number[] = [];
-    let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
-    emaArr[period - 1] = ema;
-    for (let i = period; i < values.length; i++) {
-      ema = values[i] * k + ema * (1 - k);
-      emaArr[i] = ema;
-    }
-    return emaArr;
-  }
-  const closes = candlesSlice.slice(-66).map((c: any) => c.close);
-  const ema12 = calcEMA(closes, 12);
-  const ema26 = calcEMA(closes, 26);
-  let macdLineArr: number[] = [];
-  for (let i = 0; i < closes.length; i++) {
-    if (ema12[i] !== undefined && ema26[i] !== undefined) {
-      macdLineArr[i] = ema12[i] - ema26[i];
-    } else {
-      macdLineArr[i] = 0;
-    }
-  }
-  const signalLineArr = calcEMA(macdLineArr.filter(x => x !== undefined), 9);
-  const macd = macdLineArr[macdLineArr.length - 1];
-  const macdSignalLine = signalLineArr[signalLineArr.length - 1];
-  let macdSignal: "BULLISH" | "BEARISH" | null = null;
-  if (macd > macdSignalLine) macdSignal = "BULLISH";
-  else if (macd < macdSignalLine) macdSignal = "BEARISH";
+        import("@/utils/macd-decision"),
+        import("@/utils/autoMixMemory")
+      ]).then(([macdMod, memMod]) => {
+        const { decideMixDirection } = macdMod;
+        const { shouldInvertDecision } = memMod;
+        // Obtener señales detalladas
+        const candlesSlice = candles.slice();
+        const last65 = candlesSlice.slice(-66, -1);
+        const bullishCount = last65.filter(c => c.close > c.open).length;
+        const bearishCount = last65.length - bullishCount;
+        let majoritySignal: "BULLISH" | "BEARISH" | null = null;
+        if (bullishCount > bearishCount) majoritySignal = "BULLISH";
+        else if (bearishCount > bullishCount) majoritySignal = "BEARISH";
+        // RSI
+        function calcRSI(candles: any[], period = 14): number {
+          if (candles.length < period + 1) return 50;
+          let gains = 0, losses = 0;
+          for (let i = candles.length - period; i < candles.length; i++) {
+            const diff = candles[i].close - candles[i - 1].close;
+            if (diff > 0) gains += diff;
+            else losses -= diff;
+          }
+          if (gains + losses === 0) return 50;
+          const avgGain = gains / period;
+          const avgLoss = losses / period;
+          if (avgLoss === 0) return 100;
+          const rs = avgGain / avgLoss;
+          return 100 - (100 / (1 + rs));
+        }
+        const rsi = calcRSI(candlesSlice);
+        let rsiSignal: "BULLISH" | "BEARISH" | null = null;
+        if (rsi > 70) rsiSignal = "BEARISH";
+        else if (rsi < 30) rsiSignal = "BULLISH";
+        // MACD
+        function calcEMA(values: number[], period: number): number[] {
+          const k = 2 / (period + 1);
+          let emaArr: number[] = [];
+          let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+          emaArr[period - 1] = ema;
+          for (let i = period; i < values.length; i++) {
+            ema = values[i] * k + ema * (1 - k);
+            emaArr[i] = ema;
+          }
+          return emaArr;
+        }
+        const closes = candlesSlice.slice(-66).map((c: any) => c.close);
+        const ema12 = calcEMA(closes, 12);
+        const ema26 = calcEMA(closes, 26);
+        let macdLineArr: number[] = [];
+        for (let i = 0; i < closes.length; i++) {
+          if (ema12[i] !== undefined && ema26[i] !== undefined) {
+            macdLineArr[i] = ema12[i] - ema26[i];
+          } else {
+            macdLineArr[i] = 0;
+          }
+        }
+        const signalLineArr = calcEMA(macdLineArr.filter(x => x !== undefined), 9);
+        const macd = macdLineArr[macdLineArr.length - 1];
+        const macdSignalLine = signalLineArr[signalLineArr.length - 1];
+        let macdSignal: "BULLISH" | "BEARISH" | null = null;
+        if (macd > macdSignalLine) macdSignal = "BULLISH";
+        else if (macd < macdSignalLine) macdSignal = "BEARISH";
 
-  // Decisión base
-  let direction = decideMixDirection(candles);
-  // Consultar memoria: si la combinación es perdedora, invertir
-  if (shouldInvertDecision(majoritySignal, rsiSignal, macdSignal)) {
-    direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
-    console.log('[AUTO MIX] Dirección invertida por memoria');
-  }
-  let finalAmount = userAmount;
-  finalAmount = Math.min(finalAmount, userBalance);
-  // Leer leverage de localStorage (igual que la UI)
-  let leverage = 2000;
-  try {
-    const storedLev = localStorage.getItem('autoMixLeverage');
-    if (storedLev) {
-      const parsed = parseFloat(storedLev);
-      if (!isNaN(parsed) && parsed > 0) leverage = parsed;
-    }
-  } catch {}
-  // --- SONIDO DE APUESTA ---
-  if (betAudioRef.current) {
-    betAudioRef.current.currentTime = 0;
-    betAudioRef.current.play();
-  }
-  const bet = placeBet(direction as "BULLISH" | "BEARISH", finalAmount, leverage, { esAutomatica: 'Sí', autoType: 'MIX' });
-  // Guardar memoria (async, no bloquea)
-  import("@/utils/autoMixMemory").then(({ saveAutoMixMemory }) => {
-    const newEntry = {
-      betId: bet?.id || `auto_${Date.now()}`,
-      timestamp: Date.now(),
-      direction: direction as "BULLISH" | "BEARISH",
-      result: null,
-      majoritySignal,
-      rsiSignal,
-      macdSignal,
-      rsi,
-      macd,
-      macdSignalLine,
-      valleyVote: null, // Valor por defecto para compatibilidad
-      volumeVote: null, // Valor por defecto requerido
-      consecutiveBets: 1
-    };
-    saveAutoMixMemory(newEntry);
-  });
-  console.log('[AUTO MIX] Apuesta automática MIX creada (MACD+MEM)', { direction, finalAmount, leverage, candle: currentCandle.timestamp, majoritySignal, rsiSignal, macdSignal, rsi, macd, macdSignalLine });
-}).catch(() => {
+        // Decisión base
+        let direction = decideMixDirection(candles);
+        // Consultar memoria: si la combinación es perdedora, invertir
+        if (shouldInvertDecision(majoritySignal, rsiSignal, macdSignal)) {
+          direction = direction === "BULLISH" ? "BEARISH" : "BULLISH";
+          console.log('[AUTO MIX] Dirección invertida por memoria');
+        }
+        let finalAmount = userAmount;
+        finalAmount = Math.min(finalAmount, userBalance);
+        // Leer leverage de localStorage (igual que la UI)
+        let leverage = 2000;
+        try {
+          const storedLev = localStorage.getItem('autoMixLeverage');
+          if (storedLev) {
+            const parsed = parseFloat(storedLev);
+            if (!isNaN(parsed) && parsed > 0) leverage = parsed;
+          }
+        } catch { }
+        // --- SONIDO DE APUESTA ---
+        if (betAudioRef.current) {
+          betAudioRef.current.currentTime = 0;
+          betAudioRef.current.play();
+        }
+        const bet = placeBet(direction as "BULLISH" | "BEARISH", finalAmount, leverage, { esAutomatica: 'Sí', autoType: 'MIX' });
+        // Guardar memoria (async, no bloquea)
+        import("@/utils/autoMixMemory").then(({ saveAutoMixMemory }) => {
+          const newEntry = {
+            betId: bet?.id || `auto_${Date.now()}`,
+            timestamp: Date.now(),
+            direction: direction as "BULLISH" | "BEARISH",
+            result: null,
+            majoritySignal,
+            rsiSignal,
+            macdSignal,
+            rsi,
+            macd,
+            macdSignalLine,
+            valleyVote: null, // Valor por defecto para compatibilidad
+            volumeVote: null, // Valor por defecto requerido
+            consecutiveBets: 1
+          };
+          saveAutoMixMemory(newEntry);
+        });
+        console.log('[AUTO MIX] Apuesta automática MIX creada (MACD+MEM)', { direction, finalAmount, leverage, candle: currentCandle.timestamp, majoritySignal, rsiSignal, macdSignal, rsi, macd, macdSignalLine });
+      }).catch(() => {
         const direction = Math.random() < 0.5 ? "BULLISH" : "BEARISH";
         let finalAmount = userAmount;
         finalAmount = Math.min(finalAmount, userBalance);
@@ -1611,7 +1618,7 @@ const changeSymbol = useCallback(
             const parsed = parseFloat(storedLev);
             if (!isNaN(parsed) && parsed > 0) leverage = parsed;
           }
-        } catch {}
+        } catch { }
         // --- SONIDO DE APUESTA ---
         if (betAudioRef.current) {
           betAudioRef.current.currentTime = 0;
@@ -1635,16 +1642,16 @@ const changeSymbol = useCallback(
             wasRandom: true,
             consecutiveBets: 1
           };
-         console.log('[AUTO MIX][MEMORY] Guardando entrada:', newEntry);
-    saveAutoMixMemory(newEntry);
-    setTimeout(() => {
-      try {
-        const mem = getAutoMixMemory();
-        console.log('[AUTO MIX][MEMORY] Estado actual de memoria tras guardar:', mem.slice(-5));
-      } catch (e) {
-        console.error('[AUTO MIX][MEMORY] Error leyendo memoria tras guardar', e);
-      }
-    }, 200);
+          console.log('[AUTO MIX][MEMORY] Guardando entrada:', newEntry);
+          saveAutoMixMemory(newEntry);
+          setTimeout(() => {
+            try {
+              const mem = getAutoMixMemory();
+              console.log('[AUTO MIX][MEMORY] Estado actual de memoria tras guardar:', mem.slice(-5));
+            } catch (e) {
+              console.error('[AUTO MIX][MEMORY] Error leyendo memoria tras guardar', e);
+            }
+          }, 200);
 
         });
         console.log('[AUTO MIX] Apuesta automática MIX creada (fallback aleatorio)', { direction, finalAmount, leverage, candle: currentCandle.timestamp });
