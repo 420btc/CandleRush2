@@ -140,6 +140,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Referencias
   const betsRef = useRef<Bet[]>([]);
   const autoBetDoneRef = useRef<{ [key: string]: boolean }>({});
+  const currentCandleRef = useRef<Candle | null>(null);
 
   const [userBalance, setUserBalance] = useState<number>(() => {
     if (typeof window === 'undefined') return 100;
@@ -818,6 +819,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
         // Resetear contador de apuestas para la nueva vela
         setCurrentCandleBets(0)
+        // Actualizar ref con la última vela histórica (que es la actual)
+        currentCandleRef.current = historicalData[historicalData.length - 1];
 
         // Calculate next phase time based on the current candle's timestamp
         const currentCandleTime = historicalData[historicalData.length - 1].timestamp
@@ -931,6 +934,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       // Update current candle
       setCurrentCandle(candle)
+      currentCandleRef.current = candle;
 
       // If candle is closed, add it to history and schedule resolution
       if (candle.isClosed) {
@@ -1271,10 +1275,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       // Ajustar el timestamp de la apuesta para que siempre caiga dentro de la vela actual
       // CORRECCIÓN: Normalizar el timestamp según el timeframe para resolver correctamente
-      const rawTimestamp = currentCandle ? currentCandle.timestamp : Date.now();
+      // USAR REF para obtener el precio real actual y no uno estancado en el closure
+      const liveCandle = currentCandleRef.current;
+      const rawTimestamp = liveCandle ? liveCandle.timestamp : Date.now();
       const candleTimestamp = normalizeTimestampToTimeframe(rawTimestamp, timeframe);
       // Calcular entryPrice y liquidationPrice según leverage y porcentaje apostado
-      const entryPrice = currentCandle ? currentCandle.close : 0;
+      const entryPrice = liveCandle ? liveCandle.close : 0;
       let liquidationPrice: number | undefined = undefined;
 
       // Asegurarse de que siempre se calcule el precio de liquidación cuando hay apalancamiento
