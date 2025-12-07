@@ -1589,7 +1589,38 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(timeStr, tooltipX + padding, tooltipY + boxHeight / 2);
+
+      // --- Close Button (Circle with X) ---
+      const closeBtnR = 8;
+      const closeBtnX = tooltipX + boxWidth + closeBtnR + 5; // right side of tooltip
+      const closeBtnY = tooltipY + boxHeight / 2;
+
+      // Guardar hitbox
+      tooltipCloseHitboxRef.current = { x: closeBtnX, y: closeBtnY, r: closeBtnR };
+
+      // Draw Circle
+      ctx.beginPath();
+      ctx.arc(closeBtnX, closeBtnY, closeBtnR, 0, Math.PI * 2);
+      ctx.fillStyle = '#ef4444'; // Red background
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Draw X
+      const xSize = 3;
+      ctx.beginPath();
+      ctx.moveTo(closeBtnX - xSize, closeBtnY - xSize);
+      ctx.lineTo(closeBtnX + xSize, closeBtnY + xSize);
+      ctx.moveTo(closeBtnX + xSize, closeBtnY - xSize);
+      ctx.lineTo(closeBtnX - xSize, closeBtnY + xSize);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
       ctx.restore();
+    } else {
+      tooltipCloseHitboxRef.current = null;
     }
 
     // Reset transformation
