@@ -1965,8 +1965,8 @@ useEffect(() => {
 
             </div>
 
-            <div className={`${isMobile ? 'order-2 mt-4' : 'lg:col-span-1'} flex flex-col h-full min-h-0 flex-1 ${isMobile ? 'h-auto' : 'lg:h-full'} m-0 p-0 gap-0`}>
-              <Card className="bg-black border-[#FFD600]" style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
+            <div className={`${isMobile ? 'order-2 mt-4' : 'lg:col-span-1'} flex flex-col h-full min-h-0 flex-1 ${isMobile ? 'h-auto' : 'lg:h-full'} m-0 p-0 gap-1`}>
+              <Card className={`bg-black border-[#FFD600] ${isMobile ? 'h-auto mb-4' : 'flex-none h-[48%] min-h-0'}`} style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 justify-between w-full">
   <span className="flex items-center gap-2">
@@ -1997,17 +1997,17 @@ useEffect(() => {
   </div>
 </CardTitle>
                 </CardHeader>
-                <CardContent className="p-2 h-full flex flex-col gap-2">
-                  <div className="flex-shrink-0" style={{ maxHeight: '180px' }}>
+                <CardContent className="p-2 h-full flex flex-col gap-2 min-h-0 overflow-hidden">
+                  <div className="flex-shrink-0" style={{ maxHeight: '140px' }}>
                     <WhaleTradesLive />
                   </div>
-                  <div className="flex-1 overflow-y-auto">
+                  <div className="flex-1 overflow-y-auto min-h-0">
                     <UserStats />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-black border-[#FFD600] w-full h-full flex-1 flex flex-col min-h-0" style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
+              <Card className={`bg-black border-[#FFD600] w-full flex flex-col min-h-0 ${isMobile ? 'h-[500px]' : 'flex-1 h-full'}`} style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
                 <CardHeader className="pb-0">
   <div className="flex items-center justify-center w-full relative">
   <button

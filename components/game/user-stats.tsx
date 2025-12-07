@@ -437,18 +437,18 @@ export default function UserStats() {
         </div>
         <span className="font-black text-lg text-white">{winRate.toFixed(1)}%</span>
       </div>
-      <div className="grid grid-cols-3 gap-2 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif] p-0 m-0">
-        <div className="bg-zinc-900/80 border border-yellow-300/40 p-2 rounded-xl text-center text-white">
-          <p className="text-sm font-bold text-yellow-200 drop-shadow-sm mb-1 stats-item">Total</p>
-          <p className="font-black text-xl text-white text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #FFD60055'}}>{totalBets}</p>
+      <div className="grid grid-cols-3 gap-1 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif] p-0 m-0">
+        <div className="bg-zinc-900/80 border border-yellow-300/40 p-1 rounded-lg text-center text-white">
+          <p className="text-[10px] font-bold text-yellow-200 drop-shadow-sm mb-0 stats-item">Total</p>
+          <p className="font-black text-base text-white text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #FFD60055'}}>{totalBets}</p>
         </div>
-        <div className="bg-green-900/50 border border-green-400/30 p-3 rounded-xl text-center text-white">
-          <p className="text-sm font-bold text-green-300 drop-shadow-sm mb-1 stats-item">Ganadas</p>
-          <p className="font-black text-xl text-green-200 text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #00FF8555'}}>{wonBets}</p>
+        <div className="bg-green-900/50 border border-green-400/30 p-1 rounded-lg text-center text-white">
+          <p className="text-[10px] font-bold text-green-300 drop-shadow-sm mb-0 stats-item">Ganadas</p>
+          <p className="font-black text-base text-green-200 text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #00FF8555'}}>{wonBets}</p>
         </div>
-        <div className="bg-red-900/50 border border-red-400/30 p-3 rounded-xl text-center text-white">
-          <p className="text-sm font-bold text-red-300 drop-shadow-sm mb-1 stats-item">Perdidas</p>
-          <p className="font-black text-xl text-red-200 text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #FF222255'}}>{lostBets}</p>
+        <div className="bg-red-900/50 border border-red-400/30 p-1 rounded-lg text-center text-white">
+          <p className="text-[10px] font-bold text-red-300 drop-shadow-sm mb-0 stats-item">Perdidas</p>
+          <p className="font-black text-base text-red-200 text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #FF222255'}}>{lostBets}</p>
         </div>
       </div>
     </div>
