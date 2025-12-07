@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { canAttemptMathChallenge, incrementMathChallengeCount, getMathChallengeTimeLeft, MATH_CHALLENGE_LIMIT } from "@/utils/math-challenge-limit";
 import { useGame } from "@/context/game-context";
-import { TrendingUp, TrendingDown, Percent, DollarSign } from "lucide-react";
+import { useAchievement } from "@/context/achievement-context";
+import { TrendingUp, TrendingDown, Percent, DollarSign, Trophy, Lock } from "lucide-react";
 
 function generateMathChallenge() {
   // Nivel avanzado: operaciones encadenadas y números grandes
@@ -181,7 +182,7 @@ export default function UserStats() {
   const [canAttempt, setCanAttempt] = useState(true);
 
   // Obtener el progreso actual (ej: 1/3)
-  const [mathProgress, setMathProgress] = useState<{count: number, limit: number}>({count: 0, limit: MATH_CHALLENGE_LIMIT});
+  const [mathProgress, setMathProgress] = useState<{ count: number, limit: number }>({ count: 0, limit: MATH_CHALLENGE_LIMIT });
 
   // Actualizar intentos y tiempo restante cada vez que se muestra el modal o cada 60s
   useEffect(() => {
@@ -196,14 +197,14 @@ export default function UserStats() {
           if (data) {
             const parsed = JSON.parse(data);
             const count = parsed && typeof parsed.count === 'number' ? parsed.count : 0;
-            setMathProgress({count, limit: MATH_CHALLENGE_LIMIT});
+            setMathProgress({ count, limit: MATH_CHALLENGE_LIMIT });
             setMathAttempts(count);
           } else {
-            setMathProgress({count: 0, limit: MATH_CHALLENGE_LIMIT});
+            setMathProgress({ count: 0, limit: MATH_CHALLENGE_LIMIT });
             setMathAttempts(0);
           }
         } catch {
-          setMathProgress({count: 0, limit: MATH_CHALLENGE_LIMIT});
+          setMathProgress({ count: 0, limit: MATH_CHALLENGE_LIMIT });
           setMathAttempts(0);
         }
       }
@@ -371,40 +372,40 @@ export default function UserStats() {
               disabled={!canAttempt}
             />
             <div className="flex justify-center gap-2 mt-4">
-  <button
-    className="px-3 py-1 bg-green-500 hover:bg-green-400 rounded text-white font-bold disabled:bg-zinc-500 disabled:text-zinc-300"
-    onClick={handleCheckMath}
-    disabled={!canAttempt}
-  >Aceptar</button>
-  <button
-    className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white font-bold"
-    onClick={() => { setShowMathModal(false); setMathAnswer(''); setMathChallenge(generateMathChallenge()); }}
-  >Cancelar</button>
-  <button
-    className="px-3 py-1 bg-yellow-400 hover:bg-yellow-300 rounded text-black font-bold border border-yellow-600 shadow"
-    onClick={() => setShowPasswordSection(true)}
-    type="button"
-  >Contraseña</button>
-</div>
-{showPasswordSection && (
-  <div className="mt-3 p-3 border-2 border-yellow-400 rounded-lg bg-black/80">
-    <div className="mb-2 text-yellow-300 font-bold">Introduce la contraseña secreta:</div>
-    <input
-      type="password"
-      className="w-32 px-2 py-1 rounded border border-yellow-400 text-center text-black font-bold"
-      value={passwordInput}
-      onChange={e => setPasswordInput(e.target.value)}
-      onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
-      autoFocus
-    />
-    <button
-      className="ml-2 px-3 py-1 bg-yellow-500 hover:bg-yellow-400 rounded text-black font-bold border border-yellow-600"
-      onClick={handlePasswordSubmit}
-      type="button"
-    >OK</button>
-    {passwordMsg && <div className={`mt-2 ${passwordMsg === '¡Contraseña correcta! +1500 monedas' ? 'text-green-400' : 'text-red-400'}`}>{passwordMsg}</div>}
-  </div>
-) }
+              <button
+                className="px-3 py-1 bg-green-500 hover:bg-green-400 rounded text-white font-bold disabled:bg-zinc-500 disabled:text-zinc-300"
+                onClick={handleCheckMath}
+                disabled={!canAttempt}
+              >Aceptar</button>
+              <button
+                className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white font-bold"
+                onClick={() => { setShowMathModal(false); setMathAnswer(''); setMathChallenge(generateMathChallenge()); }}
+              >Cancelar</button>
+              <button
+                className="px-3 py-1 bg-yellow-400 hover:bg-yellow-300 rounded text-black font-bold border border-yellow-600 shadow"
+                onClick={() => setShowPasswordSection(true)}
+                type="button"
+              >Contraseña</button>
+            </div>
+            {showPasswordSection && (
+              <div className="mt-3 p-3 border-2 border-yellow-400 rounded-lg bg-black/80">
+                <div className="mb-2 text-yellow-300 font-bold">Introduce la contraseña secreta:</div>
+                <input
+                  type="password"
+                  className="w-32 px-2 py-1 rounded border border-yellow-400 text-center text-black font-bold"
+                  value={passwordInput}
+                  onChange={e => setPasswordInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
+                  autoFocus
+                />
+                <button
+                  className="ml-2 px-3 py-1 bg-yellow-500 hover:bg-yellow-400 rounded text-black font-bold border border-yellow-600"
+                  onClick={handlePasswordSubmit}
+                  type="button"
+                >OK</button>
+                {passwordMsg && <div className={`mt-2 ${passwordMsg === '¡Contraseña correcta! +1500 monedas' ? 'text-green-400' : 'text-red-400'}`}>{passwordMsg}</div>}
+              </div>
+            )}
             {mathError && <div className="text-red-400 mt-2">{mathError}</div>}
             {mathSuccess && <div className="text-green-400 mt-2">¡Correcto! +100 monedas</div>}
           </div>
@@ -440,17 +441,86 @@ export default function UserStats() {
       <div className="grid grid-cols-3 gap-1 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif] p-0 m-0">
         <div className="bg-zinc-900/80 border border-yellow-300/40 p-1 rounded-lg text-center text-white">
           <p className="text-[10px] font-bold text-yellow-200 drop-shadow-sm mb-0 stats-item">Total</p>
-          <p className="font-black text-base text-white text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #FFD60055'}}>{totalBets}</p>
+          <p className="font-black text-base text-white text-shadow-lg stats-number" style={{ textShadow: '0 2px 8px #FFD60055' }}>{totalBets}</p>
         </div>
         <div className="bg-green-900/50 border border-green-400/30 p-1 rounded-lg text-center text-white">
           <p className="text-[10px] font-bold text-green-300 drop-shadow-sm mb-0 stats-item">Ganadas</p>
-          <p className="font-black text-base text-green-200 text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #00FF8555'}}>{wonBets}</p>
+          <p className="font-black text-base text-green-200 text-shadow-lg stats-number" style={{ textShadow: '0 2px 8px #00FF8555' }}>{wonBets}</p>
         </div>
         <div className="bg-red-900/50 border border-red-400/30 p-1 rounded-lg text-center text-white">
           <p className="text-[10px] font-bold text-red-300 drop-shadow-sm mb-0 stats-item">Perdidas</p>
-          <p className="font-black text-base text-red-200 text-shadow-lg stats-number" style={{textShadow:'0 2px 8px #FF222255'}}>{lostBets}</p>
+          <p className="font-black text-base text-red-200 text-shadow-lg stats-number" style={{ textShadow: '0 2px 8px #FF222255' }}>{lostBets}</p>
         </div>
       </div>
+
+      {/* --- SECCIÓN DE LOGROS --- */}
+      <AchievementsSection />
+    </div>
+  );
+}
+
+// Componente interno para aislar la lógica de logros y evitar re-renders innecesarios
+function AchievementsSection() {
+  const { achievements, unlockedAchievements } = useAchievement();
+
+  // Agrupar logros: Desbloqueados primero, luego el resto
+  const sortedAchievements = [...achievements].sort((a, b) => {
+    const isUnlockedA = unlockedAchievements.some(u => u.id === a.id);
+    const isUnlockedB = unlockedAchievements.some(u => u.id === b.id);
+    if (isUnlockedA && !isUnlockedB) return -1;
+    if (!isUnlockedA && isUnlockedB) return 1;
+    return 0;
+  });
+
+  return (
+    <div className="mt-4 border-t border-zinc-800 pt-2">
+      <div className="flex items-center gap-2 mb-2 text-white">
+        <Trophy className="h-4 w-4 text-yellow-400" />
+        <span className="text-sm font-bold">Logros ({unlockedAchievements.length}/{achievements.length})</span>
+      </div>
+
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+        {sortedAchievements.map(achievement => {
+          const isUnlocked = unlockedAchievements.some(u => u.id === achievement.id);
+
+          return (
+            <div
+              key={achievement.id}
+              className={`
+                aspect-square rounded-md flex items-center justify-center relative group cursor-help transition-all duration-200
+                ${isUnlocked
+                  ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-900/40 border border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.2)]'
+                  : 'bg-zinc-900/50 border border-zinc-800 grayscale opacity-60'}
+              `}
+              title={`${achievement.title}\n${achievement.description}\nRecompensa: $${achievement.reward}`}
+            >
+              {isUnlocked ? (
+                <div className="text-xl sm:text-2xl drop-shadow-md filter brightness-110">
+                  {/* Si el logro tiene icono personalizado usarlo, sino trofeo genérico */}
+                  {achievement.icon ? achievement.icon : '🏆'}
+                </div>
+              ) : (
+                <Lock className="w-4 h-4 text-zinc-600" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 214, 0, 0.3);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 214, 0, 0.5);
+        }
+      `}</style>
     </div>
   );
 }
