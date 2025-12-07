@@ -23,6 +23,7 @@ interface CandlestickChartProps {
   viewState: ViewState;
   setViewState: React.Dispatch<React.SetStateAction<ViewState>>;
   verticalScale?: number;
+  setVerticalScale?: (v: number) => void;
   showVolumeProfile?: boolean;
   setShowVolumeProfile?: (v: boolean | ((v: boolean) => boolean)) => void;
 }
@@ -42,6 +43,8 @@ interface SupportResistance {
 }
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const RIGHT_AXIS_WIDTH = 50;
 
 export default function CandlestickChart({ candles, currentCandle, viewState, setViewState, verticalScale = 1, setVerticalScale, showVolumeProfile, setShowVolumeProfile, showCrossCircles, setShowCrossCircles }: CandlestickChartProps & { setVerticalScale?: (v: number) => void, showCrossCircles?: boolean, setShowCrossCircles?: (v: boolean | ((v: boolean) => boolean)) => void }) {
   // --- Estado de velas simuladas ---
@@ -1623,7 +1626,45 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
       tooltipCloseHitboxRef.current = null;
     }
 
-    // Reset transformation
+    // Draw Right Axis Visual Indicator
+    ctx.save();
+    ctx.resetTransform(); // Reset transform to draw in screen coordinates
+    // We want to draw on the far right edge
+    // Since we scaled by devicePixelRatio before, we might need to handle it or just use dimensions.width which is CSS pixels? 
+    // Wait, earlier we did ctx.scale(devicePixelRatio, ...)
+    // So dimensions.width is in CSS pixels. 
+    // When we resetTransform, we are in device pixels usually if the canvas is sized that way?
+    // Let's re-apply pixel ratio scale just for drawing 
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+    // Draw a subtle background for the right axis
+    ctx.fillStyle = 'rgba(20, 20, 20, 0.5)';
+    ctx.fillRect(dimensions.width - RIGHT_AXIS_WIDTH, 0, RIGHT_AXIS_WIDTH, dimensions.height);
+
+    // Draw a separator line
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(dimensions.width - RIGHT_AXIS_WIDTH, 0);
+    ctx.lineTo(dimensions.width - RIGHT_AXIS_WIDTH, dimensions.height);
+    ctx.stroke();
+
+    // If dragging or hovering (we can check mouse position if tracking, but for now just static or based on isDraggingScaleRef)
+    if (isDraggingScaleRef.current) {
+      ctx.fillStyle = 'rgba(255, 214, 0, 0.1)'; // Highlight yellow when dragging
+      ctx.fillRect(dimensions.width - RIGHT_AXIS_WIDTH, 0, RIGHT_AXIS_WIDTH, dimensions.height);
+
+      ctx.strokeStyle = '#FFD600';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(dimensions.width - RIGHT_AXIS_WIDTH, 0);
+      ctx.lineTo(dimensions.width - RIGHT_AXIS_WIDTH, dimensions.height);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Reset transformation (redundant if we restored, but safe for following logic)
     ctx.resetTransform()
 
     // Guardar el timestamp de este render
@@ -1664,9 +1705,13 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   // Ref para el hitbox del botón de cerrar tooltip
   const tooltipCloseHitboxRef = useRef<{ x: number, y: number, r: number } | null>(null);
 
+  // Refs para vertical scaling
+  const isDraggingScaleRef = useRef(false);
+  const lastMouseYRef = useRef<number | null>(null);
+
   // Eventos de mouse/touch para navegación
   const handleMouseDown = (e: MouseEvent) => {
-    // Verificar si el click fue en el botón de cerrar
+    // 1. Verificar si clickó en el botón de cerrar tooltip
     if (selectedCandle && tooltipCloseHitboxRef.current && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -1674,11 +1719,21 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
       const btn = tooltipCloseHitboxRef.current;
       const dist = Math.sqrt((x - btn.x) ** 2 + (y - btn.y) ** 2);
 
-      // Si clickó en el botón de cerrar (con un poco de margen)
       if (dist <= btn.r + 5) {
         setSelectedCandle(null);
         tooltipCloseHitboxRef.current = null;
-        return; // No iniciar drag
+        return;
+      }
+    }
+
+    // 2. Verificar si clickó en el Eje Derecho (Vertical Scale)
+    if (canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x > dimensions.width - RIGHT_AXIS_WIDTH) {
+        isDraggingScaleRef.current = true;
+        lastMouseYRef.current = e.clientY;
+        return; // No iniciar drag de panning
       }
     }
 
@@ -1691,6 +1746,36 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   };
 
   const handleMouseMove = (e: MouseEvent) => {
+    // Lógica para cursor resize
+    if (canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x > dimensions.width - RIGHT_AXIS_WIDTH) {
+        canvasRef.current.style.cursor = 'ns-resize';
+      } else {
+        canvasRef.current.style.cursor = 'crosshair';
+      }
+    }
+
+    // Lógica para arrastrar escala vertical
+    if (isDraggingScaleRef.current && lastMouseYRef.current !== null && setVerticalScale) {
+      const deltaY = e.clientY - lastMouseYRef.current;
+      lastMouseYRef.current = e.clientY;
+
+      // Sensitivity
+      const sensitivity = 0.005;
+      // Drag down -> deltaY > 0 -> zoom out (scale decreases)
+      // Drag up -> deltaY < 0 -> zoom in (scale increases)
+      // We invert deltaY because usually drag up means increase
+      const change = -deltaY * sensitivity;
+
+      // Limitar la escala
+      const currentScale = verticalScale || 1;
+      const newScale = Math.max(0.1, Math.min(50, currentScale + change * currentScale));
+      setVerticalScale(newScale);
+      return;
+    }
+
     if (!viewState.isDragging || viewState.startX === null || viewState.startY === null) return;
     const deltaX = e.clientX - viewState.startX;
     const deltaY = e.clientY - viewState.startY;
@@ -1732,6 +1817,9 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
   };
 
   const handleMouseUp = () => {
+    isDraggingScaleRef.current = false;
+    lastMouseYRef.current = null;
+
     setViewState((prev: ViewState) => ({
       ...prev,
       isDragging: false,

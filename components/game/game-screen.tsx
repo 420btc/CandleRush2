@@ -1706,6 +1706,7 @@ export default function GameScreen() {
                           setShowVolumeProfile={setShowVolumeProfile}
                           showCrossCircles={showCrossCircles}
                           setShowCrossCircles={setShowCrossCircles}
+                          setVerticalScale={setVerticalScale}
                         />
                         {showVolumeProfile && (
                           <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', width: 16, background: 'black', pointerEvents: 'none', zIndex: 21 }}>
