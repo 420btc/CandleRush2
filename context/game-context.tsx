@@ -8,7 +8,7 @@ import { fetchHistoricalCandles, setupWebSocket } from "@/lib/binance-api"
 import { useToast } from "@/hooks/use-toast"
 import { useAchievement } from "@/context/achievement-context"
 import { usePriceAlerts } from "@/hooks/usePriceAlerts"
-import { normalizeTimestampToTimeframe, shouldResolveBet } from "@/utils/timeframe-utils"
+import { normalizeTimestampToTimeframe, shouldResolveBet, getTimeframeInMs } from "@/utils/timeframe-utils"
 
 // Generate simulated candle data for testing when real data isn't available
 function generateSimulatedCandles(count: number, basePrice = 30000): Candle[] {
@@ -659,10 +659,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!betsHydrated) return;
 
-    // Verificar cada 30 segundos por apuestas pendientes por más de 2 minutos
+    // Verificar cada 30 segundos por apuestas pendientes excediendo su tiempo límite
     const orphanCheckInterval = setInterval(() => {
       const now = Date.now();
-      const twoMinutesAgo = now - (2 * 60 * 1000); // 2 minutos en milisegundos
       let orphanBetsFound = false;
 
       // Buscar en todos los pares y timeframes por apuestas huérfanas
@@ -670,13 +669,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
         Object.keys(betsByPair[symbol] || {}).forEach(tf => {
           const bets = betsByPair[symbol][tf] || [];
 
+          // Calcular tiempo de expiración basado en el timeframe
+          // Para 1m: 1m + 1m = 2m (mantiene comportamiento original)
+          // Para 5m: 5m + 1m = 6m (evita cierre prematuro)
+          const tfMs = getTimeframeInMs(tf);
+          const gracePeriod = 60000; // 1 minuto de gracia
+          const expirationThreshold = tfMs + gracePeriod;
+
           // Buscar apuestas pendientes antiguas
-          const orphanBets = bets.filter(bet =>
-            bet.status === "PENDING" &&
-            bet.timestamp < twoMinutesAgo &&
+          const orphanBets = bets.filter(bet => {
+            if (bet.status !== "PENDING") return false;
+
+            // La apuesta es huérfana si ha pasado más tiempo del esperado desde su creación
+            // SIN resolverse.
+            const age = now - bet.timestamp;
+            const isTooOld = age > expirationThreshold;
+
             // Asegurarse de que no haya una resolución pendiente para esta apuesta
-            !pendingResolutions.some(res => res.candle.timestamp === bet.candleTimestamp)
-          );
+            const hasPendingResolution = pendingResolutions.some(res => res.candle.timestamp === bet.candleTimestamp);
+
+            return isTooOld && !hasPendingResolution;
+          });
 
           if (orphanBets.length > 0) {
             orphanBetsFound = true;
@@ -724,7 +737,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (orphanBetsFound) {
         toast({
           title: "Resolviendo apuestas pendientes",
-          description: "Se han encontrado apuestas sin resolver por más de 2 minutos",
+          description: "Se han encontrado apuestas sin resolver excediendo el tiempo límite",
           variant: "default",
         });
       }

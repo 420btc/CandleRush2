@@ -9,6 +9,7 @@ import AnimatedBorder from "@/components/game/AnimatedBorder"
 import "@/styles/animated-border.css"
 
 import BetResultModal from "@/components/game/bet-result-modal"
+import { getTimeframeInMs } from "@/utils/timeframe-utils"
 
 export default function BetHistory() {
   const { isMobile } = useDevice()
@@ -171,21 +172,29 @@ export default function BetHistory() {
                         onClick={() => {
                           if (bet.status !== 'PENDING') {
                             // Buscar la vela correspondiente usando múltiples criterios
+                            // Usar una tolerancia basada competa en el timeframe + margen
+                            const getTolerance = (tf: string) => {
+                              const ms = getTimeframeInMs(tf || '1m');
+                              return ms + 60000; // Timeframe + 1 min margen
+                            };
+
                             const resolvedCandle = (() => {
+                              const tolerance = getTolerance(bet.timeframe);
+
                               // 1. Primero intentar por resolvedAt si existe
                               if (bet.resolvedAt) {
-                                const byResolved = candles.find(c => Math.abs(c.timestamp - bet.resolvedAt!) < 2 * 60 * 1000);
+                                const byResolved = candles.find(c => Math.abs(c.timestamp - bet.resolvedAt!) <= tolerance);
                                 if (byResolved) return byResolved;
                               }
 
                               // 2. Luego intentar por candleTimestamp si existe
                               if (bet.candleTimestamp) {
-                                const byCandleTimestamp = candles.find(c => Math.abs(c.timestamp - bet.candleTimestamp!) < 2 * 60 * 1000);
+                                const byCandleTimestamp = candles.find(c => Math.abs(c.timestamp - bet.candleTimestamp!) <= tolerance);
                                 if (byCandleTimestamp) return byCandleTimestamp;
                               }
 
                               // 3. Finalmente por timestamp de la apuesta
-                              const byTimestamp = candles.find(c => Math.abs(c.timestamp - bet.timestamp) < 2 * 60 * 1000);
+                              const byTimestamp = candles.find(c => Math.abs(c.timestamp - bet.timestamp) <= tolerance);
                               if (byTimestamp) return byTimestamp;
 
                               // 4. Fallback a la última vela
