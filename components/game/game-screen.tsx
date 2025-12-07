@@ -2009,42 +2009,61 @@ export default function GameScreen() {
               </Card>
 
               <Card className={`bg-black border-[#FFD600] w-full flex flex-col min-h-0 ${isMobile ? 'h-[500px]' : 'flex-1 h-full'}`} style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
-                <CardHeader className="pb-0">
-                  <div className="flex items-center justify-center w-full relative">
-                    <button
-                      aria-label="Ver gráfico"
-                      title="Ver gráfico"
-                      className="p-0.5 rounded hover:bg-green-600 bg-green-500/90 text-white flex items-center justify-center transition h-[44px] w-[44px] mr-2 absolute left-0"
-                      style={{ minWidth: 0, minHeight: 0 }}
-                      onClick={() => setOpenMinimap(true)}
-                    >
-                      <FaChartArea className="h-[22px] w-[22px]" />
-                    </button>
-                    <ModalMinimapChart
-                      open={openMinimap}
-                      onOpenChange={setOpenMinimap}
-                      candles={candles}
-                      bets={bets}
-                      timeframe={timeframe}
-                    />
-                    <CardTitle className="flex items-center gap-2 whitespace-nowrap text-center text-white" style={{ position: 'relative', top: '-6px' }}>
-                      <MdOutlineCasino className="h-6 w-6 text-yellow-400" />
-                      Actividad
-                    </CardTitle>
-                    <button
-                      aria-label="Eliminar historial de apuestas"
-                      title="Eliminar historial de apuestas"
-                      className="p-0.5 rounded hover:bg-red-800 bg-red-700/80 text-white flex items-center justify-center transition h-[44px] w-[44px] ml-2 absolute right-0"
-                      style={{ minWidth: 0, minHeight: 0 }}
-                      onClick={() => { if (window.confirm('¿Seguro que deseas eliminar todo el historial de apuestas?')) window.dispatchEvent(new CustomEvent('clearBets')); }}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-                    </button>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 min-h-0 h-full p-2">
-                  <BetHistory />
-                </CardContent>
+                <Tabs defaultValue="bets" className="flex flex-col h-full w-full">
+                  <CardHeader className="pb-0 pt-2 px-2">
+                    <div className="flex items-center justify-between w-full relative mb-1">
+                      {/* Tabs Triggers Centrados */}
+                      <TabsList className="bg-zinc-900 border border-zinc-800 mx-auto grid grid-cols-2 w-[220px]">
+                        <TabsTrigger value="bets" className="data-[state=active]:bg-yellow-400 data-[state=active]:text-black font-bold text-xs sm:text-sm cursor-pointer">
+                          <List className="w-3 h-3 mr-1" /> Apuestas
+                        </TabsTrigger>
+                        <TabsTrigger value="achievements" className="data-[state=active]:bg-yellow-400 data-[state=active]:text-black font-bold text-xs sm:text-sm cursor-pointer">
+                          <Trophy className="w-3 h-3 mr-1" /> Logros
+                        </TabsTrigger>
+                      </TabsList>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-0 h-full p-0 overflow-hidden">
+                    <TabsContent value="bets" className="h-full flex flex-col m-0 p-0 data-[state=inactive]:hidden">
+                      <div className="flex justify-between items-center px-3 py-1 bg-black z-10 border-b border-zinc-800">
+                        <button
+                          aria-label="Ver gráfico"
+                          title="Ver gráfico"
+                          className="p-1 rounded hover:bg-green-600 bg-green-500/90 text-white transition h-[32px] w-[32px] flex items-center justify-center"
+                          onClick={() => setOpenMinimap(true)}
+                        >
+                          <FaChartArea className="h-4 w-4" />
+                        </button>
+
+                        <ModalMinimapChart // Mantenemos el modal aquí
+                          open={openMinimap}
+                          onOpenChange={setOpenMinimap}
+                          candles={candles}
+                          bets={bets}
+                          timeframe={timeframe}
+                        />
+
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Historial</span>
+
+                        <button
+                          aria-label="Eliminar historial"
+                          title="Eliminar historial"
+                          className="p-1 rounded hover:bg-red-800 bg-red-700/80 text-white transition h-[32px] w-[32px] flex items-center justify-center"
+                          onClick={() => { if (window.confirm('¿Seguro que deseas eliminar todo el historial de apuestas?')) window.dispatchEvent(new CustomEvent('clearBets')); }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-hidden p-2">
+                        <BetHistory />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="achievements" className="h-full m-0 p-0 data-[state=inactive]:hidden overflow-hidden">
+                      <AchievementsList />
+                    </TabsContent>
+                  </CardContent>
+                </Tabs>
               </Card>
             </div>
           </div>
