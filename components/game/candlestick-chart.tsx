@@ -629,7 +629,7 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
     const centerY = height / 2;
 
     const targetOffsetX = lastScreenX - centerX;
-    const targetOffsetY = scaledHeight - lastScreenY - centerY;
+    const targetOffsetY = lastScreenY - centerY;
 
     console.log('[Zoom Última Vela] Enfocando última vela:', {
       width, height, last, targetScale, minPrice, maxPrice, priceRange, safeTimeRange,
