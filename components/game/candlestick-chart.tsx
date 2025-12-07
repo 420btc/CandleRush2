@@ -1630,8 +1630,27 @@ export default function CandlestickChart({ candles, currentCandle, viewState, se
     drawChart()
   }, [candles, currentCandle, dimensions, viewState, drawChart])
 
+  // Ref para el hitbox del botón de cerrar tooltip
+  const tooltipCloseHitboxRef = useRef<{ x: number, y: number, r: number } | null>(null);
+
   // Eventos de mouse/touch para navegación
   const handleMouseDown = (e: MouseEvent) => {
+    // Verificar si el click fue en el botón de cerrar
+    if (selectedCandle && tooltipCloseHitboxRef.current && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const btn = tooltipCloseHitboxRef.current;
+      const dist = Math.sqrt((x - btn.x) ** 2 + (y - btn.y) ** 2);
+
+      // Si clickó en el botón de cerrar (con un poco de margen)
+      if (dist <= btn.r + 5) {
+        setSelectedCandle(null);
+        tooltipCloseHitboxRef.current = null;
+        return; // No iniciar drag
+      }
+    }
+
     setViewState((prev: ViewState) => ({
       ...prev,
       startX: e.clientX,
