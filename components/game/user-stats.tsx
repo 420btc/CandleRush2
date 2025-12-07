@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { canAttemptMathChallenge, incrementMathChallengeCount, getMathChallengeTimeLeft, MATH_CHALLENGE_LIMIT } from "@/utils/math-challenge-limit";
 import { useGame } from "@/context/game-context";
-import { useAchievement } from "@/context/achievement-context";
-import { TrendingUp, TrendingDown, Percent, DollarSign, Trophy, Lock } from "lucide-react";
+import { TrendingUp, TrendingDown, Percent, DollarSign } from "lucide-react";
 
 function generateMathChallenge() {
   // Nivel avanzado: operaciones encadenadas y números grandes
@@ -452,75 +451,6 @@ export default function UserStats() {
           <p className="font-black text-base text-red-200 text-shadow-lg stats-number" style={{ textShadow: '0 2px 8px #FF222255' }}>{lostBets}</p>
         </div>
       </div>
-
-      {/* --- SECCIÓN DE LOGROS --- */}
-      <AchievementsSection />
-    </div>
-  );
-}
-
-// Componente interno para aislar la lógica de logros y evitar re-renders innecesarios
-function AchievementsSection() {
-  const { achievements, unlockedAchievements } = useAchievement();
-
-  // Agrupar logros: Desbloqueados primero, luego el resto
-  const sortedAchievements = [...achievements].sort((a, b) => {
-    const isUnlockedA = unlockedAchievements.some(u => u.id === a.id);
-    const isUnlockedB = unlockedAchievements.some(u => u.id === b.id);
-    if (isUnlockedA && !isUnlockedB) return -1;
-    if (!isUnlockedA && isUnlockedB) return 1;
-    return 0;
-  });
-
-  return (
-    <div className="mt-4 border-t border-zinc-800 pt-2">
-      <div className="flex items-center gap-2 mb-2 text-white">
-        <Trophy className="h-4 w-4 text-yellow-400" />
-        <span className="text-sm font-bold">Logros ({unlockedAchievements.length}/{achievements.length})</span>
-      </div>
-
-      <div className="grid grid-cols-5 gap-1.5 sm:gap-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
-        {sortedAchievements.map(achievement => {
-          const isUnlocked = unlockedAchievements.some(u => u.id === achievement.id);
-
-          return (
-            <div
-              key={achievement.id}
-              className={`
-                aspect-square rounded-md flex items-center justify-center relative group cursor-help transition-all duration-200
-                ${isUnlocked
-                  ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-900/40 border border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.2)]'
-                  : 'bg-zinc-900/50 border border-zinc-800 grayscale opacity-60'}
-              `}
-              title={`${achievement.title}\n${achievement.description}\nRecompensa: $${achievement.reward}`}
-            >
-              {isUnlocked ? (
-                <div className="text-xl sm:text-2xl drop-shadow-md filter brightness-110">
-                  {/* Si el logro tiene icono personalizado usarlo, sino trofeo genérico */}
-                  {achievement.icon ? achievement.icon : '🏆'}
-                </div>
-              ) : (
-                <Lock className="w-4 h-4 text-zinc-600" />
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(0,0,0,0.2);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 214, 0, 0.3);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 214, 0, 0.5);
-        }
-      `}</style>
     </div>
   );
 }

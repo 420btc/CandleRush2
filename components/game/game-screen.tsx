@@ -133,12 +133,13 @@ import BetHistory from "@/components/game/bet-history"
 import WhaleTradesLive from "@/components/game/whale-trades-live";
 import UserStats from "@/components/game/user-stats"
 import MobileStats from "@/components/game/mobile-stats"
+import AchievementsList from "@/components/game/achievements-list"
 // import AchievementNotification from "@/components/game/achievement-notification";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useDevice } from "@/context/device-mode-context"
-import { ArrowUpCircle, ArrowDownCircle, BarChart3, History, Trophy, Wallet } from "lucide-react"
+import { ArrowUpCircle, ArrowDownCircle, BarChart3, History, Trophy, Wallet, List } from "lucide-react"
 import { FaChartArea } from "react-icons/fa";
 import type { Candle, Bet } from "@/types/game";
 import ModalMinimapChart from "@/components/game/modal-minimap-chart";
@@ -263,13 +264,13 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
   }
 
   return (
-    <span style={{ 
-      position: 'relative', 
-      display: 'inline-block', 
-      minWidth: isMobile ? '150px' : '230px', 
-      textAlign: isMobile ? 'center' : 'right', 
-      whiteSpace: 'nowrap', 
-      lineHeight: 1.12 
+    <span style={{
+      position: 'relative',
+      display: 'inline-block',
+      minWidth: isMobile ? '150px' : '230px',
+      textAlign: isMobile ? 'center' : 'right',
+      whiteSpace: 'nowrap',
+      lineHeight: 1.12
     }}>
       {/* Glow background */}
       <span
@@ -307,7 +308,7 @@ function BTCPriceDynamicColor({ price, isMobile, open }: { price: number | null,
 // --- Fin de BTCPriceDynamicColor ---
 
 
-  
+
 
 // Animación flip para los dígitos que cambian
 // Se añade como bloque global de CSS
@@ -364,7 +365,7 @@ export default function GameScreen() {
       let users: UsersMap = {};
       try {
         users = JSON.parse(localStorage.getItem("users") || "{}") as UsersMap;
-      } catch {}
+      } catch { }
       if (!users[email]) {
         users[email] = { password: '', google: true };
         localStorage.setItem("users", JSON.stringify(users));
@@ -748,94 +749,94 @@ export default function GameScreen() {
   }
   // Estado para el monto de apuesta
   // Inicializa el monto de apuesta desde localStorage si existe
-const [betAmount, setBetAmount] = useState(() => {
-  const stored = typeof window !== 'undefined' ? localStorage.getItem('autoMixAmount') : null;
-  if (stored) {
-    const parsed = parseFloat(stored);
-    if (!isNaN(parsed) && parsed > 0) return parsed;
-  }
-  return 10;
-});
-// Nuevo: estado separado para el input, como string
-const [betAmountInput, setBetAmountInput] = useState(() => String(betAmount));
+  const [betAmount, setBetAmount] = useState(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('autoMixAmount') : null;
+    if (stored) {
+      const parsed = parseFloat(stored);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return 10;
+  });
+  // Nuevo: estado separado para el input, como string
+  const [betAmountInput, setBetAmountInput] = useState(() => String(betAmount));
 
   // Sincroniza el monto de apuesta con el balance real
   // Sincroniza betAmount a localStorage cada vez que cambia
-useEffect(() => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('autoMixAmount', String(betAmount));
-  }
-}, [betAmount]);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('autoMixAmount', String(betAmount));
+    }
+  }, [betAmount]);
 
-useEffect(() => {
-  if (betAmount > userBalance) {
-    setBetAmount(userBalance > 0 ? Math.floor(userBalance) : 0);
-  } else if (!Number.isInteger(betAmount)) {
-    setBetAmount(Math.floor(betAmount));
-  }
-}, [userBalance]);
+  useEffect(() => {
+    if (betAmount > userBalance) {
+      setBetAmount(userBalance > 0 ? Math.floor(userBalance) : 0);
+    } else if (!Number.isInteger(betAmount)) {
+      setBetAmount(Math.floor(betAmount));
+    }
+  }, [userBalance]);
 
-  
+
 
   // Estado para apalancamiento
-// --- Notificación de AutoMix activo ---
-useEffect(() => {
-  // Comprobar si viene de vuelta del perfil con autoMix activado
-  if (autoMix) {
-    // Verificar si es la navegación de regreso desde otra página
-    const lastLocation = typeof window !== 'undefined' ? localStorage.getItem('lastLocation') : null;
-    if (lastLocation && lastLocation !== '/game') {
-      console.log('[AUTO MIX] AutoMix sigue activo después de navegar desde:', lastLocation);
-      
-      // Mostrar toast o notificación solo si viene de otra página
-      toast({
-        title: "AutoMix sigue activo",
-        description: "El modo automático continúa funcionando incluso después de navegar entre páginas",
-        variant: "default",
-      });
-    }
-    
-    // Actualizar la ubicación actual
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('lastLocation', '/game');
-    }
-  }
-}, [autoMix, toast]);
+  // --- Notificación de AutoMix activo ---
+  useEffect(() => {
+    // Comprobar si viene de vuelta del perfil con autoMix activado
+    if (autoMix) {
+      // Verificar si es la navegación de regreso desde otra página
+      const lastLocation = typeof window !== 'undefined' ? localStorage.getItem('lastLocation') : null;
+      if (lastLocation && lastLocation !== '/game') {
+        console.log('[AUTO MIX] AutoMix sigue activo después de navegar desde:', lastLocation);
 
-// NOTA: La lógica de apuestas automáticas (AutoMix, AutoBullish, AutoBearish) 
-// se maneja completamente en game-context.tsx para evitar duplicaciones.
-// Este componente solo maneja la UI y las apuestas manuales.
+        // Mostrar toast o notificación solo si viene de otra página
+        toast({
+          title: "AutoMix sigue activo",
+          description: "El modo automático continúa funcionando incluso después de navegar entre páginas",
+          variant: "default",
+        });
+      }
+
+      // Actualizar la ubicación actual
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lastLocation', '/game');
+      }
+    }
+  }, [autoMix, toast]);
+
+  // NOTA: La lógica de apuestas automáticas (AutoMix, AutoBullish, AutoBearish) 
+  // se maneja completamente en game-context.tsx para evitar duplicaciones.
+  // Este componente solo maneja la UI y las apuestas manuales.
 
   // Default leverage is now 2000x
-const [leverage, setLeverage] = useState(() => {
-  const stored = typeof window !== 'undefined' ? localStorage.getItem('autoMixLeverage') : null;
-  if (stored) {
-    const parsed = parseFloat(stored);
-    if (!isNaN(parsed) && parsed > 0) return parsed;
-  }
-  return 2000;
-});
+  const [leverage, setLeverage] = useState(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('autoMixLeverage') : null;
+    if (stored) {
+      const parsed = parseFloat(stored);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return 2000;
+  });
 
   // Calcular precio de liquidación en tiempo real
   const entryPrice = currentCandle?.close || 0;
   const liquidationPrice = leverage > 1 && entryPrice > 0
     ? ((prediction: "BULLISH" | "BEARISH") => {
-        if (prediction === "BULLISH") {
-          return entryPrice * (1 - 0.99 / leverage);
-        } else {
-          return entryPrice * (1 + 0.99 / leverage);
-        }
-      })
+      if (prediction === "BULLISH") {
+        return entryPrice * (1 - 0.99 / leverage);
+      } else {
+        return entryPrice * (1 + 0.99 / leverage);
+      }
+    })
     : null; // función para calcular según tipo
 
   const [bonusMessage, setBonusMessage] = useState<string | null>(null);
 
-// Sincroniza leverage a localStorage cada vez que cambia
-useEffect(() => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('autoMixLeverage', String(leverage));
-  }
-}, [leverage]);
+  // Sincroniza leverage a localStorage cada vez que cambia
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('autoMixLeverage', String(leverage));
+    }
+  }, [leverage]);
   const [bonusDetail, setBonusDetail] = useState<string | null>(null);
   const [betResult, setBetResult] = useState<null | {
     won: boolean;
@@ -886,7 +887,7 @@ useEffect(() => {
       // Buscar la vela correspondiente usando candleTimestamp si está disponible
       const targetTimestamp = lastResolved.candleTimestamp ?? lastResolved.timestamp;
       // Buscar la vela exacta o muy cercana (dentro del mismo minuto/timeframe)
-      const resolvedCandle = candles.find(c => Math.abs(c.timestamp - targetTimestamp) < 60000); 
+      const resolvedCandle = candles.find(c => Math.abs(c.timestamp - targetTimestamp) < 60000);
 
       if (resolvedCandle) {
         const diff = resolvedCandle.close - resolvedCandle.open;
@@ -1026,7 +1027,7 @@ useEffect(() => {
       currentCandle,
       timestamp: Date.now()
     });
-    
+
     if (gamePhase !== "BETTING") {
       console.log('[DEBUG APUESTA] Error: No es fase de apuestas', { gamePhase });
       toast({
@@ -1045,19 +1046,19 @@ useEffect(() => {
       });
       return;
     }
-    
+
     console.log('[DEBUG APUESTA] Validaciones pasadas, llamando placeBet...');
-    
+
     // Sonido de apostar
     if (betAudioRef.current) {
       betAudioRef.current.currentTime = 0;
       betAudioRef.current.play();
     }
-    
+
     try {
       const bet = await placeBet("BULLISH", betAmount, leverage, { esAutomatica: 'No' });
       console.log('[DEBUG APUESTA] Resultado de placeBet:', bet);
-      
+
       if (bet) {
         console.log('[DEBUG APUESTA] Apuesta exitosa, mostrando animación');
         setLastFlyupAmount(betAmount);
@@ -1078,7 +1079,7 @@ useEffect(() => {
       currentCandle,
       timestamp: Date.now()
     });
-    
+
     if (gamePhase !== "BETTING") {
       console.log('[DEBUG APUESTA] Error: No es fase de apuestas', { gamePhase });
       toast({
@@ -1097,19 +1098,19 @@ useEffect(() => {
       });
       return;
     }
-    
+
     console.log('[DEBUG APUESTA] Validaciones pasadas, llamando placeBet...');
-    
+
     // Sonido de apostar
     if (betAudioRef.current) {
       betAudioRef.current.currentTime = 0;
       betAudioRef.current.play();
     }
-    
+
     try {
       const bet = await placeBet("BEARISH", betAmount, leverage, { esAutomatica: 'No' });
       console.log('[DEBUG APUESTA] Resultado de placeBet:', bet);
-      
+
       if (bet) {
         console.log('[DEBUG APUESTA] Apuesta exitosa, mostrando animación');
         setLastFlyupAmount(betAmount);
@@ -1171,7 +1172,7 @@ useEffect(() => {
       )}
       <audio ref={betAudioRef} src="/bet.mp3" preload="auto" />
       {/* Ref oculta para pulsar, por si hace falta en móviles */}
-      <audio ref={pulsarAudioRef} src="/pulsar.mp3" preload="auto" style={{display:'none'}} />
+      <audio ref={pulsarAudioRef} src="/pulsar.mp3" preload="auto" style={{ display: 'none' }} />
       <BetAmountFlyup amount={lastFlyupAmount} trigger={showFlyup} onComplete={() => setShowFlyup(false)} />
       {/* Game Over Modal */}
       {showGameOver && (
@@ -1223,41 +1224,41 @@ useEffect(() => {
         </div>
       )}
       <BetResultModal
-  open={showBetModal}
-  onOpenChange={setShowBetModal}
-  result={(() => {
-    if (showBetModal && betResult && betResult.bet && typeof betResult.bet.id === 'string' && 'status' in betResult.bet && 'prediction' in betResult.bet && 'amount' in betResult.bet && 'timestamp' in betResult.bet && 'symbol' in betResult.bet && 'timeframe' in betResult.bet) {
-      return { bet: betResult.bet, candle: betResult.candle };
-    } else if (showBetModal && bets.length > 0) {
-      const last = bets[bets.length - 1];
-      return {
-        bet: {
-              id: String(last.id),
-              prediction: last.prediction,
-              amount: last.amount,
-              timestamp: last.timestamp,
-              symbol: last.symbol,
-              timeframe: last.timeframe,
-              status: last.status,
-              resolvedAt: last.resolvedAt,
-              leverage: last.leverage,
-              entryPrice: last.entryPrice,
-              liquidationPrice: last.liquidationPrice,
-              wasLiquidated: last.wasLiquidated,
-              winnings: last.winnings,
-              candleTimestamp: last.candleTimestamp ?? last.timestamp ?? 0, // fallback si no existe
-        },
-        candle: betResult?.candle || {
-          open: last.entryPrice || 0,
-          close: last.entryPrice || 0,
-          high: last.entryPrice || 0,
-          low: last.entryPrice || 0,
-        }
-      };
-    }
-    return null;
-  })()}
-/>
+        open={showBetModal}
+        onOpenChange={setShowBetModal}
+        result={(() => {
+          if (showBetModal && betResult && betResult.bet && typeof betResult.bet.id === 'string' && 'status' in betResult.bet && 'prediction' in betResult.bet && 'amount' in betResult.bet && 'timestamp' in betResult.bet && 'symbol' in betResult.bet && 'timeframe' in betResult.bet) {
+            return { bet: betResult.bet, candle: betResult.candle };
+          } else if (showBetModal && bets.length > 0) {
+            const last = bets[bets.length - 1];
+            return {
+              bet: {
+                id: String(last.id),
+                prediction: last.prediction,
+                amount: last.amount,
+                timestamp: last.timestamp,
+                symbol: last.symbol,
+                timeframe: last.timeframe,
+                status: last.status,
+                resolvedAt: last.resolvedAt,
+                leverage: last.leverage,
+                entryPrice: last.entryPrice,
+                liquidationPrice: last.liquidationPrice,
+                wasLiquidated: last.wasLiquidated,
+                winnings: last.winnings,
+                candleTimestamp: last.candleTimestamp ?? last.timestamp ?? 0, // fallback si no existe
+              },
+              candle: betResult?.candle || {
+                open: last.entryPrice || 0,
+                close: last.entryPrice || 0,
+                high: last.entryPrice || 0,
+                low: last.entryPrice || 0,
+              }
+            };
+          }
+          return null;
+        })()}
+      />
       <ModalRuleta open={rouletteOpen} onClose={() => setRouletteOpen(false)} onWin={handleRouletteWin} />
       <div
         className="w-full max-w-full mx-0 px-2 sm:px-4 bg-black min-h-screen flex flex-col"
@@ -1266,12 +1267,12 @@ useEffect(() => {
             {},
             isMobile
               ? {
-                  width: '100vw',
-                  height: '200vh', // Aumentado a 200vh para dar más espacio en móvil
-                  minHeight: '200vh',
-                  margin: 0,
-                  overflow: 'auto',
-                }
+                width: '100vw',
+                height: '200vh', // Aumentado a 200vh para dar más espacio en móvil
+                minHeight: '200vh',
+                margin: 0,
+                overflow: 'auto',
+              }
               : {},
             {
               transform: 'scaleX(1.0) scaleY(0.88)',
@@ -1280,242 +1281,242 @@ useEffect(() => {
           )
         }
       >
-      {bonusMessage && (
-        <div className="w-full flex justify-center mt-4">
-          <div className="bg-yellow-400 border-2 border-yellow-600 text-black font-bold rounded-xl px-4 py-3 text-center shadow-lg animate-pulse max-w-xl">
-            {bonusMessage.split('\n').map((line, i) => <div key={i}>{line}</div>)}
-            {bonusDetail && <div className="text-xs mt-1">{bonusDetail}</div>}
+        {bonusMessage && (
+          <div className="w-full flex justify-center mt-4">
+            <div className="bg-yellow-400 border-2 border-yellow-600 text-black font-bold rounded-xl px-4 py-3 text-center shadow-lg animate-pulse max-w-xl">
+              {bonusMessage.split('\n').map((line, i) => <div key={i}>{line}</div>)}
+              {bonusDetail && <div className="text-xs mt-1">{bonusDetail}</div>}
+            </div>
           </div>
-        </div>
-      )}
-      <div className="flex flex-col gap-6">
-        {/* SoundManager flotante */}
-        <div className="fixed bottom-1 right-4 z-50">
-        </div>
-           <header className={`flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full ${isMobile ? 'mobile-header' : ''}`} style={{ 
-             background: 'none',
-             height: isMobile ? '120px' : 'auto',
-             position: 'relative'
-           }}>
-  <div className={`flex items-center w-full justify-between relative ${isMobile ? 'mobile-header-content' : ''}`}>
-  {/* Título a la izquierda */}
-  <div className={`flex items-center relative ${isMobile ? 'mobile-title' : ''}`}>
-    <h1 className={`text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8 ${isMobile ? 'mobile-title-text' : ''}`} data-component-name="GameScreen" style={{ 
-      transform: isMobile ? 'scale(1.2)' : 'scale(1.7)', 
-      lineHeight: '1', 
-      whiteSpace: 'nowrap', 
-      overflow: 'hidden', 
-      textOverflow: 'ellipsis', 
-      maxWidth: '100%', 
-      textShadow: '0 0 12px #FFD60088',
-      marginLeft: isMobile ? '4px' : undefined
-    }}>Candle Rush 2</h1>
-    <a
-      href="https://x.com/CarlosFreire0"
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`absolute left-8 text-xs font-semibold select-none ${isMobile ? 'mobile-author' : ''}`}
-      style={{ 
-        color: '#FFD600', 
-        textShadow: '0 0 8px #FFD60088', 
-        letterSpacing: '0.06em', 
-        lineHeight: '1', 
-        top: isMobile ? '1.8em' : '2.8em', 
-        cursor: 'pointer', 
-        textDecoration: 'none',
-        left: isMobile ? '4px' : undefined,
-        fontSize: isMobile ? '0.6rem' : undefined
-      }}
-      onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
-      onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
-      aria-label="Twitter de Carlos Freire"
-    >
-      By Carlos Freire
-    </a>
-  </div>
-  {/* Nav centrado absolutamente */}
-  {/* Relojes centrados y botón ruleta a la derecha de los relojes */}
-  <div className={`${isMobile ? 'mobile-clocks-container' : 'absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3'} flex ${isMobile ? 'flex-col' : 'flex-row'} items-center gap-4 z-10`} style={isMobile ? {
-    position: 'absolute',
-    top: '45%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    gap: '6px',
-    width: '95%',
-    maxWidth: '320px'
-  } : {}}>
-  {/* Nuevo botón al principio del grupo de relojes */}
-  <button
-    onClick={() => setShowBlockInfoModal(true)}
-    className={`${isMobile ? 'mobile-block-button' : 'mr-4'} flex items-center justify-center rounded-full border-2 border-yellow-400 bg-black hover:bg-yellow-400/20 transition p-1 shadow focus:outline-none focus:ring-2 focus:ring-yellow-500`}
-    style={{ 
-      width: isMobile ? 20 : 32, 
-      height: isMobile ? 20 : 32, 
-      minWidth: isMobile ? 20 : 32, 
-      minHeight: isMobile ? 20 : 32,
-      marginRight: isMobile ? 0 : undefined
-    }}
-    title="Últimos bloques Bitcoin"
-    aria-label="Últimos bloques Bitcoin"
-    tabIndex={0}
-  >
-    {/* Icono de estrella */}
-    <GiMiner className={`${isMobile ? 'w-3 h-3' : 'w-6 h-6'} text-yellow-400`} />
-  </button>
-  
-  {/* Contenedor de relojes optimizado para móvil */}
-  <div className={`${isMobile ? 'mobile-clocks-grid' : 'flex flex-row items-center gap-4'}`} style={isMobile ? {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '3px',
-    width: '100%',
-    maxWidth: '260px'
-  } : {}}>
-    <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
-      <span className={`text-xs font-semibold text-[#FFD600] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
-        letterSpacing: '0.01em',
-        fontSize: isMobile ? '0.5rem' : undefined
-      }}>Hora local</span>
-      <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold text-[#FFD600] select-none leading-tight`} style={{ 
-        minWidth: isMobile ? 'auto' : '180px', 
-        width: isMobile ? 'auto' : '180px', 
-        display: 'inline-block', 
-        letterSpacing: '0.02em', 
-        textShadow: '0 0 12px #FFD60088', 
-        textAlign: 'center', 
-        fontSize: isMobile ? '0.75rem' : '2rem', 
-        fontVariantNumeric: 'tabular-nums' 
-      }}>{systemTime}</span>
-    </div>
-    
-    <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
-      <span className={`text-xs font-semibold text-[#ef4444] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
-        letterSpacing: '0.01em', 
-        textShadow: '0 0 12px #FFD60088',
-        fontSize: isMobile ? '0.5rem' : undefined
-      }}>Hora Shanghai</span>
-      <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold select-none leading-tight`} style={{ 
-        minWidth: isMobile ? 'auto' : '180px', 
-        width: isMobile ? 'auto' : '180px', 
-        display: 'inline-block', 
-        letterSpacing: '0.02em', 
-        color: '#ef4444', 
-        textShadow: '0 0 12px #FFD60088', 
-        textAlign: 'center', 
-        fontSize: isMobile ? '0.75rem' : '2rem', 
-        fontVariantNumeric: 'tabular-nums' 
-      }}>{shanghaiTime}</span>
-    </div>
-    
-    <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
-      <span className={`text-xs font-semibold text-[#60aaff] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
-        letterSpacing: '0.01em', 
-        textShadow: '0 0 12px #FFD60088',
-        fontSize: isMobile ? '0.6rem' : undefined
-      }}>Hora Chicago</span>
-      <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold select-none leading-tight`} style={{ 
-        minWidth: isMobile ? 'auto' : '180px', 
-        width: isMobile ? 'auto' : '180px', 
-        display: 'inline-block', 
-        letterSpacing: '0.02em', 
-        color: '#60aaff', 
-        textShadow: '0 0 12px #FFD60088', 
-        textAlign: 'center', 
-        fontSize: isMobile ? '0.9rem' : '2rem', 
-        fontVariantNumeric: 'tabular-nums' 
-      }}>{chicagoTime}</span>
-    </div>
-    
-    <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
-      <span className={`text-xs font-semibold text-[#a259ff] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
-        letterSpacing: '0.01em',
-        fontSize: isMobile ? '0.6rem' : undefined
-      }}>Cierre diario</span>
-      <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold text-[#a259ff] select-none leading-tight`} style={{ 
-        minWidth: isMobile ? 'auto' : '180px', 
-        width: isMobile ? 'auto' : '180px', 
-        display: 'inline-block', 
-        letterSpacing: '0.02em', 
-        textShadow: '0 0 12px #FFD60088', 
-        textAlign: 'center', 
-        fontSize: isMobile ? '0.9rem' : '2rem', 
-        fontVariantNumeric: 'tabular-nums' 
-      }}>{dailyCloseCountdown}</span>
-    </div>
-  </div>
-  
-  {/* Botón ruleta */}
-  <div className={`${isMobile ? 'mobile-roulette' : 'ml-4'} flex items-center`} style={isMobile ? {
-    position: 'absolute',
-    top: '10px',
-    right: '10px'
-  } : {}}>
-    {/* Modal info bloques Bitcoin */}
-    <BlockInfoModal open={showBlockInfoModal} onClose={() => setShowBlockInfoModal(false)} />
-    <RouletteButton onClick={() => setRouletteOpen(true)} />
-  </div>
-  </div>
-  
-  {/* Nav a la derecha - MOVIDO ARRIBA para evitar conflicto con usuario */}
-  <div className={`${isMobile ? 'mobile-nav' : 'absolute top-0 right-0'} flex items-center gap-2`} style={isMobile ? {
-    position: 'absolute',
-    bottom: '8px',
-    right: '8px',
-    flexDirection: 'row',
-    gap: '3px'
-  } : { 
-    marginTop: '8px', 
-    marginRight: '120px' 
-  }}>
-    <button
-      className={`font-semibold px-1.5 py-0.5 rounded-md transition border border-blue-400 bg-blue-900/70 text-blue-200 shadow-blue-400 shadow-sm hover:bg-blue-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 ${isMobile ? 'text-xs' : 'text-sm'}`}
-      style={{
-        textShadow: '0 0 4px #60A5FA',
-        boxShadow: '0 0 6px #60A5FA44, 0 0 2px #60A5FA22',
-        borderColor: '#60A5FA',
-        borderWidth: '1px',
-        padding: isMobile ? '1px 4px' : '2px 10px',
-        fontSize: isMobile ? '0.6em' : '0.98em',
-      }}
-      onClick={() => window.location.href = '/menu'}
-    >
-      Menú
-    </button>
-    <button
-      className={`font-semibold px-1.5 py-0.5 rounded-md transition border border-[#FFD600] bg-yellow-400 text-black shadow-yellow-400 shadow-sm hover:bg-yellow-300 hover:text-black focus:outline-none focus:ring-2 focus:ring-yellow-300 ${isMobile ? 'text-xs' : 'text-sm'}`}
-      style={{
-        textShadow: '0 0 8px #FFD600, 0 0 2px #FFD600',
-        boxShadow: '0 0 6px #FFD600, 0 0 1px #FFD600',
-        borderColor: '#FFD600',
-        borderWidth: '0.5px',
-        padding: isMobile ? '1px 4px' : '2px 8px',
-        fontSize: isMobile ? '0.6em' : '0.95em',
-      }}
-      onClick={() => window.location.href = '/profile'}
-    >
-      Perfil
-    </button>
-    {!isMobile && (
-      <button
-        className="font-semibold px-1.5 py-0.5 rounded-md transition border border-green-400 bg-green-900/70 text-green-200 shadow-green-400 shadow-sm hover:bg-green-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
-        style={{
-          textShadow: '0 0 4px #4ADE80',
-          boxShadow: '0 0 6px #4ADE8044, 0 0 2px #4ADE8022',
-          borderColor: '#4ADE80',
-          borderWidth: '1px',
-          padding: '2px 10px',
-          fontSize: '0.98em',
-        }}
-        onClick={() => window.location.href = '/how-to-play'}
-      >
-        Cómo jugar
-      </button>
-    )}
-  </div>
-</div>
-  <div className="flex items-center gap-2">
+        )}
+        <div className="flex flex-col gap-6">
+          {/* SoundManager flotante */}
+          <div className="fixed bottom-1 right-4 z-50">
+          </div>
+          <header className={`flex flex-col lg:flex-row justify-between items-center border-[#FFD600] rounded-xl p-1 pt-1 pb-1 mb-0 shadow-lg min-h-[32px] w-full ${isMobile ? 'mobile-header' : ''}`} style={{
+            background: 'none',
+            height: isMobile ? '120px' : 'auto',
+            position: 'relative'
+          }}>
+            <div className={`flex items-center w-full justify-between relative ${isMobile ? 'mobile-header-content' : ''}`}>
+              {/* Título a la izquierda */}
+              <div className={`flex items-center relative ${isMobile ? 'mobile-title' : ''}`}>
+                <h1 className={`text-base md:text-lg font-extrabold text-[#FFD600] tracking-tight ml-8 ${isMobile ? 'mobile-title-text' : ''}`} data-component-name="GameScreen" style={{
+                  transform: isMobile ? 'scale(1.2)' : 'scale(1.7)',
+                  lineHeight: '1',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                  textShadow: '0 0 12px #FFD60088',
+                  marginLeft: isMobile ? '4px' : undefined
+                }}>Candle Rush 2</h1>
+                <a
+                  href="https://x.com/CarlosFreire0"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`absolute left-8 text-xs font-semibold select-none ${isMobile ? 'mobile-author' : ''}`}
+                  style={{
+                    color: '#FFD600',
+                    textShadow: '0 0 8px #FFD60088',
+                    letterSpacing: '0.06em',
+                    lineHeight: '1',
+                    top: isMobile ? '1.8em' : '2.8em',
+                    cursor: 'pointer',
+                    textDecoration: 'none',
+                    left: isMobile ? '4px' : undefined,
+                    fontSize: isMobile ? '0.6rem' : undefined
+                  }}
+                  onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
+                  aria-label="Twitter de Carlos Freire"
+                >
+                  By Carlos Freire
+                </a>
+              </div>
+              {/* Nav centrado absolutamente */}
+              {/* Relojes centrados y botón ruleta a la derecha de los relojes */}
+              <div className={`${isMobile ? 'mobile-clocks-container' : 'absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/3'} flex ${isMobile ? 'flex-col' : 'flex-row'} items-center gap-4 z-10`} style={isMobile ? {
+                position: 'absolute',
+                top: '45%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                gap: '6px',
+                width: '95%',
+                maxWidth: '320px'
+              } : {}}>
+                {/* Nuevo botón al principio del grupo de relojes */}
+                <button
+                  onClick={() => setShowBlockInfoModal(true)}
+                  className={`${isMobile ? 'mobile-block-button' : 'mr-4'} flex items-center justify-center rounded-full border-2 border-yellow-400 bg-black hover:bg-yellow-400/20 transition p-1 shadow focus:outline-none focus:ring-2 focus:ring-yellow-500`}
+                  style={{
+                    width: isMobile ? 20 : 32,
+                    height: isMobile ? 20 : 32,
+                    minWidth: isMobile ? 20 : 32,
+                    minHeight: isMobile ? 20 : 32,
+                    marginRight: isMobile ? 0 : undefined
+                  }}
+                  title="Últimos bloques Bitcoin"
+                  aria-label="Últimos bloques Bitcoin"
+                  tabIndex={0}
+                >
+                  {/* Icono de estrella */}
+                  <GiMiner className={`${isMobile ? 'w-3 h-3' : 'w-6 h-6'} text-yellow-400`} />
+                </button>
 
-    <a
+                {/* Contenedor de relojes optimizado para móvil */}
+                <div className={`${isMobile ? 'mobile-clocks-grid' : 'flex flex-row items-center gap-4'}`} style={isMobile ? {
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '3px',
+                  width: '100%',
+                  maxWidth: '260px'
+                } : {}}>
+                  <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
+                    <span className={`text-xs font-semibold text-[#FFD600] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
+                      letterSpacing: '0.01em',
+                      fontSize: isMobile ? '0.5rem' : undefined
+                    }}>Hora local</span>
+                    <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold text-[#FFD600] select-none leading-tight`} style={{
+                      minWidth: isMobile ? 'auto' : '180px',
+                      width: isMobile ? 'auto' : '180px',
+                      display: 'inline-block',
+                      letterSpacing: '0.02em',
+                      textShadow: '0 0 12px #FFD60088',
+                      textAlign: 'center',
+                      fontSize: isMobile ? '0.75rem' : '2rem',
+                      fontVariantNumeric: 'tabular-nums'
+                    }}>{systemTime}</span>
+                  </div>
+
+                  <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
+                    <span className={`text-xs font-semibold text-[#ef4444] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
+                      letterSpacing: '0.01em',
+                      textShadow: '0 0 12px #FFD60088',
+                      fontSize: isMobile ? '0.5rem' : undefined
+                    }}>Hora Shanghai</span>
+                    <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold select-none leading-tight`} style={{
+                      minWidth: isMobile ? 'auto' : '180px',
+                      width: isMobile ? 'auto' : '180px',
+                      display: 'inline-block',
+                      letterSpacing: '0.02em',
+                      color: '#ef4444',
+                      textShadow: '0 0 12px #FFD60088',
+                      textAlign: 'center',
+                      fontSize: isMobile ? '0.75rem' : '2rem',
+                      fontVariantNumeric: 'tabular-nums'
+                    }}>{shanghaiTime}</span>
+                  </div>
+
+                  <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
+                    <span className={`text-xs font-semibold text-[#60aaff] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
+                      letterSpacing: '0.01em',
+                      textShadow: '0 0 12px #FFD60088',
+                      fontSize: isMobile ? '0.6rem' : undefined
+                    }}>Hora Chicago</span>
+                    <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold select-none leading-tight`} style={{
+                      minWidth: isMobile ? 'auto' : '180px',
+                      width: isMobile ? 'auto' : '180px',
+                      display: 'inline-block',
+                      letterSpacing: '0.02em',
+                      color: '#60aaff',
+                      textShadow: '0 0 12px #FFD60088',
+                      textAlign: 'center',
+                      fontSize: isMobile ? '0.9rem' : '2rem',
+                      fontVariantNumeric: 'tabular-nums'
+                    }}>{chicagoTime}</span>
+                  </div>
+
+                  <div className={`flex flex-col items-center ${isMobile ? 'mobile-clock' : ''}`} style={isMobile ? { minWidth: 'auto' } : { minWidth: '110px' }}>
+                    <span className={`text-xs font-semibold text-[#a259ff] mb-0.5 ${isMobile ? 'mobile-clock-label' : ''}`} style={{
+                      letterSpacing: '0.01em',
+                      fontSize: isMobile ? '0.6rem' : undefined
+                    }}>Cierre diario</span>
+                    <span className={`${isMobile ? 'text-sm' : 'text-3xl sm:text-4xl'} font-extrabold text-[#a259ff] select-none leading-tight`} style={{
+                      minWidth: isMobile ? 'auto' : '180px',
+                      width: isMobile ? 'auto' : '180px',
+                      display: 'inline-block',
+                      letterSpacing: '0.02em',
+                      textShadow: '0 0 12px #FFD60088',
+                      textAlign: 'center',
+                      fontSize: isMobile ? '0.9rem' : '2rem',
+                      fontVariantNumeric: 'tabular-nums'
+                    }}>{dailyCloseCountdown}</span>
+                  </div>
+                </div>
+
+                {/* Botón ruleta */}
+                <div className={`${isMobile ? 'mobile-roulette' : 'ml-4'} flex items-center`} style={isMobile ? {
+                  position: 'absolute',
+                  top: '10px',
+                  right: '10px'
+                } : {}}>
+                  {/* Modal info bloques Bitcoin */}
+                  <BlockInfoModal open={showBlockInfoModal} onClose={() => setShowBlockInfoModal(false)} />
+                  <RouletteButton onClick={() => setRouletteOpen(true)} />
+                </div>
+              </div>
+
+              {/* Nav a la derecha - MOVIDO ARRIBA para evitar conflicto con usuario */}
+              <div className={`${isMobile ? 'mobile-nav' : 'absolute top-0 right-0'} flex items-center gap-2`} style={isMobile ? {
+                position: 'absolute',
+                bottom: '8px',
+                right: '8px',
+                flexDirection: 'row',
+                gap: '3px'
+              } : {
+                marginTop: '8px',
+                marginRight: '120px'
+              }}>
+                <button
+                  className={`font-semibold px-1.5 py-0.5 rounded-md transition border border-blue-400 bg-blue-900/70 text-blue-200 shadow-blue-400 shadow-sm hover:bg-blue-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 ${isMobile ? 'text-xs' : 'text-sm'}`}
+                  style={{
+                    textShadow: '0 0 4px #60A5FA',
+                    boxShadow: '0 0 6px #60A5FA44, 0 0 2px #60A5FA22',
+                    borderColor: '#60A5FA',
+                    borderWidth: '1px',
+                    padding: isMobile ? '1px 4px' : '2px 10px',
+                    fontSize: isMobile ? '0.6em' : '0.98em',
+                  }}
+                  onClick={() => window.location.href = '/menu'}
+                >
+                  Menú
+                </button>
+                <button
+                  className={`font-semibold px-1.5 py-0.5 rounded-md transition border border-[#FFD600] bg-yellow-400 text-black shadow-yellow-400 shadow-sm hover:bg-yellow-300 hover:text-black focus:outline-none focus:ring-2 focus:ring-yellow-300 ${isMobile ? 'text-xs' : 'text-sm'}`}
+                  style={{
+                    textShadow: '0 0 8px #FFD600, 0 0 2px #FFD600',
+                    boxShadow: '0 0 6px #FFD600, 0 0 1px #FFD600',
+                    borderColor: '#FFD600',
+                    borderWidth: '0.5px',
+                    padding: isMobile ? '1px 4px' : '2px 8px',
+                    fontSize: isMobile ? '0.6em' : '0.95em',
+                  }}
+                  onClick={() => window.location.href = '/profile'}
+                >
+                  Perfil
+                </button>
+                {!isMobile && (
+                  <button
+                    className="font-semibold px-1.5 py-0.5 rounded-md transition border border-green-400 bg-green-900/70 text-green-200 shadow-green-400 shadow-sm hover:bg-green-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
+                    style={{
+                      textShadow: '0 0 4px #4ADE80',
+                      boxShadow: '0 0 6px #4ADE8044, 0 0 2px #4ADE8022',
+                      borderColor: '#4ADE80',
+                      borderWidth: '1px',
+                      padding: '2px 10px',
+                      fontSize: '0.98em',
+                    }}
+                    onClick={() => window.location.href = '/how-to-play'}
+                  >
+                    Cómo jugar
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+
+              <a
                 href="https://btcer.fun"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1524,7 +1525,7 @@ useEffect(() => {
               >
                 Candle Rush 1.0&nbsp;&rarr;&nbsp;btcer.fun
               </a>
-              
+
             </div>
           </header>
 
@@ -1541,7 +1542,7 @@ useEffect(() => {
             `}</style>
             <div className={`${isMobile ? 'order-1' : 'lg:col-span-4'} flex flex-col gap-4 h-full ${isMobile ? 'h-auto' : 'lg:h-full'} header-content`}>
               {/* Tarjeta principal con gráfico y controles */}
-              <Card className="bg-black" style={{ 
+              <Card className="bg-black" style={{
                 width: isMobile ? '100%' : 'calc(101% + 26px)',
                 maxWidth: 'none',
                 position: 'relative',
@@ -1562,79 +1563,79 @@ useEffect(() => {
                         <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-4`}>
                           <BarChart3 className="h-5 w-5" />
                           {/* Precio BTC grande con color dinámico según cambio cada 5s */}
-{["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol) ? (
-  <span className={`${isMobile ? 'text-2xl' : 'text-2xl sm:text-[4rem] md:text-[5rem]'} font-extrabold text-white ${isMobile ? 'ml-0' : 'ml-2'}`} style={{
-    minWidth: isMobile ? 'auto' : '230px',
-    textAlign: isMobile ? 'left' : 'right',
-    display: 'inline-block',
-    fontSize: isMobile ? '1.8rem' : undefined
-  }}>
-    {stockLoading ? 'Cargando...' : (stockPrice !== null ? stockPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--')}
-  </span>
-) : (
-  <BTCPriceDynamicColor
-    price={currentCandle ? currentCandle.close : null}
-    open={currentCandle ? currentCandle.open ?? null : null}
-    isMobile={isMobile}
-  />
-)}
-{/* Mostrar estado de mercado para stocks y commodities */}
-{["AAPL","AMD","GCUSD","SIUSD"].includes(currentSymbol) && (
-  <AaplMarketStatus />
-)}
-{/* Dollar difference counter below price */}
-<div className={`flex items-center ${isMobile ? 'ml-0 mt-0.5 justify-center' : 'ml-130 sm:ml-[231px]'} w-full sm:w-auto justify-center sm:justify-start`}>
-  <DollarDiffCounter currentCandle={currentCandle} realtimePrice={currentCandle?.close ?? null} />
-</div>
+                          {["AAPL", "AMD", "GCUSD", "SIUSD"].includes(currentSymbol) ? (
+                            <span className={`${isMobile ? 'text-2xl' : 'text-2xl sm:text-[4rem] md:text-[5rem]'} font-extrabold text-white ${isMobile ? 'ml-0' : 'ml-2'}`} style={{
+                              minWidth: isMobile ? 'auto' : '230px',
+                              textAlign: isMobile ? 'left' : 'right',
+                              display: 'inline-block',
+                              fontSize: isMobile ? '1.8rem' : undefined
+                            }}>
+                              {stockLoading ? 'Cargando...' : (stockPrice !== null ? stockPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--')}
+                            </span>
+                          ) : (
+                            <BTCPriceDynamicColor
+                              price={currentCandle ? currentCandle.close : null}
+                              open={currentCandle ? currentCandle.open ?? null : null}
+                              isMobile={isMobile}
+                            />
+                          )}
+                          {/* Mostrar estado de mercado para stocks y commodities */}
+                          {["AAPL", "AMD", "GCUSD", "SIUSD"].includes(currentSymbol) && (
+                            <AaplMarketStatus />
+                          )}
+                          {/* Dollar difference counter below price */}
+                          <div className={`flex items-center ${isMobile ? 'ml-0 mt-0.5 justify-center' : 'ml-130 sm:ml-[231px]'} w-full sm:w-auto justify-center sm:justify-start`}>
+                            <DollarDiffCounter currentCandle={currentCandle} realtimePrice={currentCandle?.close ?? null} />
+                          </div>
                           <span className={`${isMobile ? 'text-base' : 'text-xl'} text-[#FFD600] ${isMobile ? 'ml-0' : 'ml-2'}`}>({timeframe})</span>
-{/* Reloj grande en amarillo */}
+                          {/* Reloj grande en amarillo */}
 
                         </div>
                         {/* Estado de apuestas a la derecha */}
                         <div className={`flex flex-col items-end justify-center text-right ${isMobile ? 'min-w-[180px]' : 'min-w-[220px]'}`}>
 
                           {/* Solo en desktop: mantener arriba */}
-<span style={{ position: 'relative', display: 'inline-block' }}>
-  {/* Glow background */}
-  <span
-    aria-hidden="true"
-    style={{
-      position: 'absolute',
-      left: '50%',
-      top: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: '110%',
-      height: '70%',
-      borderRadius: '30%',
-      filter: 'blur(22px)',
-      opacity: gamePhase === 'BETTING' ? 0.36 : 0.33,
-      background: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222',
-      zIndex: 0,
-      pointerEvents: 'none',
-    }}
-  />
-  {/* Text label */}
-  <span
-    className={`${isMobile ? 'text-lg' : 'hidden sm:inline text-4xl'} font-extrabold uppercase tracking-wide drop-shadow-lg mb-1`}
-    style={{ color: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222', position: 'relative', zIndex: 1 }}
-  >
-    {gamePhase === 'BETTING' ? (isMobile ? 'Abierto ✅' : 'Apuestas Abiertas ✅') : (isMobile ? 'Cerrado' : 'Apuestas Cerradas')}
-  </span>
-</span>
-<button
-  className={`${isMobile ? 'inline' : 'hidden sm:inline'} mt-0 mb-1 self-end rounded-full p-[0.2rem] bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black`}
-  style={{ 
-    fontSize: 0, 
-    outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none', 
-    transform: isMobile ? 'scale(0.6)' : 'scale(0.8)' 
-  }}
-  onClick={() => setShowVolumeProfile(v => !v)}
-  title="Mostrar/ocultar perfil de volumen"
-  type="button"
-  aria-label="Mostrar/ocultar perfil de volumen"
->
-  <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
-</button>
+                          <span style={{ position: 'relative', display: 'inline-block' }}>
+                            {/* Glow background */}
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                position: 'absolute',
+                                left: '50%',
+                                top: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '110%',
+                                height: '70%',
+                                borderRadius: '30%',
+                                filter: 'blur(22px)',
+                                opacity: gamePhase === 'BETTING' ? 0.36 : 0.33,
+                                background: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222',
+                                zIndex: 0,
+                                pointerEvents: 'none',
+                              }}
+                            />
+                            {/* Text label */}
+                            <span
+                              className={`${isMobile ? 'text-lg' : 'hidden sm:inline text-4xl'} font-extrabold uppercase tracking-wide drop-shadow-lg mb-1`}
+                              style={{ color: gamePhase === 'BETTING' ? '#00FF85' : '#FF2222', position: 'relative', zIndex: 1 }}
+                            >
+                              {gamePhase === 'BETTING' ? (isMobile ? 'Abierto ✅' : 'Apuestas Abiertas ✅') : (isMobile ? 'Cerrado' : 'Apuestas Cerradas')}
+                            </span>
+                          </span>
+                          <button
+                            className={`${isMobile ? 'inline' : 'hidden sm:inline'} mt-0 mb-1 self-end rounded-full p-[0.2rem] bg-yellow-400 hover:bg-yellow-300 shadow-lg border-2 border-yellow-300 transition text-black`}
+                            style={{
+                              fontSize: 0,
+                              outline: showVolumeProfile ? '2.5px solid #FFD600' : 'none',
+                              transform: isMobile ? 'scale(0.6)' : 'scale(0.8)'
+                            }}
+                            onClick={() => setShowVolumeProfile(v => !v)}
+                            title="Mostrar/ocultar perfil de volumen"
+                            type="button"
+                            aria-label="Mostrar/ocultar perfil de volumen"
+                          >
+                            <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                          </button>
                         </div>
                       </div>
 
@@ -1649,24 +1650,24 @@ useEffect(() => {
                       {/* Contador grande centrado debajo */}
                       <div className="w-full flex justify-center">
                         {(() => {
-  // Determine color based on ProgressBar logic
-  const phaseDur = gamePhase === 'BETTING' ? bettingPhaseDuration : waitingPhaseDuration;
-  const tLeft = gamePhase === 'BETTING' ? timeLeft : timeUntilNextCandle;
-  const percent = phaseDur > 0 ? Math.max(0, Math.min(1, tLeft / phaseDur)) : 0;
-  let color = '#00FF85'; // Verde por defecto
-  if (percent <= 0.2) {
-    color = '#FF2222'; // Rojo
-  } else if (percent <= 0.5) {
-    color = '#FF9900'; // Naranja
-  }
-  return (
-    <CountdownFlipTimer
-  ms={gamePhase === 'BETTING' ? timeLeft : timeUntilNextCandle}
-  color={color}
-  className={isMobile ? 'text-[2.5rem]' : ''}
-/>
-  );
-})()}
+                          // Determine color based on ProgressBar logic
+                          const phaseDur = gamePhase === 'BETTING' ? bettingPhaseDuration : waitingPhaseDuration;
+                          const tLeft = gamePhase === 'BETTING' ? timeLeft : timeUntilNextCandle;
+                          const percent = phaseDur > 0 ? Math.max(0, Math.min(1, tLeft / phaseDur)) : 0;
+                          let color = '#00FF85'; // Verde por defecto
+                          if (percent <= 0.2) {
+                            color = '#FF2222'; // Rojo
+                          } else if (percent <= 0.5) {
+                            color = '#FF9900'; // Naranja
+                          }
+                          return (
+                            <CountdownFlipTimer
+                              ms={gamePhase === 'BETTING' ? timeLeft : timeUntilNextCandle}
+                              color={color}
+                              className={isMobile ? 'text-[2.5rem]' : ''}
+                            />
+                          );
+                        })()}
 
 
                       </div>
@@ -1674,88 +1675,88 @@ useEffect(() => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div style={{ 
+                  <div style={{
                     position: 'relative',
                     minHeight: isMobile ? '70vh' : 430,
                     height: isMobile ? '70vh' : 'auto'
                   }}>
-  {/* Fondo portada detrás del chart con opacidad y blur */}
-  <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{zIndex:0}} />
-  <CardContent className="relative p-0 bg-black rounded-b-xl overflow-hidden" style={{ 
-    minHeight: isMobile ? '70vh' : 430, 
-    width: 'calc(100% + 16px)', 
-    maxWidth: 'none', 
-    position: 'relative', 
-    padding: 0, 
-    borderBottomLeftRadius: 8, 
-    borderBottomRightRadius: 8 
-  }}>
-    <div className="relative" style={{ 
-      width: '100%', 
-      height: isMobile ? '70vh' : 430,
-      minWidth: 0
-    }}>
-      <CandlestickChart
-          candles={candles}
-          currentCandle={currentCandle}
-          viewState={viewState}
-          setViewState={setViewState}
-          verticalScale={verticalScale}
-          showVolumeProfile={showVolumeProfile}
-          setShowVolumeProfile={setShowVolumeProfile}
-          showCrossCircles={showCrossCircles}
-          setShowCrossCircles={setShowCrossCircles}
-        />
-      {showVolumeProfile && (
-        <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', width: 16, background: 'black', pointerEvents: 'none', zIndex: 21 }}>
-          <VolumeProfile
-            candles={candles}
-            chartHeight={isMobile ? window.innerHeight * 0.7 : 420}
-            barWidth={16}
-            priceMin={verticalScale ? verticalScale : 0}
-            priceMax={verticalScale ? verticalScale : 1}
-          />
-        </div>
-      )}
-    </div>
-    <div className={`relative w-full ${isMobile ? 'h-[120px]' : 'h-[180px]'} mt-2`}>
-      <MacdChart
-        candles={allCandles}
-        viewState={{
-          offsetX,
-          scale,
-        }}
-        startIndex={startIndex}
-        candlesToShow={candlesToShow}
-        height={isMobile ? 120 : 180}
-      />
-    </div>
-  </CardContent>
-</div>
+                    {/* Fondo portada detrás del chart con opacidad y blur */}
+                    <img src="/portada.png" alt="Portada Chart" className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover opacity-15 blur-[4px] z-0" style={{ zIndex: 0 }} />
+                    <CardContent className="relative p-0 bg-black rounded-b-xl overflow-hidden" style={{
+                      minHeight: isMobile ? '70vh' : 430,
+                      width: 'calc(100% + 16px)',
+                      maxWidth: 'none',
+                      position: 'relative',
+                      padding: 0,
+                      borderBottomLeftRadius: 8,
+                      borderBottomRightRadius: 8
+                    }}>
+                      <div className="relative" style={{
+                        width: '100%',
+                        height: isMobile ? '70vh' : 430,
+                        minWidth: 0
+                      }}>
+                        <CandlestickChart
+                          candles={candles}
+                          currentCandle={currentCandle}
+                          viewState={viewState}
+                          setViewState={setViewState}
+                          verticalScale={verticalScale}
+                          showVolumeProfile={showVolumeProfile}
+                          setShowVolumeProfile={setShowVolumeProfile}
+                          showCrossCircles={showCrossCircles}
+                          setShowCrossCircles={setShowCrossCircles}
+                        />
+                        {showVolumeProfile && (
+                          <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', width: 16, background: 'black', pointerEvents: 'none', zIndex: 21 }}>
+                            <VolumeProfile
+                              candles={candles}
+                              chartHeight={isMobile ? window.innerHeight * 0.7 : 420}
+                              barWidth={16}
+                              priceMin={verticalScale ? verticalScale : 0}
+                              priceMax={verticalScale ? verticalScale : 1}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className={`relative w-full ${isMobile ? 'h-[120px]' : 'h-[180px]'} mt-2`}>
+                        <MacdChart
+                          candles={allCandles}
+                          viewState={{
+                            offsetX,
+                            scale,
+                          }}
+                          startIndex={startIndex}
+                          candlesToShow={candlesToShow}
+                          height={isMobile ? 120 : 180}
+                        />
+                      </div>
+                    </CardContent>
+                  </div>
 
                   {/* Controles justo debajo del gráfico */}
-                  <div className={`${isMobile ? 'mt-1' : 'mt-2'} bg-black/50 rounded-lg ${isMobile ? 'p-1' : 'p-2'}`} style={{borderRadius: '0 0 10px 10px'}}>
+                  <div className={`${isMobile ? 'mt-1' : 'mt-2'} bg-black/50 rounded-lg ${isMobile ? 'p-1' : 'p-2'}`} style={{ borderRadius: '0 0 10px 10px' }}>
                     <div className="flex flex-col md:flex-row gap-2 items-center justify-between">
                       {/* Bloque de información de fase eliminado (ahora está arriba) */}
 
                       {/* Selector de monto y botones de apuesta */}
                       <div className="flex flex-col items-center gap-4 w-full">
                         {/* Joystick-style console: all controls grouped */}
-<div className={`w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-[3px] border-[#FFD600] rounded-lg shadow-lg ${isMobile ? 'p-1' : 'p-1 sm:p-2'} gap-1 sm:gap-2 mt-0 overflow-x-auto z-20`} data-component-name="GameScreen">
-  {/* SOLO EN MOVIL: Estado de apuestas y botón volumen */}
-  <div className={`w-full flex sm:hidden flex-row justify-between items-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
-    <span className={`${isMobile ? 'text-xs' : 'text-xs'} font-extrabold uppercase tracking-wide drop-shadow-lg ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
-    <button
-      className={`rounded-full ${isMobile ? 'p-0.5' : 'p-0.5'} bg-yellow-400 hover:bg-yellow-300 shadow border-2 border-yellow-300 transition text-black ml-2`}
-      style={{ fontSize: 0, outline: showVolumeProfile ? '2px solid #FFD600' : 'none' }}
-      onClick={() => setShowVolumeProfile(v => !v)}
-      title="Mostrar/ocultar perfil de volumen"
-      type="button"
-      aria-label="Mostrar/ocultar perfil de volumen"
-    >
-      <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
-    </button>
-  </div>
+                        <div className={`w-full max-w-full flex flex-col sm:flex-row items-center justify-between bg-black border-[3px] border-[#FFD600] rounded-lg shadow-lg ${isMobile ? 'p-1' : 'p-1 sm:p-2'} gap-1 sm:gap-2 mt-0 overflow-x-auto z-20`} data-component-name="GameScreen">
+                          {/* SOLO EN MOVIL: Estado de apuestas y botón volumen */}
+                          <div className={`w-full flex sm:hidden flex-row justify-between items-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
+                            <span className={`${isMobile ? 'text-xs' : 'text-xs'} font-extrabold uppercase tracking-wide drop-shadow-lg ${gamePhase === 'BETTING' ? 'text-green-400' : 'text-red-400'}`}>{gamePhase === 'BETTING' ? 'Apuestas Abiertas' : 'Apuestas Cerradas'}</span>
+                            <button
+                              className={`rounded-full ${isMobile ? 'p-0.5' : 'p-0.5'} bg-yellow-400 hover:bg-yellow-300 shadow border-2 border-yellow-300 transition text-black ml-2`}
+                              style={{ fontSize: 0, outline: showVolumeProfile ? '2px solid #FFD600' : 'none' }}
+                              onClick={() => setShowVolumeProfile(v => !v)}
+                              title="Mostrar/ocultar perfil de volumen"
+                              type="button"
+                              aria-label="Mostrar/ocultar perfil de volumen"
+                            >
+                              <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                            </button>
+                          </div>
                           {/* Symbol and Interval selectors */}
                           <div className={`flex w-full justify-center items-center ${isMobile ? 'gap-2' : 'gap-4'} py-1 flex-wrap`}>
                             <GameControls
@@ -1780,21 +1781,21 @@ useEffect(() => {
                               <div className={`flex flex-col items-center ${isMobile ? 'mx-1' : 'mx-2'} controls-select`}>
                                 <label htmlFor="leverage" className={`text-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} font-bold mb-1`}>Apalancamiento</label>
                                 <select
-  id="leverage"
-  className={`rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold ${isMobile ? 'text-sm' : 'text-sm sm:text-lg'} ${isMobile ? 'px-1 py-1' : 'px-1 py-1 sm:px-2 sm:py-1'} focus:ring-[#FFD600] focus:border-[#FFD600] outline-none ${isMobile ? 'min-w-[60px]' : 'min-w-[40px] sm:min-w-[70px]'}`}
-  value={leverage}
-  onChange={e => { playPulsar(); setLeverage(Number(e.target.value)); }}
->
-  <option value={100} disabled={!['1d','12h','8h'].includes(timeframe)}>100x</option>
-  <option value={300}>300x</option>
-  <option value={500}>500x</option>
-  <option value={1000}>1000x</option>
-  <option value={2000}>2000x</option>
-  <option value={3000}>3000x</option>
-  <option value={5000}>5000x</option>
-  <option value={6666}>6666x</option>
-  <option value={10000}>10000x</option>
-</select>
+                                  id="leverage"
+                                  className={`rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold ${isMobile ? 'text-sm' : 'text-sm sm:text-lg'} ${isMobile ? 'px-1 py-1' : 'px-1 py-1 sm:px-2 sm:py-1'} focus:ring-[#FFD600] focus:border-[#FFD600] outline-none ${isMobile ? 'min-w-[60px]' : 'min-w-[40px] sm:min-w-[70px]'}`}
+                                  value={leverage}
+                                  onChange={e => { playPulsar(); setLeverage(Number(e.target.value)); }}
+                                >
+                                  <option value={100} disabled={!['1d', '12h', '8h'].includes(timeframe)}>100x</option>
+                                  <option value={300}>300x</option>
+                                  <option value={500}>500x</option>
+                                  <option value={1000}>1000x</option>
+                                  <option value={2000}>2000x</option>
+                                  <option value={3000}>3000x</option>
+                                  <option value={5000}>5000x</option>
+                                  <option value={6666}>6666x</option>
+                                  <option value={10000}>10000x</option>
+                                </select>
                               </div>
 
                               <button
@@ -1805,27 +1806,27 @@ useEffect(() => {
                                 -1
                               </button>
                               <input
-        type="number"
-        min={1}
-        max={Math.floor(userBalance)}
-        step={1}
-        value={betAmountInput}
-        onChange={(e) => {
-          const val = e.target.value;
-          // Permitir vacío o solo números
-          if (/^\d*$/.test(val)) {
-            setBetAmountInput(val);
-            // Solo actualizar el número si es válido
-            const asNumber = Number(val);
-            if (val !== "" && !isNaN(asNumber)) {
-              setBetAmount(asNumber);
-            }
-          }
-        }}
-        className="controls-input text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-base sm:text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none py-1 sm:py-1"
-        inputMode="numeric"
-        pattern="[0-9]*"
-      />
+                                type="number"
+                                min={1}
+                                max={Math.floor(userBalance)}
+                                step={1}
+                                value={betAmountInput}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  // Permitir vacío o solo números
+                                  if (/^\d*$/.test(val)) {
+                                    setBetAmountInput(val);
+                                    // Solo actualizar el número si es válido
+                                    const asNumber = Number(val);
+                                    if (val !== "" && !isNaN(asNumber)) {
+                                      setBetAmount(asNumber);
+                                    }
+                                  }
+                                }}
+                                className="controls-input text-center rounded bg-black border-2 border-[#FFD600] text-[#FFD600] font-bold text-base sm:text-lg focus:ring-[#FFD600] focus:border-[#FFD600] outline-none py-1 sm:py-1"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                              />
                               <button
                                 className={`bg-[#FFD600] text-black font-bold ${isMobile ? 'px-2 py-1' : 'px-3 py-1'} rounded-full shadow hover:bg-yellow-400 transition`}
                                 onClick={() => { playPulsar(); setBetAmount((prev) => Math.min(Math.floor(userBalance), Math.floor(prev + 1))); }}
@@ -1842,23 +1843,23 @@ useEffect(() => {
                               >
                                 50/50
                               </button>
-<button
-  className={`bg-[#FFD600] text-black font-bold ${isMobile ? 'px-1 py-1' : 'px-2 py-1'} rounded-full shadow hover:bg-yellow-400 transition ${isMobile ? 'text-xs' : 'text-sm sm:text-base'} ${isMobile ? 'min-w-[45px]' : 'min-w-[20px] sm:min-w-[40px]'} border-1 border-yellow-400`}
-  style={{ marginRight: 6 }}
-  onClick={() => setBetAmount(Math.floor(userBalance))}
-  disabled={userBalance < 1}
-  type="button"
->
-  All In
-</button>
+                              <button
+                                className={`bg-[#FFD600] text-black font-bold ${isMobile ? 'px-1 py-1' : 'px-2 py-1'} rounded-full shadow hover:bg-yellow-400 transition ${isMobile ? 'text-xs' : 'text-sm sm:text-base'} ${isMobile ? 'min-w-[45px]' : 'min-w-[20px] sm:min-w-[40px]'} border-1 border-yellow-400`}
+                                style={{ marginRight: 6 }}
+                                onClick={() => setBetAmount(Math.floor(userBalance))}
+                                disabled={userBalance < 1}
+                                type="button"
+                              >
+                                All In
+                              </button>
                             </div>
                             {/* Precio de liquidación estimado */}
                             {leverage && currentCandle && (
                               <div className={`flex items-center justify-center ${isMobile ? 'gap-1' : 'gap-2'} w-full mt-1 ${isMobile ? 'flex-col' : 'flex-row'}`}>
                                 <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-yellow-400 font-bold`}>Precio de liquidación:</span>
                                 <div className={`flex ${isMobile ? 'gap-2' : 'gap-2'}`}>
-                                  <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-green-400 font-bold`}>Long: ${Number(currentCandle.close * (1 - (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)}</span>
-                                  <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-red-400 font-bold`}>Short: ${Number(currentCandle.close * (1 + (0.99 * betAmount)/(leverage * betAmount))).toFixed(2)}</span>
+                                  <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-green-400 font-bold`}>Long: ${Number(currentCandle.close * (1 - (0.99 * betAmount) / (leverage * betAmount))).toFixed(2)}</span>
+                                  <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-red-400 font-bold`}>Short: ${Number(currentCandle.close * (1 + (0.99 * betAmount) / (leverage * betAmount))).toFixed(2)}</span>
                                 </div>
                               </div>
                             )}
@@ -1878,72 +1879,72 @@ useEffect(() => {
                           <div className={`bet-buttons-container flex flex-col ${isMobile ? 'gap-1' : 'gap-2'} justify-center w-full mt-2`}>
                             {/* Auto betting buttons - Perfectamente centrados con los botones de abajo */}
                             <div className={`grid grid-cols-3 ${isMobile ? 'gap-1' : 'gap-3'} w-full`} style={{ maxWidth: '420px', margin: '0 auto' }}>
-  <button
-    className={`${isMobile ? 'px-1 py-1' : 'px-3 py-1'} rounded-xl ${autoBullish ? 'bg-green-500' : 'bg-green-600/40'} hover:bg-green-500 text-white font-bold border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
-    onClick={autoMix ? undefined : toggleAutoBullish}
-    title="Apuestas automáticas BULL"
-    style={{ minWidth: 0 }}
-    disabled={autoMix}
-  >
-    <span className="font-bold text-[#FFD600]">Automático</span>
-  </button>
-  <button
-    className={`${isMobile ? 'px-2 py-1' : 'px-4 py-2'} rounded-xl border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center font-bold ${autoMix ? 'ring-4 ring-[#FFD600] ring-opacity-60 ring-offset-2 ring-offset-black animate-pulse' : ''} ${(autoBullish || autoBearish) ? 'opacity-50 cursor-not-allowed' : ''}`}
-    onClick={(autoBullish || autoBearish) ? undefined : (e) => {
-      e.preventDefault();
-      console.log('Botón AutoMix clickeado, llamando a toggleAutoMix sin parámetros');
-      toggleAutoMix();
-    }}
-    title="MIX: Apuesta automática aleatoria. El color indica el modo. Si tus apuestas quedan liquidadas automáticamente, revisa el apalancamiento o tu saldo."
-    style={{
-      minWidth: 0,
-      background: autoMix
-        ? 'linear-gradient(90deg, #22c55e 50%, #ef4444 50%)'
-        : 'linear-gradient(90deg, #22c55e66 50%, #ef444466 50%)',
-      color: '#fff',
-      position: 'relative',
-      overflow: 'hidden',
-    }}
-    disabled={autoBullish || autoBearish}
-  >
-    <span
-  style={{
-    position: 'relative',
-    zIndex: 2,
-    fontWeight: 900,
-    fontSize: isMobile ? '0.8em' : '1.08em',
-    letterSpacing: '0.04em',
-    color: '#FFD600',
-    textShadow: '0 0 2px #000, 0 0 4px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000',
-  }}
->{isMobile ? 'AUTO MIX' : 'AUTO MIX 🤖'}</span>
-  </button>
-  <button
-    className={`${isMobile ? 'px-1 py-1' : 'px-3 py-1'} rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
-    onClick={autoMix ? undefined : toggleAutoBearish}
-    title="Apuestas automáticas BEAR"
-    style={{ minWidth: 0 }}
-    disabled={autoMix}
-  >
-    <span className="font-bold text-[#FFD600]">Automático</span>
-  </button>
-</div>
-                            
+                              <button
+                                className={`${isMobile ? 'px-1 py-1' : 'px-3 py-1'} rounded-xl ${autoBullish ? 'bg-green-500' : 'bg-green-600/40'} hover:bg-green-500 text-white font-bold border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={autoMix ? undefined : toggleAutoBullish}
+                                title="Apuestas automáticas BULL"
+                                style={{ minWidth: 0 }}
+                                disabled={autoMix}
+                              >
+                                <span className="font-bold text-[#FFD600]">Automático</span>
+                              </button>
+                              <button
+                                className={`${isMobile ? 'px-2 py-1' : 'px-4 py-2'} rounded-xl border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center font-bold ${autoMix ? 'ring-4 ring-[#FFD600] ring-opacity-60 ring-offset-2 ring-offset-black animate-pulse' : ''} ${(autoBullish || autoBearish) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={(autoBullish || autoBearish) ? undefined : (e) => {
+                                  e.preventDefault();
+                                  console.log('Botón AutoMix clickeado, llamando a toggleAutoMix sin parámetros');
+                                  toggleAutoMix();
+                                }}
+                                title="MIX: Apuesta automática aleatoria. El color indica el modo. Si tus apuestas quedan liquidadas automáticamente, revisa el apalancamiento o tu saldo."
+                                style={{
+                                  minWidth: 0,
+                                  background: autoMix
+                                    ? 'linear-gradient(90deg, #22c55e 50%, #ef4444 50%)'
+                                    : 'linear-gradient(90deg, #22c55e66 50%, #ef444466 50%)',
+                                  color: '#fff',
+                                  position: 'relative',
+                                  overflow: 'hidden',
+                                }}
+                                disabled={autoBullish || autoBearish}
+                              >
+                                <span
+                                  style={{
+                                    position: 'relative',
+                                    zIndex: 2,
+                                    fontWeight: 900,
+                                    fontSize: isMobile ? '0.8em' : '1.08em',
+                                    letterSpacing: '0.04em',
+                                    color: '#FFD600',
+                                    textShadow: '0 0 2px #000, 0 0 4px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000',
+                                  }}
+                                >{isMobile ? 'AUTO MIX' : 'AUTO MIX 🤖'}</span>
+                              </button>
+                              <button
+                                className={`${isMobile ? 'px-1 py-1' : 'px-3 py-1'} rounded-xl ${autoBearish ? 'bg-red-500' : 'bg-red-600/40'} hover:bg-red-500 text-white font-bold border-2 border-[#FFD600] ${isMobile ? 'text-xs' : 'text-xs'} shadow-md shadow-yellow-400/50 transition-all flex items-center justify-center ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={autoMix ? undefined : toggleAutoBearish}
+                                title="Apuestas automáticas BEAR"
+                                style={{ minWidth: 0 }}
+                                disabled={autoMix}
+                              >
+                                <span className="font-bold text-[#FFD600]">Automático</span>
+                              </button>
+                            </div>
+
                             {/* Regular betting buttons - Usando el mismo grid que los botones automáticos */}
                             <div className={`grid grid-cols-2 ${isMobile ? 'gap-2' : 'gap-4'} w-full`} style={{ maxWidth: '420px', margin: '0 auto' }}>
                               <button
-  className={`${isMobile ? 'px-2 py-2' : 'px-4 py-2 sm:px-8 sm:py-4'} rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] ${isMobile ? 'text-base' : 'text-lg sm:text-2xl'} shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''} ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
-  onClick={autoMix ? undefined : () => handleBullishBet()}
-  disabled={autoMix || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
- >
+                                className={`${isMobile ? 'px-2 py-2' : 'px-4 py-2 sm:px-8 sm:py-4'} rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold border-4 border-[#FFD600] ${isMobile ? 'text-base' : 'text-lg sm:text-2xl'} shadow-lg shadow-yellow-400/80 transition-all disabled:bg-green-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''} ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={autoMix ? undefined : () => handleBullishBet()}
+                                disabled={autoMix || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
+                              >
                                 <img src="/bull.png" alt="Bullish" style={{ width: isMobile ? 24 : 32, height: isMobile ? 24 : 32, objectFit: 'contain', marginRight: 6 }} />
                                 <span className="font-black tracking-widest text-white">BULL</span>
                               </button>
                               <button
-  className={`${isMobile ? 'px-2 py-2' : 'px-4 py-2 sm:px-8 sm:py-4'} rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] ${isMobile ? 'text-base' : 'text-lg sm:text-2xl'} shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''} ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
-  onClick={autoMix ? undefined : () => handleBearishBet()}
-  disabled={autoMix || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
- >
+                                className={`${isMobile ? 'px-2 py-2' : 'px-4 py-2 sm:px-8 sm:py-4'} rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold border-4 border-[#FFD600] ${isMobile ? 'text-base' : 'text-lg sm:text-2xl'} shadow-lg shadow-yellow-400/80 transition-all disabled:bg-red-600 disabled:opacity-60 flex items-center justify-center gap-2${(gamePhase === 'BETTING' && secondsLeft > 0 && currentCandleBets < 1 && userBalance >= 1 && betAmount >= 1) ? ' animate-shake' : ''} ${autoMix ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={autoMix ? undefined : () => handleBearishBet()}
+                                disabled={autoMix || gamePhase !== 'BETTING' || secondsLeft <= 0 || currentCandleBets >= 1 || userBalance < 1 || betAmount < 1}
+                              >
                                 <img src="/bear.png" alt="Bearish" style={{ width: isMobile ? 24 : 32, height: isMobile ? 24 : 32, objectFit: 'contain', marginRight: 6 }} />
                                 <span className="font-black tracking-widest text-white">BEAR</span>
                               </button>
@@ -1969,33 +1970,33 @@ useEffect(() => {
               <Card className={`bg-black border-[#FFD600] ${isMobile ? 'h-auto mb-4' : 'flex-none h-[48%] min-h-0'}`} style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 justify-between w-full">
-  <span className="flex items-center gap-2">
-    <Wallet className="h-5 w-5 text-white" />
-    <span className="text-white">Estadísticas</span>
-  </span>
-  <div className="ml-auto flex items-center gap-2">
-    <button
-      onClick={() => setShowAIChatModal(true)}
-      className="flex items-center justify-center gap-2 rounded-md shadow-lg border border-[#FFD600]/30 font-bold transition-all duration-200 transform hover:scale-105"
-      style={{
-        minWidth:'unset',
-        minHeight:'unset',
-        background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.95) 0%, rgba(255, 165, 0, 0.95) 100%)',
-        backdropFilter: 'blur(6px)',
-        padding: '6px 8px',
-        boxShadow: '0 0 12px rgba(255, 214, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-        height: '32px',
-        color: '#000',
-        fontSize: '10px'
-      }}
-      title="Chat con AutoMix IA"
-      aria-label="Abrir chat con AutoMix IA"
-    >
-      🤖 CHAT AI
-    </button>
-    <SoundManager muted={muted} onToggleMute={() => setMuted(m => !m)} triggerLose={triggerLose} triggerWin={triggerWin} />
-  </div>
-</CardTitle>
+                    <span className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5 text-white" />
+                      <span className="text-white">Estadísticas</span>
+                    </span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <button
+                        onClick={() => setShowAIChatModal(true)}
+                        className="flex items-center justify-center gap-2 rounded-md shadow-lg border border-[#FFD600]/30 font-bold transition-all duration-200 transform hover:scale-105"
+                        style={{
+                          minWidth: 'unset',
+                          minHeight: 'unset',
+                          background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.95) 0%, rgba(255, 165, 0, 0.95) 100%)',
+                          backdropFilter: 'blur(6px)',
+                          padding: '6px 8px',
+                          boxShadow: '0 0 12px rgba(255, 214, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                          height: '32px',
+                          color: '#000',
+                          fontSize: '10px'
+                        }}
+                        title="Chat con AutoMix IA"
+                        aria-label="Abrir chat con AutoMix IA"
+                      >
+                        🤖 CHAT AI
+                      </button>
+                      <SoundManager muted={muted} onToggleMute={() => setMuted(m => !m)} triggerLose={triggerLose} triggerWin={triggerWin} />
+                    </div>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="p-2 h-full flex flex-col gap-2 min-h-0 overflow-hidden">
                   <div className="flex-shrink-0" style={{ maxHeight: '140px' }}>
@@ -2009,101 +2010,101 @@ useEffect(() => {
 
               <Card className={`bg-black border-[#FFD600] w-full flex flex-col min-h-0 ${isMobile ? 'h-[500px]' : 'flex-1 h-full'}`} style={{ borderWidth: '3px', marginRight: 'calc(-2% + 2px)', marginLeft: '4px' }}>
                 <CardHeader className="pb-0">
-  <div className="flex items-center justify-center w-full relative">
-  <button
-    aria-label="Ver gráfico"
-    title="Ver gráfico"
-    className="p-0.5 rounded hover:bg-green-600 bg-green-500/90 text-white flex items-center justify-center transition h-[44px] w-[44px] mr-2 absolute left-0"
-    style={{ minWidth: 0, minHeight: 0 }}
-    onClick={() => setOpenMinimap(true)}
-  >
-    <FaChartArea className="h-[22px] w-[22px]" />
-  </button>
-  <ModalMinimapChart
-    open={openMinimap}
-    onOpenChange={setOpenMinimap}
-    candles={candles}
-    bets={bets}
-    timeframe={timeframe}
-  />
-  <CardTitle className="flex items-center gap-2 whitespace-nowrap text-center text-white" style={{ position: 'relative', top: '-6px' }}>
-    <MdOutlineCasino className="h-6 w-6 text-yellow-400" />
-    Actividad
-  </CardTitle>
-  <button
-    aria-label="Eliminar historial de apuestas"
-    title="Eliminar historial de apuestas"
-    className="p-0.5 rounded hover:bg-red-800 bg-red-700/80 text-white flex items-center justify-center transition h-[44px] w-[44px] ml-2 absolute right-0"
-    style={{ minWidth: 0, minHeight: 0 }}
-    onClick={() => { if(window.confirm('¿Seguro que deseas eliminar todo el historial de apuestas?')) window.dispatchEvent(new CustomEvent('clearBets')); }}
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-  </button>
-</div>
-</CardHeader>
-<CardContent className="flex-1 min-h-0 h-full p-2">
-  <BetHistory />
-</CardContent>
+                  <div className="flex items-center justify-center w-full relative">
+                    <button
+                      aria-label="Ver gráfico"
+                      title="Ver gráfico"
+                      className="p-0.5 rounded hover:bg-green-600 bg-green-500/90 text-white flex items-center justify-center transition h-[44px] w-[44px] mr-2 absolute left-0"
+                      style={{ minWidth: 0, minHeight: 0 }}
+                      onClick={() => setOpenMinimap(true)}
+                    >
+                      <FaChartArea className="h-[22px] w-[22px]" />
+                    </button>
+                    <ModalMinimapChart
+                      open={openMinimap}
+                      onOpenChange={setOpenMinimap}
+                      candles={candles}
+                      bets={bets}
+                      timeframe={timeframe}
+                    />
+                    <CardTitle className="flex items-center gap-2 whitespace-nowrap text-center text-white" style={{ position: 'relative', top: '-6px' }}>
+                      <MdOutlineCasino className="h-6 w-6 text-yellow-400" />
+                      Actividad
+                    </CardTitle>
+                    <button
+                      aria-label="Eliminar historial de apuestas"
+                      title="Eliminar historial de apuestas"
+                      className="p-0.5 rounded hover:bg-red-800 bg-red-700/80 text-white flex items-center justify-center transition h-[44px] w-[44px] ml-2 absolute right-0"
+                      style={{ minWidth: 0, minHeight: 0 }}
+                      onClick={() => { if (window.confirm('¿Seguro que deseas eliminar todo el historial de apuestas?')) window.dispatchEvent(new CustomEvent('clearBets')); }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 min-h-0 h-full p-2">
+                  <BetHistory />
+                </CardContent>
               </Card>
             </div>
           </div>
         </div>
 
         {/* AchievementNotification eliminado para evitar doble modal de logro al ganar. */}
-        <div className="fixed top-[26px] right-2 z-50 flex items-center gap-1 px-2 py-0.5 rounded-lg border-none shadow-none backdrop-blur-md min-h-0" style={{background: 'rgba(24,24,24,0.18)', border: 'none', boxShadow: 'none', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)', minHeight: 0}}>
+        <div className="fixed top-[26px] right-2 z-50 flex items-center gap-1 px-2 py-0.5 rounded-lg border-none shadow-none backdrop-blur-md min-h-0" style={{ background: 'rgba(24,24,24,0.18)', border: 'none', boxShadow: 'none', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)', minHeight: 0 }}>
           <span className="text-white font-semibold drop-shadow-lg text-xs" style={{ letterSpacing: 0.3 }}>Usuario:</span>
           <span className="text-yellow-100 font-bold text-xs" style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
           {session?.user ? (
-  <button
-    className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
-    style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
-    onClick={async () => {
-      await signOut({ redirect: false });
-      localStorage.removeItem('googleLoginReloaded');
-      localStorage.removeItem('currentUser');
-      setLocalUser(null);
-      setTimeout(() => window.location.reload(), 250);
-    }}
-  >
-    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-  Cerrar sesión Google
-  <ImGoogle2 style={{ color: '#111' }} size={16} />
-</span>
-  </button>
-) : (
-  displayName === "Invitado" ? (
-    <button
-      className="ml-2 px-3 py-0.5 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-[12px] h-[20px] min-h-0 border-none outline-none shadow-none"
-      style={{border:'none', outline:'none', boxShadow:'none', marginTop: '-4px'}} 
-      onClick={() => {
-        localStorage.setItem('googleLoginReloaded', 'pending');
-        signIn("google");
-      }}
-    >
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', top: '-2px' }}>
-  Login con Google
-  <ImGoogle2 style={{ color: '#111' }} size={20} />
-</span>
-    </button>
-  ) : (
-    <button
-      className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0 border-none outline-none shadow-none"
-      style={{border:'none', outline:'none', boxShadow:'none'}} 
-      onClick={() => {
-        localStorage.removeItem("currentUser");
-        setLocalUser(null);
-      }}
-    >
-      Cerrar sesión
-    </button>
-  )
-) }
+            <button
+              className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0"
+              style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+              onClick={async () => {
+                await signOut({ redirect: false });
+                localStorage.removeItem('googleLoginReloaded');
+                localStorage.removeItem('currentUser');
+                setLocalUser(null);
+                setTimeout(() => window.location.reload(), 250);
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                Cerrar sesión Google
+                <ImGoogle2 style={{ color: '#111' }} size={16} />
+              </span>
+            </button>
+          ) : (
+            displayName === "Invitado" ? (
+              <button
+                className="ml-2 px-3 py-0.5 rounded bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-[12px] h-[20px] min-h-0 border-none outline-none shadow-none"
+                style={{ border: 'none', outline: 'none', boxShadow: 'none', marginTop: '-4px' }}
+                onClick={() => {
+                  localStorage.setItem('googleLoginReloaded', 'pending');
+                  signIn("google");
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', top: '-2px' }}>
+                  Login con Google
+                  <ImGoogle2 style={{ color: '#111' }} size={20} />
+                </span>
+              </button>
+            ) : (
+              <button
+                className="ml-2 px-2 py-0 rounded bg-yellow-700 hover:bg-yellow-600 text-white font-bold text-[10px] h-[16px] min-h-0 border-none outline-none shadow-none"
+                style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                onClick={() => {
+                  localStorage.removeItem("currentUser");
+                  setLocalUser(null);
+                }}
+              >
+                Cerrar sesión
+              </button>
+            )
+          )}
         </div>
-        
+
         {/* Modal del Chat IA */}
-        <AIChatModal 
-          isOpen={showAIChatModal} 
-          onClose={() => setShowAIChatModal(false)} 
+        <AIChatModal
+          isOpen={showAIChatModal}
+          onClose={() => setShowAIChatModal(false)}
         />
       </div>
     </>
