@@ -1,5 +1,5 @@
 import type { Candle } from "@/types/game";
-import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry, getMarketStructureMemory, getOrderBlockMemory, OrderBlockMemoryEntry } from "./autoMixMemory";
+import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry, getMarketStructureMemory, getOrderBlockMemory, OrderBlockMemoryEntry, saveVolumeTrendMemory } from "./autoMixMemory";
 import type { WhaleTrade } from "@/hooks/useWhaleTrades";
 import { getWhaleVote } from "./whale-vote";
 import { getAdxMemoryVote } from "./adx-vote";
@@ -30,10 +30,10 @@ export function decideMixDirection(
   // --- HISTORIAL DE ÉXITO/FRACASO POR COMBINACIÓN ---
   // Se analiza ANTES de devolver la decisión final
   // (esto se aplicará tras calcular signals y antes de devolver dirección)
-interface DecisionAnalysis {
-  shouldInvert: boolean;
-  consecutiveBets: number;
-}
+  interface DecisionAnalysis {
+    shouldInvert: boolean;
+    consecutiveBets: number;
+  }
 
   function checkShouldInvertDecision(majoritySignal: "BULLISH" | "BEARISH" | null, rsiSignal: "BULLISH" | "BEARISH" | null, macdSignal: "BULLISH" | "BEARISH" | null): DecisionAnalysis {
     try {
@@ -44,21 +44,21 @@ interface DecisionAnalysis {
         e.rsiSignal === rsiSignal &&
         e.macdSignal === macdSignal
       );
-      
+
       // --- 1. BLOQUES DE 3 DERROTAS ---
       let blocksOf3Losses = 0;
       for (let i = 0; i <= similares.length - 3; i++) {
         if (
           (similares[i].result === "LOSS" || similares[i].result === "LIQ") &&
-          (similares[i+1].result === "LOSS" || similares[i+1].result === "LIQ") &&
-          (similares[i+2].result === "LOSS" || similares[i+2].result === "LIQ")
+          (similares[i + 1].result === "LOSS" || similares[i + 1].result === "LIQ") &&
+          (similares[i + 2].result === "LOSS" || similares[i + 2].result === "LIQ")
         ) {
           blocksOf3Losses++;
           i += 2; // Salta al siguiente bloque (no solapa)
         }
       }
       if (blocksOf3Losses >= 2) return { shouldInvert: true, consecutiveBets: 1 };
-      
+
       // --- 2. TASA DE DERROTA HISTÓRICA ---
       if (similares.length >= 5) {
         const perdidas = similares.filter(e => e.result === "LOSS" || e.result === "LIQ").length;
@@ -75,10 +75,10 @@ interface DecisionAnalysis {
         const lastPrice = candles[candles.length - 1].close;
         // Usar la última entrada de memoria de estructura de mercado
         const latestStructure = marketStructure[marketStructure.length - 1];
-        const nearSupport = latestStructure?.supportLevels.some((level: number) => 
+        const nearSupport = latestStructure?.supportLevels.some((level: number) =>
           Math.abs((lastPrice - level) / level) < 0.005 // Umbral del 0.5%
         ) ?? false;
-        const nearResistance = latestStructure?.resistanceLevels.some((level: number) => 
+        const nearResistance = latestStructure?.resistanceLevels.some((level: number) =>
           Math.abs((lastPrice - level) / level) < 0.005 // Umbral del 0.5%
         ) ?? false;
 
@@ -94,14 +94,14 @@ interface DecisionAnalysis {
               break;
             }
           }
-          
+
           // Si hemos tenido 2 o más ganancias consecutivas cerca del mismo nivel
           if (consecutiveWins >= 2) {
             return { shouldInvert: false, consecutiveBets: consecutiveWins + 1 };
           }
         }
       }
-      
+
       return { shouldInvert: false, consecutiveBets: 1 };
     } catch {
       return { shouldInvert: false, consecutiveBets: 1 };
@@ -138,7 +138,7 @@ interface DecisionAnalysis {
 
   // --- Golden Cross / Death Cross ---
   // (definición única al inicio de decideMixDirection)
-function simpleMovingAverage(values: number[], period: number): number[] {
+  function simpleMovingAverage(values: number[], period: number): number[] {
     if (values.length < period) return [];
     const result: number[] = [];
     for (let i = period - 1; i < values.length; i++) {
@@ -148,9 +148,9 @@ function simpleMovingAverage(values: number[], period: number): number[] {
     return result;
   }
   // (definición única al inicio de decideMixDirection)
-type CrossType = "GOLDEN_CROSS" | "DEATH_CROSS" | null;
+  type CrossType = "GOLDEN_CROSS" | "DEATH_CROSS" | null;
   // (definición única al inicio de decideMixDirection)
-function detectCross(candles: Candle[], shortPeriod = 50, longPeriod = 200): CrossType {
+  function detectCross(candles: Candle[], shortPeriod = 50, longPeriod = 200): CrossType {
     const closes = candles.map(c => c.close);
     const smaShort = simpleMovingAverage(closes, shortPeriod);
     const smaLong = simpleMovingAverage(closes, longPeriod);
@@ -170,9 +170,9 @@ function detectCross(candles: Candle[], shortPeriod = 50, longPeriod = 200): Cro
     return null;
   }
   // (definición única al inicio de decideMixDirection)
-const crossSignal = detectCross(candles);
+  const crossSignal = detectCross(candles);
   // (definición única al inicio de decideMixDirection)
-let crossVote: "BULLISH" | "BEARISH" | null = null;
+  let crossVote: "BULLISH" | "BEARISH" | null = null;
   if (crossSignal === "GOLDEN_CROSS") crossVote = "BULLISH";
   if (crossSignal === "DEATH_CROSS") crossVote = "BEARISH";
 
@@ -208,11 +208,11 @@ let crossVote: "BULLISH" | "BEARISH" | null = null;
   // Guardar en memoria dedicada de RSI
   try {
     saveRsiMemory({ timestamp: Date.now(), rsi, rsiSignal });
-  } catch {}
+  } catch { }
 
   // --- 2a. Golden Cross / Death Cross ---
   // (definición única al inicio de decideMixDirection)
-// (Definición ya incluida arriba, eliminar duplicados aquí)
+  // (Definición ya incluida arriba, eliminar duplicados aquí)
 
   // --- 2b. Análisis Fibonacci ---
   function calculateFibonacciLevels(candles: Candle[], timeframe: string) {
@@ -233,33 +233,33 @@ let crossVote: "BULLISH" | "BEARISH" | null = null;
     };
     return { high, low, levels };
   }
-  function fibonacciVote(candles: Candle[], timeframe: string): {vote: "BULLISH"|"BEARISH"|null, level: string|null, price: number, levels: Record<string, number>} {
+  function fibonacciVote(candles: Candle[], timeframe: string): { vote: "BULLISH" | "BEARISH" | null, level: string | null, price: number, levels: Record<string, number> } {
     const fib = calculateFibonacciLevels(candles, timeframe);
-    if (!fib) return {vote: null, level: null, price: candles[candles.length-1]?.close, levels: {}};
-    const price = candles[candles.length-1]?.close;
-    let closestLevel: string|null = null;
+    if (!fib) return { vote: null, level: null, price: candles[candles.length - 1]?.close, levels: {} };
+    const price = candles[candles.length - 1]?.close;
+    let closestLevel: string | null = null;
     let minDiff = Infinity;
     for (const [level, val] of Object.entries(fib.levels)) {
-      const diff = Math.abs(price-val);
+      const diff = Math.abs(price - val);
       if (diff < minDiff) {
         minDiff = diff;
         closestLevel = level;
       }
     }
     // Considerar "cerca" si está a menos del 0.2%
-    let vote: "BULLISH"|"BEARISH"|null = null;
-    if (closestLevel && minDiff/price < 0.002) {
+    let vote: "BULLISH" | "BEARISH" | null = null;
+    if (closestLevel && minDiff / price < 0.002) {
       // Si la última vela es alcista y rebota en nivel, voto BULLISH, si es bajista y rebota abajo, BEARISH
-      const last = candles[candles.length-1];
+      const last = candles[candles.length - 1];
       if (last.close > last.open) vote = "BULLISH";
       if (last.close < last.open) vote = "BEARISH";
     }
-    return {vote, level: closestLevel, price, levels: fib.levels};
+    return { vote, level: closestLevel, price, levels: fib.levels };
   }
   const fibResult = fibonacciVote(candles, timeframe);
   try {
     saveFibonacciMemory({ timestamp: Date.now(), fibVote: fibResult.vote, level: fibResult.level, price: fibResult.price, levels: fibResult.levels });
-  } catch {}
+  } catch { }
 
   // --- 3. Señal MACD (últimas 66 velas) ---
 
@@ -275,34 +275,34 @@ let crossVote: "BULLISH" | "BEARISH" | null = null;
     }
   }
   const signalLineArr = calcEMA(macdLineArr.filter(x => x !== undefined), 9);
-  
+
   // Valores actuales
   const macdLine = macdLineArr[macdLineArr.length - 1];
   const signalLine = signalLineArr[signalLineArr.length - 1];
-  
+
   // --- NUEVO: Histograma y Detección de Valle ---
   const macdHistogram = macdLine - signalLine;
   const macdValleyType: "RED" | "GREEN" = macdHistogram >= 0 ? "GREEN" : "RED";
-  
+
   // Detectar ID del Valle (Timestamp de inicio del valle actual)
   // Retrocedemos para encontrar cuándo cambió el signo del histograma
   let valleyId = candles[candles.length - 1].timestamp; // Por defecto, la vela actual
   const subset66 = candles.slice(-66);
-  
+
   for (let i = macdLineArr.length - 2; i >= 0; i--) {
-     // Calculamos el histograma histórico en ese punto
-     // Nota: signalLineArr tiene la misma longitud, podemos acceder directo
-     const histAtI = macdLineArr[i] - signalLineArr[i];
-     const typeAtI = histAtI >= 0 ? "GREEN" : "RED";
-     
-     if (typeAtI !== macdValleyType) {
-        // Cambio de signo detectado entre i y el final
-        // El valle actual empezó en i + 1
-        if (subset66[i + 1]) {
-            valleyId = subset66[i + 1].timestamp;
-        }
-        break;
-     }
+    // Calculamos el histograma histórico en ese punto
+    // Nota: signalLineArr tiene la misma longitud, podemos acceder directo
+    const histAtI = macdLineArr[i] - signalLineArr[i];
+    const typeAtI = histAtI >= 0 ? "GREEN" : "RED";
+
+    if (typeAtI !== macdValleyType) {
+      // Cambio de signo detectado entre i y el final
+      // El valle actual empezó en i + 1
+      if (subset66[i + 1]) {
+        valleyId = subset66[i + 1].timestamp;
+      }
+      break;
+    }
   }
 
   let macdSignal: "BULLISH" | "BEARISH" | null = null;
@@ -361,36 +361,50 @@ let crossVote: "BULLISH" | "BEARISH" | null = null;
     return null;
   }
   const valleyVote = detectValleyVote(candles);
-// Guardar en memoria de valle
-try {
-  saveValleyMemory({ timestamp: Date.now(), valleyVote });
-} catch {}
+  // Guardar en memoria de valle
+  try {
+    saveValleyMemory({ timestamp: Date.now(), valleyVote });
+  } catch { }
 
-  // --- Votación proporcional: RSI, Valle, Majority y MACD (25% cada uno) ---
+  // --- Votación Ponderada: Lógica Ajustada ---
+
   let bullishVotes = 0;
   let bearishVotes = 0;
+
+  // 1. RSI (Filtro de tendencia/momento): 0.5 puntos
+  // No es una señal de entrada por sí sola, pero da contexto.
   if (rsiSignal === "BULLISH") bullishVotes += 0.5;
   if (rsiSignal === "BEARISH") bearishVotes += 0.5;
-  if (valleyVote === "BULLISH") bullishVotes++;
-  if (valleyVote === "BEARISH") bearishVotes++;
-  if (majoritySignal === "BULLISH") bullishVotes++;
-  if (majoritySignal === "BEARISH") bearishVotes++;
-  // Asegurar que macdSignal es del tipo correcto antes de usarlo en votos
-  const validMacdSignal = macdSignal === "BULLISH" ? "BULLISH" : macdSignal === "BEARISH" ? "BEARISH" : "BULLISH";
-  if (validMacdSignal === "BULLISH") bullishVotes++;
-  if (validMacdSignal === "BEARISH") bearishVotes++;
-  // Fibonacci: 1 voto
-  if (fibResult.vote === "BULLISH") bullishVotes++;
-  if (fibResult.vote === "BEARISH") bearishVotes++;
 
-  // --- 8. Voto por Estructura de Mercado ---
+  // 2. Patrón de Valle (Price Action a corto plazo): 1.25 puntos
+  // Detecta giros inmediatos en el precio, muy útil para entradas.
+  if (valleyVote === "BULLISH") bullishVotes += 1.25;
+  if (valleyVote === "BEARISH") bearishVotes += 1.25;
+
+  // 3. Mayoría Simple (65 velas): 0.5 puntos
+  // Reducido porque se solapa con "Trend Vote". Mide el sesgo reciente.
+  if (majoritySignal === "BULLISH") bullishVotes += 0.5;
+  if (majoritySignal === "BEARISH") bearishVotes += 0.5;
+
+  // 4. MACD (Momentum): 1.0 punto
+  // Señal estándar de momentum.
+  const validMacdSignal = macdSignal === "BULLISH" ? "BULLISH" : macdSignal === "BEARISH" ? "BEARISH" : "BULLISH";
+  if (validMacdSignal === "BULLISH") bullishVotes += 1.0;
+  if (validMacdSignal === "BEARISH") bearishVotes += 1.0;
+
+  // 5. Fibonacci (Soporte/Resistencia): 0.75 puntos
+  // Contexto importante, pero depende de la precisión del nivel.
+  if (fibResult.vote === "BULLISH") bullishVotes += 0.75;
+  if (fibResult.vote === "BEARISH") bearishVotes += 0.75;
+
+  // 6. Estructura de Mercado: Peso dinámico (generalmente alto)
+  // Definido en market-structure.ts
   const marketStructure = detectMarketStructure(candles);
   if (marketStructure.vote === "BULLISH") bullishVotes += marketStructure.voteWeight;
   if (marketStructure.vote === "BEARISH") bearishVotes += marketStructure.voteWeight;
 
-  // --- 6. Voto por tendencia y conteo de velas (últimas 70) ---
-  // Importar función de memoria de tendencia
-  // (asegúrate de tener: import { saveTrendMemory } from "./autoMixMemory"; al inicio del archivo)
+  // --- 7. Tendencia General (70 velas): 0.5 puntos ---
+  // Sesgo a largo plazo. Reducido para no duplicar peso con Majority.
   function trendVote(candles: Candle[]): "BULLISH" | "BEARISH" | null {
     if (candles.length < 70) return null;
     const last70 = candles.slice(-70);
@@ -403,16 +417,15 @@ try {
     try {
       // @ts-ignore
       saveTrendMemory({ timestamp: Date.now(), bullishCount, bearishCount, trend });
-    } catch {}
+    } catch { }
     return trend;
   }
   const trend = trendVote(candles);
-  if (trend === "BULLISH") bullishVotes++;
-  if (trend === "BEARISH") bearishVotes++;
+  if (trend === "BULLISH") bullishVotes += 0.5;
+  if (trend === "BEARISH") bearishVotes += 0.5;
 
-  // --- 7. Voto por tendencia de volumen (últimas 30 velas) ---
-  // Importar función de memoria de tendencia de volumen
-  // (asegúrate de tener: import { saveVolumeTrendMemory } from "./autoMixMemory"; al inicio del archivo)
+  // --- 8. Tendencia de Volumen: 0.75 puntos ---
+  // Confirmación de la fuerza del movimiento.
   function volumeTrendVote(candles: Candle[]): "BULLISH" | "BEARISH" | null {
     if (candles.length < 30) return null;
     const last30 = candles.slice(-30);
@@ -436,70 +449,75 @@ try {
       if (avgVol2 > avgVol1) vote = "BEARISH"; // sube el volumen en tendencia bajista
     }
     // Guardar en memoria de tendencia de volumen
-    // Guardar siempre la memoria, aunque vote sea null
     try {
       // @ts-ignore
       saveVolumeTrendMemory({ timestamp: Date.now(), avgVol1, avgVol2, volumeTrend, majority, vote: vote ?? null });
-    } catch {}
+    } catch { }
 
     return vote;
   }
   const volumeVote = volumeTrendVote(candles);
-  if (volumeVote === "BULLISH") bullishVotes++;
-  if (volumeVote === "BEARISH") bearishVotes++;
+  if (volumeVote === "BULLISH") bullishVotes += 0.75;
+  if (volumeVote === "BEARISH") bearishVotes += 0.75;
 
-  // --- 8. Voto por Golden Cross/Death Cross ---
-  if (crossVote === "BULLISH") bullishVotes++;
-  if (crossVote === "BEARISH") bearishVotes++;
-  // --- 9. Voto por posición EMA 55/200 ---
-  if (emaPositionVote === "BULLISH") bullishVotes += 0.5;
-  if (emaPositionVote === "BEARISH") bearishVotes += 0.5;
+  // 9. Golden/Death Cross: 2.0 puntos
+  // Señal mayor de cambio de tendencia. Muy importante.
+  if (crossVote === "BULLISH") bullishVotes += 2.0;
+  if (crossVote === "BEARISH") bearishVotes += 2.0;
 
-  // --- Voto Whale Trades (si se pasa como parámetro) ---
+  // 10. Posición EMA 55/200: 1.0 punto
+  // Alineación con la tendencia macro. Aumentado de 0.5 a 1.0.
+  if (emaPositionVote === "BULLISH") bullishVotes += 1.0;
+  if (emaPositionVote === "BEARISH") bearishVotes += 1.0;
+
+  // 11. Whale Trades: 1.5 puntos
+  // Flujo de dinero inteligente. Importante pero puede ser ruidoso.
   let whaleVote: "BULLISH" | "BEARISH" | null = null;
   if (whaleTrades && Array.isArray(whaleTrades)) {
     whaleVote = getWhaleVote(whaleTrades, Date.now());
-    if (whaleVote === "BULLISH") bullishVotes += 2;
-    if (whaleVote === "BEARISH") bearishVotes += 2;
+    if (whaleVote === "BULLISH") bullishVotes += 1.5;
+    if (whaleVote === "BEARISH") bearishVotes += 1.5;
   }
-  // --- 9. Voto ADX+memoria ---
-  let adxMemoryVote: "BULLISH" | "BEARISH" | null = getAdxMemoryVote(candles);
-  if (adxMemoryVote === "BULLISH") bullishVotes++;
-  if (adxMemoryVote === "BEARISH") bearishVotes++;
 
-  // --- 10. Votos SMC+ por últimos 3 order blocks ---
+  // 12. ADX (Fuerza de tendencia): 1.0 punto
+  let adxMemoryVote: "BULLISH" | "BEARISH" | null = getAdxMemoryVote(candles);
+  if (adxMemoryVote === "BULLISH") bullishVotes += 1.0;
+  if (adxMemoryVote === "BEARISH") bearishVotes += 1.0;
+
+  // 13. Order Blocks (SMC): 1.0 punto
+  // Reacción en zonas de oferta/demanda.
   try {
     const orderBlocks: OrderBlockMemoryEntry[] = getOrderBlockMemory();
     const bullishBlocks = orderBlocks.filter(b => b.type === 'BULLISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
     const bearishBlocks = orderBlocks.filter(b => b.type === 'BEARISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
     const currentPrice = candles[candles.length - 1]?.close;
-    // Voto 1: Si el precio está por encima del último bullish block, voto bullish
-    if (bullishBlocks.length > 0 && currentPrice > bullishBlocks[0].price) bullishVotes++;
-    // Voto 2: Si el precio está por debajo del último bearish block, voto bearish
-    if (bearishBlocks.length > 0 && currentPrice < bearishBlocks[0].price) bearishVotes++;
-  } catch {}
+    // Si precio > último OB bullish (rebotando o sosteniendo)
+    if (bullishBlocks.length > 0 && currentPrice > bullishBlocks[0].price) bullishVotes += 1.0;
+    // Si precio < último OB bearish (resistencia)
+    if (bearishBlocks.length > 0 && currentPrice < bearishBlocks[0].price) bearishVotes += 1.0;
+  } catch { }
 
   // --- Mejorada: Detección de rachas ganadoras/perdedoras ---
   try {
     const memory = getAutoMixMemory();
     const lastN = memory.slice(-15); // Revisar 15 trades para mejor contexto
-    
+
     // Contadores
     let consecutiveLosses = 0;
     let consecutiveWins = 0;
     let lastDirection: "BULLISH" | "BEARISH" | null = null;
-    
+
     // Analizar cada trade
     for (let i = lastN.length - 1; i >= 0; i--) {
       const trade = lastN[i];
-      
+
       // Si cambia de dirección, resetear contadores
       if (trade.direction !== lastDirection) {
         lastDirection = trade.direction;
         consecutiveLosses = 0;
         consecutiveWins = 0;
       }
-      
+
       // Contar pérdidas consecutivas
       if ((trade.result === "LOSS" || trade.result === "LIQ") && trade.direction === lastDirection) {
         consecutiveLosses++;
@@ -516,12 +534,12 @@ try {
     if (consecutiveLosses >= 4) { // Cambiar después de 4 pérdidas consecutivas
       return lastDirection === "BULLISH" ? "BEARISH" : "BULLISH";
     }
-    
+
     // Mantener dirección en rachas ganadoras
     if (consecutiveWins >= 2 && lastDirection) { // Mantener dirección después de 2 ganancias consecutivas
       return lastDirection as "BULLISH" | "BEARISH"; // Aseguramos que no sea null
     }
-  } catch {}
+  } catch { }
 
   // --- Desempate con MACD ---
   const totalVotes = bullishVotes + bearishVotes;
@@ -566,7 +584,7 @@ try {
       // Mantener la dirección hasta que el consenso cambie
       return direction;
     }
-  } catch {}
+  } catch { }
 
   // Si hay una racha ganadora, ignorar la inversión
   try {
@@ -580,8 +598,8 @@ try {
       // Mantener dirección en racha ganadora
       return direction;
     }
-  } catch {}
-  
+  } catch { }
+
   // Si no hay racha ganadora, proceder con la inversión
   let calculatedDirection = shouldInvert ? (direction === "BULLISH" ? "BEARISH" : "BULLISH") : direction;
 
@@ -590,38 +608,38 @@ try {
     const memory = getAutoMixMemory();
     // 1. Comprobar apuestas anteriores en ESTE MISMO valle
     const sameValleyBets = memory.filter(e => e.valleyId === valleyId);
-    
+
     if (sameValleyBets.length > 0) {
-       const lastBet = sameValleyBets[sameValleyBets.length - 1];
-       // Si la última apuesta en este valle falló
-       if (lastBet.result === "LOSS" || lastBet.result === "LIQ") {
-          // Si íbamos a apostar lo mismo que falló, invertimos para corregir
-          if (calculatedDirection === lastBet.direction) {
-              calculatedDirection = calculatedDirection === "BULLISH" ? "BEARISH" : "BULLISH";
-          }
-       } else if (lastBet.result === "WIN") {
-          // Si ganamos, intentamos mantener la dirección que funcionó (momentum del valle)
-          calculatedDirection = lastBet.direction;
-       }
+      const lastBet = sameValleyBets[sameValleyBets.length - 1];
+      // Si la última apuesta en este valle falló
+      if (lastBet.result === "LOSS" || lastBet.result === "LIQ") {
+        // Si íbamos a apostar lo mismo que falló, invertimos para corregir
+        if (calculatedDirection === lastBet.direction) {
+          calculatedDirection = calculatedDirection === "BULLISH" ? "BEARISH" : "BULLISH";
+        }
+      } else if (lastBet.result === "WIN") {
+        // Si ganamos, intentamos mantener la dirección que funcionó (momentum del valle)
+        calculatedDirection = lastBet.direction;
+      }
     } else {
-       // 2. Si es un NUEVO valle, consultar historial de valles similares (Machine Learning básico)
-       // Buscamos valles del mismo tipo (ROJO/VERDE)
-       const similarValleys = memory.filter(e => e.macdValleyType === macdValleyType && e.valleyId !== valleyId);
-       const recentSimilar = similarValleys.slice(-20); // Últimos 20 casos
-       
-       if (recentSimilar.length >= 5) {
-          // Filtramos las que coincidieron con nuestra dirección actual propuesta
-          const similarMoves = recentSimilar.filter(e => e.direction === calculatedDirection);
-          if (similarMoves.length >= 3) {
-              const wins = similarMoves.filter(e => e.result === "WIN").length;
-              const winRate = wins / similarMoves.length;
-              
-              // Si esta dirección en este tipo de valle suele perder (<40%), invertimos
-              if (winRate < 0.4) {
-                  calculatedDirection = calculatedDirection === "BULLISH" ? "BEARISH" : "BULLISH";
-              }
+      // 2. Si es un NUEVO valle, consultar historial de valles similares (Machine Learning básico)
+      // Buscamos valles del mismo tipo (ROJO/VERDE)
+      const similarValleys = memory.filter(e => e.macdValleyType === macdValleyType && e.valleyId !== valleyId);
+      const recentSimilar = similarValleys.slice(-20); // Últimos 20 casos
+
+      if (recentSimilar.length >= 5) {
+        // Filtramos las que coincidieron con nuestra dirección actual propuesta
+        const similarMoves = recentSimilar.filter(e => e.direction === calculatedDirection);
+        if (similarMoves.length >= 3) {
+          const wins = similarMoves.filter(e => e.result === "WIN").length;
+          const winRate = wins / similarMoves.length;
+
+          // Si esta dirección en este tipo de valle suele perder (<40%), invertimos
+          if (winRate < 0.4) {
+            calculatedDirection = calculatedDirection === "BULLISH" ? "BEARISH" : "BULLISH";
           }
-       }
+        }
+      }
     }
   } catch (e) {
     console.error("Error en lógica de valle:", e);
@@ -725,19 +743,19 @@ try {
               return { high, low, levels };
             })();
             if (!fib) return null;
-            const price = candles[candles.length-1]?.close;
-            let closestLevel: string|null = null;
+            const price = candles[candles.length - 1]?.close;
+            let closestLevel: string | null = null;
             let minDiff = Infinity;
             for (const [level, val] of Object.entries(fib.levels)) {
-              const diff = Math.abs(price-val);
+              const diff = Math.abs(price - val);
               if (diff < minDiff) {
                 minDiff = diff;
                 closestLevel = level;
               }
             }
-            let vote: "BULLISH"|"BEARISH"|null = null;
-            if (closestLevel && minDiff/price < 0.002) {
-              const last = candles[candles.length-1];
+            let vote: "BULLISH" | "BEARISH" | null = null;
+            if (closestLevel && minDiff / price < 0.002) {
+              const last = candles[candles.length - 1];
               if (last.close > last.open) vote = "BULLISH";
               if (last.close < last.open) vote = "BEARISH";
             }
@@ -776,7 +794,7 @@ try {
     // Guardar memoria inmediatamente para que el consenso funcione correctamente
     const { saveAutoMixMemory } = require('./autoMixMemory');
     saveAutoMixMemory(entry);
-  } catch {}
+  } catch { }
   return finalDirection;
 }
 
