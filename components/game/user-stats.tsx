@@ -237,81 +237,49 @@ export default function UserStats() {
   };
 
   return (
-    <div className="space-y-2 text-white p-0 m-0">
+    <div className="space-y-3 text-white p-2 pb-6 m-0 h-full flex flex-col">
       <style jsx>{`
         @media (max-width: 768px) {
-          .stats-container {
-            height: 60px;
-            overflow-y: auto;
-            padding: 1px;
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-          }
-          .stats-item {
-            padding: 0.1rem 0;
-            font-size: 0.6rem;
-            line-height: 1.1;
-            height: 12px;
-            margin: 0;
-          }
-          .stats-icon {
-            width: 0.8rem;
-            height: 0.8rem;
-          }
-          .stats-number {
-            font-size: 0.65rem;
-            line-height: 1;
-          }
           .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.1rem;
-            height: 30px;
-            flex: 1;
-            overflow-y: auto;
-          }
-          .stats-card {
-            padding: 0.1rem;
-            font-size: 0.5rem;
-            height: 14px;
-          }
-          .stats-container .grid p {
-            margin: 0;
-            padding: 0.05rem 0;
-            font-size: 0.5rem;
-          }
-          .stats-container .grid > div {
-            height: 14px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+             gap: 0.25rem;
           }
         }
       `}</style>
-      {/* Toro/Oso y Top racha - Compacto */}
-      <div className="flex items-center justify-between text-xs stats-item p-0 m-0">
-        <div className="flex items-center gap-0.5">
-          <span className="text-lg">{bullVsBearIcon}</span>
-          <span className="font-bold text-yellow-300 text-sm">{bullVsBearText}</span>
-          <span className="ml-1 text-zinc-300 text-sm">({bullPct}% Toro / {bearPct}% Oso)</span>
+
+      {/* Toro/Oso y Top racha - Mejor espaciado */}
+      <div className="flex flex-col gap-1.5 border-b border-zinc-800 pb-2">
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xl">{bullVsBearIcon}</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-yellow-300 text-sm leading-tight">{bullVsBearText}</span>
+              <span className="text-[10px] text-zinc-400 font-mono tracking-tight leading-tight">({bullPct}% Toro / {bearPct}% Oso)</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end">
+            <span className="text-pink-300 font-bold text-[10px] uppercase tracking-wider">Top racha</span>
+            <div className="flex items-center gap-1">
+              <span className="font-black text-pink-300 text-base leading-none">{topStreak}</span>
+              <span className="text-xs">🔥</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-0.5">
-          <span className="text-pink-300 font-bold text-sm">Top racha:</span>
-          <span className="font-extrabold text-pink-300 text-sm">{topStreak}</span>
+
+        {/* Racha actual */}
+        <div className="flex items-center justify-between text-xs bg-zinc-900/40 rounded px-2 py-1">
+          <div className="flex items-center gap-2">
+            {realStreak >= 3 ? (
+              <span className="text-orange-400 animate-pulse text-sm">🔥</span>
+            ) : (
+              <span className="text-zinc-500 text-sm">🏁</span>
+            )}
+            <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide">Racha Actual</span>
+          </div>
+          <span className={`font-black text-sm ${realStreak >= 3 ? "text-orange-400" : "text-white"} ${realStreak >= 1 ? "animate-shake" : ""}`}>{realStreak}</span>
         </div>
       </div>
-      {/* Racha actual */}
-      <div className="flex items-center justify-between text-xs p-0 m-0">
-        <div className="flex items-center gap-1">
-          {realStreak >= 3 ? (
-            <span className="text-orange-400 animate-pulse text-lg">🔥</span>
-          ) : (
-            <span className="text-zinc-400 text-lg">🏁</span>
-          )}
-          <span className="text-sm font-bold">Racha actual</span>
-        </div>
-        <span className={`font-extrabold text-base ${realStreak >= 3 ? "text-orange-400" : ""} ${realStreak >= 1 ? "animate-shake" : ""}`}>{realStreak}</span>
-      </div>
+
       <style jsx>{`
         @keyframes shake {
           0% { transform: translateX(0); }
@@ -326,129 +294,73 @@ export default function UserStats() {
           display: inline-block;
         }
       `}</style>
-      <div className="flex items-center justify-between text-white p-0 m-0">
-        <div className="flex items-center gap-2 text-white">
-          <DollarSign className="h-5 w-5 text-green-400" />
-          <span className="text-sm font-bold text-white">Balance</span>
-        </div>
-        <div className="flex items-center gap-2 stats-item">
-          <span className="font-extrabold text-lg text-yellow-300">${formatNum(userBalance)}</span>
-          <button
-            className="ml-2 px-2 py-1 rounded bg-yellow-400 text-black text-xs font-bold shadow hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:bg-zinc-500 disabled:text-zinc-300 disabled:cursor-not-allowed"
-            style={{ minWidth: 24, minHeight: 24 }}
-            onClick={() => setShowMathModal(true)}
-            title={canAttempt ? "Recargar monedas" : "Máximo de retos matemáticos alcanzado (3 cada 24h)"}
-            disabled={!canAttempt}
-          >
-            +💰
-          </button>
-        </div>
-      </div>
 
-      {/* Modal de reto matemático para recargar monedas */}
-      {showMathModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-zinc-900 rounded-xl p-6 shadow-lg border-2 border-yellow-400 min-w-[260px] text-center">
-            <h2 className="text-lg font-bold mb-2 text-yellow-400 flex items-center justify-center gap-2">
-              ¡Reto matemático!
-              <span className="text-xs font-normal text-yellow-300 bg-yellow-400/10 px-2 py-0.5 rounded-full ml-2">{mathProgress.count}/{mathProgress.limit}</span>
-            </h2>
-            <p className="mb-3 text-white">Resuelve para ganar <span className="font-bold text-yellow-300">100 monedas</span>:</p>
-            {!canAttempt && (
-              <div className="mb-2 text-red-400 font-bold">
-                Has alcanzado el máximo de retos matemáticos por 24h.<br />
-                Intenta de nuevo en {Math.floor(mathTimeLeft / 3600000)}h {Math.floor((mathTimeLeft % 3600000) / 60000)}min.
-              </div>
-            )}
-            <div className="mb-3 text-xl font-mono text-yellow-200">{mathChallenge.question}</div>
-            <input
-              type="text"
-              className="w-24 px-2 py-1 rounded border border-yellow-400 text-center text-black font-bold"
-              value={mathAnswer}
-              onChange={e => setMathAnswer(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleCheckMath(); }}
-              autoFocus
+      <div className="flex-1 flex flex-col gap-1.5 justify-center">
+        {/* Balance */}
+        <div className="flex items-center justify-between text-white">
+          <div className="flex items-center gap-1.5 text-white">
+            <DollarSign className="h-4 w-4 text-green-400" />
+            <span className="text-xs font-bold text-zinc-300">Balance</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-sm text-yellow-300">${formatNum(userBalance)}</span>
+            <button
+              className="px-1.5 py-0.5 rounded bg-yellow-400 text-black text-[10px] font-bold shadow hover:bg-yellow-300 disabled:opacity-50"
+              onClick={() => setShowMathModal(true)}
+              title={canAttempt ? "Recargar monedas" : "Máximo alcanzado"}
               disabled={!canAttempt}
-            />
-            <div className="flex justify-center gap-2 mt-4">
-              <button
-                className="px-3 py-1 bg-green-500 hover:bg-green-400 rounded text-white font-bold disabled:bg-zinc-500 disabled:text-zinc-300"
-                onClick={handleCheckMath}
-                disabled={!canAttempt}
-              >Aceptar</button>
-              <button
-                className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white font-bold"
-                onClick={() => { setShowMathModal(false); setMathAnswer(''); setMathChallenge(generateMathChallenge()); }}
-              >Cancelar</button>
-              <button
-                className="px-3 py-1 bg-yellow-400 hover:bg-yellow-300 rounded text-black font-bold border border-yellow-600 shadow"
-                onClick={() => setShowPasswordSection(true)}
-                type="button"
-              >Contraseña</button>
-            </div>
-            {showPasswordSection && (
-              <div className="mt-3 p-3 border-2 border-yellow-400 rounded-lg bg-black/80">
-                <div className="mb-2 text-yellow-300 font-bold">Introduce la contraseña secreta:</div>
-                <input
-                  type="password"
-                  className="w-32 px-2 py-1 rounded border border-yellow-400 text-center text-black font-bold"
-                  value={passwordInput}
-                  onChange={e => setPasswordInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
-                  autoFocus
-                />
-                <button
-                  className="ml-2 px-3 py-1 bg-yellow-500 hover:bg-yellow-400 rounded text-black font-bold border border-yellow-600"
-                  onClick={handlePasswordSubmit}
-                  type="button"
-                >OK</button>
-                {passwordMsg && <div className={`mt-2 ${passwordMsg === '¡Contraseña correcta! +1500 monedas' ? 'text-green-400' : 'text-red-400'}`}>{passwordMsg}</div>}
-              </div>
-            )}
-            {mathError && <div className="text-red-400 mt-2">{mathError}</div>}
-            {mathSuccess && <div className="text-green-400 mt-2">¡Correcto! +100 monedas</div>}
+            >
+              +💰
+            </button>
           </div>
         </div>
-      )}
 
-      <div className="flex items-center justify-between text-white p-0 m-0">
-        <div className="flex items-center gap-2 text-white">
-          {isProfitable ? (
-            <TrendingUp className="h-5 w-5 text-green-400" />
-          ) : (
-            <TrendingDown className="h-5 w-5 text-red-400" />
-          )}
-          <span className="text-sm font-bold text-white">Ganancias/Pérdidas</span>
+        {/* Net PnL */}
+        <div className="flex items-center justify-between text-white">
+          <div className="flex items-center gap-1.5 text-white">
+            {isProfitable ? (
+              <TrendingUp className="h-4 w-4 text-green-400" />
+            ) : (
+              <TrendingDown className="h-4 w-4 text-red-400" />
+            )}
+            <span className="text-xs font-bold text-zinc-300">PnL Neto</span>
+          </div>
+          <span className={`font-bold text-sm ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{netBetProfit.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
-        <span className={`font-extrabold text-lg ${isProfitable ? "text-green-400" : "text-red-400"}`}>{isProfitable ? "+" : ""}{netBetProfit.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
+        {/* Win Rate */}
+        <div className="flex items-center justify-between text-white">
+          <div className="flex items-center gap-1.5 text-white">
+            <Percent className="h-4 w-4 text-blue-400" />
+            <span className="text-xs font-bold text-zinc-300">Win Rate</span>
+          </div>
+          <span className="font-bold text-sm text-white">{winRate.toFixed(1)}%</span>
+        </div>
+
+        {/* Liquidaciones small */}
+        <div className="flex items-center justify-between text-white opacity-80">
+          <div className="flex items-center gap-1.5 text-white">
+            <span className="text-sm">💀</span>
+            <span className="text-[10px] font-bold text-red-300">Liqs</span>
+          </div>
+          <span className="font-bold text-xs text-red-400">{bets.filter(b => b.status === "LIQUIDATED").length}</span>
+        </div>
       </div>
-      {/* Liquidaciones */}
-      <div className="flex items-center justify-between text-white" style={{ marginTop: '0.125rem' }}>
-        <div className="flex items-center gap-2 text-white">
-          <span className="text-lg">💀</span>
-          <span className="text-sm font-bold text-red-400">Liquidaciones</span>
+
+
+      {/* Stats Grid Compacto */}
+      <div className="grid grid-cols-3 gap-2 text-white font-mono pt-2 mt-auto">
+        <div className="bg-zinc-900 border border-zinc-700/50 p-1.5 rounded-md text-center flex flex-col justify-center h-14">
+          <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">Total</p>
+          <p className="font-bold text-sm text-white leading-none">{totalBets}</p>
         </div>
-        <span className="font-black text-lg text-red-400">{bets.filter(b => b.status === "LIQUIDATED").length}</span>
-      </div>
-      <div className="flex items-center justify-between text-white p-0 m-0">
-        <div className="flex items-center gap-2 text-white">
-          <Percent className="h-5 w-5 text-blue-400" />
-          <span className="text-sm font-bold text-white">Tasa de victorias</span>
+        <div className="bg-green-950/30 border border-green-500/20 p-1.5 rounded-md text-center flex flex-col justify-center h-14">
+          <p className="text-[9px] font-bold text-green-400/80 uppercase tracking-wider mb-0.5">Ganadas</p>
+          <p className="font-bold text-sm text-green-400 leading-none">{wonBets}</p>
         </div>
-        <span className="font-black text-lg text-white">{winRate.toFixed(1)}%</span>
-      </div>
-      <div className="grid grid-cols-3 gap-1 text-white font-[Montserrat,Inter,Rubik,Poppins,sans-serif] p-0 m-0">
-        <div className="bg-zinc-900/80 border border-yellow-300/40 p-1 rounded-lg text-center text-white">
-          <p className="text-[10px] font-bold text-yellow-200 drop-shadow-sm mb-0 stats-item">Total</p>
-          <p className="font-black text-base text-white text-shadow-lg stats-number" style={{ textShadow: '0 2px 8px #FFD60055' }}>{totalBets}</p>
-        </div>
-        <div className="bg-green-900/50 border border-green-400/30 p-1 rounded-lg text-center text-white">
-          <p className="text-[10px] font-bold text-green-300 drop-shadow-sm mb-0 stats-item">Ganadas</p>
-          <p className="font-black text-base text-green-200 text-shadow-lg stats-number" style={{ textShadow: '0 2px 8px #00FF8555' }}>{wonBets}</p>
-        </div>
-        <div className="bg-red-900/50 border border-red-400/30 p-1 rounded-lg text-center text-white">
-          <p className="text-[10px] font-bold text-red-300 drop-shadow-sm mb-0 stats-item">Perdidas</p>
-          <p className="font-black text-base text-red-200 text-shadow-lg stats-number" style={{ textShadow: '0 2px 8px #FF222255' }}>{lostBets}</p>
+        <div className="bg-red-950/30 border border-red-500/20 p-1.5 rounded-md text-center flex flex-col justify-center h-14">
+          <p className="text-[9px] font-bold text-red-400/80 uppercase tracking-wider mb-0.5">Perdidas</p>
+          <p className="font-bold text-sm text-red-400 leading-none">{lostBets}</p>
         </div>
       </div>
     </div>
