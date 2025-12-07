@@ -237,17 +237,27 @@ export default function UserStats() {
   };
 
   return (
-    <div className="space-y-3 text-white p-2 pb-6 m-0 h-full flex flex-col">
+    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar p-2 pb-2">
       <style jsx>{`
         @media (max-width: 768px) {
           .stats-grid {
              gap: 0.25rem;
           }
         }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 4px;
+        }
       `}</style>
 
-      {/* Toro/Oso y Top racha - Mejor espaciado */}
-      <div className="flex flex-col gap-1.5 border-b border-zinc-800 pb-2">
+      {/* Toro/Oso y Top racha */}
+      <div className="flex flex-col gap-2 border-b border-zinc-800 pb-2 mb-2 shrink-0">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5">
             <span className="text-xl">{bullVsBearIcon}</span>
@@ -267,7 +277,7 @@ export default function UserStats() {
         </div>
 
         {/* Racha actual */}
-        <div className="flex items-center justify-between text-xs bg-zinc-900/40 rounded px-2 py-1">
+        <div className="flex items-center justify-between text-xs bg-zinc-900/40 rounded px-2 py-1.5">
           <div className="flex items-center gap-2">
             {realStreak >= 3 ? (
               <span className="text-orange-400 animate-pulse text-sm">🔥</span>
@@ -295,11 +305,12 @@ export default function UserStats() {
         }
       `}</style>
 
-      <div className="flex-1 flex flex-col gap-1.5 justify-center">
+      {/* Lista de Estadísticas (Balance, PnL, Winrate) */}
+      <div className="flex flex-col gap-2 mb-2 shrink-0">
         {/* Balance */}
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center gap-1.5 text-white">
-            <DollarSign className="h-4 w-4 text-green-400" />
+            <DollarSign className="h-3.5 w-3.5 text-green-400" />
             <span className="text-xs font-bold text-zinc-300">Balance</span>
           </div>
           <div className="flex items-center gap-2">
@@ -319,9 +330,9 @@ export default function UserStats() {
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center gap-1.5 text-white">
             {isProfitable ? (
-              <TrendingUp className="h-4 w-4 text-green-400" />
+              <TrendingUp className="h-3.5 w-3.5 text-green-400" />
             ) : (
-              <TrendingDown className="h-4 w-4 text-red-400" />
+              <TrendingDown className="h-3.5 w-3.5 text-red-400" />
             )}
             <span className="text-xs font-bold text-zinc-300">PnL Neto</span>
           </div>
@@ -331,7 +342,7 @@ export default function UserStats() {
         {/* Win Rate */}
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center gap-1.5 text-white">
-            <Percent className="h-4 w-4 text-blue-400" />
+            <Percent className="h-3.5 w-3.5 text-blue-400" />
             <span className="text-xs font-bold text-zinc-300">Win Rate</span>
           </div>
           <span className="font-bold text-sm text-white">{winRate.toFixed(1)}%</span>
@@ -349,16 +360,16 @@ export default function UserStats() {
 
 
       {/* Stats Grid Compacto */}
-      <div className="grid grid-cols-3 gap-2 text-white font-mono pt-2 mt-auto">
-        <div className="bg-zinc-900 border border-zinc-700/50 p-1.5 rounded-md text-center flex flex-col justify-center h-14">
+      <div className="grid grid-cols-3 gap-2 text-white font-mono mt-1 shrink-0">
+        <div className="bg-zinc-900 border border-zinc-700/50 p-1 rounded-md text-center flex flex-col justify-center h-[52px]">
           <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">Total</p>
           <p className="font-bold text-sm text-white leading-none">{totalBets}</p>
         </div>
-        <div className="bg-green-950/30 border border-green-500/20 p-1.5 rounded-md text-center flex flex-col justify-center h-14">
+        <div className="bg-green-950/30 border border-green-500/20 p-1 rounded-md text-center flex flex-col justify-center h-[52px]">
           <p className="text-[9px] font-bold text-green-400/80 uppercase tracking-wider mb-0.5">Ganadas</p>
           <p className="font-bold text-sm text-green-400 leading-none">{wonBets}</p>
         </div>
-        <div className="bg-red-950/30 border border-red-500/20 p-1.5 rounded-md text-center flex flex-col justify-center h-14">
+        <div className="bg-red-950/30 border border-red-500/20 p-1 rounded-md text-center flex flex-col justify-center h-[52px]">
           <p className="text-[9px] font-bold text-red-400/80 uppercase tracking-wider mb-0.5">Perdidas</p>
           <p className="font-bold text-sm text-red-400 leading-none">{lostBets}</p>
         </div>
