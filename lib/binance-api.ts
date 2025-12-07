@@ -23,7 +23,7 @@ export async function fetchHistoricalCandles(symbol: string, interval: string, l
       low: Number.parseFloat(kline[3]),
       close: Number.parseFloat(kline[4]),
       volume: Number.parseFloat(kline[5]),
-      isClosed: true,
+      isClosed: Date.now() > kline[6],
     }))
   } catch (error) {
     console.error("Error fetching historical candles:", error)
