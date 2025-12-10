@@ -574,6 +574,17 @@ export default function GameScreen() {
     // Oculta el modal automáticamente al llegar a las 2:00:00
   }, [nowDate]);
 
+  // Cerrar el modal automáticamente después de 10 segundos
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showDailyCloseModal) {
+      timer = setTimeout(() => {
+        setShowDailyCloseModal(false);
+      }, 10000);
+    }
+    return () => clearTimeout(timer);
+  }, [showDailyCloseModal]);
+
   // Context hooks FIRST (fixes userBalance/addCoins before use)
   const {
     gamePhase,
@@ -1158,7 +1169,14 @@ export default function GameScreen() {
       {/* Modal de aviso de cierre diario */}
       {showDailyCloseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="bg-zinc-900 rounded-2xl p-8 flex flex-col items-center border-4 border-yellow-400 shadow-2xl max-w-xs">
+          <div className="relative bg-zinc-900 rounded-2xl p-8 flex flex-col items-center border-4 border-yellow-400 shadow-2xl max-w-xs">
+            <button 
+              onClick={() => setShowDailyCloseModal(false)}
+              className="absolute top-2 right-2 text-white hover:text-yellow-400 font-bold text-xl p-2"
+              aria-label="Cerrar"
+            >
+              X
+            </button>
             <h2 className="text-2xl font-bold text-yellow-400 mb-3">¡Cierre Diario de Bitcoin!</h2>
             <p className="text-white mb-4 text-center">En menos de 30 segundos se cierra la vela diaria de Bitcoin.<br />¿Quieres ver el gráfico diario?</p>
             <button
