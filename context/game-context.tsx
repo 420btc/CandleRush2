@@ -101,6 +101,7 @@ interface GameContextType {
   saveUserData: (username: string, data: any) => void;
   loadUserData: (username: string) => any;
   lastBetAnimation: { amount: number; timestamp: number } | null;
+  syncWithServer: () => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
@@ -282,17 +283,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [autoMixState, currentSymbol, timeframe]);
 
   // --- Sincroniza datos del usuario cada vez que cambian cosas clave ---
-  useEffect(() => {
-    if (currentUser) {
-      saveUserData(currentUser, {
-        balance: userBalance,
-        betsByPair,
-        achievements,
-        autoMixMemory,
-      });
+  const syncWithServer = useCallback(async () => {
+    if (!currentUser) return;
 
-      // Sincronizar con servidor para Cron Jobs
-      fetch('/api/user/sync', {
+    try {
+      console.log('[SYNC] Iniciando sincronización manual con servidor...');
+      await fetch('/api/user/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -302,9 +298,26 @@ export function GameProvider({ children }: { children: ReactNode }) {
           autoMixTimeframe: timeframe,
           autoMixSymbol: currentSymbol
         })
-      }).catch(err => console.error('Error syncing with server:', err));
+      });
+      console.log('[SYNC] Sincronización completada con éxito');
+    } catch (err) {
+      console.error('[SYNC] Error syncing with server:', err);
     }
-  }, [currentUser, userBalance, betsByPair, achievements, autoMixMemory, autoMix, timeframe, currentSymbol]);
+  }, [currentUser, userBalance, autoMix, timeframe, currentSymbol]);
+
+  useEffect(() => {
+    if (currentUser) {
+      saveUserData(currentUser, {
+        balance: userBalance,
+        betsByPair,
+        achievements,
+        autoMixMemory,
+      });
+
+      // Sincronizar automáticamente (debounce implícito por el useEffect)
+      syncWithServer();
+    }
+  }, [currentUser, userBalance, betsByPair, achievements, autoMixMemory, autoMix, timeframe, currentSymbol, syncWithServer]);
   const { toast } = useToast()
   const { unlockAchievement } = useAchievement()
 
@@ -1735,6 +1748,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         saveUserData,
         loadUserData,
         lastBetAnimation,
+        syncWithServer,
       }}
     >
       {children}

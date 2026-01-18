@@ -946,6 +946,17 @@ export default function ProfilePage() {
     
     return false;
   }, []);
+
+  // Sync state
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { syncWithServer } = useGame();
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    await syncWithServer();
+    // Simular un pequeño delay para feedback visual
+    setTimeout(() => setIsSyncing(false), 1000);
+  };
   
   // Función para mostrar una notificación de racha ganadora
   const showWinStreakNotification = useCallback((streak: number) => {
@@ -1107,13 +1118,35 @@ export default function ProfilePage() {
       </button>
 
       {/* Botón para ir al juego arriba derecha */}
-      <button
-        className="fixed top-6 right-6 z-50 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-lg py-2 px-4 shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
-        title="Ir al juego"
-        onClick={() => router.push('/game')}
-      >
-        Jugar Ahora
-      </button>
+      <div className="fixed top-6 right-6 z-50 flex gap-2">
+        <button
+          className={`bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg py-2 px-4 shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-2 ${isSyncing ? 'opacity-80 cursor-wait' : ''}`}
+          title="Sincronizar datos con la nube"
+          onClick={handleManualSync}
+          disabled={isSyncing}
+        >
+          {isSyncing ? (
+            <>
+              <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+              Sincronizando...
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Guardar en Nube
+            </>
+          )}
+        </button>
+        <button
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-lg py-2 px-4 shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          title="Ir al juego"
+          onClick={() => router.push('/game')}
+        >
+          Jugar Ahora
+        </button>
+      </div>
       {/* Perfil y logo arriba */}
       <div className="container mx-auto w-full flex flex-col pt-8 items-center">
         <div className="flex flex-col items-center gap-4 mb-8">
