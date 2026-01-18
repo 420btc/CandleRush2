@@ -104,12 +104,15 @@ async function neonSaveDB(data: ServerDB) {
     }
 
     // Guardar memoria global
+    // Asegurarse de que autoMixMemory sea un array válido
+    const memoryToSave = Array.isArray(data.autoMixMemory) ? data.autoMixMemory : [];
+    
     await pool.query(`
       INSERT INTO global_memory (key, data)
       VALUES ('autoMixMemory', $1)
       ON CONFLICT (key)
       DO UPDATE SET data = $1
-    `, [JSON.stringify(data.autoMixMemory)]);
+    `, [JSON.stringify(memoryToSave)]);
 
   } catch (e) {
     console.error("Neon DB Save Error:", e);
@@ -149,7 +152,6 @@ export async function getDB(): Promise<ServerDB> {
   // 1. Intentar Neon DB (Persistencia Real)
   if (connectionString) {
     // Inicializar tablas la primera vez (lazy init)
-    // Nota: Idealmente esto iría en un script de migración, pero para simplicidad lo dejamos aquí con un flag o try/catch
     await initNeonDB(); 
     
     const neonData = await neonGetDB();
@@ -162,6 +164,7 @@ export async function getDB(): Promise<ServerDB> {
   // 2. Fallback a Sistema de Archivos / Memoria
   if (memoryCache) return memoryCache; 
   
+  // Si no hay caché y falló Neon, intentar local
   initLocalDB();
   try {
     if (fs.existsSync(DB_PATH)) {
