@@ -1,5 +1,5 @@
 import type { Candle } from "@/types/game";
-import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry, getMarketStructureMemory, getOrderBlockMemory, OrderBlockMemoryEntry, saveVolumeTrendMemory } from "./autoMixMemory";
+import { saveTrendMemory, saveValleyMemory, saveRsiMemory, saveFibonacciMemory, getAutoMixMemory, AutoMixMemoryEntry, getMarketStructureMemory, getOrderBlockMemory, OrderBlockMemoryEntry, saveVolumeTrendMemory, MarketStructureMemoryEntry, RsiMemoryEntry, ValleyMemoryEntry, VolumeTrendMemoryEntry, TrendMemoryEntry, FibonacciMemoryEntry } from "./autoMixMemory";
 import type { WhaleTrade } from "@/hooks/useWhaleTrades";
 import { getWhaleVote } from "./whale-vote";
 import { getAdxMemoryVote } from "./adx-vote";
@@ -25,8 +25,30 @@ interface DecisionAnalysis {
 export function decideMixDirection(
   candles: Candle[],
   timeframe: string = "1m",
-  whaleTrades?: WhaleTrade[]
+  whaleTrades?: WhaleTrade[],
+  // Dependencias inyectadas (opcionales para mantener compatibilidad hacia atrás si se proveen defaults, 
+  // pero para servidor deben pasarse explícitamente)
+  injectedMemory?: {
+    autoMix?: AutoMixMemoryEntry[],
+    orderBlocks?: OrderBlockMemoryEntry[],
+    marketStructure?: MarketStructureMemoryEntry[],
+    rsi?: RsiMemoryEntry[],
+    valley?: ValleyMemoryEntry[],
+    volumeTrend?: VolumeTrendMemoryEntry[],
+    trend?: TrendMemoryEntry[],
+    fibonacci?: FibonacciMemoryEntry[]
+  }
 ): "BULLISH" | "BEARISH" {
+  // Helpers para obtener memoria (inyectada o localStorage)
+  const getMem = <T>(injected: T[] | undefined, getter: () => T[]) => injected ?? getter();
+  
+  const autoMixMemory = getMem(injectedMemory?.autoMix, getAutoMixMemory);
+  const orderBlockMemory = getMem(injectedMemory?.orderBlocks, getOrderBlockMemory);
+  const marketStructureMemory = getMem(injectedMemory?.marketStructure, getMarketStructureMemory);
+  // ... otros si son necesarios, aunque algunos save* functions se llaman dentro.
+  // Nota: Las funciones save* seguirán intentando usar localStorage. 
+  // Para el servidor, deberíamos evitar llamar a save* o hacerlas seguras.
+
   // --- HISTORIAL DE ÉXITO/FRACASO POR COMBINACIÓN ---
   // Se analiza ANTES de devolver la decisión final
   // (esto se aplicará tras calcular signals y antes de devolver dirección)
@@ -37,7 +59,7 @@ export function decideMixDirection(
 
   function checkShouldInvertDecision(majoritySignal: "BULLISH" | "BEARISH" | null, rsiSignal: "BULLISH" | "BEARISH" | null, macdSignal: "BULLISH" | "BEARISH" | null): DecisionAnalysis {
     try {
-      const memory = getAutoMixMemory();
+      const memory = autoMixMemory; // Usar la memoria resuelta
       // Filtra por la combinación de señales actual
       const similares = memory.filter(e =>
         e.majoritySignal === majoritySignal &&
@@ -71,7 +93,7 @@ export function decideMixDirection(
       const lastTrade = memory[memory.length - 1];
       if (lastTrade && lastTrade.result === "WIN" && lastTrade.consecutiveBets) {
         // Verificar si la última apuesta ganadora fue cerca de un soporte/resistencia
-        const marketStructure = getMarketStructureMemory();
+        const marketStructure = marketStructureMemory;
         const lastPrice = candles[candles.length - 1].close;
         // Usar la última entrada de memoria de estructura de mercado
         const latestStructure = marketStructure[marketStructure.length - 1];
@@ -487,7 +509,7 @@ export function decideMixDirection(
   // 13. Order Blocks (SMC): 1.0 punto
   // Reacción en zonas de oferta/demanda.
   try {
-    const orderBlocks: OrderBlockMemoryEntry[] = getOrderBlockMemory();
+    const orderBlocks: OrderBlockMemoryEntry[] = orderBlockMemory;
     const bullishBlocks = orderBlocks.filter(b => b.type === 'BULLISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
     const bearishBlocks = orderBlocks.filter(b => b.type === 'BEARISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
     const currentPrice = candles[candles.length - 1]?.close;
@@ -499,7 +521,7 @@ export function decideMixDirection(
 
   // --- Mejorada: Detección de rachas ganadoras/perdedoras ---
   try {
-    const memory = getAutoMixMemory();
+    const memory = autoMixMemory;
     const lastN = memory.slice(-15); // Revisar 15 trades para mejor contexto
 
     // Contadores
@@ -559,7 +581,7 @@ export function decideMixDirection(
 
   // --- LÓGICA DE CONSENSO PERSISTENTE ---
   try {
-    const memory = getAutoMixMemory();
+    const memory = autoMixMemory;
     // Filtrar por temporalidad (ej: "1m", "5m"), si existe en la memoria
     // Si no, usar las últimas N entradas
     const N = timeframe === "1m" ? 4 : timeframe === "5m" ? 3 : 3;
@@ -588,7 +610,7 @@ export function decideMixDirection(
 
   // Si hay una racha ganadora, ignorar la inversión
   try {
-    const memory = getAutoMixMemory();
+    const memory = autoMixMemory;
     const lastN = memory.slice(-2);
     if (
       lastN.length === 2 &&
@@ -605,7 +627,7 @@ export function decideMixDirection(
 
   // --- LÓGICA DE MEMORIA DE VALLE (AutoMix Learning) ---
   try {
-    const memory = getAutoMixMemory();
+    const memory = autoMixMemory;
     // 1. Comprobar apuestas anteriores en ESTE MISMO valle
     const sameValleyBets = memory.filter(e => e.valleyId === valleyId);
 
@@ -693,7 +715,7 @@ export function decideMixDirection(
         orderBlockVotes: {
           bullish: (() => {
             try {
-              const orderBlocks: OrderBlockMemoryEntry[] = getOrderBlockMemory();
+              const orderBlocks: OrderBlockMemoryEntry[] = orderBlockMemory;
               const bullishBlocks = orderBlocks.filter(b => b.type === 'BULLISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
               const currentPrice = candles[candles.length - 1]?.close;
               return bullishBlocks.length > 0 && currentPrice > bullishBlocks[0].price;
@@ -701,7 +723,7 @@ export function decideMixDirection(
           })(),
           bearish: (() => {
             try {
-              const orderBlocks: OrderBlockMemoryEntry[] = getOrderBlockMemory();
+              const orderBlocks: OrderBlockMemoryEntry[] = orderBlockMemory;
               const bearishBlocks = orderBlocks.filter(b => b.type === 'BEARISH').sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
               const currentPrice = candles[candles.length - 1]?.close;
               return bearishBlocks.length > 0 && currentPrice < bearishBlocks[0].price;

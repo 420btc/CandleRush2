@@ -275,6 +275,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [currentUser]);
 
+  // Obtener el estado de AutoMix para el par/intervalo actual
+  const autoMix = useMemo(() => {
+    const key = currentSymbol && timeframe ? `${currentSymbol}_${timeframe}` : '';
+    return key ? autoMixState[key] || false : false;
+  }, [autoMixState, currentSymbol, timeframe]);
+
   // --- Sincroniza datos del usuario cada vez que cambian cosas clave ---
   useEffect(() => {
     if (currentUser) {
@@ -284,8 +290,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
         achievements,
         autoMixMemory,
       });
+
+      // Sincronizar con servidor para Cron Jobs
+      fetch('/api/user/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser,
+          balance: userBalance,
+          autoMixEnabled: autoMix,
+          autoMixTimeframe: timeframe,
+          autoMixSymbol: currentSymbol
+        })
+      }).catch(err => console.error('Error syncing with server:', err));
     }
-  }, [currentUser, userBalance, betsByPair, achievements, autoMixMemory]);
+  }, [currentUser, userBalance, betsByPair, achievements, autoMixMemory, autoMix, timeframe, currentSymbol]);
   const { toast } = useToast()
   const { unlockAchievement } = useAchievement()
 
@@ -382,11 +401,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }
 
 
-  // Obtener el estado de AutoMix para el par/intervalo actual
-  const autoMix = useMemo(() => {
-    const key = currentSymbol && timeframe ? `${currentSymbol}_${timeframe}` : '';
-    return key ? autoMixState[key] || false : false;
-  }, [autoMixState, currentSymbol, timeframe]);
+
 
   // Obtener todos los timeframes activos para AutoMix
   const getActiveAutoMixTimeframes = useCallback((symbol: string) => {
