@@ -220,6 +220,11 @@ export async function updateUser(username: string, updates: Partial<UserData>) {
 
 export async function saveAutoMixMemoryEntry(entry: AutoMixMemoryEntry) {
   const db = await getDB();
+  
+  // Evitar duplicados por betId
+  const exists = db.autoMixMemory.some(e => e.betId === entry.betId);
+  if (exists) return;
+
   db.autoMixMemory.push(entry);
   if (db.autoMixMemory.length > 666) {
     db.autoMixMemory = db.autoMixMemory.slice(-666);

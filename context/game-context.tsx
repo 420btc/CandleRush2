@@ -288,22 +288,30 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     try {
       console.log('[SYNC] Iniciando sincronización manual con servidor...');
+      
+      // Construir payload completo con memoria detallada
+      const payload = {
+        username: currentUser,
+        balance: userBalance,
+        autoMixEnabled: autoMix,
+        autoMixTimeframe: timeframe,
+        autoMixSymbol: currentSymbol,
+        // Incluir la memoria completa para que el servidor pueda aprender
+        autoMixMemory: autoMixMemory
+      };
+
+      console.log('[SYNC] Payload:', payload);
+
       await fetch('/api/user/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: currentUser,
-          balance: userBalance,
-          autoMixEnabled: autoMix,
-          autoMixTimeframe: timeframe,
-          autoMixSymbol: currentSymbol
-        })
+        body: JSON.stringify(payload)
       });
       console.log('[SYNC] Sincronización completada con éxito');
     } catch (err) {
       console.error('[SYNC] Error syncing with server:', err);
     }
-  }, [currentUser, userBalance, autoMix, timeframe, currentSymbol]);
+  }, [currentUser, userBalance, autoMix, timeframe, currentSymbol, autoMixMemory]);
 
   useEffect(() => {
     if (currentUser) {

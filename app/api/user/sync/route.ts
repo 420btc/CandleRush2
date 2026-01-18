@@ -20,6 +20,19 @@ export async function POST(request: Request) {
       autoMixSymbol
     });
 
+    // Si viene memoria en el payload, guardarla en la memoria global
+    if (body.autoMixMemory && Array.isArray(body.autoMixMemory) && body.autoMixMemory.length > 0) {
+      console.log(`[API Sync] Guardando ${body.autoMixMemory.length} entradas de memoria`);
+      // Guardar las últimas entradas nuevas (asumimos que las últimas son las más recientes)
+      // En un sistema real, deberíamos hacer un merge inteligente o usar un Set
+      const latestEntries = body.autoMixMemory.slice(-10); // Guardar solo las últimas 10 para no saturar en cada sync
+      
+      const { saveAutoMixMemoryEntry } = require('@/lib/server-db');
+      for (const entry of latestEntries) {
+        await saveAutoMixMemoryEntry(entry);
+      }
+    }
+
     const updatedUser = await getUser(username);
 
     return NextResponse.json({ success: true, user: updatedUser });
