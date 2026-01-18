@@ -2,11 +2,11 @@
   "users": {
     "carlos freire": {
       "username": "carlos freire",
-      "balance": 4315.043061201233,
+      "balance": 4273.043061201233,
       "autoMixEnabled": true,
       "autoMixTimeframe": "1m",
       "autoMixSymbol": "BTCUSDT",
-      "lastActive": 1768756800299
+      "lastActive": 1768756920231
     }
   },
   "autoMixMemory": [],

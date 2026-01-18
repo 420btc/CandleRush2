@@ -1,8 +1,16 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { AutoMixMemoryEntry, OrderBlockMemoryEntry, MarketStructureMemoryEntry } from '@/utils/autoMixMemory';
 
-const DB_PATH = path.join(process.cwd(), 'server', 'db.json');
+// En producción (Vercel), solo /tmp es escribible.
+// NOTA: /tmp es efímero. Para persistencia real se necesita una base de datos externa (Redis, Mongo, Postgres).
+const DB_PATH = process.env.NODE_ENV === 'production' 
+  ? path.join(os.tmpdir(), 'candlerush_db.json')
+  : path.join(process.cwd(), 'server', 'db.json');
+
+// Cache en memoria para intentar mitigar la pérdida de datos en /tmp si la instancia se reutiliza
+let memoryCache: ServerDB | null = null;
 
 export interface UserData {
   username: string;
@@ -20,8 +28,16 @@ export interface ServerDB {
   marketStructure: MarketStructureMemoryEntry[];
 }
 
-// Inicializar DB si no existe
+// Inicializar DB
 function initDB() {
+  // Asegurar directorio local si no es producción
+  if (process.env.NODE_ENV !== 'production') {
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  }
+
   if (!fs.existsSync(DB_PATH)) {
     const initialDB: ServerDB = {
       users: {},
@@ -29,22 +45,37 @@ function initDB() {
       orderBlocks: [],
       marketStructure: []
     };
-    fs.writeFileSync(DB_PATH, JSON.stringify(initialDB, null, 2));
+    try {
+      fs.writeFileSync(DB_PATH, JSON.stringify(initialDB, null, 2));
+      memoryCache = initialDB;
+    } catch (e) {
+      console.error("Error writing init DB:", e);
+      // Fallback a memoria si falla escritura
+      memoryCache = initialDB;
+    }
   }
 }
 
 export function getDB(): ServerDB {
+  if (memoryCache) return memoryCache; // Retornar caché si existe
+  
   initDB();
   try {
-    const data = fs.readFileSync(DB_PATH, 'utf-8');
-    return JSON.parse(data);
+    if (fs.existsSync(DB_PATH)) {
+      const data = fs.readFileSync(DB_PATH, 'utf-8');
+      memoryCache = JSON.parse(data);
+      return memoryCache!;
+    }
   } catch (error) {
     console.error("Error reading DB:", error);
-    return { users: {}, autoMixMemory: [], orderBlocks: [], marketStructure: [] };
   }
+  
+  // Fallback seguro
+  return { users: {}, autoMixMemory: [], orderBlocks: [], marketStructure: [] };
 }
 
 export function saveDB(data: ServerDB) {
+  memoryCache = data; // Actualizar caché
   try {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
   } catch (error) {
