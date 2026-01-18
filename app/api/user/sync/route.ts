@@ -13,12 +13,14 @@ export async function POST(request: Request) {
     }
 
     // Actualizar usuario en DB
-    await updateUser(username, {
+    const result = await updateUser(username, {
       balance,
       autoMixEnabled,
       autoMixTimeframe,
       autoMixSymbol
     });
+
+    console.log(`[API Sync] Update User Result:`, result);
 
     // Si viene memoria en el payload, guardarla en la memoria global
     if (body.autoMixMemory && Array.isArray(body.autoMixMemory) && body.autoMixMemory.length > 0) {
@@ -35,7 +37,14 @@ export async function POST(request: Request) {
 
     const updatedUser = await getUser(username);
 
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({ 
+      success: true, 
+      user: updatedUser,
+      debug: {
+        storage: result.storage,
+        error: result.error
+      }
+    });
   } catch (error: any) {
     console.error('[API Sync] Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

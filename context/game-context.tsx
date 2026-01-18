@@ -302,14 +302,33 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       console.log('[SYNC] Payload:', payload);
 
-      await fetch('/api/user/sync', {
+      const res = await fetch('/api/user/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
+      const data = await res.json();
+      console.log('[SYNC] Respuesta:', data);
+
+      if (data.success) {
+        toast({
+          title: "Datos sincronizados",
+          description: `Guardado en: ${data.debug?.storage || 'desconocido'}.`,
+          variant: "default",
+        });
+      } else {
+        throw new Error(data.error || 'Error desconocido');
+      }
+
       console.log('[SYNC] Sincronización completada con éxito');
-    } catch (err) {
+    } catch (err: any) {
       console.error('[SYNC] Error syncing with server:', err);
+      toast({
+        title: "Error de sincronización",
+        description: err.message || "No se pudo conectar con el servidor",
+        variant: "destructive",
+      });
     }
   }, [currentUser, userBalance, autoMix, timeframe, currentSymbol, autoMixMemory]);
 

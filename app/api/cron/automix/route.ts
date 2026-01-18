@@ -32,6 +32,9 @@ export async function GET(request: Request) {
       const [symbol, timeframe] = key.split('-');
       
       console.log(`[AutoMix Cron] Procesando grupo: ${symbol} ${timeframe} para ${groupUsers.length} usuarios`);
+      
+      // LOG DE USUARIOS ENCONTRADOS
+      console.log(`[AutoMix Cron] Usuarios activos: ${groupUsers.map(u => u.username).join(', ')}`);
 
       // Obtener velas (necesitamos suficientes para los indicadores, ~100 o más)
       let candles;

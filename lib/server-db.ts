@@ -180,27 +180,36 @@ export async function getDB(): Promise<ServerDB> {
 }
 
 // --- Función Principal SaveDB ---
-export async function saveDB(data: ServerDB) {
+export async function saveDB(data: ServerDB): Promise<{ success: boolean; storage: 'neon' | 'local' | 'both' | 'none'; error?: string }> {
   memoryCache = data; // Actualizar caché
-  
+  let storage: 'neon' | 'local' | 'both' | 'none' = 'none';
+  let errorMsg: string | undefined;
+
   // 1. Guardar en Neon DB
   if (connectionString) {
-    await neonSaveDB(data);
+    try {
+      await neonSaveDB(data);
+      storage = 'neon';
+    } catch (e: any) {
+      console.error("Neon DB Save Error:", e);
+      errorMsg = e.message;
+    }
   }
 
   // 2. Guardar en Archivo Local (Backup / Dev)
   try {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+    storage = storage === 'neon' ? 'both' : 'local';
   } catch (error) {
     // Ignorar error en Vercel si no es /tmp
     if (process.env.NODE_ENV !== 'production') console.error("Error saving local DB:", error);
   }
+
+  return { success: true, storage, error: errorMsg };
 }
 
 // Helpers específicos
 export async function getUser(username: string): Promise<UserData | null> {
-  // Optimización: Si tenemos caché, buscar ahí primero, si no, ir a DB completa
-  // (Para apps grandes, haríamos SELECT * FROM users WHERE username = ..., pero aquí cargamos todo para simplificar la lógica de sincronización)
   const db = await getDB();
   return db.users[username] || null;
 }
@@ -218,7 +227,7 @@ export async function updateUser(username: string, updates: Partial<UserData>) {
     };
   }
   db.users[username] = { ...db.users[username], ...updates, lastActive: Date.now() };
-  await saveDB(db);
+  return await saveDB(db);
 }
 
 export async function saveAutoMixMemoryEntry(entry: AutoMixMemoryEntry) {
@@ -226,13 +235,13 @@ export async function saveAutoMixMemoryEntry(entry: AutoMixMemoryEntry) {
   
   // Evitar duplicados por betId
   const exists = db.autoMixMemory.some(e => e.betId === entry.betId);
-  if (exists) return;
+  if (exists) return { success: true, skipped: true };
 
   db.autoMixMemory.push(entry);
   if (db.autoMixMemory.length > 666) {
     db.autoMixMemory = db.autoMixMemory.slice(-666);
   }
-  await saveDB(db);
+  return await saveDB(db);
 }
 
 export async function getAutoMixMemoryFn(): Promise<AutoMixMemoryEntry[]> {
