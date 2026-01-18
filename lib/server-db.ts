@@ -1,15 +1,18 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { Pool } from '@neondatabase/serverless';
 import { AutoMixMemoryEntry, OrderBlockMemoryEntry, MarketStructureMemoryEntry } from '@/utils/autoMixMemory';
 
-// En producción (Vercel), solo /tmp es escribible.
-// NOTA: /tmp es efímero. Para persistencia real se necesita una base de datos externa (Redis, Mongo, Postgres).
+// Configuración DB Neon (Postgres)
+const connectionString = process.env.DATABASE_URL;
+
+// En producción (Vercel), solo /tmp es escribible para fallbacks locales
 const DB_PATH = process.env.NODE_ENV === 'production' 
   ? path.join(os.tmpdir(), 'candlerush_db.json')
   : path.join(process.cwd(), 'server', 'db.json');
 
-// Cache en memoria para intentar mitigar la pérdida de datos en /tmp si la instancia se reutiliza
+// Cache en memoria para rendimiento y fallback
 let memoryCache: ServerDB | null = null;
 
 export interface UserData {
@@ -28,38 +31,95 @@ export interface ServerDB {
   marketStructure: MarketStructureMemoryEntry[];
 }
 
-// --- Vercel KV (Upstash Redis) Helper ---
-async function kvGet<T>(key: string): Promise<T | null> {
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
+// --- Neon DB Helpers ---
+
+// Crear tablas si no existen
+async function initNeonDB() {
+  if (!connectionString) return;
+  const pool = new Pool({ connectionString });
   try {
-    const res = await fetch(`${process.env.KV_REST_API_URL}/get/${key}`, {
-      headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` }
-    });
-    const data = await res.json();
-    // Redis devuelve el string JSON en result, hay que parsearlo
-    return data.result ? JSON.parse(data.result) : null;
+    // Tabla Users
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        username TEXT PRIMARY KEY,
+        data JSONB
+      );
+    `);
+    // Tabla Global Memory (AutoMix)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS global_memory (
+        key TEXT PRIMARY KEY,
+        data JSONB
+      );
+    `);
   } catch (e) {
-    console.error("KV Get Error:", e);
+    console.error("Neon DB Init Error:", e);
+  } finally {
+    await pool.end();
+  }
+}
+
+// Obtener datos completos de Neon
+async function neonGetDB(): Promise<ServerDB | null> {
+  if (!connectionString) return null;
+  const pool = new Pool({ connectionString });
+  try {
+    const usersRes = await pool.query('SELECT * FROM users');
+    const memoryRes = await pool.query("SELECT data FROM global_memory WHERE key = 'autoMixMemory'");
+    
+    const users: Record<string, UserData> = {};
+    usersRes.rows.forEach(row => {
+      users[row.username] = row.data;
+    });
+
+    const autoMixMemory = memoryRes.rows[0]?.data || [];
+
+    return {
+      users,
+      autoMixMemory,
+      orderBlocks: [], // No persistido en SQL por ahora para simplificar
+      marketStructure: []
+    };
+  } catch (e) {
+    console.error("Neon DB Get Error:", e);
     return null;
+  } finally {
+    await pool.end();
   }
 }
 
-async function kvSet(key: string, value: any) {
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return;
+// Guardar datos completos en Neon
+async function neonSaveDB(data: ServerDB) {
+  if (!connectionString) return;
+  const pool = new Pool({ connectionString });
   try {
-    await fetch(`${process.env.KV_REST_API_URL}/set/${key}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` },
-      body: JSON.stringify(value)
-    });
+    // Guardar usuarios (upsert)
+    for (const [username, userData] of Object.entries(data.users)) {
+      await pool.query(`
+        INSERT INTO users (username, data)
+        VALUES ($1, $2)
+        ON CONFLICT (username)
+        DO UPDATE SET data = $2
+      `, [username, JSON.stringify(userData)]);
+    }
+
+    // Guardar memoria global
+    await pool.query(`
+      INSERT INTO global_memory (key, data)
+      VALUES ('autoMixMemory', $1)
+      ON CONFLICT (key)
+      DO UPDATE SET data = $1
+    `, [JSON.stringify(data.autoMixMemory)]);
+
   } catch (e) {
-    console.error("KV Set Error:", e);
+    console.error("Neon DB Save Error:", e);
+  } finally {
+    await pool.end();
   }
 }
 
-// Inicializar DB
-function initDB() {
-  // Asegurar directorio local si no es producción
+// Inicializar DB Local (Fallback)
+function initLocalDB() {
   if (process.env.NODE_ENV !== 'production') {
     const dir = path.dirname(DB_PATH);
     if (!fs.existsSync(dir)) {
@@ -78,26 +138,31 @@ function initDB() {
       fs.writeFileSync(DB_PATH, JSON.stringify(initialDB, null, 2));
       memoryCache = initialDB;
     } catch (e) {
-      console.error("Error writing init DB:", e);
-      // Fallback a memoria si falla escritura
+      console.error("Error writing init local DB:", e);
       memoryCache = initialDB;
     }
   }
 }
 
-// Convertir a ASYNC para soportar KV
+// --- Función Principal GetDB ---
 export async function getDB(): Promise<ServerDB> {
-  // 1. Intentar KV primero (Persistencia Real)
-  const kvData = await kvGet<ServerDB>('server_db');
-  if (kvData) {
-    memoryCache = kvData;
-    return kvData;
+  // 1. Intentar Neon DB (Persistencia Real)
+  if (connectionString) {
+    // Inicializar tablas la primera vez (lazy init)
+    // Nota: Idealmente esto iría en un script de migración, pero para simplicidad lo dejamos aquí con un flag o try/catch
+    await initNeonDB(); 
+    
+    const neonData = await neonGetDB();
+    if (neonData) {
+      memoryCache = neonData;
+      return neonData;
+    }
   }
 
   // 2. Fallback a Sistema de Archivos / Memoria
   if (memoryCache) return memoryCache; 
   
-  initDB();
+  initLocalDB();
   try {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, 'utf-8');
@@ -105,29 +170,34 @@ export async function getDB(): Promise<ServerDB> {
       return memoryCache!;
     }
   } catch (error) {
-    console.error("Error reading DB:", error);
+    console.error("Error reading local DB:", error);
   }
   
-  // Fallback seguro
   return { users: {}, autoMixMemory: [], orderBlocks: [], marketStructure: [] };
 }
 
+// --- Función Principal SaveDB ---
 export async function saveDB(data: ServerDB) {
   memoryCache = data; // Actualizar caché
   
-  // 1. Guardar en KV (Persistencia Real)
-  await kvSet('server_db', data);
+  // 1. Guardar en Neon DB
+  if (connectionString) {
+    await neonSaveDB(data);
+  }
 
-  // 2. Guardar en Archivo (Local / Tmp)
+  // 2. Guardar en Archivo Local (Backup / Dev)
   try {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
   } catch (error) {
-    console.error("Error saving DB:", error);
+    // Ignorar error en Vercel si no es /tmp
+    if (process.env.NODE_ENV !== 'production') console.error("Error saving local DB:", error);
   }
 }
 
-// Helpers específicos (Ahora ASYNC)
+// Helpers específicos
 export async function getUser(username: string): Promise<UserData | null> {
+  // Optimización: Si tenemos caché, buscar ahí primero, si no, ir a DB completa
+  // (Para apps grandes, haríamos SELECT * FROM users WHERE username = ..., pero aquí cargamos todo para simplificar la lógica de sincronización)
   const db = await getDB();
   return db.users[username] || null;
 }
@@ -151,7 +221,6 @@ export async function updateUser(username: string, updates: Partial<UserData>) {
 export async function saveAutoMixMemoryEntry(entry: AutoMixMemoryEntry) {
   const db = await getDB();
   db.autoMixMemory.push(entry);
-  // Limitar a 666 entradas
   if (db.autoMixMemory.length > 666) {
     db.autoMixMemory = db.autoMixMemory.slice(-666);
   }
