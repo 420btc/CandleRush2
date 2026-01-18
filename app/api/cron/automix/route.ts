@@ -31,8 +31,17 @@ export async function GET(request: Request) {
       const groupUsers = groups[key];
       const [symbol, timeframe] = key.split('-');
       
+      console.log(`[AutoMix Cron] Procesando grupo: ${symbol} ${timeframe} para ${groupUsers.length} usuarios`);
+
       // Obtener velas (necesitamos suficientes para los indicadores, ~100 o más)
-      const candles = await fetchHistoricalCandles(symbol, timeframe, 200);
+      let candles;
+      try {
+        candles = await fetchHistoricalCandles(symbol, timeframe, 200);
+      } catch (e: any) {
+        console.error(`[AutoMix Cron] Error fetching candles for ${symbol} ${timeframe}:`, e.message);
+        results.push({ error: `Failed to fetch candles for ${symbol}`, details: e.message });
+        continue; // Intentar siguiente grupo
+      }
       
       if (!candles || candles.length < 100) {
         console.error(`Insufficient candles for ${symbol} ${timeframe}`);
