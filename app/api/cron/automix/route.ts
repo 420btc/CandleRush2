@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'; // Evitar caché estático
 export async function GET(request: Request) {
   try {
     // 1. Cargar Base de Datos
-    const db = getDB();
+    const db = await getDB();
     const users = Object.values(db.users).filter(u => u.autoMixEnabled);
 
     if (users.length === 0) {
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
     }
 
     // Guardar cambios en DB
-    saveDB(db);
+    await saveDB(db);
 
     return NextResponse.json({ 
       success: true, 
