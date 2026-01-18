@@ -54,6 +54,7 @@
     "d3": "^7.9.0",
     "d3-hexbin": "^0.2.2",
     "date-fns": "4.1.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "8.5.1",
     "feedparser": "^2.2.10",
     "framer-motion": "^12.10.5",
@@ -83,6 +84,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/dotenv": "^6.1.1",
     "@types/node": "^22",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

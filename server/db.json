@@ -7,9 +7,33 @@
       "autoMixTimeframe": "1m",
       "autoMixSymbol": "BTCUSDT",
       "lastActive": 1768756920231
+    },
+    "test-user-1768758596343": {
+      "username": "test-user-1768758596343",
+      "balance": 999,
+      "autoMixEnabled": true,
+      "autoMixTimeframe": "1m",
+      "autoMixSymbol": "BTCUSDT",
+      "lastActive": 1768758596344
     }
   },
-  "autoMixMemory": [],
+  "autoMixMemory": [
+    {
+      "betId": "test-bet-1768758596347",
+      "timestamp": 1768758596347,
+      "direction": "BULLISH",
+      "result": "WIN",
+      "majoritySignal": "BULLISH",
+      "rsiSignal": "BULLISH",
+      "macdSignal": "BULLISH",
+      "rsi": 60,
+      "macd": 100,
+      "macdSignalLine": 90,
+      "volumeVote": "BULLISH",
+      "valleyVote": "BULLISH",
+      "consecutiveBets": 1
+    }
+  ],
   "orderBlocks": [],
   "marketStructure": []
 }
